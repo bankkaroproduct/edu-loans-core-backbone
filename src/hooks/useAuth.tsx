@@ -1,6 +1,6 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import type { User } from "@supabase/supabase-js";
 import type { Tables } from "@/integrations/supabase/types";
 
 type AppUser = Tables<"users">;
@@ -21,35 +21,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [appUser, setAppUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchAppUser = async (authId: string) => {
+  const loadAppUser = async (authUserId: string | null) => {
+    if (!authUserId) {
+      setAppUser(null);
+      return;
+    }
+
     const { data } = await supabase
       .from("users")
       .select("*")
-      .eq("auth_user_id", authId)
+      .eq("auth_user_id", authUserId)
       .maybeSingle();
-    setAppUser(data);
+
+    setAppUser(data ?? null);
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchAppUser(session.user.id);
-      } else {
+    let mounted = true;
+
+    const syncSession = (session: Session | null) => {
+      if (!mounted) return;
+
+      const nextUser = session?.user ?? null;
+      setUser(nextUser);
+
+      if (!nextUser) {
         setAppUser(null);
+        setLoading(false);
+        return;
       }
-      setLoading(false);
+
+      setLoading(true);
+      void loadAppUser(nextUser.id).finally(() => {
+        if (mounted) setLoading(false);
+      });
+    };
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      syncSession(session);
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchAppUser(session.user.id);
-      }
-      setLoading(false);
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      syncSession(session);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
@@ -61,8 +82,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } },
+      options: {
+        data: { full_name: fullName },
+        emailRedirectTo: window.location.origin,
+      },
     });
+
     return { error: error?.message ?? null };
   };
 
