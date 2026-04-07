@@ -7,9 +7,20 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { AppLayout } from "@/components/AppLayout";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import Leads from "./pages/Leads";
+import AddLead from "./pages/AddLead";
+import LeadDetail from "./pages/LeadDetail";
+import BulkUpload from "./pages/BulkUpload";
+import Payouts from "./pages/Payouts";
+import Partners from "./pages/Partners";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => (
+  <AppLayout>{children}</AppLayout>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -20,15 +31,14 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route
-              path="/"
-              element={
-                <AppLayout>
-                  <Index />
-                </AppLayout>
-              }
-            />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+            <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
+            <Route path="/leads/new" element={<ProtectedRoute><AddLead /></ProtectedRoute>} />
+            <Route path="/leads/:id" element={<ProtectedRoute><LeadDetail /></ProtectedRoute>} />
+            <Route path="/bulk-upload" element={<ProtectedRoute><BulkUpload /></ProtectedRoute>} />
+            <Route path="/payouts" element={<ProtectedRoute><Payouts /></ProtectedRoute>} />
+            <Route path="/partners" element={<ProtectedRoute><Partners /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
