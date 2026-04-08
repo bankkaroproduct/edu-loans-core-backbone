@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { usePartnerContext } from "@/hooks/usePartnerContext";
 import { useDuplicateCheck } from "@/hooks/useDuplicateCheck";
 import { createDownstreamRecords, fetchLeadDisplayId } from "@/hooks/useLeadWriteFlow";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ const STATUS = "pending_info" as const;
 export default function QuickLead() {
   const navigate = useNavigate();
   const { appUser } = useAuth();
+  const { effectivePartnerId, effectiveUserId } = usePartnerContext();
   const { duplicates, checking, checkDuplicates } = useDuplicateCheck();
   const [submitting, setSubmitting] = useState(false);
   const [showDupDialog, setShowDupDialog] = useState(false);
@@ -74,7 +76,7 @@ export default function QuickLead() {
     if (!form.course_name.trim()) return "Course name is required";
     if (!form.loan_amount_required.trim()) return "Loan amount is required";
     if (isNaN(Number(form.loan_amount_required)) || Number(form.loan_amount_required) <= 0) return "Loan amount must be a positive number";
-    if (!appUser?.partner_id) return "No partner organization found for your account";
+    if (!effectivePartnerId) return "No partner organization found. Admins can use 'Test as Partner' in the sidebar.";
     return null;
   };
 
@@ -90,7 +92,7 @@ export default function QuickLead() {
       lastName: form.student_last_name.trim(),
       intakeTerm: form.intake_term,
       intakeYear: form.intake_year,
-      partnerId: appUser!.partner_id!,
+      partnerId: effectivePartnerId!,
     });
 
     if (dups.length > 0) {
@@ -120,8 +122,8 @@ export default function QuickLead() {
       intake_year: form.intake_year,
       course_name: form.course_name.trim(),
       loan_amount_required: Number(form.loan_amount_required),
-      partner_id: appUser!.partner_id!,
-      partner_user_id: appUser!.id,
+      partner_id: effectivePartnerId!,
+      partner_user_id: effectiveUserId!,
       current_stage: STAGE,
       current_status: STATUS,
       source_type: "partner",
