@@ -13,7 +13,7 @@ export function QuickActions() {
     { label: "View Submitted Leads", icon: FileText, action: () => navigate("/leads") },
     { label: "Download Bulk Template", icon: Download, action: () => {} },
     { label: "View Payout Summary", icon: CreditCard, action: () => navigate("/payouts") },
-    { label: "View Pending Documents", icon: FileSearch, action: () => navigate("/leads?stage=documents_pending") },
+    { label: "View Pending Documents", icon: FileSearch, action: () => navigate("/leads?attention=true&stage=documents_pending") },
   ];
 
   return (
