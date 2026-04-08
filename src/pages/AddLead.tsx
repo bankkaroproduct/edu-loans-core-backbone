@@ -16,11 +16,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DuplicateWarningDialog } from "@/components/leads/DuplicateWarningDialog";
 import { LeadSuccessDialog } from "@/components/leads/LeadSuccessDialog";
-import { LeadCreateDebugPanel } from "@/components/leads/LeadCreateDebugPanel";
 import { toast } from "sonner";
 import { ArrowLeft, FileText, User, GraduationCap, Wallet, MessageSquare, Eye } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
-import { buildLeadCreateDebugState, formatLeadCreateError, serializeDbError, type LeadCreateDebugState } from "@/lib/leadCreateDebug";
 
 type Country = Tables<"countries_master">;
 type University = Tables<"universities_master">;
@@ -65,7 +63,7 @@ export default function AddLead() {
   const [createdLeadDisplayId, setCreatedLeadDisplayId] = useState<string | null>(null);
   const [isDraftSuccess, setIsDraftSuccess] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
-  const [debugState, setDebugState] = useState<LeadCreateDebugState | null>(null);
+  
 
   const [countries, setCountries] = useState<Country[]>([]);
   const [universities, setUniversities] = useState<University[]>([]);
@@ -217,43 +215,11 @@ export default function AddLead() {
       duplicate_flag: hasDuplicateWarning,
     };
 
-    const baseDebug = buildLeadCreateDebugState({
-      authUserId: user?.id ?? null,
-      appUser,
-      effectivePartnerId,
-      effectiveSubmittingUserId: effectiveUserId,
-      payload,
-    });
-    setDebugState(baseDebug);
-
-    console.groupCollapsed("[AddLead] Lead create debug");
-    console.log("[AddLead] Auth context:", {
-      authUserId: baseDebug.authUserId,
-      appUserId: baseDebug.appUserId,
-      resolvedRole: baseDebug.resolvedRole,
-      resolvedPartnerId: baseDebug.resolvedPartnerId,
-      effectivePartnerId: baseDebug.effectivePartnerId,
-      effectiveSubmittingUserId: baseDebug.effectiveSubmittingUserId,
-      isSimulating,
-    });
-    console.log("[AddLead] Submitting payload:", JSON.stringify(payload, null, 2));
     const { data, error } = await supabase.from("student_leads").insert(payload).select("id").single();
-    const insertError = serializeDbError(error);
-    const afterInsertDebug: LeadCreateDebugState = {
-      ...baseDebug,
-      mainInsertResponse: {
-        data: data ?? null,
-        error: insertError,
-      },
-      failedStep: insertError ? "main lead insert" : null,
-      error: insertError,
-    };
-    setDebugState(afterInsertDebug);
-    console.log("[AddLead] Insert result:", afterInsertDebug.mainInsertResponse);
 
     if (error) {
       console.error("[AddLead] Insert failed:", error.message, error.details, error.hint);
-      toast.error(formatLeadCreateError(afterInsertDebug));
+      toast.error(`Lead insert failed: ${error.message}`);
     } else if (data) {
       const downstream = await createDownstreamRecords({
         leadId: data.id,
@@ -264,34 +230,17 @@ export default function AddLead() {
         hasDuplicateOverride: hasDuplicateWarning,
         partnerRemark: form.partner_remark,
       });
-      const afterDownstreamDebug: LeadCreateDebugState = {
-        ...afterInsertDebug,
-        downstream: downstream.steps,
-        failedStep: downstream.failedStep,
-        error: downstream.error,
-      };
-      setDebugState(afterDownstreamDebug);
-      console.log("[AddLead] Downstream result:", downstream);
 
       if (!downstream.ok) {
-        toast.error(`Lead row created, but ${formatLeadCreateError(afterDownstreamDebug)}`);
+        toast.error(`Lead row created, but downstream failed: ${downstream.failedStep}`);
         setSubmitting(false);
-        console.groupEnd();
         return;
       }
 
       const displayIdResult = await fetchLeadDisplayId(data.id);
-      const afterDisplayIdDebug: LeadCreateDebugState = {
-        ...afterDownstreamDebug,
-        displayIdResponse: displayIdResult,
-        failedStep: displayIdResult.error ? "lead_id_fetch" : null,
-        error: displayIdResult.error,
-      };
-      setDebugState(afterDisplayIdDebug);
-      console.log("[AddLead] Lead ID fetch result:", displayIdResult);
 
       if (displayIdResult.error) {
-        toast.error(`Lead created, but ${formatLeadCreateError(afterDisplayIdDebug)}`);
+        toast.error(`Lead created, but could not fetch display ID`);
       }
 
       setCreatedLeadId(data.id);
@@ -301,7 +250,6 @@ export default function AddLead() {
       setShowSuccess(true);
     }
 
-    console.groupEnd();
     setSubmitting(false);
   };
 
@@ -629,8 +577,6 @@ export default function AddLead() {
         isDraft={isDraftSuccess}
         onClose={() => navigate("/leads")}
       />
-
-      <LeadCreateDebugPanel debug={debugState} />
     </div>
   );
 }

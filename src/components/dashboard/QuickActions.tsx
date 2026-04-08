@@ -3,6 +3,25 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Upload, FileText, CreditCard, FileSearch, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
+function downloadBulkTemplate() {
+  const headers = [
+    "student_first_name", "student_last_name", "student_phone", "student_email",
+    "student_whatsapp", "city", "state", "country_of_residence",
+    "intended_study_country", "intake_term", "intake_year", "course_name",
+    "university_name", "loan_amount_required", "coapplicant_name",
+    "coapplicant_relation", "coapplicant_income", "collateral_available",
+    "collateral_notes", "source_sub_type", "partner_remark",
+  ];
+  const csv = headers.join(",") + "\n";
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "bulk_upload_template.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export function QuickActions() {
   const navigate = useNavigate();
 
@@ -11,7 +30,7 @@ export function QuickActions() {
     { label: "Add New Lead", icon: Plus, action: () => navigate("/leads/new") },
     { label: "Bulk Upload Leads", icon: Upload, action: () => navigate("/bulk-upload") },
     { label: "View Submitted Leads", icon: FileText, action: () => navigate("/leads") },
-    { label: "Download Bulk Template", icon: Download, action: () => {} },
+    { label: "Download Bulk Template", icon: Download, action: downloadBulkTemplate },
     { label: "View Payout Summary", icon: CreditCard, action: () => navigate("/payouts") },
     { label: "View Pending Documents", icon: FileSearch, action: () => navigate("/leads?attention=true&stage=documents_pending") },
   ];
