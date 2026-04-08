@@ -1,8 +1,8 @@
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileText, Upload, CheckCircle, AlertTriangle, Clock, XCircle } from "lucide-react";
-import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 
 type DocReq = Tables<"lead_document_requirements"> & {
@@ -22,9 +22,11 @@ const STATUS_CONFIG: Record<string, { icon: typeof CheckCircle; color: string; l
 
 interface Props {
   requirements: DocReq[];
+  leadId: string;
 }
 
-export function LeadDocumentSnapshot({ requirements }: Props) {
+export function LeadDocumentSnapshot({ requirements, leadId }: Props) {
+  const navigate = useNavigate();
   const counts = {
     total: requirements.length,
     uploaded: requirements.filter(r => ["uploaded", "under_review", "verified"].includes(r.status)).length,
@@ -41,7 +43,7 @@ export function LeadDocumentSnapshot({ requirements }: Props) {
           <CardTitle className="text-base flex items-center gap-2">
             <FileText className="h-4 w-4 text-primary" /> Document Checklist
           </CardTitle>
-          <Button variant="outline" size="sm" onClick={() => toast.info("Full document module coming soon")}>
+          <Button variant="outline" size="sm" onClick={() => navigate(`/leads/${leadId}/documents`)}>
             Manage Documents
           </Button>
         </div>
@@ -61,7 +63,7 @@ export function LeadDocumentSnapshot({ requirements }: Props) {
           <p className="text-sm text-muted-foreground text-center py-4">No document requirements set for this lead yet.</p>
         ) : (
           <div className="space-y-2">
-            {requirements.map(req => {
+            {requirements.slice(0, 5).map(req => {
               const cfg = STATUS_CONFIG[req.status] ?? STATUS_CONFIG.not_uploaded;
               const Icon = cfg.icon;
               return (
@@ -79,6 +81,11 @@ export function LeadDocumentSnapshot({ requirements }: Props) {
                 </div>
               );
             })}
+            {requirements.length > 5 && (
+              <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => navigate(`/leads/${leadId}/documents`)}>
+                View all {requirements.length} documents →
+              </Button>
+            )}
           </div>
         )}
       </CardContent>
