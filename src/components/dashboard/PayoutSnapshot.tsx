@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CreditCard, Clock, CheckCircle, DollarSign } from "lucide-react";
+import { CreditCard, Clock, CheckCircle, DollarSign, AlertTriangle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -9,6 +9,7 @@ export interface PayoutSummary {
   pending: number;
   approved: number;
   paid: number;
+  reversed: number;
   recentRecords: {
     id: string;
     leadId: string;
@@ -29,6 +30,7 @@ export function PayoutSnapshot({ data, loading }: { data: PayoutSummary; loading
     { label: "Pending", value: data.pending, icon: Clock, route: "/payouts?status=pending" },
     { label: "Approved", value: data.approved, icon: CheckCircle, route: "/payouts?status=approved" },
     { label: "Paid", value: data.paid, icon: CreditCard, route: "/payouts?status=paid" },
+    ...(data.reversed > 0 ? [{ label: "Reversed", value: data.reversed, icon: AlertTriangle, route: "/payouts?status=reversed" }] : []),
   ];
 
   return (
@@ -44,7 +46,7 @@ export function PayoutSnapshot({ data, loading }: { data: PayoutSummary; loading
           <Skeleton className="h-20 w-full" />
         ) : (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <div className={`grid grid-cols-2 ${metrics.length > 4 ? "sm:grid-cols-5" : "sm:grid-cols-4"} gap-3 mb-4`}>
               {metrics.map((m) => {
                 const Icon = m.icon;
                 return (
@@ -67,9 +69,9 @@ export function PayoutSnapshot({ data, loading }: { data: PayoutSummary; loading
                   <div
                     key={r.id}
                     className="flex items-center justify-between text-xs p-1.5 border rounded cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => navigate("/payouts")}
+                    onClick={() => navigate(`/payouts?lead=${r.leadId}`)}
                   >
-                    <span className="font-mono text-muted-foreground">{r.leadId}</span>
+                    <span className="font-mono text-muted-foreground">{r.leadId.slice(0, 8)}</span>
                     <span className="font-medium">{r.amount ? formatINR(r.amount) : "—"}</span>
                     <span className="capitalize text-muted-foreground">{r.status.replace(/_/g, " ")}</span>
                   </div>
