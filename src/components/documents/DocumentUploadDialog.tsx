@@ -21,11 +21,12 @@ interface Props {
   requirement: DocRequirement;
   leadId: string;
   userId: string | null;
+  userRole?: string | null;
   onUploadComplete: () => void;
   currentVersionCount?: number;
 }
 
-export function DocumentUploadDialog({ open, onOpenChange, requirement, leadId, userId, onUploadComplete, currentVersionCount = 0 }: Props) {
+export function DocumentUploadDialog({ open, onOpenChange, requirement, leadId, userId, userRole, onUploadComplete, currentVersionCount = 0 }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -102,6 +103,7 @@ export function DocumentUploadDialog({ open, onOpenChange, requirement, leadId, 
           storage_path: storagePath,
           mime_type: file.type,
           uploaded_by_user_id: userId,
+          uploaded_by_role: userRole as any ?? null,
           version_number: nextVersion,
           is_latest: true,
           verification_status: "uploaded",

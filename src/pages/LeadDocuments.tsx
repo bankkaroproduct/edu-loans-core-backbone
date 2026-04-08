@@ -24,7 +24,7 @@ export type DocFile = Tables<"lead_documents"> & {
 export default function LeadDocuments() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { userId } = useRoleAccess();
+  const { userId, role } = useRoleAccess();
 
   const [lead, setLead] = useState<Lead | null>(null);
   const [requirements, setRequirements] = useState<DocRequirement[]>([]);
@@ -154,6 +154,7 @@ export default function LeadDocuments() {
           requirement={uploadTarget}
           leadId={lead.id}
           userId={userId}
+          userRole={role}
           onUploadComplete={handleUploadComplete}
           currentVersionCount={documents.filter(d => d.document_type_id === uploadTarget.document_type_id).length}
         />
