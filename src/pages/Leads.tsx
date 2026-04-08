@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
+import { usePartnerContext } from "@/hooks/usePartnerContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -85,7 +86,8 @@ const SUMMARY_ITEMS = [
 export default function Leads() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { agentUserId, isPartnerAdmin } = useRoleAccess();
+  const { agentUserId, isPartnerAdmin, isAdmin } = useRoleAccess();
+  const { effectivePartnerId, isSimulating } = usePartnerContext();
 
   // ── Read URL params ──
   const paramStage = searchParams.get("stage") ?? "";
@@ -181,6 +183,7 @@ export default function Leads() {
     setLoading(true);
 
     const applyFilters = (q: any) => {
+      if (effectivePartnerId) q = q.eq("partner_id", effectivePartnerId);
       if (agentUserId) q = q.eq("partner_user_id", agentUserId);
       if (stageFilter !== "all") {
         if (stageFilter.includes(",")) q = q.in("current_stage", stageFilter.split(",") as Stage[]);
@@ -269,7 +272,7 @@ export default function Leads() {
     } else {
       setDupMatches({});
     }
-  }, [stageFilter, statusFilter, duplicateFilter, attentionFilter, originFilter, submittedByFilter, sourceSubtypeFilter, countryFilter, intakeTermFilter, intakeYearFilter, dateFrom, dateTo, search, sortKey, sortDir, page, agentUserId]);
+  }, [stageFilter, statusFilter, duplicateFilter, attentionFilter, originFilter, submittedByFilter, sourceSubtypeFilter, countryFilter, intakeTermFilter, intakeYearFilter, dateFrom, dateTo, search, sortKey, sortDir, page, agentUserId, effectivePartnerId]);
 
   useEffect(() => { fetchLeads(); }, [fetchLeads]);
 

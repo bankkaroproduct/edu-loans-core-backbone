@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import type { Tables } from "@/integrations/supabase/types";
+import { usePartnerContext } from "@/hooks/usePartnerContext";
 
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardFilters, defaultFilters, type DashboardFilterValues } from "@/components/dashboard/DashboardFilters";
@@ -28,6 +29,7 @@ type Note = Tables<"lead_notes">;
 export default function Dashboard() {
   const { appUser } = useAuth();
   const { agentUserId } = useRoleAccess();
+  const { effectivePartnerId } = usePartnerContext();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -43,21 +45,25 @@ export default function Dashboard() {
     const fetchData = async () => {
       // Build role-aware lead query
       let leadsQ = supabase.from("student_leads").select("*").eq("is_archived", false).order("updated_at", { ascending: false }).limit(500);
+      if (effectivePartnerId) leadsQ = leadsQ.eq("partner_id", effectivePartnerId);
       if (agentUserId) leadsQ = leadsQ.eq("partner_user_id", agentUserId);
 
       // Build role-aware batch query
       let batchQ = supabase.from("bulk_upload_batches").select("*").order("uploaded_at", { ascending: false }).limit(20);
+      if (effectivePartnerId) batchQ = batchQ.eq("partner_id", effectivePartnerId);
       if (agentUserId) batchQ = batchQ.eq("uploaded_by", agentUserId);
 
       const [leadsRes, batchRes, payoutRes, docReqRes, historyRes, notesRes, partnerRes] = await Promise.all([
         leadsQ,
         batchQ,
-        supabase.from("partner_payout_records").select("*").order("created_at", { ascending: false }).limit(100),
+        effectivePartnerId
+          ? supabase.from("partner_payout_records").select("*").eq("partner_id", effectivePartnerId).order("created_at", { ascending: false }).limit(100)
+          : supabase.from("partner_payout_records").select("*").order("created_at", { ascending: false }).limit(100),
         supabase.from("lead_document_requirements").select("*").limit(500),
         supabase.from("lead_stage_history").select("*").order("created_at", { ascending: false }).limit(50),
         supabase.from("lead_notes").select("*").order("created_at", { ascending: false }).limit(30),
-        appUser?.partner_id
-          ? supabase.from("partner_organizations").select("display_name").eq("id", appUser.partner_id).maybeSingle()
+        effectivePartnerId
+          ? supabase.from("partner_organizations").select("display_name").eq("id", effectivePartnerId).maybeSingle()
           : Promise.resolve({ data: null }),
       ]);
 
@@ -68,7 +74,7 @@ export default function Dashboard() {
       // For agent role, filter related records to only accessible leads
       const accessibleLeadIds = new Set(fetchedLeads.map((l) => l.id));
 
-      if (agentUserId) {
+      if (agentUserId || effectivePartnerId) {
         setPayoutRecords((payoutRes.data ?? []).filter((p) => accessibleLeadIds.has(p.lead_id)));
         setDocReqs((docReqRes.data ?? []).filter((d) => accessibleLeadIds.has(d.lead_id)));
         setStageHistory((historyRes.data ?? []).filter((h) => accessibleLeadIds.has(h.lead_id)));
@@ -86,7 +92,7 @@ export default function Dashboard() {
       setLoading(false);
     };
     fetchData();
-  }, [appUser?.partner_id, agentUserId]);
+  }, [effectivePartnerId, agentUserId]);
 
   const destinations = useMemo(() => [...new Set(leads.map((l) => l.intended_study_country))].sort(), [leads]);
   const intakes = useMemo(() => {

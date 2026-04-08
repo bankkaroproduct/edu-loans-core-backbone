@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
+import { usePartnerContext } from "@/hooks/usePartnerContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -75,6 +76,7 @@ export default function BulkUpload() {
   const [searchParams] = useSearchParams();
   const { appUser } = useAuth();
   const { agentUserId } = useRoleAccess();
+  const { effectivePartnerId, effectiveUserId } = usePartnerContext();
 
   const [batches, setBatches] = useState<Batch[]>([]);
   const [batchesLoading, setBatchesLoading] = useState(true);
@@ -98,13 +100,14 @@ export default function BulkUpload() {
 
   const loadBatches = async () => {
     let query = supabase.from("bulk_upload_batches").select("*").order("uploaded_at", { ascending: false }).limit(50);
+    if (effectivePartnerId) query = query.eq("partner_id", effectivePartnerId);
     if (agentUserId) query = query.eq("uploaded_by", agentUserId);
     const { data } = await query;
     setBatches(data ?? []);
     setBatchesLoading(false);
   };
 
-  useEffect(() => { loadBatches(); }, []);
+  useEffect(() => { loadBatches(); }, [effectivePartnerId]);
 
   useEffect(() => {
     if (selectedBatchId) loadBatchRows(selectedBatchId);
@@ -161,6 +164,10 @@ export default function BulkUpload() {
 
   const startProcessing = async () => {
     if (!selectedFile || !appUser || processingRef.current) return;
+    if (!effectivePartnerId) {
+      toast.error("No partner context available. Please select a partner to test as.");
+      return;
+    }
     processingRef.current = true;
     setProcessingError(null);
 
@@ -170,6 +177,8 @@ export default function BulkUpload() {
         text, selectedFile.name, appUser,
         (s) => setStage(s),
         (c, t) => setProgress({ current: c, total: t }),
+        effectivePartnerId,
+        effectiveUserId,
       );
       setResults(result.results);
       setSummary({ batchId: result.batchId, total: result.totalRows, success: result.successCount, failed: result.failedCount, duplicates: result.duplicateCount });
