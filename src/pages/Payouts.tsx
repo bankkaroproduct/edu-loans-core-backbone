@@ -26,7 +26,8 @@ export default function Payouts() {
   const { agentUserId } = useRoleAccess();
 
   const [records, setRecords] = useState<PayoutRecord[]>([]);
-  const [leadMap, setLeadMap] = useState<Record<string, { lead_id: string | null; student_full_name: string | null; current_stage: string }>>({});
+  const [leadMap, setLeadMap] = useState<Record<string, { lead_id: string | null; student_full_name: string | null; current_stage: string; partner_user_id: string | null }>>({});
+  const [userMap, setUserMap] = useState<Record<string, string>>({});
   const [ruleMap, setRuleMap] = useState<Record<string, PayoutRule>>({});
   const [rules, setRules] = useState<PayoutRule[]>([]);
   const [loading, setLoading] = useState(true);
