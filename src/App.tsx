@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Leads from "./pages/Leads";
 import AddLead from "./pages/AddLead";
+import QuickLead from "./pages/QuickLead";
 import LeadDetail from "./pages/LeadDetail";
 import BulkUpload from "./pages/BulkUpload";
 import Payouts from "./pages/Payouts";
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
             <Route path="/leads/new" element={<ProtectedRoute><AddLead /></ProtectedRoute>} />
+            <Route path="/leads/quick" element={<ProtectedRoute><QuickLead /></ProtectedRoute>} />
             <Route path="/leads/:id" element={<ProtectedRoute><LeadDetail /></ProtectedRoute>} />
             <Route path="/bulk-upload" element={<ProtectedRoute><BulkUpload /></ProtectedRoute>} />
             <Route path="/payouts" element={<ProtectedRoute><Payouts /></ProtectedRoute>} />
