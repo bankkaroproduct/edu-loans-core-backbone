@@ -1,11 +1,30 @@
 
 
-# Disable Email Confirmation for Testing
+# Fix: Remove `student_full_name` from All Insert Payloads
 
-## What changes
-Use the `cloud--configure_auth` tool to enable auto-confirm for email signups. This lets you sign up with the seeded partner emails (e.g. `priya@edubridge.in`) and log in immediately without email verification.
+## Root Cause
+The `student_full_name` column is a generated column in Postgres. The frontend is explicitly sending a value for it in insert payloads, which Postgres rejects.
 
-## Steps
-1. Call `configure_auth` to set `autoconfirm: true` for email signups
-2. No code changes needed
+## Changes (3 files)
+
+### 1. `src/pages/QuickLead.tsx` (~line 113-118)
+- Remove `const fullName = ...` line
+- Remove `student_full_name: fullName` from the payload object
+
+### 2. `src/pages/AddLead.tsx` (~line 190-192)
+- Remove `student_full_name: fullName || null` from the payload object
+- Remove the `fullName` variable if only used for the payload
+
+### 3. `src/hooks/useBulkUploadProcessor.ts` (~line 397-409)
+- Remove `const fullName = ...` line
+- Remove `student_full_name: fullName` from the insert payload
+
+## What stays unchanged
+- All SELECT queries that read `student_full_name` — those are fine
+- Database schema — no changes
+- Display logic using `student_full_name` — stays as-is
+- RLS policies, downstream writes, debug panel — untouched
+
+## Scope
+Three surgical deletions. No other files need changes.
 
