@@ -148,7 +148,7 @@ export default function LeadDetail() {
           <LeadTimeline history={history} notes={notes} />
 
           {/* K. Payout Snapshot */}
-          <LeadPayoutSnapshot payouts={payouts} />
+          <LeadPayoutSnapshot payouts={payouts} leadId={id!} />
         </div>
       </div>
     </div>
