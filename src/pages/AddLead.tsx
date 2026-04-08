@@ -577,8 +577,6 @@ export default function AddLead() {
         isDraft={isDraftSuccess}
         onClose={() => navigate("/leads")}
       />
-
-      <LeadCreateDebugPanel debug={debugState} />
     </div>
   );
 }
