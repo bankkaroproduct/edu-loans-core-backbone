@@ -10,11 +10,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { StageBadge, StatusBadge, formatStageLabel } from "@/components/dashboard/StageBadge";
 import {
   Plus, Search, Upload, X, ChevronLeft, ChevronRight, ArrowUpDown,
   AlertTriangle, FileText, Zap, Filter, LayoutList, CalendarIcon, ChevronDown,
-  ExternalLink,
+  ExternalLink, Eye,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -84,7 +85,7 @@ const SUMMARY_ITEMS = [
 export default function Leads() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { agentUserId } = useRoleAccess();
+  const { agentUserId, isPartnerAdmin } = useRoleAccess();
 
   // ── Read URL params ──
   const paramStage = searchParams.get("stage") ?? "";
@@ -99,6 +100,8 @@ export default function Leads() {
   const paramIntakeYear = searchParams.get("intake_year") ?? "";
   const paramDateFrom = searchParams.get("date_from") ?? "";
   const paramDateTo = searchParams.get("date_to") ?? "";
+  const paramSubmittedBy = searchParams.get("submitted_by") ?? "";
+  const paramSourceSubtype = searchParams.get("source_subtype") ?? "";
 
   // ── State ──
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -113,6 +116,8 @@ export default function Leads() {
   const [countryFilter, setCountryFilter] = useState(paramCountry || "all");
   const [intakeTermFilter, setIntakeTermFilter] = useState(paramIntakeTerm || "all");
   const [intakeYearFilter, setIntakeYearFilter] = useState(paramIntakeYear || "all");
+  const [submittedByFilter, setSubmittedByFilter] = useState(paramSubmittedBy || "all");
+  const [sourceSubtypeFilter, setSourceSubtypeFilter] = useState(paramSourceSubtype || "all");
   const [dateFrom, setDateFrom] = useState<Date | undefined>(paramDateFrom ? new Date(paramDateFrom) : undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(paramDateTo ? new Date(paramDateTo) : undefined);
   const [sortKey, setSortKey] = useState<SortKey>("updated_at");
@@ -124,6 +129,11 @@ export default function Leads() {
   const [countries, setCountries] = useState<string[]>([]);
   const [intakeTerms, setIntakeTerms] = useState<string[]>([]);
   const [intakeYears, setIntakeYears] = useState<number[]>([]);
+  const [partnerUsers, setPartnerUsers] = useState<{ id: string; full_name: string }[]>([]);
+  const [sourceSubtypes, setSourceSubtypes] = useState<string[]>([]);
+
+  // ── Duplicate matched leads lookup ──
+  const [dupMatches, setDupMatches] = useState<Record<string, string>>({});
 
   // ── Summary counts ──
   const [summaryCounts, setSummaryCounts] = useState<Record<string, number>>({});
@@ -131,9 +141,10 @@ export default function Leads() {
   // ── Load master data once ──
   useEffect(() => {
     const load = async () => {
-      const [cRes, iRes] = await Promise.all([
+      const [cRes, iRes, uRes] = await Promise.all([
         supabase.from("countries_master").select("country_name").eq("active_flag", true).order("country_name"),
         supabase.from("intake_master").select("intake_term, intake_year").eq("active_flag", true).order("sort_order"),
+        supabase.from("users").select("id, full_name").order("full_name"),
       ]);
       if (cRes.data) setCountries(cRes.data.map((c) => c.country_name));
       if (iRes.data) {
@@ -142,13 +153,25 @@ export default function Leads() {
         setIntakeTerms(terms);
         setIntakeYears(years);
       }
+      if (uRes.data) setPartnerUsers(uRes.data);
+
+      // Derive distinct source_sub_type values from visible leads
+      const { data: stData } = await supabase
+        .from("student_leads")
+        .select("source_sub_type")
+        .not("source_sub_type", "is", null)
+        .eq("is_archived", false);
+      if (stData) {
+        const unique = [...new Set(stData.map((r) => r.source_sub_type!).filter(Boolean))].sort();
+        setSourceSubtypes(unique);
+      }
     };
     load();
   }, []);
 
   // ── Auto-show advanced filters if any are active from URL ──
   useEffect(() => {
-    if (paramOrigin || paramCountry || paramIntakeTerm || paramIntakeYear || paramDateFrom || paramDateTo) {
+    if (paramOrigin || paramCountry || paramIntakeTerm || paramIntakeYear || paramDateFrom || paramDateTo || paramSubmittedBy || paramSourceSubtype) {
       setShowAdvanced(true);
     }
   }, []);
@@ -172,6 +195,8 @@ export default function Leads() {
           q = q.eq("source_sub_type", originFilter);
         }
       }
+      if (submittedByFilter !== "all") q = q.eq("partner_user_id", submittedByFilter);
+      if (sourceSubtypeFilter !== "all") q = q.eq("source_sub_type", sourceSubtypeFilter);
       if (countryFilter !== "all") q = q.eq("intended_study_country", countryFilter);
       if (intakeTermFilter !== "all") q = q.eq("intake_term", intakeTermFilter);
       if (intakeYearFilter !== "all") q = q.eq("intake_year", parseInt(intakeYearFilter));
@@ -217,7 +242,34 @@ export default function Leads() {
     counts._attention = results.filter(needsAttention).length;
     counts._total = attentionFilter ? results.length : (count ?? results.length);
     setSummaryCounts(counts);
-  }, [stageFilter, statusFilter, duplicateFilter, attentionFilter, originFilter, countryFilter, intakeTermFilter, intakeYearFilter, dateFrom, dateTo, search, sortKey, sortDir, page, agentUserId]);
+
+    // Look up duplicate matches for flagged leads
+    const dupLeads = results.filter((l) => l.duplicate_flag);
+    if (dupLeads.length > 0) {
+      // Find matched leads by phone (same logic as duplicate detection)
+      const phones = dupLeads.map((l) => l.student_phone);
+      const { data: matchData } = await supabase
+        .from("student_leads")
+        .select("id, student_phone, created_at")
+        .in("student_phone", phones)
+        .eq("is_archived", false)
+        .order("created_at", { ascending: true });
+
+      if (matchData) {
+        const matchMap: Record<string, string> = {};
+        for (const dup of dupLeads) {
+          // Find the earliest lead with same phone that isn't this lead
+          const match = matchData.find(
+            (m) => m.student_phone === dup.student_phone && m.id !== dup.id && new Date(m.created_at) <= new Date(dup.created_at)
+          );
+          if (match) matchMap[dup.id] = match.id;
+        }
+        setDupMatches(matchMap);
+      }
+    } else {
+      setDupMatches({});
+    }
+  }, [stageFilter, statusFilter, duplicateFilter, attentionFilter, originFilter, submittedByFilter, sourceSubtypeFilter, countryFilter, intakeTermFilter, intakeYearFilter, dateFrom, dateTo, search, sortKey, sortDir, page, agentUserId]);
 
   useEffect(() => { fetchLeads(); }, [fetchLeads]);
 
@@ -229,6 +281,8 @@ export default function Leads() {
     if (attentionFilter) p.set("attention", "true");
     if (duplicateFilter) p.set("duplicate", "true");
     if (originFilter !== "all") p.set("origin", originFilter);
+    if (submittedByFilter !== "all") p.set("submitted_by", submittedByFilter);
+    if (sourceSubtypeFilter !== "all") p.set("source_subtype", sourceSubtypeFilter);
     if (countryFilter !== "all") p.set("country", countryFilter);
     if (intakeTermFilter !== "all") p.set("intake_term", intakeTermFilter);
     if (intakeYearFilter !== "all") p.set("intake_year", intakeYearFilter);
@@ -237,15 +291,23 @@ export default function Leads() {
     if (search) p.set("q", search);
     if (page > 1) p.set("page", String(page));
     setSearchParams(p, { replace: true });
-  }, [stageFilter, statusFilter, attentionFilter, duplicateFilter, originFilter, countryFilter, intakeTermFilter, intakeYearFilter, dateFrom, dateTo, search, page]);
+  }, [stageFilter, statusFilter, attentionFilter, duplicateFilter, originFilter, submittedByFilter, sourceSubtypeFilter, countryFilter, intakeTermFilter, intakeYearFilter, dateFrom, dateTo, search, page]);
 
   // ── Active filter chips ──
+  const submittedByName = useMemo(() => {
+    if (submittedByFilter === "all") return "";
+    const u = partnerUsers.find((u) => u.id === submittedByFilter);
+    return u?.full_name ?? submittedByFilter.slice(0, 8);
+  }, [submittedByFilter, partnerUsers]);
+
   const activeFilters: { label: string; clear: () => void }[] = [];
   if (stageFilter !== "all") activeFilters.push({ label: `Stage: ${fmt(stageFilter)}`, clear: () => setStageFilter("all") });
   if (statusFilter !== "all") activeFilters.push({ label: `Status: ${fmt(statusFilter)}`, clear: () => setStatusFilter("all") });
   if (attentionFilter) activeFilters.push({ label: "Needs Attention", clear: () => setAttentionFilter(false) });
   if (duplicateFilter) activeFilters.push({ label: "Duplicates Only", clear: () => setDuplicateFilter(false) });
   if (originFilter !== "all") activeFilters.push({ label: `Origin: ${fmt(originFilter)}`, clear: () => setOriginFilter("all") });
+  if (submittedByFilter !== "all") activeFilters.push({ label: `Submitted By: ${submittedByName}`, clear: () => setSubmittedByFilter("all") });
+  if (sourceSubtypeFilter !== "all") activeFilters.push({ label: `Source: ${fmt(sourceSubtypeFilter)}`, clear: () => setSourceSubtypeFilter("all") });
   if (countryFilter !== "all") activeFilters.push({ label: `Country: ${countryFilter}`, clear: () => setCountryFilter("all") });
   if (intakeTermFilter !== "all") activeFilters.push({ label: `Term: ${intakeTermFilter}`, clear: () => setIntakeTermFilter("all") });
   if (intakeYearFilter !== "all") activeFilters.push({ label: `Year: ${intakeYearFilter}`, clear: () => setIntakeYearFilter("all") });
@@ -257,6 +319,7 @@ export default function Leads() {
     setStageFilter("all"); setStatusFilter("all"); setAttentionFilter(false);
     setDuplicateFilter(false); setOriginFilter("all"); setCountryFilter("all");
     setIntakeTermFilter("all"); setIntakeYearFilter("all");
+    setSubmittedByFilter("all"); setSourceSubtypeFilter("all");
     setDateFrom(undefined); setDateTo(undefined); setSearch(""); setPage(1);
   };
 
@@ -351,7 +414,7 @@ export default function Leads() {
 
           {/* ── Advanced Filters Row ── */}
           {showAdvanced && (
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-3 border-t mt-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t mt-3">
               {/* Study Destination */}
               <Select value={countryFilter} onValueChange={(v) => { setCountryFilter(v); setPage(1); }}>
                 <SelectTrigger className="text-xs h-9"><SelectValue placeholder="Study Destination" /></SelectTrigger>
@@ -383,8 +446,24 @@ export default function Leads() {
                   {ORIGIN_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
                 </SelectContent>
               </Select>
+              {/* Submitted By */}
+              <Select value={submittedByFilter} onValueChange={(v) => { setSubmittedByFilter(v); setPage(1); }}>
+                <SelectTrigger className="text-xs h-9"><SelectValue placeholder="Submitted By" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Users</SelectItem>
+                  {partnerUsers.map((u) => <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              {/* Source Subtype */}
+              <Select value={sourceSubtypeFilter} onValueChange={(v) => { setSourceSubtypeFilter(v); setPage(1); }}>
+                <SelectTrigger className="text-xs h-9"><SelectValue placeholder="Source Subtype" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Subtypes</SelectItem>
+                  {sourceSubtypes.map((s) => <SelectItem key={s} value={s}>{fmt(s)}</SelectItem>)}
+                </SelectContent>
+              </Select>
               {/* Date Range */}
-              <div className="flex gap-1">
+              <div className="flex gap-1 col-span-2 sm:col-span-2">
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button variant="outline" size="sm" className={cn("h-9 text-xs flex-1 justify-start", !dateFrom && "text-muted-foreground")}>
@@ -483,12 +562,13 @@ export default function Leads() {
                           Updated <ArrowUpDown className="h-3 w-3" />
                         </button>
                       </TableHead>
-                      <TableHead className="w-20" />
+                      <TableHead className="w-28" />
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {leads.map((lead) => {
                       const attn = needsAttention(lead);
+                      const matchedLeadId = dupMatches[lead.id];
                       return (
                         <TableRow
                           key={lead.id}
@@ -532,9 +612,30 @@ export default function Leads() {
                                 </Button>
                               )}
                               {lead.duplicate_flag && (
-                                <Button variant="ghost" size="sm" className="text-xs h-7 px-2 text-yellow-700" title="View duplicate context" onClick={(e) => { e.stopPropagation(); navigate(`/leads/${lead.id}`); }}>
-                                  <ExternalLink className="h-3 w-3" />
-                                </Button>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-xs h-7 px-2 text-yellow-700"
+                                        disabled={!matchedLeadId}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (matchedLeadId) navigate(`/leads/${matchedLeadId}`);
+                                        }}
+                                      >
+                                        <Eye className="h-3 w-3 mr-1" />
+                                        View Existing
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      {matchedLeadId
+                                        ? "Open the original matched lead record"
+                                        : "No matched lead reference available"}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
                               )}
                             </div>
                           </TableCell>
