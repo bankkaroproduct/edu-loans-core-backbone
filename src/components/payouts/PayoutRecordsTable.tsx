@@ -63,6 +63,7 @@ export function PayoutRecordsTable({ records, sortField, sortDir, onSort }: Prop
         <TableRow>
           <TableHead>Lead ID</TableHead>
           <TableHead>Student</TableHead>
+          <TableHead>Submitted By</TableHead>
           <TableHead>Trigger Stage</TableHead>
           <TableHead>Basis</TableHead>
           <SortHeader field="payout_amount">Amount</SortHeader>
@@ -82,6 +83,7 @@ export function PayoutRecordsTable({ records, sortField, sortDir, onSort }: Prop
             <TableRow key={r.id} className={isReversed ? "bg-destructive/5" : ""}>
               <TableCell className="font-mono text-xs">{r.lead_display_id ?? r.lead_id.slice(0, 8)}</TableCell>
               <TableCell className="text-sm max-w-[140px] truncate">{r.student_name ?? "—"}</TableCell>
+              <TableCell className="text-xs text-muted-foreground max-w-[120px] truncate">{r.submitted_by ?? "—"}</TableCell>
               <TableCell className="text-xs">{r.trigger_stage ? fmt(r.trigger_stage) : "—"}</TableCell>
               <TableCell className="text-xs">{r.payout_basis ? fmt(r.payout_basis) : "—"}</TableCell>
               <TableCell className="font-medium">{fmtINR(r.payout_amount)}</TableCell>
