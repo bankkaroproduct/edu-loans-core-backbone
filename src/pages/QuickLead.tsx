@@ -1,14 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useDuplicateCheck } from "@/hooks/useDuplicateCheck";
+import { createDownstreamRecords, fetchLeadDisplayId } from "@/hooks/useLeadWriteFlow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DuplicateWarningDialog } from "@/components/leads/DuplicateWarningDialog";
 import { LeadSuccessDialog } from "@/components/leads/LeadSuccessDialog";
 import { toast } from "sonner";
@@ -18,14 +19,18 @@ import type { Tables } from "@/integrations/supabase/types";
 type Country = Tables<"countries_master">;
 type Intake = Tables<"intake_master">;
 
+const STAGE = "submitted" as const;
+const STATUS = "pending_info" as const;
+
 export default function QuickLead() {
   const navigate = useNavigate();
   const { appUser } = useAuth();
-  const { duplicates, checking, checkDuplicates, clearDuplicates } = useDuplicateCheck();
+  const { duplicates, checking, checkDuplicates } = useDuplicateCheck();
   const [submitting, setSubmitting] = useState(false);
   const [showDupDialog, setShowDupDialog] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [createdLeadId, setCreatedLeadId] = useState<string | null>(null);
+  const [createdLeadDisplayId, setCreatedLeadDisplayId] = useState<string | null>(null);
 
   const [countries, setCountries] = useState<Country[]>([]);
   const [intakes, setIntakes] = useState<Intake[]>([]);
@@ -78,7 +83,6 @@ export default function QuickLead() {
     const err = validate();
     if (err) return toast.error(err);
 
-    // Check duplicates first
     const dups = await checkDuplicates({
       phone: form.student_phone.trim(),
       email: form.student_email.trim() || undefined,
@@ -118,8 +122,8 @@ export default function QuickLead() {
       loan_amount_required: Number(form.loan_amount_required),
       partner_id: appUser!.partner_id!,
       partner_user_id: appUser!.id,
-      current_stage: "submitted" as const,
-      current_status: "pending_info" as const,
+      current_stage: STAGE,
+      current_status: STATUS,
       source_type: "partner",
       duplicate_flag: hasDuplicateWarning,
     };
@@ -128,17 +132,21 @@ export default function QuickLead() {
 
     if (error) {
       toast.error(error.message);
-    } else {
-      // Create partner-visible note if remark provided
-      if (form.partner_remark.trim() && data) {
-        await supabase.from("lead_notes").insert({
-          lead_id: data.id,
-          note_type: "partner_visible",
-          note_text: form.partner_remark.trim(),
-          created_by: appUser!.id,
-        });
-      }
-      setCreatedLeadId(data?.id ?? null);
+    } else if (data) {
+      // Create downstream records
+      await createDownstreamRecords({
+        leadId: data.id,
+        appUser: appUser!,
+        stage: STAGE,
+        status: STATUS,
+        isDraft: false,
+        hasDuplicateOverride: hasDuplicateWarning,
+        partnerRemark: form.partner_remark,
+      });
+
+      const displayId = await fetchLeadDisplayId(data.id);
+      setCreatedLeadId(data.id);
+      setCreatedLeadDisplayId(displayId);
       setShowSuccess(true);
     }
     setSubmitting(false);
@@ -264,6 +272,7 @@ export default function QuickLead() {
       <LeadSuccessDialog
         open={showSuccess}
         leadId={createdLeadId}
+        leadDisplayId={createdLeadDisplayId}
         studentName={`${form.student_first_name} ${form.student_last_name}`.trim()}
         isDraft={false}
         onClose={() => navigate("/leads")}
