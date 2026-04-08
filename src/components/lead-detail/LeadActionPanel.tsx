@@ -61,8 +61,8 @@ export function LeadActionPanel({ lead }: Props) {
               <Edit className="h-4 w-4 mr-1" /> Edit Lead
             </Button>
           )}
-          <Button size="sm" variant="outline" onClick={() => toast.info("Document module coming soon")}>
-            <FileText className="h-4 w-4 mr-1" /> Upload Documents
+          <Button size="sm" variant="outline" onClick={() => navigate(`/leads/${lead.id}/documents`)}>
+            <FileText className="h-4 w-4 mr-1" /> Manage Documents
           </Button>
           <Button size="sm" variant="ghost" onClick={() => navigate("/leads")}>
             Back to Leads

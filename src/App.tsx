@@ -11,6 +11,7 @@ import Leads from "./pages/Leads";
 import AddLead from "./pages/AddLead";
 import QuickLead from "./pages/QuickLead";
 import LeadDetail from "./pages/LeadDetail";
+import LeadDocuments from "./pages/LeadDocuments";
 import BulkUpload from "./pages/BulkUpload";
 import Payouts from "./pages/Payouts";
 import Partners from "./pages/Partners";
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/leads/new" element={<ProtectedRoute><AddLead /></ProtectedRoute>} />
             <Route path="/leads/quick" element={<ProtectedRoute><QuickLead /></ProtectedRoute>} />
             <Route path="/leads/:id" element={<ProtectedRoute><LeadDetail /></ProtectedRoute>} />
+            <Route path="/leads/:id/documents" element={<ProtectedRoute><LeadDocuments /></ProtectedRoute>} />
             <Route path="/bulk-upload" element={<ProtectedRoute><BulkUpload /></ProtectedRoute>} />
             <Route path="/payouts" element={<ProtectedRoute><Payouts /></ProtectedRoute>} />
             <Route path="/partners" element={<ProtectedRoute><Partners /></ProtectedRoute>} />
