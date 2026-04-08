@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Tables } from "@/integrations/supabase/types";
+import { usePartnerContext } from "@/hooks/usePartnerContext";
 
 type PayoutRecord = Tables<"partner_payout_records">;
 type PayoutRule = Tables<"partner_payout_rules">;
@@ -26,6 +27,7 @@ const fmt = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUppe
 export default function Payouts() {
   const [searchParams] = useSearchParams();
   const statusParam = searchParams.get("status");
+  const { effectivePartnerId } = usePartnerContext();
   const [records, setRecords] = useState<PayoutRecord[]>([]);
   const [rules, setRules] = useState<PayoutRule[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,16 +35,19 @@ export default function Payouts() {
 
   useEffect(() => {
     const load = async () => {
-      const [r, ru] = await Promise.all([
-        supabase.from("partner_payout_records").select("*").order("created_at", { ascending: false }).limit(100),
-        supabase.from("partner_payout_rules").select("*").eq("active_flag", true).order("created_at", { ascending: false }),
-      ]);
+      let recQ = supabase.from("partner_payout_records").select("*").order("created_at", { ascending: false }).limit(100);
+      if (effectivePartnerId) recQ = recQ.eq("partner_id", effectivePartnerId);
+
+      let ruleQ = supabase.from("partner_payout_rules").select("*").eq("active_flag", true).order("created_at", { ascending: false });
+      if (effectivePartnerId) ruleQ = ruleQ.eq("partner_id", effectivePartnerId);
+
+      const [r, ru] = await Promise.all([recQ, ruleQ]);
       setRecords(r.data ?? []);
       setRules(ru.data ?? []);
       setLoading(false);
     };
     load();
-  }, []);
+  }, [effectivePartnerId]);
 
   const filteredRecords = statusFilter === "all"
     ? records

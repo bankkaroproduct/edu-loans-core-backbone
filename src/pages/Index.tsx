@@ -43,10 +43,12 @@ export default function Dashboard() {
     const fetchData = async () => {
       // Build role-aware lead query
       let leadsQ = supabase.from("student_leads").select("*").eq("is_archived", false).order("updated_at", { ascending: false }).limit(500);
+      if (effectivePartnerId) leadsQ = leadsQ.eq("partner_id", effectivePartnerId);
       if (agentUserId) leadsQ = leadsQ.eq("partner_user_id", agentUserId);
 
       // Build role-aware batch query
       let batchQ = supabase.from("bulk_upload_batches").select("*").order("uploaded_at", { ascending: false }).limit(20);
+      if (effectivePartnerId) batchQ = batchQ.eq("partner_id", effectivePartnerId);
       if (agentUserId) batchQ = batchQ.eq("uploaded_by", agentUserId);
 
       const [leadsRes, batchRes, payoutRes, docReqRes, historyRes, notesRes, partnerRes] = await Promise.all([
@@ -86,7 +88,7 @@ export default function Dashboard() {
       setLoading(false);
     };
     fetchData();
-  }, [appUser?.partner_id, agentUserId]);
+  }, [effectivePartnerId, agentUserId]);
 
   const destinations = useMemo(() => [...new Set(leads.map((l) => l.intended_study_country))].sort(), [leads]);
   const intakes = useMemo(() => {

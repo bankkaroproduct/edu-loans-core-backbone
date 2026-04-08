@@ -85,7 +85,8 @@ const SUMMARY_ITEMS = [
 export default function Leads() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { agentUserId, isPartnerAdmin } = useRoleAccess();
+  const { agentUserId, isPartnerAdmin, isAdmin } = useRoleAccess();
+  const { effectivePartnerId, isSimulating } = usePartnerContext();
 
   // ── Read URL params ──
   const paramStage = searchParams.get("stage") ?? "";
@@ -269,7 +270,7 @@ export default function Leads() {
     } else {
       setDupMatches({});
     }
-  }, [stageFilter, statusFilter, duplicateFilter, attentionFilter, originFilter, submittedByFilter, sourceSubtypeFilter, countryFilter, intakeTermFilter, intakeYearFilter, dateFrom, dateTo, search, sortKey, sortDir, page, agentUserId]);
+  }, [stageFilter, statusFilter, duplicateFilter, attentionFilter, originFilter, submittedByFilter, sourceSubtypeFilter, countryFilter, intakeTermFilter, intakeYearFilter, dateFrom, dateTo, search, sortKey, sortDir, page, agentUserId, effectivePartnerId]);
 
   useEffect(() => { fetchLeads(); }, [fetchLeads]);
 
