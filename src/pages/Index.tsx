@@ -1,9 +1,10 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { Tables } from "@/integrations/supabase/types";
 
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { DashboardFilters, defaultFilters, type DashboardFilterValues } from "@/components/dashboard/DashboardFilters";
 import { KPICards, type KPIData } from "@/components/dashboard/KPICards";
 import { PipelineSnapshot } from "@/components/dashboard/PipelineSnapshot";
 import { PriorityAlerts, type AlertItem } from "@/components/dashboard/PriorityAlerts";
@@ -13,12 +14,14 @@ import { BulkUploadSnapshot } from "@/components/dashboard/BulkUploadSnapshot";
 import { PayoutSnapshot, type PayoutSummary } from "@/components/dashboard/PayoutSnapshot";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { ActivityFeed, type ActivityItem } from "@/components/dashboard/ActivityFeed";
+import { SystemHelp } from "@/components/dashboard/SystemHelp";
 
 type Lead = Tables<"student_leads">;
 type Batch = Tables<"bulk_upload_batches">;
 type PayoutRecord = Tables<"partner_payout_records">;
 type DocReq = Tables<"lead_document_requirements">;
 type StageHistory = Tables<"lead_stage_history">;
+type Note = Tables<"lead_notes">;
 
 export default function Dashboard() {
   const { appUser } = useAuth();
@@ -28,17 +31,19 @@ export default function Dashboard() {
   const [payoutRecords, setPayoutRecords] = useState<PayoutRecord[]>([]);
   const [docReqs, setDocReqs] = useState<DocReq[]>([]);
   const [stageHistory, setStageHistory] = useState<StageHistory[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [partnerName, setPartnerName] = useState<string | null>(null);
+  const [filters, setFilters] = useState<DashboardFilterValues>(defaultFilters);
 
   useEffect(() => {
-    const fetch = async () => {
-      // Fetch all data in parallel — RLS scopes automatically
-      const [leadsRes, batchRes, payoutRes, docReqRes, historyRes, partnerRes] = await Promise.all([
-        supabase.from("student_leads").select("*").eq("is_archived", false).order("updated_at", { ascending: false }).limit(200),
-        supabase.from("bulk_upload_batches").select("*").order("uploaded_at", { ascending: false }).limit(10),
-        supabase.from("partner_payout_records").select("*").order("created_at", { ascending: false }).limit(50),
+    const fetchData = async () => {
+      const [leadsRes, batchRes, payoutRes, docReqRes, historyRes, notesRes, partnerRes] = await Promise.all([
+        supabase.from("student_leads").select("*").eq("is_archived", false).order("updated_at", { ascending: false }).limit(500),
+        supabase.from("bulk_upload_batches").select("*").order("uploaded_at", { ascending: false }).limit(20),
+        supabase.from("partner_payout_records").select("*").order("created_at", { ascending: false }).limit(100),
         supabase.from("lead_document_requirements").select("*").limit(500),
-        supabase.from("lead_stage_history").select("*").order("created_at", { ascending: false }).limit(30),
+        supabase.from("lead_stage_history").select("*").order("created_at", { ascending: false }).limit(50),
+        supabase.from("lead_notes").select("*").order("created_at", { ascending: false }).limit(30),
         appUser?.partner_id
           ? supabase.from("partner_organizations").select("display_name").eq("id", appUser.partner_id).maybeSingle()
           : Promise.resolve({ data: null }),
@@ -49,117 +54,123 @@ export default function Dashboard() {
       if (payoutRes.data) setPayoutRecords(payoutRes.data);
       if (docReqRes.data) setDocReqs(docReqRes.data);
       if (historyRes.data) setStageHistory(historyRes.data);
+      if (notesRes.data) setNotes(notesRes.data);
       if (partnerRes.data && "display_name" in partnerRes.data) {
         setPartnerName(partnerRes.data.display_name);
       }
       setLoading(false);
     };
-    fetch();
+    fetchData();
   }, [appUser?.partner_id]);
 
-  // KPI calculations
+  // Derived filter values for dropdowns
+  const destinations = useMemo(() => [...new Set(leads.map((l) => l.intended_study_country))].sort(), [leads]);
+  const intakes = useMemo(() => {
+    const set = new Set(leads.map((l) => `${l.intake_term} ${l.intake_year}`));
+    return [...set].sort();
+  }, [leads]);
+
+  // Filter leads
+  const filteredLeads = useMemo(() => {
+    return leads.filter((l) => {
+      if (filters.dateFrom && l.created_at < filters.dateFrom) return false;
+      if (filters.dateTo && l.created_at > filters.dateTo + "T23:59:59") return false;
+      if (filters.stage && filters.stage !== "all" && l.current_stage !== filters.stage) return false;
+      if (filters.status && filters.status !== "all" && l.current_status !== filters.status) return false;
+      if (filters.destination && filters.destination !== "all" && l.intended_study_country !== filters.destination) return false;
+      if (filters.intake && filters.intake !== "all" && `${l.intake_term} ${l.intake_year}` !== filters.intake) return false;
+      return true;
+    });
+  }, [leads, filters]);
+
+  // KPI calculations on filtered leads
   const kpiData = useMemo<KPIData>(() => {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-
     const reviewStages = ["under_initial_review", "documents_under_review", "bre_evaluated"];
     const pendingPayout = payoutRecords.filter((p) => p.payout_status === "pending" || p.payout_status === "triggered");
     const paidPayout = payoutRecords.filter((p) => p.payout_status === "paid");
-
-    const docsNeedingAction = docReqs.filter((d) =>
-      ["not_uploaded", "reupload_needed"].includes(d.status)
-    );
-
-    const needsAttention = leads.filter((l) =>
-      l.current_stage === "on_hold" ||
-      l.current_stage === "documents_pending" ||
-      l.current_status === "reupload_needed" ||
-      l.current_status === "pending_info"
+    const docsNeedingAction = docReqs.filter((d) => ["not_uploaded", "reupload_needed"].includes(d.status));
+    const needsAttention = filteredLeads.filter((l) =>
+      l.current_stage === "on_hold" || l.current_stage === "documents_pending" ||
+      l.current_status === "reupload_needed" || l.current_status === "pending_info"
     );
 
     return {
-      totalLeads: leads.length,
-      leadsThisMonth: leads.filter((l) => l.created_at >= monthStart).length,
-      underReview: leads.filter((l) => reviewStages.includes(l.current_stage)).length,
+      totalLeads: filteredLeads.length,
+      leadsThisMonth: filteredLeads.filter((l) => l.created_at >= monthStart).length,
+      underReview: filteredLeads.filter((l) => reviewStages.includes(l.current_stage)).length,
       documentsPending: docsNeedingAction.length,
-      sentToLender: leads.filter((l) => ["sent_to_lender", "login_submitted"].includes(l.current_stage)).length,
-      sanctionReceived: leads.filter((l) => l.current_stage === "sanction_received").length,
-      disbursed: leads.filter((l) => l.current_stage === "disbursed").length,
-      rejectedDropped: leads.filter((l) => ["rejected", "dropped"].includes(l.current_stage)).length,
+      sentToLender: filteredLeads.filter((l) => ["sent_to_lender", "login_submitted"].includes(l.current_stage)).length,
+      sanctionReceived: filteredLeads.filter((l) => l.current_stage === "sanction_received").length,
+      disbursed: filteredLeads.filter((l) => l.current_stage === "disbursed").length,
+      rejectedDropped: filteredLeads.filter((l) => ["rejected", "dropped"].includes(l.current_stage)).length,
       bulkBatchesThisMonth: batches.filter((b) => b.uploaded_at >= monthStart).length,
       pendingPayout: pendingPayout.reduce((s, p) => s + (p.payout_amount ?? 0), 0),
       paidPayout: paidPayout.reduce((s, p) => s + (p.payout_amount ?? 0), 0),
       needsAttention: needsAttention.length,
     };
-  }, [leads, batches, payoutRecords, docReqs]);
+  }, [filteredLeads, batches, payoutRecords, docReqs]);
 
-  // Pipeline counts
+  // Pipeline counts on filtered leads
   const stageCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    leads.forEach((l) => {
-      counts[l.current_stage] = (counts[l.current_stage] ?? 0) + 1;
-    });
+    filteredLeads.forEach((l) => { counts[l.current_stage] = (counts[l.current_stage] ?? 0) + 1; });
     return counts;
-  }, [leads]);
+  }, [filteredLeads]);
 
-  // Priority alerts
+  // Expanded priority alerts
   const alerts = useMemo<AlertItem[]>(() => {
     const items: AlertItem[] = [];
+    const now = Date.now();
+    const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
 
-    // Leads on hold
+    // On hold
     leads.filter((l) => l.current_stage === "on_hold").forEach((l) => {
-      items.push({
-        id: `hold-${l.id}`,
-        leadId: l.lead_id,
-        studentName: l.student_full_name ?? l.student_first_name,
-        reason: "Lead is on hold — may need clarification",
-        category: "on_hold",
-        updatedAt: l.updated_at,
-        entityId: l.id,
-      });
+      items.push({ id: `hold-${l.id}`, leadId: l.lead_id, studentName: l.student_full_name ?? l.student_first_name, reason: "Lead is on hold — may need clarification", category: "on_hold", updatedAt: l.updated_at, entityId: l.id });
     });
 
-    // Leads with documents pending
+    // Documents pending
     leads.filter((l) => l.current_stage === "documents_pending").forEach((l) => {
-      items.push({
-        id: `docs-${l.id}`,
-        leadId: l.lead_id,
-        studentName: l.student_full_name ?? l.student_first_name,
-        reason: "Documents pending — upload required",
-        category: "docs_pending",
-        updatedAt: l.updated_at,
-        entityId: l.id,
-      });
+      items.push({ id: `docs-${l.id}`, leadId: l.lead_id, studentName: l.student_full_name ?? l.student_first_name, reason: "Documents pending — upload required", category: "docs_pending", updatedAt: l.updated_at, entityId: l.id });
     });
 
-    // Leads needing reupload
+    // Reupload needed
     leads.filter((l) => l.current_status === "reupload_needed").forEach((l) => {
-      items.push({
-        id: `reup-${l.id}`,
-        leadId: l.lead_id,
-        studentName: l.student_full_name ?? l.student_first_name,
-        reason: "Document reupload needed",
-        category: "reupload",
-        updatedAt: l.updated_at,
-        entityId: l.id,
-      });
+      items.push({ id: `reup-${l.id}`, leadId: l.lead_id, studentName: l.student_full_name ?? l.student_first_name, reason: "Document reupload needed", category: "reupload", updatedAt: l.updated_at, entityId: l.id });
+    });
+
+    // Stuck leads (in early stages > 7 days)
+    const earlyStages = ["draft", "submitted", "under_initial_review"];
+    leads.filter((l) => earlyStages.includes(l.current_stage) && now - new Date(l.updated_at).getTime() > SEVEN_DAYS).forEach((l) => {
+      items.push({ id: `stuck-${l.id}`, leadId: l.lead_id, studentName: l.student_full_name ?? l.student_first_name, reason: `Stuck in ${l.current_stage.replace(/_/g, " ")} for over 7 days`, category: "stuck", updatedAt: l.updated_at, entityId: l.id });
+    });
+
+    // Missing mandatory fields
+    leads.filter((l) => !l.student_email && !l.loan_amount_required).forEach((l) => {
+      items.push({ id: `missing-${l.id}`, leadId: l.lead_id, studentName: l.student_full_name ?? l.student_first_name, reason: "Missing mandatory fields (email, loan amount)", category: "attention", updatedAt: l.updated_at, entityId: l.id });
     });
 
     // Failed bulk uploads
     batches.filter((b) => b.failed_rows > 0).forEach((b) => {
-      items.push({
-        id: `batch-${b.id}`,
-        leadId: b.batch_id,
-        studentName: b.file_name,
-        reason: `${b.failed_rows} of ${b.total_rows} rows failed`,
-        category: "upload_error",
-        updatedAt: b.uploaded_at,
-        entityId: b.id,
-      });
+      items.push({ id: `batch-${b.id}`, leadId: b.batch_id, studentName: b.file_name, reason: `${b.failed_rows} of ${b.total_rows} rows failed`, category: "upload_error", updatedAt: b.uploaded_at, entityId: b.id });
+    });
+
+    // Payout clarification
+    payoutRecords.filter((p) => p.payout_status === "on_hold").forEach((p) => {
+      items.push({ id: `payout-${p.id}`, leadId: p.lead_id.slice(0, 8), studentName: "Payout Record", reason: "Payout on hold — clarification needed", category: "payout_clarification", updatedAt: p.updated_at, entityId: p.lead_id });
+    });
+
+    // Partner-visible admin remarks (recent notes of type partner_visible or system)
+    notes.filter((n) => n.note_type === "partner_visible" || n.note_type === "system").slice(0, 5).forEach((n) => {
+      const lead = leads.find((l) => l.id === n.lead_id);
+      if (lead) {
+        items.push({ id: `remark-${n.id}`, leadId: lead.lead_id, studentName: lead.student_full_name ?? lead.student_first_name, reason: n.note_text.length > 60 ? n.note_text.slice(0, 60) + "…" : n.note_text, category: "admin_remark", updatedAt: n.created_at, entityId: lead.id });
+      }
     });
 
     return items.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-  }, [leads, batches]);
+  }, [leads, batches, payoutRecords, notes]);
 
   // Document summary
   const docSummary = useMemo<DocSummary>(() => ({
@@ -174,43 +185,80 @@ export default function Dashboard() {
   const payoutSummary = useMemo<PayoutSummary>(() => {
     const sum = (statuses: string[]) =>
       payoutRecords.filter((p) => statuses.includes(p.payout_status)).reduce((s, p) => s + (p.payout_amount ?? 0), 0);
-
     return {
       totalAccrued: payoutRecords.reduce((s, p) => s + (p.payout_amount ?? 0), 0),
       pending: sum(["pending", "triggered"]),
       approved: sum(["approved"]),
       paid: sum(["paid"]),
       recentRecords: payoutRecords.slice(0, 5).map((p) => ({
-        id: p.id,
-        leadId: p.lead_id.slice(0, 8) + "…",
-        amount: p.payout_amount,
-        status: p.payout_status,
-        updatedAt: p.updated_at,
+        id: p.id, leadId: p.lead_id.slice(0, 8) + "…", amount: p.payout_amount, status: p.payout_status, updatedAt: p.updated_at,
       })),
     };
   }, [payoutRecords]);
 
-  // Activity feed from stage history
+  // Expanded activity feed: stage history + notes + documents + payouts + bulk uploads
   const activityItems = useMemo<ActivityItem[]>(() => {
-    return stageHistory.slice(0, 15).map((h) => {
+    const items: ActivityItem[] = [];
+
+    // Stage changes
+    stageHistory.slice(0, 20).forEach((h) => {
       const lead = leads.find((l) => l.id === h.lead_id);
       const stageLabel = h.new_stage.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-      return {
-        id: h.id,
-        label: "Stage Changed",
-        leadId: lead?.lead_id ?? null,
+      items.push({
+        id: `stage-${h.id}`, label: "Stage Changed", leadId: lead?.lead_id ?? null,
         description: `${h.previous_stage ? h.previous_stage.replace(/_/g, " ") : "—"} → ${stageLabel}`,
-        timestamp: h.created_at,
-        actor: h.changed_by_role ? h.changed_by_role.replace(/_/g, " ") : "System",
-      };
+        timestamp: h.created_at, actor: h.changed_by_role ? h.changed_by_role.replace(/_/g, " ") : "System",
+        category: "stage",
+      });
     });
-  }, [stageHistory, leads]);
+
+    // Partner-visible notes
+    notes.filter((n) => n.note_type !== "internal").slice(0, 10).forEach((n) => {
+      const lead = leads.find((l) => l.id === n.lead_id);
+      items.push({
+        id: `note-${n.id}`, label: "Note Added", leadId: lead?.lead_id ?? null,
+        description: n.note_text.length > 80 ? n.note_text.slice(0, 80) + "…" : n.note_text,
+        timestamp: n.created_at, actor: n.note_type === "system" ? "System" : "Partner",
+        category: "note",
+      });
+    });
+
+    // Bulk upload completion
+    batches.slice(0, 5).forEach((b) => {
+      items.push({
+        id: `bulk-${b.id}`, label: "Bulk Upload", leadId: b.batch_id,
+        description: `${b.file_name} — ${b.success_rows} success, ${b.failed_rows} failed`,
+        timestamp: b.uploaded_at, actor: "Partner",
+        category: "bulk",
+      });
+    });
+
+    // Payout status updates
+    payoutRecords.filter((p) => p.payout_status !== "pending").slice(0, 5).forEach((p) => {
+      items.push({
+        id: `payout-${p.id}`, label: "Payout Updated", leadId: p.lead_id.slice(0, 8) + "…",
+        description: `Status: ${p.payout_status.replace(/_/g, " ")} — ₹${(p.payout_amount ?? 0).toLocaleString("en-IN")}`,
+        timestamp: p.updated_at, actor: "System",
+        category: "payout",
+      });
+    });
+
+    return items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 20);
+  }, [stageHistory, leads, notes, batches, payoutRecords]);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <DashboardHeader appUser={appUser} partnerName={partnerName} />
+
+      <DashboardFilters
+        filters={filters}
+        onChange={setFilters}
+        destinations={destinations}
+        intakes={intakes}
+      />
+
       <KPICards data={kpiData} loading={loading} />
-      
+
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <PipelineSnapshot stageCounts={stageCounts} loading={loading} />
@@ -218,7 +266,7 @@ export default function Dashboard() {
         <PriorityAlerts alerts={alerts} loading={loading} />
       </div>
 
-      <RecentLeads leads={leads.slice(0, 10)} loading={loading} />
+      <RecentLeads leads={filteredLeads.slice(0, 10)} loading={loading} />
 
       <div className="grid gap-6 md:grid-cols-2">
         <DocumentSnapshot data={docSummary} loading={loading} />
@@ -231,6 +279,8 @@ export default function Dashboard() {
         <ActivityFeed items={activityItems} loading={loading} />
         <QuickActions />
       </div>
+
+      <SystemHelp />
     </div>
   );
 }
