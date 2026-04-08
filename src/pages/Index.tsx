@@ -1,203 +1,236 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, Plus, Upload, TrendingUp, Clock, CheckCircle, AlertCircle } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import type { Tables } from "@/integrations/supabase/types";
 
+import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { KPICards, type KPIData } from "@/components/dashboard/KPICards";
+import { PipelineSnapshot } from "@/components/dashboard/PipelineSnapshot";
+import { PriorityAlerts, type AlertItem } from "@/components/dashboard/PriorityAlerts";
+import { RecentLeads } from "@/components/dashboard/RecentLeads";
+import { DocumentSnapshot, type DocSummary } from "@/components/dashboard/DocumentSnapshot";
+import { BulkUploadSnapshot } from "@/components/dashboard/BulkUploadSnapshot";
+import { PayoutSnapshot, type PayoutSummary } from "@/components/dashboard/PayoutSnapshot";
+import { QuickActions } from "@/components/dashboard/QuickActions";
+import { ActivityFeed, type ActivityItem } from "@/components/dashboard/ActivityFeed";
+
 type Lead = Tables<"student_leads">;
-
-interface StageCounts {
-  total: number;
-  draft: number;
-  submitted: number;
-  in_review: number;
-  disbursed: number;
-  rejected: number;
-}
-
-const stageColors: Record<string, string> = {
-  draft: "bg-muted text-muted-foreground",
-  submitted: "bg-primary/10 text-primary",
-  under_initial_review: "bg-accent text-accent-foreground",
-  documents_pending: "bg-destructive/10 text-destructive",
-  documents_under_review: "bg-accent text-accent-foreground",
-  bre_evaluated: "bg-primary/10 text-primary",
-  sent_to_lender: "bg-primary/10 text-primary",
-  login_submitted: "bg-primary/10 text-primary",
-  credit_query: "bg-destructive/10 text-destructive",
-  sanction_received: "bg-primary/20 text-primary",
-  disbursed: "bg-primary/20 text-primary",
-  rejected: "bg-destructive/10 text-destructive",
-  dropped: "bg-muted text-muted-foreground",
-  on_hold: "bg-muted text-muted-foreground",
-};
+type Batch = Tables<"bulk_upload_batches">;
+type PayoutRecord = Tables<"partner_payout_records">;
+type DocReq = Tables<"lead_document_requirements">;
+type StageHistory = Tables<"lead_stage_history">;
 
 export default function Dashboard() {
   const { appUser } = useAuth();
-  const navigate = useNavigate();
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [counts, setCounts] = useState<StageCounts>({ total: 0, draft: 0, submitted: 0, in_review: 0, disbursed: 0, rejected: 0 });
   const [loading, setLoading] = useState(true);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [batches, setBatches] = useState<Batch[]>([]);
+  const [payoutRecords, setPayoutRecords] = useState<PayoutRecord[]>([]);
+  const [docReqs, setDocReqs] = useState<DocReq[]>([]);
+  const [stageHistory, setStageHistory] = useState<StageHistory[]>([]);
+  const [partnerName, setPartnerName] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      const { data: allLeads } = await supabase
-        .from("student_leads")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(100);
+    const fetch = async () => {
+      // Fetch all data in parallel — RLS scopes automatically
+      const [leadsRes, batchRes, payoutRes, docReqRes, historyRes, partnerRes] = await Promise.all([
+        supabase.from("student_leads").select("*").eq("is_archived", false).order("updated_at", { ascending: false }).limit(200),
+        supabase.from("bulk_upload_batches").select("*").order("uploaded_at", { ascending: false }).limit(10),
+        supabase.from("partner_payout_records").select("*").order("created_at", { ascending: false }).limit(50),
+        supabase.from("lead_document_requirements").select("*").limit(500),
+        supabase.from("lead_stage_history").select("*").order("created_at", { ascending: false }).limit(30),
+        appUser?.partner_id
+          ? supabase.from("partner_organizations").select("display_name").eq("id", appUser.partner_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
 
-      if (allLeads) {
-        setLeads(allLeads);
-        setCounts({
-          total: allLeads.length,
-          draft: allLeads.filter(l => l.current_stage === "draft").length,
-          submitted: allLeads.filter(l => l.current_stage === "submitted").length,
-          in_review: allLeads.filter(l => ["under_initial_review", "documents_pending", "documents_under_review"].includes(l.current_stage)).length,
-          disbursed: allLeads.filter(l => l.current_stage === "disbursed").length,
-          rejected: allLeads.filter(l => l.current_stage === "rejected").length,
-        });
+      if (leadsRes.data) setLeads(leadsRes.data);
+      if (batchRes.data) setBatches(batchRes.data);
+      if (payoutRes.data) setPayoutRecords(payoutRes.data);
+      if (docReqRes.data) setDocReqs(docReqRes.data);
+      if (historyRes.data) setStageHistory(historyRes.data);
+      if (partnerRes.data && "display_name" in partnerRes.data) {
+        setPartnerName(partnerRes.data.display_name);
       }
       setLoading(false);
     };
-    fetchData();
-  }, []);
+    fetch();
+  }, [appUser?.partner_id]);
 
-  const recentLeads = leads.slice(0, 5);
-  const formatStage = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  // KPI calculations
+  const kpiData = useMemo<KPIData>(() => {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+    const reviewStages = ["under_initial_review", "documents_under_review", "bre_evaluated"];
+    const pendingPayout = payoutRecords.filter((p) => p.payout_status === "pending" || p.payout_status === "triggered");
+    const paidPayout = payoutRecords.filter((p) => p.payout_status === "paid");
+
+    const docsNeedingAction = docReqs.filter((d) =>
+      ["not_uploaded", "reupload_needed"].includes(d.status)
+    );
+
+    const needsAttention = leads.filter((l) =>
+      l.current_stage === "on_hold" ||
+      l.current_stage === "documents_pending" ||
+      l.current_status === "reupload_needed" ||
+      l.current_status === "pending_info"
+    );
+
+    return {
+      totalLeads: leads.length,
+      leadsThisMonth: leads.filter((l) => l.created_at >= monthStart).length,
+      underReview: leads.filter((l) => reviewStages.includes(l.current_stage)).length,
+      documentsPending: docsNeedingAction.length,
+      sentToLender: leads.filter((l) => ["sent_to_lender", "login_submitted"].includes(l.current_stage)).length,
+      sanctionReceived: leads.filter((l) => l.current_stage === "sanction_received").length,
+      disbursed: leads.filter((l) => l.current_stage === "disbursed").length,
+      rejectedDropped: leads.filter((l) => ["rejected", "dropped"].includes(l.current_stage)).length,
+      bulkBatchesThisMonth: batches.filter((b) => b.uploaded_at >= monthStart).length,
+      pendingPayout: pendingPayout.reduce((s, p) => s + (p.payout_amount ?? 0), 0),
+      paidPayout: paidPayout.reduce((s, p) => s + (p.payout_amount ?? 0), 0),
+      needsAttention: needsAttention.length,
+    };
+  }, [leads, batches, payoutRecords, docReqs]);
+
+  // Pipeline counts
+  const stageCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    leads.forEach((l) => {
+      counts[l.current_stage] = (counts[l.current_stage] ?? 0) + 1;
+    });
+    return counts;
+  }, [leads]);
+
+  // Priority alerts
+  const alerts = useMemo<AlertItem[]>(() => {
+    const items: AlertItem[] = [];
+
+    // Leads on hold
+    leads.filter((l) => l.current_stage === "on_hold").forEach((l) => {
+      items.push({
+        id: `hold-${l.id}`,
+        leadId: l.lead_id,
+        studentName: l.student_full_name ?? l.student_first_name,
+        reason: "Lead is on hold — may need clarification",
+        category: "on_hold",
+        updatedAt: l.updated_at,
+        entityId: l.id,
+      });
+    });
+
+    // Leads with documents pending
+    leads.filter((l) => l.current_stage === "documents_pending").forEach((l) => {
+      items.push({
+        id: `docs-${l.id}`,
+        leadId: l.lead_id,
+        studentName: l.student_full_name ?? l.student_first_name,
+        reason: "Documents pending — upload required",
+        category: "docs_pending",
+        updatedAt: l.updated_at,
+        entityId: l.id,
+      });
+    });
+
+    // Leads needing reupload
+    leads.filter((l) => l.current_status === "reupload_needed").forEach((l) => {
+      items.push({
+        id: `reup-${l.id}`,
+        leadId: l.lead_id,
+        studentName: l.student_full_name ?? l.student_first_name,
+        reason: "Document reupload needed",
+        category: "reupload",
+        updatedAt: l.updated_at,
+        entityId: l.id,
+      });
+    });
+
+    // Failed bulk uploads
+    batches.filter((b) => b.failed_rows > 0).forEach((b) => {
+      items.push({
+        id: `batch-${b.id}`,
+        leadId: b.batch_id,
+        studentName: b.file_name,
+        reason: `${b.failed_rows} of ${b.total_rows} rows failed`,
+        category: "upload_error",
+        updatedAt: b.uploaded_at,
+        entityId: b.id,
+      });
+    });
+
+    return items.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  }, [leads, batches]);
+
+  // Document summary
+  const docSummary = useMemo<DocSummary>(() => ({
+    pending: docReqs.filter((d) => d.status === "not_uploaded").length,
+    underReview: docReqs.filter((d) => d.status === "under_review").length,
+    verified: docReqs.filter((d) => d.status === "verified").length,
+    rejected: docReqs.filter((d) => d.status === "rejected").length,
+    reuploadNeeded: docReqs.filter((d) => d.status === "reupload_needed").length,
+  }), [docReqs]);
+
+  // Payout summary
+  const payoutSummary = useMemo<PayoutSummary>(() => {
+    const sum = (statuses: string[]) =>
+      payoutRecords.filter((p) => statuses.includes(p.payout_status)).reduce((s, p) => s + (p.payout_amount ?? 0), 0);
+
+    return {
+      totalAccrued: payoutRecords.reduce((s, p) => s + (p.payout_amount ?? 0), 0),
+      pending: sum(["pending", "triggered"]),
+      approved: sum(["approved"]),
+      paid: sum(["paid"]),
+      recentRecords: payoutRecords.slice(0, 5).map((p) => ({
+        id: p.id,
+        leadId: p.lead_id.slice(0, 8) + "…",
+        amount: p.payout_amount,
+        status: p.payout_status,
+        updatedAt: p.updated_at,
+      })),
+    };
+  }, [payoutRecords]);
+
+  // Activity feed from stage history
+  const activityItems = useMemo<ActivityItem[]>(() => {
+    return stageHistory.slice(0, 15).map((h) => {
+      const lead = leads.find((l) => l.id === h.lead_id);
+      const stageLabel = h.new_stage.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+      return {
+        id: h.id,
+        label: "Stage Changed",
+        leadId: lead?.lead_id ?? null,
+        description: `${h.previous_stage ? h.previous_stage.replace(/_/g, " ") : "—"} → ${stageLabel}`,
+        timestamp: h.created_at,
+        actor: h.changed_by_role ? h.changed_by_role.replace(/_/g, " ") : "System",
+      };
+    });
+  }, [stageHistory, leads]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome back, {appUser?.full_name ?? "User"}
-          </p>
+    <div className="space-y-6 max-w-7xl mx-auto">
+      <DashboardHeader appUser={appUser} partnerName={partnerName} />
+      <KPICards data={kpiData} loading={loading} />
+      
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <PipelineSnapshot stageCounts={stageCounts} loading={loading} />
         </div>
-        <div className="flex gap-2">
-          <Button onClick={() => navigate("/leads/new")} size="sm">
-            <Plus className="mr-1 h-4 w-4" /> Add Lead
-          </Button>
-          <Button variant="outline" onClick={() => navigate("/bulk-upload")} size="sm">
-            <Upload className="mr-1 h-4 w-4" /> Bulk Upload
-          </Button>
-        </div>
+        <PriorityAlerts alerts={alerts} loading={loading} />
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Total Leads" value={counts.total} icon={FileText} loading={loading} />
-        <StatCard title="Submitted" value={counts.submitted} icon={TrendingUp} loading={loading} />
-        <StatCard title="Under Review" value={counts.in_review} icon={Clock} loading={loading} />
-        <StatCard title="Disbursed" value={counts.disbursed} icon={CheckCircle} loading={loading} />
+      <RecentLeads leads={leads.slice(0, 10)} loading={loading} />
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <DocumentSnapshot data={docSummary} loading={loading} />
+        <BulkUploadSnapshot batches={batches} loading={loading} />
       </div>
 
-      {/* Quick Stats Row */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Drafts</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{loading ? "—" : counts.draft}</p>
-            <p className="text-xs text-muted-foreground mt-1">Pending submission</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Rejected</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{loading ? "—" : counts.rejected}</p>
-            <p className="text-xs text-muted-foreground mt-1">Needs attention</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Conversion Rate</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">
-              {loading || counts.total === 0 ? "—" : `${Math.round((counts.disbursed / counts.total) * 100)}%`}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">Disbursed / Total</p>
-          </CardContent>
-        </Card>
-      </div>
+      <PayoutSnapshot data={payoutSummary} loading={loading} />
 
-      {/* Recent Leads */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">Recent Leads</CardTitle>
-          <Button variant="link" size="sm" onClick={() => navigate("/leads")}>
-            View All →
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <p className="text-muted-foreground text-sm py-4 text-center">Loading...</p>
-          ) : recentLeads.length === 0 ? (
-            <div className="text-center py-8">
-              <AlertCircle className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-              <p className="text-muted-foreground">No leads yet. Add your first lead to get started.</p>
-              <Button className="mt-4" onClick={() => navigate("/leads/new")}>
-                <Plus className="mr-1 h-4 w-4" /> Add Lead
-              </Button>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Lead ID</TableHead>
-                  <TableHead>Student Name</TableHead>
-                  <TableHead>Course</TableHead>
-                  <TableHead>Country</TableHead>
-                  <TableHead>Stage</TableHead>
-                  <TableHead>Created</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {recentLeads.map((lead) => (
-                  <TableRow key={lead.id} className="cursor-pointer" onClick={() => navigate(`/leads/${lead.id}`)}>
-                    <TableCell className="font-mono text-sm">{lead.lead_id ?? "—"}</TableCell>
-                    <TableCell>{lead.student_full_name ?? `${lead.student_first_name} ${lead.student_last_name ?? ""}`.trim()}</TableCell>
-                    <TableCell className="max-w-[150px] truncate">{lead.course_name}</TableCell>
-                    <TableCell>{lead.intended_study_country}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className={stageColors[lead.current_stage] ?? ""}>
-                        {formatStage(lead.current_stage)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {new Date(lead.created_at).toLocaleDateString()}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 md:grid-cols-2">
+        <ActivityFeed items={activityItems} loading={loading} />
+        <QuickActions />
+      </div>
     </div>
-  );
-}
-
-function StatCard({ title, value, icon: Icon, loading }: { title: string; value: number; icon: React.ElementType; loading: boolean }) {
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
-      </CardHeader>
-      <CardContent>
-        <p className="text-2xl font-bold">{loading ? "—" : value}</p>
-      </CardContent>
-    </Card>
   );
 }
