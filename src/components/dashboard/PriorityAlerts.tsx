@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { AlertTriangle, FileWarning, UploadCloud, Pause } from "lucide-react";
+import { AlertTriangle, FileWarning, UploadCloud, Pause, Clock, MessageSquare, CreditCard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -9,7 +8,7 @@ export interface AlertItem {
   leadId: string | null;
   studentName: string;
   reason: string;
-  category: "docs_pending" | "reupload" | "on_hold" | "upload_error" | "attention";
+  category: "docs_pending" | "reupload" | "on_hold" | "upload_error" | "attention" | "stuck" | "payout_clarification" | "admin_remark";
   updatedAt: string;
   entityId: string;
 }
@@ -20,6 +19,9 @@ const categoryConfig: Record<string, { icon: React.ElementType; label: string; c
   on_hold: { icon: Pause, label: "On Hold", color: "text-yellow-600" },
   upload_error: { icon: UploadCloud, label: "Upload Error", color: "text-destructive" },
   attention: { icon: AlertTriangle, label: "Needs Attention", color: "text-amber-600" },
+  stuck: { icon: Clock, label: "Stuck Lead", color: "text-orange-500" },
+  payout_clarification: { icon: CreditCard, label: "Payout Clarification", color: "text-blue-600" },
+  admin_remark: { icon: MessageSquare, label: "Admin Remark", color: "text-indigo-600" },
 };
 
 export function PriorityAlerts({ alerts, loading }: { alerts: AlertItem[]; loading: boolean }) {
@@ -44,12 +46,14 @@ export function PriorityAlerts({ alerts, loading }: { alerts: AlertItem[]; loadi
             {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
           </div>
         ) : alerts.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            All clear! No actions required right now.
-          </p>
+          <div className="text-center py-6">
+            <p className="text-sm text-muted-foreground">
+              All clear! No actions required right now. Keep submitting leads and uploading documents.
+            </p>
+          </div>
         ) : (
           <div className="space-y-2 max-h-64 overflow-y-auto">
-            {alerts.slice(0, 10).map((alert) => {
+            {alerts.slice(0, 15).map((alert) => {
               const config = categoryConfig[alert.category] ?? categoryConfig.attention;
               const Icon = config.icon;
               return (

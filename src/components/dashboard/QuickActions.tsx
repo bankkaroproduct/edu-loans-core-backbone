@@ -7,11 +7,13 @@ export function QuickActions() {
   const navigate = useNavigate();
 
   const actions = [
+    { label: "Add Quick Lead", icon: Plus, action: () => navigate("/leads/new?mode=quick") },
     { label: "Add New Lead", icon: Plus, action: () => navigate("/leads/new") },
-    { label: "Bulk Upload", icon: Upload, action: () => navigate("/bulk-upload") },
-    { label: "View Leads", icon: FileText, action: () => navigate("/leads") },
-    { label: "Payout Summary", icon: CreditCard, action: () => navigate("/payouts") },
-    { label: "Pending Docs", icon: FileSearch, action: () => navigate("/leads?stage=documents_pending") },
+    { label: "Bulk Upload Leads", icon: Upload, action: () => navigate("/bulk-upload") },
+    { label: "View Submitted Leads", icon: FileText, action: () => navigate("/leads") },
+    { label: "Download Bulk Template", icon: Download, action: () => {} },
+    { label: "View Payout Summary", icon: CreditCard, action: () => navigate("/payouts") },
+    { label: "View Pending Documents", icon: FileSearch, action: () => navigate("/leads?stage=documents_pending") },
   ];
 
   return (
