@@ -6,12 +6,13 @@ import { useNavigate } from "react-router-dom";
 interface Props {
   open: boolean;
   leadId: string | null;
+  leadDisplayId: string | null;
   studentName: string;
   isDraft: boolean;
   onClose: () => void;
 }
 
-export function LeadSuccessDialog({ open, leadId, studentName, isDraft, onClose }: Props) {
+export function LeadSuccessDialog({ open, leadId, leadDisplayId, studentName, isDraft, onClose }: Props) {
   const navigate = useNavigate();
 
   return (
@@ -26,7 +27,11 @@ export function LeadSuccessDialog({ open, leadId, studentName, isDraft, onClose 
           </DialogTitle>
           <DialogDescription className="text-center space-y-1">
             <p><strong>{studentName}</strong></p>
-            {leadId && <p className="text-xs text-muted-foreground">Lead ID will be assigned shortly</p>}
+            {leadDisplayId ? (
+              <p className="text-xs font-mono text-muted-foreground">Lead ID: {leadDisplayId}</p>
+            ) : (
+              <p className="text-xs text-muted-foreground">Lead ID will be assigned shortly</p>
+            )}
             <p className="text-sm">
               {isDraft
                 ? "You can complete and submit this lead later from the Leads page."
@@ -35,7 +40,14 @@ export function LeadSuccessDialog({ open, leadId, studentName, isDraft, onClose 
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="flex-col gap-2 sm:flex-col">
-          <Button className="w-full" onClick={() => navigate("/leads")}>View Submitted Leads</Button>
+          {leadId && (
+            <Button className="w-full" onClick={() => navigate(`/leads/${leadId}`)}>
+              Open Lead Detail
+            </Button>
+          )}
+          <Button className="w-full" variant={leadId ? "outline" : "default"} onClick={() => navigate("/leads")}>
+            View Submitted Leads
+          </Button>
           <div className="flex gap-2 w-full">
             <Button variant="outline" className="flex-1" onClick={() => navigate("/leads/new")}>Add Another Lead</Button>
             <Button variant="outline" className="flex-1" onClick={() => navigate("/")}>Dashboard</Button>
