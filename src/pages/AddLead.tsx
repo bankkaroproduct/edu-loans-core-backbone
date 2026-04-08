@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useDuplicateCheck } from "@/hooks/useDuplicateCheck";
+import { createDownstreamRecords, fetchLeadDisplayId } from "@/hooks/useLeadWriteFlow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,6 +34,21 @@ const STEPS = [
 
 type StepId = typeof STEPS[number]["id"];
 
+const CO_APPLICANT_RELATIONS = [
+  "Father", "Mother", "Spouse", "Guardian", "Brother", "Sister", "Uncle", "Other",
+];
+
+const SOURCE_SUBTYPES = [
+  { value: "walk_in", label: "Walk-in" },
+  { value: "phone_inquiry", label: "Phone Inquiry" },
+  { value: "email_inquiry", label: "Email Inquiry" },
+  { value: "referral", label: "Referral" },
+  { value: "social_media", label: "Social Media" },
+  { value: "event", label: "Event / Seminar" },
+  { value: "university_referral", label: "University Referral" },
+  { value: "other", label: "Other" },
+];
+
 export default function AddLead() {
   const navigate = useNavigate();
   const { appUser } = useAuth();
@@ -42,7 +58,9 @@ export default function AddLead() {
   const [showDupDialog, setShowDupDialog] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [createdLeadId, setCreatedLeadId] = useState<string | null>(null);
+  const [createdLeadDisplayId, setCreatedLeadDisplayId] = useState<string | null>(null);
   const [isDraftSuccess, setIsDraftSuccess] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
 
   const [countries, setCountries] = useState<Country[]>([]);
   const [universities, setUniversities] = useState<University[]>([]);
@@ -62,6 +80,7 @@ export default function AddLead() {
     intake_term: "",
     intake_year: 0,
     course_name: "",
+    course_name_raw: "",
     university_name_raw: "",
     university_id: "",
     loan_amount_required: "",
@@ -88,10 +107,26 @@ export default function AddLead() {
     });
   }, []);
 
-  const set = (field: string, value: string | number | boolean) =>
+  // Unsaved changes protection
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
+
+  const set = (field: string, value: string | number | boolean) => {
+    setIsDirty(true);
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
 
   const fullName = `${form.student_first_name.trim()} ${form.student_last_name.trim()}`.trim();
+
+  // Resolve final course name: master selection takes priority, raw fallback
+  const resolvedCourseName = form.course_name || form.course_name_raw.trim();
 
   const validate = (isDraft: boolean): string | null => {
     if (!form.student_first_name.trim()) return "Student first name is required";
@@ -103,7 +138,7 @@ export default function AddLead() {
       if (!form.intended_study_country) return "Study country is required";
       if (!form.intake_term) return "Intake term is required";
       if (!form.intake_year) return "Intake year is required";
-      if (!form.course_name.trim()) return "Course name is required";
+      if (!resolvedCourseName) return "Course name is required";
       if (form.loan_amount_required && (isNaN(Number(form.loan_amount_required)) || Number(form.loan_amount_required) <= 0))
         return "Loan amount must be a positive number";
       if (form.coapplicant_income && (isNaN(Number(form.coapplicant_income)) || Number(form.coapplicant_income) < 0))
@@ -143,6 +178,9 @@ export default function AddLead() {
     setSubmitting(true);
     setShowDupDialog(false);
 
+    const stage = asDraft ? "draft" as const : "submitted" as const;
+    const status = asDraft ? "in_progress" as const : "awaiting_verification" as const;
+
     const payload = {
       student_first_name: form.student_first_name.trim(),
       student_last_name: form.student_last_name.trim() || null,
@@ -156,20 +194,20 @@ export default function AddLead() {
       intended_study_country: form.intended_study_country || "Not specified",
       intake_term: form.intake_term || "Not specified",
       intake_year: form.intake_year || new Date().getFullYear(),
-      course_name: form.course_name.trim() || "Not specified",
+      course_name: resolvedCourseName || "Not specified",
       university_name_raw: form.university_name_raw.trim() || null,
       university_id: form.university_id || null,
       loan_amount_required: form.loan_amount_required ? Number(form.loan_amount_required) : null,
       coapplicant_name: form.coapplicant_name.trim() || null,
-      coapplicant_relation: form.coapplicant_relation.trim() || null,
+      coapplicant_relation: form.coapplicant_relation || null,
       coapplicant_income: form.coapplicant_income ? Number(form.coapplicant_income) : null,
       collateral_available: form.collateral_available,
       collateral_notes: form.collateral_notes.trim() || null,
-      source_sub_type: form.source_sub_type.trim() || null,
+      source_sub_type: form.source_sub_type || null,
       partner_id: appUser!.partner_id!,
       partner_user_id: appUser!.id,
-      current_stage: asDraft ? ("draft" as const) : ("submitted" as const),
-      current_status: asDraft ? ("in_progress" as const) : ("new" as const),
+      current_stage: stage,
+      current_status: status,
       source_type: "partner",
       duplicate_flag: hasDuplicateWarning,
     };
@@ -178,17 +216,23 @@ export default function AddLead() {
 
     if (error) {
       toast.error(error.message);
-    } else {
-      if (form.partner_remark.trim() && data) {
-        await supabase.from("lead_notes").insert({
-          lead_id: data.id,
-          note_type: "partner_visible",
-          note_text: form.partner_remark.trim(),
-          created_by: appUser!.id,
-        });
-      }
-      setCreatedLeadId(data?.id ?? null);
+    } else if (data) {
+      // Create downstream records
+      await createDownstreamRecords({
+        leadId: data.id,
+        appUser: appUser!,
+        stage,
+        status,
+        isDraft: asDraft,
+        hasDuplicateOverride: hasDuplicateWarning,
+        partnerRemark: form.partner_remark,
+      });
+
+      const displayId = await fetchLeadDisplayId(data.id);
+      setCreatedLeadId(data.id);
+      setCreatedLeadDisplayId(displayId);
       setIsDraftSuccess(asDraft);
+      setIsDirty(false);
       setShowSuccess(true);
     }
     setSubmitting(false);
@@ -324,15 +368,26 @@ export default function AddLead() {
               </div>
               <div className="space-y-2">
                 <Label>Or enter university name</Label>
-                <Input value={form.university_name_raw} onChange={(e) => set("university_name_raw", e.target.value)} placeholder="If not in the list above" />
+                <Input value={form.university_name_raw} onChange={(e) => {
+                  set("university_name_raw", e.target.value);
+                  if (form.university_id) set("university_id", "");
+                }} placeholder="If not in the list above" />
                 <p className="text-xs text-muted-foreground">Type university name manually if not found in the list</p>
               </div>
               <div className="space-y-2">
-                <Label>Course Name *</Label>
+                <Label>Course (from list)</Label>
                 <Select value={form.course_name} onValueChange={(v) => set("course_name", v)}>
                   <SelectTrigger><SelectValue placeholder="Select course" /></SelectTrigger>
                   <SelectContent>{courses.map((c) => <SelectItem key={c.id} value={c.course_name}>{c.course_name}</SelectItem>)}</SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Or enter course name</Label>
+                <Input value={form.course_name_raw} onChange={(e) => {
+                  set("course_name_raw", e.target.value);
+                  if (form.course_name) set("course_name", "");
+                }} placeholder="If not in the list above" />
+                <p className="text-xs text-muted-foreground">Type course name if not found in master list</p>
               </div>
               <div className="space-y-2">
                 <Label>Intake Term *</Label>
@@ -371,7 +426,14 @@ export default function AddLead() {
               </div>
               <div className="space-y-2">
                 <Label>Co-Applicant Relation</Label>
-                <Input value={form.coapplicant_relation} onChange={(e) => set("coapplicant_relation", e.target.value)} placeholder="e.g. Father, Mother, Spouse" />
+                <Select value={form.coapplicant_relation} onValueChange={(v) => set("coapplicant_relation", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select relation" /></SelectTrigger>
+                  <SelectContent>
+                    {CO_APPLICANT_RELATIONS.map((r) => (
+                      <SelectItem key={r} value={r}>{r}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Co-Applicant Income (₹)</Label>
@@ -407,14 +469,9 @@ export default function AddLead() {
                 <Select value={form.source_sub_type} onValueChange={(v) => set("source_sub_type", v)}>
                   <SelectTrigger><SelectValue placeholder="How did this lead come to you?" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="walk_in">Walk-in</SelectItem>
-                    <SelectItem value="phone_inquiry">Phone Inquiry</SelectItem>
-                    <SelectItem value="email_inquiry">Email Inquiry</SelectItem>
-                    <SelectItem value="referral">Referral</SelectItem>
-                    <SelectItem value="social_media">Social Media</SelectItem>
-                    <SelectItem value="event">Event / Seminar</SelectItem>
-                    <SelectItem value="university_referral">University Referral</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    {SOURCE_SUBTYPES.map((s) => (
+                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -453,7 +510,7 @@ export default function AddLead() {
                 <Badge variant="outline" className="mb-2">Study Intent</Badge>
                 <ReviewRow label="Study Country" value={form.intended_study_country} />
                 <ReviewRow label="University" value={form.university_name_raw || (form.university_id ? universities.find(u => u.id === form.university_id)?.university_name : undefined)} />
-                <ReviewRow label="Course" value={form.course_name} />
+                <ReviewRow label="Course" value={resolvedCourseName} />
                 <ReviewRow label="Intake" value={`${form.intake_term} ${form.intake_year || ""}`} />
                 <ReviewRow label="Loan Amount (₹)" value={form.loan_amount_required ? `₹${Number(form.loan_amount_required).toLocaleString("en-IN")}` : undefined} />
               </div>
@@ -468,7 +525,7 @@ export default function AddLead() {
               {(form.source_sub_type || form.partner_remark) && (
                 <div>
                   <Badge variant="outline" className="mb-2">Source & Notes</Badge>
-                  <ReviewRow label="Source Subtype" value={form.source_sub_type?.replace(/_/g, " ")} />
+                  <ReviewRow label="Source Subtype" value={SOURCE_SUBTYPES.find(s => s.value === form.source_sub_type)?.label} />
                   <ReviewRow label="Partner Remark" value={form.partner_remark} />
                 </div>
               )}
@@ -500,6 +557,7 @@ export default function AddLead() {
       <LeadSuccessDialog
         open={showSuccess}
         leadId={createdLeadId}
+        leadDisplayId={createdLeadDisplayId}
         studentName={fullName}
         isDraft={isDraftSuccess}
         onClose={() => navigate("/leads")}
