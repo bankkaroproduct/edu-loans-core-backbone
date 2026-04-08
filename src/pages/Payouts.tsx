@@ -26,7 +26,8 @@ export default function Payouts() {
   const { agentUserId } = useRoleAccess();
 
   const [records, setRecords] = useState<PayoutRecord[]>([]);
-  const [leadMap, setLeadMap] = useState<Record<string, { lead_id: string | null; student_full_name: string | null; current_stage: string }>>({});
+  const [leadMap, setLeadMap] = useState<Record<string, { lead_id: string | null; student_full_name: string | null; current_stage: string; partner_user_id: string | null }>>({});
+  const [userMap, setUserMap] = useState<Record<string, string>>({});
   const [ruleMap, setRuleMap] = useState<Record<string, PayoutRule>>({});
   const [rules, setRules] = useState<PayoutRule[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,11 +82,20 @@ export default function Payouts() {
         // Agent scoping: if agent, they can only see leads they submitted — RLS handles this
         const { data: leads } = await supabase
           .from("student_leads")
-          .select("id, lead_id, student_full_name, current_stage")
+          .select("id, lead_id, student_full_name, current_stage, partner_user_id")
           .in("id", leadIds);
         const lm: typeof leadMap = {};
-        (leads ?? []).forEach((l) => { lm[l.id] = l; });
+        (leads ?? []).forEach((l) => { lm[l.id] = { ...l, partner_user_id: l.partner_user_id ?? null }; });
         setLeadMap(lm);
+
+        // Fetch submitter names
+        const userIds = [...new Set((leads ?? []).map((l) => l.partner_user_id).filter(Boolean))] as string[];
+        if (userIds.length > 0) {
+          const { data: users } = await supabase.from("users").select("id, full_name").in("id", userIds);
+          const um: Record<string, string> = {};
+          (users ?? []).forEach((u) => { um[u.id] = u.full_name; });
+          setUserMap(um);
+        }
 
         // If agent, filter records to only leads they can see (RLS already does this, but belt-and-suspenders)
         if (agentUserId) {
@@ -126,6 +136,7 @@ export default function Payouts() {
         lead_id: r.lead_id,
         lead_display_id: lead?.lead_id ?? null,
         student_name: lead?.student_full_name ?? null,
+        submitted_by: lead?.partner_user_id ? (userMap[lead.partner_user_id] ?? null) : null,
         trigger_stage: rule?.payout_trigger_stage ?? null,
         payout_basis: rule?.payout_basis ?? null,
         payout_amount: r.payout_amount ? Number(r.payout_amount) : null,
@@ -137,7 +148,7 @@ export default function Payouts() {
         updated_at: r.updated_at,
       };
     });
-  }, [records, leadMap, ruleMap]);
+  }, [records, leadMap, ruleMap, userMap]);
 
   // Filter
   const filteredRows = useMemo(() => {
