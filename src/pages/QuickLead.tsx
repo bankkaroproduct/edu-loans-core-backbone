@@ -13,9 +13,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DuplicateWarningDialog } from "@/components/leads/DuplicateWarningDialog";
 import { LeadSuccessDialog } from "@/components/leads/LeadSuccessDialog";
+import { LeadCreateDebugPanel } from "@/components/leads/LeadCreateDebugPanel";
 import { toast } from "sonner";
 import { ArrowLeft, Zap } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import { buildLeadCreateDebugState, formatLeadCreateError, serializeDbError, type LeadCreateDebugState } from "@/lib/leadCreateDebug";
 
 type Country = Tables<"countries_master">;
 type Intake = Tables<"intake_master">;
@@ -25,7 +27,7 @@ const STATUS = "pending_info" as const;
 
 export default function QuickLead() {
   const navigate = useNavigate();
-  const { appUser } = useAuth();
+  const { user, appUser } = useAuth();
   const { effectivePartnerId, effectiveUserId } = usePartnerContext();
   const { duplicates, checking, checkDuplicates } = useDuplicateCheck();
   const [submitting, setSubmitting] = useState(false);
@@ -33,6 +35,7 @@ export default function QuickLead() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [createdLeadId, setCreatedLeadId] = useState<string | null>(null);
   const [createdLeadDisplayId, setCreatedLeadDisplayId] = useState<string | null>(null);
+  const [debugState, setDebugState] = useState<LeadCreateDebugState | null>(null);
 
   const [countries, setCountries] = useState<Country[]>([]);
   const [intakes, setIntakes] = useState<Intake[]>([]);
@@ -130,16 +133,44 @@ export default function QuickLead() {
       duplicate_flag: hasDuplicateWarning,
     };
 
+    const baseDebug = buildLeadCreateDebugState({
+      authUserId: user?.id ?? null,
+      appUser,
+      effectivePartnerId,
+      effectiveSubmittingUserId: effectiveUserId,
+      payload,
+    });
+    setDebugState(baseDebug);
+
+    console.groupCollapsed("[QuickLead] Lead create debug");
+    console.log("[QuickLead] Auth context:", {
+      authUserId: baseDebug.authUserId,
+      appUserId: baseDebug.appUserId,
+      resolvedRole: baseDebug.resolvedRole,
+      resolvedPartnerId: baseDebug.resolvedPartnerId,
+      effectivePartnerId: baseDebug.effectivePartnerId,
+      effectiveSubmittingUserId: baseDebug.effectiveSubmittingUserId,
+    });
     console.log("[QuickLead] Submitting payload:", JSON.stringify(payload, null, 2));
     const { data, error } = await supabase.from("student_leads").insert(payload).select("id").single();
-    console.log("[QuickLead] Insert result:", { data, error: error?.message });
+    const insertError = serializeDbError(error);
+    const afterInsertDebug: LeadCreateDebugState = {
+      ...baseDebug,
+      mainInsertResponse: {
+        data: data ?? null,
+        error: insertError,
+      },
+      failedStep: insertError ? "main lead insert" : null,
+      error: insertError,
+    };
+    setDebugState(afterInsertDebug);
+    console.log("[QuickLead] Insert result:", afterInsertDebug.mainInsertResponse);
 
     if (error) {
       console.error("[QuickLead] Insert failed:", error.message, error.details, error.hint);
-      toast.error(`Lead creation failed: ${error.message}`);
+      toast.error(formatLeadCreateError(afterInsertDebug));
     } else if (data) {
-      // Create downstream records
-      await createDownstreamRecords({
+      const downstream = await createDownstreamRecords({
         leadId: data.id,
         appUser: appUser!,
         stage: STAGE,
@@ -148,12 +179,42 @@ export default function QuickLead() {
         hasDuplicateOverride: hasDuplicateWarning,
         partnerRemark: form.partner_remark,
       });
+      const afterDownstreamDebug: LeadCreateDebugState = {
+        ...afterInsertDebug,
+        downstream: downstream.steps,
+        failedStep: downstream.failedStep,
+        error: downstream.error,
+      };
+      setDebugState(afterDownstreamDebug);
+      console.log("[QuickLead] Downstream result:", downstream);
 
-      const displayId = await fetchLeadDisplayId(data.id);
+      if (!downstream.ok) {
+        toast.error(`Lead row created, but ${formatLeadCreateError(afterDownstreamDebug)}`);
+        setSubmitting(false);
+        console.groupEnd();
+        return;
+      }
+
+      const displayIdResult = await fetchLeadDisplayId(data.id);
+      const afterDisplayIdDebug: LeadCreateDebugState = {
+        ...afterDownstreamDebug,
+        displayIdResponse: displayIdResult,
+        failedStep: displayIdResult.error ? "lead_id_fetch" : null,
+        error: displayIdResult.error,
+      };
+      setDebugState(afterDisplayIdDebug);
+      console.log("[QuickLead] Lead ID fetch result:", displayIdResult);
+
+      if (displayIdResult.error) {
+        toast.error(`Lead created, but ${formatLeadCreateError(afterDisplayIdDebug)}`);
+      }
+
       setCreatedLeadId(data.id);
-      setCreatedLeadDisplayId(displayId);
+      setCreatedLeadDisplayId(displayIdResult.displayId);
       setShowSuccess(true);
     }
+
+    console.groupEnd();
     setSubmitting(false);
   };
 
@@ -282,6 +343,8 @@ export default function QuickLead() {
         isDraft={false}
         onClose={() => navigate("/leads")}
       />
+
+      <LeadCreateDebugPanel debug={debugState} />
     </div>
   );
 }
