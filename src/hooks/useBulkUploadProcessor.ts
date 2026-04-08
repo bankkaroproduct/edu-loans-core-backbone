@@ -287,10 +287,14 @@ export async function processBulkUpload(
   appUser: AppUser,
   onStageChange: (stage: ProcessingStage) => void,
   onProgress: (current: number, total: number) => void,
+  overridePartnerId?: string | null,
+  overrideUserId?: string | null,
 ): Promise<{ batchId: string; results: RowResult[]; totalRows: number; successCount: number; failedCount: number; duplicateCount: number }> {
 
-  const partnerId = appUser.partner_id;
+  const partnerId = overridePartnerId ?? appUser.partner_id;
   if (!partnerId) throw new Error("No partner association found");
+
+  const userId = overrideUserId ?? appUser.id;
 
   // 1. Parse
   onStageChange("parsing");
@@ -319,7 +323,7 @@ export async function processBulkUpload(
     .from("bulk_upload_batches")
     .insert({
       partner_id: partnerId,
-      uploaded_by: appUser.id,
+      uploaded_by: userId,
       file_name: fileName,
       total_rows: totalRows,
       batch_status: "processing",
@@ -397,7 +401,7 @@ export async function processBulkUpload(
       .from("student_leads")
       .insert({
         partner_id: partnerId,
-        partner_user_id: appUser.id,
+        partner_user_id: userId,
         source_type: "partner",
         source_sub_type: row.source_sub_type ?? "bulk_upload",
         student_first_name: row.student_first_name!,
