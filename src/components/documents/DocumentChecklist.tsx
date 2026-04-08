@@ -1,25 +1,24 @@
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   CheckCircle, Clock, XCircle, AlertTriangle, Upload, Eye,
-  FileText, ShieldCheck, Ban, RotateCcw, Info
+  FileText, ShieldCheck, Ban, RotateCcw, Info, History
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { DocRequirement, DocFile } from "@/pages/LeadDocuments";
 
-const STATUS_CONFIG: Record<string, { icon: typeof CheckCircle; color: string; bgClass: string; label: string }> = {
-  verified:        { icon: CheckCircle,    color: "text-green-600",          bgClass: "", label: "Verified" },
-  uploaded:        { icon: Clock,          color: "text-blue-600",           bgClass: "", label: "Uploaded" },
-  under_review:    { icon: Clock,          color: "text-amber-600",          bgClass: "", label: "Under Review" },
-  rejected:        { icon: XCircle,        color: "text-destructive",        bgClass: "bg-destructive/5 border-destructive/20", label: "Rejected" },
-  reupload_needed: { icon: AlertTriangle,  color: "text-orange-600",         bgClass: "bg-orange-50 border-orange-200 dark:bg-orange-950/20 dark:border-orange-800", label: "Reupload Needed" },
-  not_uploaded:    { icon: Upload,         color: "text-muted-foreground",   bgClass: "", label: "Pending Upload" },
-  waived:          { icon: ShieldCheck,    color: "text-muted-foreground",   bgClass: "opacity-60", label: "Waived" },
-  not_applicable:  { icon: Ban,            color: "text-muted-foreground",   bgClass: "opacity-60", label: "N/A" },
+const STATUS_CONFIG: Record<string, { icon: typeof CheckCircle; color: string; bgClass: string; label: string; priority: number }> = {
+  rejected:        { icon: XCircle,        color: "text-destructive",        bgClass: "bg-destructive/5 border-destructive/30 ring-1 ring-destructive/20", label: "Rejected", priority: 1 },
+  reupload_needed: { icon: AlertTriangle,  color: "text-orange-600",         bgClass: "bg-orange-50 border-orange-300 ring-1 ring-orange-200 dark:bg-orange-950/20 dark:border-orange-800", label: "Reupload Needed", priority: 2 },
+  not_uploaded:    { icon: Upload,         color: "text-muted-foreground",   bgClass: "border-dashed", label: "Pending Upload", priority: 3 },
+  uploaded:        { icon: Clock,          color: "text-blue-600",           bgClass: "", label: "Uploaded", priority: 4 },
+  under_review:    { icon: Clock,          color: "text-amber-600",          bgClass: "", label: "Under Review", priority: 5 },
+  verified:        { icon: CheckCircle,    color: "text-green-600",          bgClass: "", label: "Verified", priority: 6 },
+  waived:          { icon: ShieldCheck,    color: "text-muted-foreground",   bgClass: "opacity-60", label: "Waived", priority: 7 },
+  not_applicable:  { icon: Ban,            color: "text-muted-foreground",   bgClass: "opacity-60", label: "N/A", priority: 8 },
 };
 
 interface Props {
@@ -30,7 +29,7 @@ interface Props {
 }
 
 export function DocumentChecklist({ requirements, documents, onUpload, leadId }: Props) {
-  // Group documents by document_type_id for quick lookup
+  // Group documents by document_type_id
   const docsByType = new Map<string, DocFile[]>();
   documents.forEach(doc => {
     if (doc.document_type_id) {
@@ -38,6 +37,16 @@ export function DocumentChecklist({ requirements, documents, onUpload, leadId }:
       existing.push(doc);
       docsByType.set(doc.document_type_id, existing);
     }
+  });
+
+  // Sort: blockers first, then pending, then in-progress, then verified
+  const sortedRequirements = [...requirements].sort((a, b) => {
+    const pa = STATUS_CONFIG[a.status]?.priority ?? 5;
+    const pb = STATUS_CONFIG[b.status]?.priority ?? 5;
+    if (pa !== pb) return pa - pb;
+    // Required before optional
+    if (a.required_flag !== b.required_flag) return a.required_flag ? -1 : 1;
+    return 0;
   });
 
   const handleViewFile = async (doc: DocFile) => {
@@ -62,10 +71,13 @@ export function DocumentChecklist({ requirements, documents, onUpload, leadId }:
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           <FileText className="h-4 w-4 text-primary" /> Document Checklist
+          <span className="text-xs font-normal text-muted-foreground ml-auto">
+            {requirements.length} document{requirements.length !== 1 ? "s" : ""}
+          </span>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
-        {requirements.map(req => {
+        {sortedRequirements.map(req => {
           const cfg = STATUS_CONFIG[req.status] ?? STATUS_CONFIG.not_uploaded;
           const Icon = cfg.icon;
           const relatedDocs = docsByType.get(req.document_type_id) ?? [];
@@ -73,45 +85,80 @@ export function DocumentChecklist({ requirements, documents, onUpload, leadId }:
           const versionCount = relatedDocs.length;
           const isActionable = ["not_uploaded", "rejected", "reupload_needed"].includes(req.status);
           const isReupload = ["rejected", "reupload_needed"].includes(req.status);
+          const isBlocker = isReupload;
 
           return (
             <div
               key={req.id}
-              className={`rounded-lg border p-3 transition-colors ${cfg.bgClass}`}
+              className={`rounded-lg border p-3.5 transition-colors ${cfg.bgClass}`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                  <Icon className={`h-4 w-4 shrink-0 mt-0.5 ${cfg.color}`} />
-                  <div className="min-w-0 flex-1 space-y-1">
+                  <Icon className={`h-5 w-5 shrink-0 mt-0.5 ${cfg.color}`} />
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    {/* Document name + badges */}
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-medium">{req.document_master?.document_name ?? "Document"}</p>
+                      <p className={`text-sm font-medium ${isBlocker ? "text-destructive" : ""}`}>
+                        {req.document_master?.document_name ?? "Document"}
+                      </p>
                       {req.document_master?.document_category && (
                         <Badge variant="outline" className="text-[9px]">{req.document_master.document_category}</Badge>
                       )}
-                      {req.required_flag && (
+                      {req.required_flag ? (
                         <Badge variant="secondary" className="text-[9px]">Required</Badge>
-                      )}
-                      {!req.required_flag && (
+                      ) : (
                         <Badge variant="outline" className="text-[9px] text-muted-foreground">Optional</Badge>
                       )}
                     </div>
 
                     {/* Latest file info */}
                     {latestDoc && (
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                         <span className="truncate max-w-[200px]">{latestDoc.file_name}</span>
-                        {versionCount > 1 && <span>· v{latestDoc.version_number}</span>}
-                        <span>· {new Date(latestDoc.uploaded_at).toLocaleDateString()}</span>
+                        <span className="text-muted-foreground/50">·</span>
+                        <span>v{latestDoc.version_number}</span>
+                        <span className="text-muted-foreground/50">·</span>
+                        <span>{new Date(latestDoc.uploaded_at).toLocaleDateString()}</span>
+                        {versionCount > 1 && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex items-center gap-0.5 text-primary cursor-help">
+                                <History className="h-3 w-3" /> {versionCount} versions
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {versionCount} versions uploaded. Latest is v{latestDoc.version_number}.
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
                       </div>
                     )}
 
-                    {/* Remarks */}
+                    {/* No upload yet indicator */}
+                    {!latestDoc && req.status === "not_uploaded" && (
+                      <p className="text-xs text-muted-foreground italic">No file uploaded yet</p>
+                    )}
+
+                    {/* Partner-visible remarks — PROMINENT for rejections */}
                     {req.remarks && (
-                      <div className={`flex items-start gap-1.5 text-xs rounded-md p-1.5 mt-1 ${
-                        isReupload ? "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300" : "bg-muted text-muted-foreground"
+                      <div className={`flex items-start gap-1.5 text-xs rounded-md p-2 ${
+                        isReupload
+                          ? "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300 border border-orange-200 dark:border-orange-800"
+                          : "bg-muted text-muted-foreground"
                       }`}>
-                        <Info className="h-3 w-3 shrink-0 mt-0.5" />
-                        <span>{req.remarks}</span>
+                        <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                        <div>
+                          {isReupload && <span className="font-semibold block mb-0.5">Reason: </span>}
+                          <span>{req.remarks}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* No remark but rejected */}
+                    {isReupload && !req.remarks && (
+                      <div className="flex items-start gap-1.5 text-xs rounded-md p-2 bg-muted text-muted-foreground">
+                        <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                        <span>No specific remark available. Please upload a corrected version.</span>
                       </div>
                     )}
 
@@ -125,8 +172,10 @@ export function DocumentChecklist({ requirements, documents, onUpload, leadId }:
                 {/* Actions + Status Badge */}
                 <div className="flex items-center gap-2 shrink-0">
                   <Badge
-                    variant={req.status === "verified" ? "default" : "outline"}
-                    className={`text-[10px] ${req.status === "verified" ? "bg-green-600" : ""}`}
+                    variant={req.status === "verified" ? "default" : isBlocker ? "destructive" : "outline"}
+                    className={`text-[10px] whitespace-nowrap ${
+                      req.status === "verified" ? "bg-green-600" : ""
+                    }`}
                   >
                     {cfg.label}
                   </Badge>
