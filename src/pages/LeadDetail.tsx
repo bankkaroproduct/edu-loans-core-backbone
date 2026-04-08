@@ -1,219 +1,156 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Clock, FileText, MessageSquare, Send } from "lucide-react";
-import { toast } from "sonner";
+import { useRoleAccess } from "@/hooks/useRoleAccess";
+import { Skeleton } from "@/components/ui/skeleton";
+import { LeadDetailHeader } from "@/components/lead-detail/LeadDetailHeader";
+import { LeadSummaryStrip } from "@/components/lead-detail/LeadSummaryStrip";
+import { LeadProfileSection } from "@/components/lead-detail/LeadProfileSection";
+import { LeadLifecycleProgress } from "@/components/lead-detail/LeadLifecycleProgress";
+import { LeadTimeline } from "@/components/lead-detail/LeadTimeline";
+import { LeadNotes } from "@/components/lead-detail/LeadNotes";
+import { LeadDocumentSnapshot } from "@/components/lead-detail/LeadDocumentSnapshot";
+import { LeadDuplicateContext } from "@/components/lead-detail/LeadDuplicateContext";
+import { LeadActionPanel } from "@/components/lead-detail/LeadActionPanel";
+import { LeadPayoutSnapshot } from "@/components/lead-detail/LeadPayoutSnapshot";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Lead = Tables<"student_leads">;
 type History = Tables<"lead_stage_history">;
 type Note = Tables<"lead_notes">;
-
-const fmt = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+type PayoutRecord = Tables<"partner_payout_records">;
 
 export default function LeadDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { appUser } = useAuth();
+  const { userId, isPartnerAgent } = useRoleAccess();
+
   const [lead, setLead] = useState<Lead | null>(null);
   const [history, setHistory] = useState<History[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
-  const [newNote, setNewNote] = useState("");
+  const [docRequirements, setDocRequirements] = useState<any[]>([]);
+  const [payouts, setPayouts] = useState<PayoutRecord[]>([]);
+  const [submittedByName, setSubmittedByName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [addingNote, setAddingNote] = useState(false);
+  const [notFound, setNotFound] = useState(false);
 
-  useEffect(() => {
+  const loadData = useCallback(async () => {
     if (!id) return;
-    const load = async () => {
-      const [leadRes, histRes, notesRes] = await Promise.all([
-        supabase.from("student_leads").select("*").eq("id", id).maybeSingle(),
-        supabase.from("lead_stage_history").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
-        supabase.from("lead_notes").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
-      ]);
-      setLead(leadRes.data);
-      setHistory(histRes.data ?? []);
-      setNotes(notesRes.data ?? []);
+
+    const leadRes = await supabase.from("student_leads").select("*").eq("id", id).maybeSingle();
+
+    if (!leadRes.data) {
+      setNotFound(true);
       setLoading(false);
-    };
-    load();
+      return;
+    }
+
+    const lead = leadRes.data;
+    setLead(lead);
+
+    // Parallel fetch all related data
+    const [histRes, notesRes, docRes, payoutRes] = await Promise.all([
+      supabase.from("lead_stage_history").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
+      supabase.from("lead_notes").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
+      supabase.from("lead_document_requirements").select("*, document_master(document_name, document_category)").eq("lead_id", id).order("created_at"),
+      supabase.from("partner_payout_records").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
+    ]);
+
+    setHistory(histRes.data ?? []);
+    setNotes(notesRes.data ?? []);
+    setDocRequirements(docRes.data ?? []);
+    setPayouts(payoutRes.data ?? []);
+
+    // Fetch submitted by user name
+    if (lead.partner_user_id) {
+      const { data: userData } = await supabase
+        .from("users")
+        .select("full_name")
+        .eq("id", lead.partner_user_id)
+        .maybeSingle();
+      setSubmittedByName(userData?.full_name ?? null);
+    }
+
+    setLoading(false);
   }, [id]);
 
-  const addNote = async () => {
-    if (!newNote.trim() || !id || !appUser) return;
-    setAddingNote(true);
-    const { error } = await supabase.from("lead_notes").insert({
-      lead_id: id,
-      note_text: newNote.trim(),
-      note_type: "partner_visible",
-      created_by: appUser.id,
-    });
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Note added");
-      setNewNote("");
-      const { data } = await supabase.from("lead_notes").select("*").eq("lead_id", id).order("created_at", { ascending: false });
-      setNotes(data ?? []);
-    }
-    setAddingNote(false);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const refreshNotes = async () => {
+    if (!id) return;
+    const { data } = await supabase.from("lead_notes").select("*").eq("lead_id", id).order("created_at", { ascending: false });
+    setNotes(data ?? []);
   };
 
-  if (loading) return <p className="text-center py-12 text-muted-foreground">Loading lead details...</p>;
-  if (!lead) return <p className="text-center py-12 text-muted-foreground">Lead not found</p>;
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto space-y-6 py-4">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-16 w-full" />
+        <div className="grid gap-4 md:grid-cols-2">
+          <Skeleton className="h-48" />
+          <Skeleton className="h-48" />
+        </div>
+        <Skeleton className="h-64" />
+      </div>
+    );
+  }
+
+  if (notFound || !lead) {
+    return (
+      <div className="max-w-6xl mx-auto text-center py-20 space-y-3">
+        <h2 className="text-xl font-semibold text-foreground">Lead Not Found</h2>
+        <p className="text-muted-foreground">This lead doesn't exist or you don't have permission to view it.</p>
+        <button onClick={() => navigate("/leads")} className="text-sm text-primary hover:underline">
+          ← Back to Submitted Leads
+        </button>
+      </div>
+    );
+  }
+
+  const isDraft = lead.current_stage === "draft";
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/leads")}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-foreground">{lead.student_full_name ?? lead.student_first_name}</h1>
-            <Badge variant="outline" className="font-mono">{lead.lead_id ?? "Draft"}</Badge>
-          </div>
-          <p className="text-sm text-muted-foreground">{lead.course_name} • {lead.intended_study_country} • {lead.intake_term} {lead.intake_year}</p>
-        </div>
-        <Badge variant="secondary" className="text-sm px-3 py-1">{fmt(lead.current_stage)}</Badge>
-      </div>
+    <div className="max-w-6xl mx-auto space-y-6">
+      {/* A. Header */}
+      <LeadDetailHeader lead={lead} submittedByName={submittedByName} isDraft={isDraft} />
+
+      {/* B. Summary Strip */}
+      <LeadSummaryStrip lead={lead} />
+
+      {/* D. Lifecycle Progress */}
+      <LeadLifecycleProgress lead={lead} />
+
+      {/* H. Duplicate Context */}
+      <LeadDuplicateContext lead={lead} />
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left: Lead Info */}
+        {/* Left column: Profile + Documents + Notes */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Student Details */}
-          <Card>
-            <CardHeader><CardTitle className="text-lg">Student Details</CardTitle></CardHeader>
-            <CardContent>
-              <div className="grid gap-3 sm:grid-cols-2 text-sm">
-                <InfoRow label="Name" value={lead.student_full_name ?? `${lead.student_first_name} ${lead.student_last_name ?? ""}`} />
-                <InfoRow label="Email" value={lead.student_email} />
-                <InfoRow label="Phone" value={lead.student_phone} />
-                <InfoRow label="WhatsApp" value={lead.student_whatsapp} />
-                <InfoRow label="City" value={lead.city} />
-                <InfoRow label="State" value={lead.state} />
-                <InfoRow label="Country" value={lead.country_of_residence} />
-              </div>
-            </CardContent>
-          </Card>
+          {/* C. Lead Profile */}
+          <LeadProfileSection lead={lead} submittedByName={submittedByName} />
 
-          {/* Financial */}
-          <Card>
-            <CardHeader><CardTitle className="text-lg">Financial Details</CardTitle></CardHeader>
-            <CardContent>
-              <div className="grid gap-3 sm:grid-cols-2 text-sm">
-                <InfoRow label="Loan Amount" value={lead.loan_amount_required ? `₹${Number(lead.loan_amount_required).toLocaleString()}` : null} />
-                <InfoRow label="Co-Applicant" value={lead.coapplicant_name} />
-                <InfoRow label="Relation" value={lead.coapplicant_relation} />
-                <InfoRow label="Co-Applicant Income" value={lead.coapplicant_income ? `₹${Number(lead.coapplicant_income).toLocaleString()}` : null} />
-                <InfoRow label="Collateral" value={lead.collateral_available ? "Yes" : "No"} />
-                <InfoRow label="Collateral Notes" value={lead.collateral_notes} />
-              </div>
-            </CardContent>
-          </Card>
+          {/* G. Document Snapshot */}
+          <LeadDocumentSnapshot requirements={docRequirements} />
 
-          {/* Notes */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <MessageSquare className="h-4 w-4" /> Notes
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-2">
-                <Textarea
-                  placeholder="Add a note..."
-                  value={newNote}
-                  onChange={(e) => setNewNote(e.target.value)}
-                  className="flex-1"
-                  rows={2}
-                />
-                <Button size="icon" onClick={addNote} disabled={addingNote || !newNote.trim()}>
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-              <Separator />
-              {notes.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No notes yet</p>
-              ) : (
-                <div className="space-y-3">
-                  {notes.map((n) => (
-                    <div key={n.id} className="border rounded-md p-3">
-                      <div className="flex items-center justify-between mb-1">
-                        <Badge variant="outline" className="text-xs">{fmt(n.note_type)}</Badge>
-                        <span className="text-xs text-muted-foreground">{new Date(n.created_at).toLocaleString()}</span>
-                      </div>
-                      <p className="text-sm">{n.note_text}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* F. Notes */}
+          <LeadNotes leadId={lead.id} notes={notes} userId={userId} onNoteAdded={refreshNotes} />
         </div>
 
-        {/* Right: Timeline */}
+        {/* Right column: Timeline + Actions + Payout */}
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Clock className="h-4 w-4" /> Lifecycle Timeline
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {/* Current state */}
-              <div className="mb-4 p-3 rounded-md bg-muted">
-                <p className="text-xs text-muted-foreground">Current</p>
-                <p className="font-medium">{fmt(lead.current_stage)}</p>
-                <p className="text-sm text-muted-foreground">{fmt(lead.current_status)}</p>
-              </div>
+          {/* I. Action Panel */}
+          <LeadActionPanel lead={lead} />
 
-              {history.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No stage changes recorded</p>
-              ) : (
-                <div className="space-y-4">
-                  {history.map((h) => (
-                    <div key={h.id} className="relative pl-4 border-l-2 border-border pb-4">
-                      <div className="absolute -left-[5px] top-1 w-2 h-2 rounded-full bg-primary" />
-                      <p className="text-sm font-medium">{fmt(h.new_stage)}</p>
-                      <p className="text-xs text-muted-foreground">{fmt(h.new_status)}</p>
-                      {h.previous_stage && (
-                        <p className="text-xs text-muted-foreground mt-1">From: {fmt(h.previous_stage)}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground">{new Date(h.created_at).toLocaleString()}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* E. Timeline */}
+          <LeadTimeline history={history} notes={notes} />
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <FileText className="h-4 w-4" /> Documents
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground text-center py-4">Document management coming soon</p>
-            </CardContent>
-          </Card>
+          {/* K. Payout Snapshot */}
+          <LeadPayoutSnapshot payouts={payouts} />
         </div>
       </div>
-    </div>
-  );
-}
-
-function InfoRow({ label, value }: { label: string; value: string | null | undefined }) {
-  return (
-    <div>
-      <span className="text-muted-foreground">{label}:</span>{" "}
-      <span className="font-medium">{value || "—"}</span>
     </div>
   );
 }
