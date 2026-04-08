@@ -4,15 +4,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { StageBadge, StatusBadge, formatStageLabel } from "@/components/dashboard/StageBadge";
 import {
   Plus, Search, Upload, X, ChevronLeft, ChevronRight, ArrowUpDown,
-  AlertTriangle, FileText, Zap, Filter, LayoutList,
+  AlertTriangle, FileText, Zap, Filter, LayoutList, CalendarIcon, ChevronDown,
+  ExternalLink,
 } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -36,6 +41,13 @@ const ALL_STATUSES: Status[] = [
 const ATTENTION_STAGES: Stage[] = ["on_hold", "documents_pending", "credit_query"];
 const ATTENTION_STATUSES: Status[] = ["pending_info", "reupload_needed", "query_raised"];
 
+const ORIGIN_OPTIONS = [
+  { value: "all", label: "All Origins" },
+  { value: "manual", label: "Manual" },
+  { value: "quick_lead", label: "Quick Lead" },
+  { value: "bulk_upload", label: "Bulk Upload" },
+];
+
 const PAGE_SIZE = 50;
 
 type SortKey = "updated_at" | "created_at" | "student_first_name" | "loan_amount_required" | "intake_year";
@@ -57,6 +69,18 @@ function needsAttention(l: Lead): boolean {
   );
 }
 
+/* ─── Summary strip config ─── */
+const SUMMARY_ITEMS = [
+  { label: "Total", key: "_total", color: "" },
+  { label: "Under Review", key: "under_initial_review", color: "text-amber-700" },
+  { label: "Docs Pending", key: "documents_pending", color: "text-orange-700" },
+  { label: "Sanction Received", key: "sanction_received", color: "text-emerald-700" },
+  { label: "Disbursed", key: "disbursed", color: "text-green-700" },
+  { label: "On Hold", key: "on_hold", color: "text-yellow-700" },
+  { label: "Rejected", key: "rejected", color: "text-destructive" },
+  { label: "Attention", key: "_attention", color: "text-destructive" },
+];
+
 export default function Leads() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -69,6 +93,12 @@ export default function Leads() {
   const paramSearch = searchParams.get("q") ?? "";
   const paramDuplicate = searchParams.get("duplicate") === "true";
   const paramPage = parseInt(searchParams.get("page") ?? "1", 10) || 1;
+  const paramOrigin = searchParams.get("origin") ?? "";
+  const paramCountry = searchParams.get("country") ?? "";
+  const paramIntakeTerm = searchParams.get("intake_term") ?? "";
+  const paramIntakeYear = searchParams.get("intake_year") ?? "";
+  const paramDateFrom = searchParams.get("date_from") ?? "";
+  const paramDateTo = searchParams.get("date_to") ?? "";
 
   // ── State ──
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -79,51 +109,98 @@ export default function Leads() {
   const [statusFilter, setStatusFilter] = useState(paramStatus || "all");
   const [attentionFilter, setAttentionFilter] = useState(paramAttention);
   const [duplicateFilter, setDuplicateFilter] = useState(paramDuplicate);
+  const [originFilter, setOriginFilter] = useState(paramOrigin || "all");
+  const [countryFilter, setCountryFilter] = useState(paramCountry || "all");
+  const [intakeTermFilter, setIntakeTermFilter] = useState(paramIntakeTerm || "all");
+  const [intakeYearFilter, setIntakeYearFilter] = useState(paramIntakeYear || "all");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(paramDateFrom ? new Date(paramDateFrom) : undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(paramDateTo ? new Date(paramDateTo) : undefined);
   const [sortKey, setSortKey] = useState<SortKey>("updated_at");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [page, setPage] = useState(paramPage);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  // ── Summary counts (from current result set) ──
+  // ── Master data for filters ──
+  const [countries, setCountries] = useState<string[]>([]);
+  const [intakeTerms, setIntakeTerms] = useState<string[]>([]);
+  const [intakeYears, setIntakeYears] = useState<number[]>([]);
+
+  // ── Summary counts ──
   const [summaryCounts, setSummaryCounts] = useState<Record<string, number>>({});
+
+  // ── Load master data once ──
+  useEffect(() => {
+    const load = async () => {
+      const [cRes, iRes] = await Promise.all([
+        supabase.from("countries_master").select("country_name").eq("active_flag", true).order("country_name"),
+        supabase.from("intake_master").select("intake_term, intake_year").eq("active_flag", true).order("sort_order"),
+      ]);
+      if (cRes.data) setCountries(cRes.data.map((c) => c.country_name));
+      if (iRes.data) {
+        const terms = [...new Set(iRes.data.map((i) => i.intake_term))];
+        const years = [...new Set(iRes.data.map((i) => i.intake_year))].sort((a, b) => b - a);
+        setIntakeTerms(terms);
+        setIntakeYears(years);
+      }
+    };
+    load();
+  }, []);
+
+  // ── Auto-show advanced filters if any are active from URL ──
+  useEffect(() => {
+    if (paramOrigin || paramCountry || paramIntakeTerm || paramIntakeYear || paramDateFrom || paramDateTo) {
+      setShowAdvanced(true);
+    }
+  }, []);
 
   // ── Fetch leads ──
   const fetchLeads = useCallback(async () => {
     setLoading(true);
 
-    // Count query (simplified)
+    const applyFilters = (q: any) => {
+      if (agentUserId) q = q.eq("partner_user_id", agentUserId);
+      if (stageFilter !== "all") {
+        if (stageFilter.includes(",")) q = q.in("current_stage", stageFilter.split(",") as Stage[]);
+        else q = q.eq("current_stage", stageFilter as Stage);
+      }
+      if (statusFilter !== "all") q = q.eq("current_status", statusFilter as Status);
+      if (duplicateFilter) q = q.eq("duplicate_flag", true);
+      if (originFilter !== "all") {
+        if (originFilter === "manual") {
+          q = q.or("source_sub_type.is.null,source_sub_type.eq.manual");
+        } else {
+          q = q.eq("source_sub_type", originFilter);
+        }
+      }
+      if (countryFilter !== "all") q = q.eq("intended_study_country", countryFilter);
+      if (intakeTermFilter !== "all") q = q.eq("intake_term", intakeTermFilter);
+      if (intakeYearFilter !== "all") q = q.eq("intake_year", parseInt(intakeYearFilter));
+      if (dateFrom) q = q.gte("created_at", dateFrom.toISOString());
+      if (dateTo) {
+        const end = new Date(dateTo);
+        end.setHours(23, 59, 59, 999);
+        q = q.lte("created_at", end.toISOString());
+      }
+      if (search.trim()) {
+        const s = `%${search.trim()}%`;
+        q = q.or(`student_first_name.ilike.${s},student_last_name.ilike.${s},student_phone.ilike.${s},student_email.ilike.${s},lead_id.ilike.${s},course_name.ilike.${s},university_name_raw.ilike.${s}`);
+      }
+      return q;
+    };
+
+    // Count query
     let countQ = supabase.from("student_leads").select("id", { count: "exact", head: true }).eq("is_archived", false);
-    if (agentUserId) countQ = countQ.eq("partner_user_id", agentUserId);
-    if (stageFilter !== "all") {
-      if (stageFilter.includes(",")) countQ = countQ.in("current_stage", stageFilter.split(",") as Stage[]);
-      else countQ = countQ.eq("current_stage", stageFilter as Stage);
-    }
-    if (statusFilter !== "all") countQ = countQ.eq("current_status", statusFilter as Status);
-    if (duplicateFilter) countQ = countQ.eq("duplicate_flag", true);
+    countQ = applyFilters(countQ);
 
     // Data query
     const from = (page - 1) * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
     let q = supabase.from("student_leads").select("*").eq("is_archived", false).order(sortKey, { ascending: sortDir === "asc" }).range(from, to);
-
-    if (agentUserId) q = q.eq("partner_user_id", agentUserId);
-    if (stageFilter !== "all") {
-      if (stageFilter.includes(",")) q = q.in("current_stage", stageFilter.split(",") as Stage[]);
-      else q = q.eq("current_stage", stageFilter as Stage);
-    }
-    if (statusFilter !== "all") q = q.eq("current_status", statusFilter as Status);
-    if (duplicateFilter) q = q.eq("duplicate_flag", true);
-
-    // Text search (ilike across multiple fields)
-    if (search.trim()) {
-      const s = `%${search.trim()}%`;
-      q = q.or(`student_first_name.ilike.${s},student_last_name.ilike.${s},student_phone.ilike.${s},student_email.ilike.${s},lead_id.ilike.${s},course_name.ilike.${s}`);
-      countQ = countQ.or(`student_first_name.ilike.${s},student_last_name.ilike.${s},student_phone.ilike.${s},student_email.ilike.${s},lead_id.ilike.${s},course_name.ilike.${s}`);
-    }
+    q = applyFilters(q);
 
     const [{ data }, { count }] = await Promise.all([q, countQ]);
     let results = data ?? [];
 
-    // Client-side attention filter (combines stages + statuses)
     if (attentionFilter) {
       results = results.filter(needsAttention);
     }
@@ -140,7 +217,7 @@ export default function Leads() {
     counts._attention = results.filter(needsAttention).length;
     counts._total = attentionFilter ? results.length : (count ?? results.length);
     setSummaryCounts(counts);
-  }, [stageFilter, statusFilter, duplicateFilter, attentionFilter, search, sortKey, sortDir, page, agentUserId]);
+  }, [stageFilter, statusFilter, duplicateFilter, attentionFilter, originFilter, countryFilter, intakeTermFilter, intakeYearFilter, dateFrom, dateTo, search, sortKey, sortDir, page, agentUserId]);
 
   useEffect(() => { fetchLeads(); }, [fetchLeads]);
 
@@ -151,10 +228,16 @@ export default function Leads() {
     if (statusFilter !== "all") p.set("status", statusFilter);
     if (attentionFilter) p.set("attention", "true");
     if (duplicateFilter) p.set("duplicate", "true");
+    if (originFilter !== "all") p.set("origin", originFilter);
+    if (countryFilter !== "all") p.set("country", countryFilter);
+    if (intakeTermFilter !== "all") p.set("intake_term", intakeTermFilter);
+    if (intakeYearFilter !== "all") p.set("intake_year", intakeYearFilter);
+    if (dateFrom) p.set("date_from", dateFrom.toISOString().split("T")[0]);
+    if (dateTo) p.set("date_to", dateTo.toISOString().split("T")[0]);
     if (search) p.set("q", search);
     if (page > 1) p.set("page", String(page));
     setSearchParams(p, { replace: true });
-  }, [stageFilter, statusFilter, attentionFilter, duplicateFilter, search, page]);
+  }, [stageFilter, statusFilter, attentionFilter, duplicateFilter, originFilter, countryFilter, intakeTermFilter, intakeYearFilter, dateFrom, dateTo, search, page]);
 
   // ── Active filter chips ──
   const activeFilters: { label: string; clear: () => void }[] = [];
@@ -162,15 +245,19 @@ export default function Leads() {
   if (statusFilter !== "all") activeFilters.push({ label: `Status: ${fmt(statusFilter)}`, clear: () => setStatusFilter("all") });
   if (attentionFilter) activeFilters.push({ label: "Needs Attention", clear: () => setAttentionFilter(false) });
   if (duplicateFilter) activeFilters.push({ label: "Duplicates Only", clear: () => setDuplicateFilter(false) });
+  if (originFilter !== "all") activeFilters.push({ label: `Origin: ${fmt(originFilter)}`, clear: () => setOriginFilter("all") });
+  if (countryFilter !== "all") activeFilters.push({ label: `Country: ${countryFilter}`, clear: () => setCountryFilter("all") });
+  if (intakeTermFilter !== "all") activeFilters.push({ label: `Term: ${intakeTermFilter}`, clear: () => setIntakeTermFilter("all") });
+  if (intakeYearFilter !== "all") activeFilters.push({ label: `Year: ${intakeYearFilter}`, clear: () => setIntakeYearFilter("all") });
+  if (dateFrom) activeFilters.push({ label: `From: ${format(dateFrom, "dd MMM yyyy")}`, clear: () => setDateFrom(undefined) });
+  if (dateTo) activeFilters.push({ label: `To: ${format(dateTo, "dd MMM yyyy")}`, clear: () => setDateTo(undefined) });
   if (search) activeFilters.push({ label: `Search: "${search}"`, clear: () => setSearch("") });
 
   const clearAll = () => {
-    setStageFilter("all");
-    setStatusFilter("all");
-    setAttentionFilter(false);
-    setDuplicateFilter(false);
-    setSearch("");
-    setPage(1);
+    setStageFilter("all"); setStatusFilter("all"); setAttentionFilter(false);
+    setDuplicateFilter(false); setOriginFilter("all"); setCountryFilter("all");
+    setIntakeTermFilter("all"); setIntakeYearFilter("all");
+    setDateFrom(undefined); setDateTo(undefined); setSearch(""); setPage(1);
   };
 
   const toggleSort = (key: SortKey) => {
@@ -202,15 +289,8 @@ export default function Leads() {
       </div>
 
       {/* ── Summary Strip ── */}
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-        {[
-          { label: "Total", key: "_total", color: "" },
-          { label: "Under Review", key: "under_initial_review", color: "text-amber-700" },
-          { label: "Docs Pending", key: "documents_pending", color: "text-orange-700" },
-          { label: "On Hold", key: "on_hold", color: "text-yellow-700" },
-          { label: "Disbursed", key: "disbursed", color: "text-green-700" },
-          { label: "Attention", key: "_attention", color: "text-destructive" },
-        ].map((s) => (
+      <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+        {SUMMARY_ITEMS.map((s) => (
           <button
             key={s.key}
             onClick={() => {
@@ -219,7 +299,10 @@ export default function Leads() {
               else { setStageFilter(s.key); setAttentionFilter(false); }
               setPage(1);
             }}
-            className="rounded-lg border p-2.5 text-center hover:bg-muted/50 transition-colors"
+            className={cn(
+              "rounded-lg border p-2.5 text-center hover:bg-muted/50 transition-colors",
+              stageFilter === s.key && "ring-2 ring-primary/40"
+            )}
           >
             <p className={`text-lg font-bold ${s.color}`}>{summaryCounts[s.key] ?? 0}</p>
             <p className="text-[10px] text-muted-foreground leading-tight">{s.label}</p>
@@ -234,49 +317,99 @@ export default function Leads() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search by name, phone, email, lead ID, course…"
+                placeholder="Search by name, phone, email, lead ID, course, university…"
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                 className="pl-9"
               />
             </div>
             <Select value={stageFilter} onValueChange={(v) => { setStageFilter(v); setPage(1); }}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="All Stages" />
-              </SelectTrigger>
+              <SelectTrigger className="w-[170px]"><SelectValue placeholder="All Stages" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Stages</SelectItem>
-                {ALL_STAGES.map((s) => (
-                  <SelectItem key={s} value={s}>{fmt(s)}</SelectItem>
-                ))}
+                {ALL_STAGES.map((s) => <SelectItem key={s} value={s}>{fmt(s)}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="All Statuses" />
-              </SelectTrigger>
+              <SelectTrigger className="w-[170px]"><SelectValue placeholder="All Statuses" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
-                {ALL_STATUSES.map((s) => (
-                  <SelectItem key={s} value={s}>{fmt(s)}</SelectItem>
-                ))}
+                {ALL_STATUSES.map((s) => <SelectItem key={s} value={s}>{fmt(s)}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Button
-              variant={attentionFilter ? "default" : "outline"}
-              size="sm"
-              onClick={() => { setAttentionFilter(!attentionFilter); setPage(1); }}
-            >
+            <Button variant={attentionFilter ? "default" : "outline"} size="sm" onClick={() => { setAttentionFilter(!attentionFilter); setPage(1); }}>
               <AlertTriangle className="mr-1 h-3.5 w-3.5" /> Attention
             </Button>
-            <Button
-              variant={duplicateFilter ? "default" : "outline"}
-              size="sm"
-              onClick={() => { setDuplicateFilter(!duplicateFilter); setPage(1); }}
-            >
+            <Button variant={duplicateFilter ? "default" : "outline"} size="sm" onClick={() => { setDuplicateFilter(!duplicateFilter); setPage(1); }}>
               <Filter className="mr-1 h-3.5 w-3.5" /> Duplicates
             </Button>
+            <Button variant="ghost" size="sm" onClick={() => setShowAdvanced(!showAdvanced)} className="text-xs">
+              <ChevronDown className={cn("mr-1 h-3.5 w-3.5 transition-transform", showAdvanced && "rotate-180")} />
+              More Filters
+            </Button>
           </div>
+
+          {/* ── Advanced Filters Row ── */}
+          {showAdvanced && (
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-3 border-t mt-3">
+              {/* Study Destination */}
+              <Select value={countryFilter} onValueChange={(v) => { setCountryFilter(v); setPage(1); }}>
+                <SelectTrigger className="text-xs h-9"><SelectValue placeholder="Study Destination" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Destinations</SelectItem>
+                  {countries.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              {/* Intake Term */}
+              <Select value={intakeTermFilter} onValueChange={(v) => { setIntakeTermFilter(v); setPage(1); }}>
+                <SelectTrigger className="text-xs h-9"><SelectValue placeholder="Intake Term" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Terms</SelectItem>
+                  {intakeTerms.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              {/* Intake Year */}
+              <Select value={intakeYearFilter} onValueChange={(v) => { setIntakeYearFilter(v); setPage(1); }}>
+                <SelectTrigger className="text-xs h-9"><SelectValue placeholder="Intake Year" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Years</SelectItem>
+                  {intakeYears.map((y) => <SelectItem key={y} value={String(y)}>{String(y)}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              {/* Origin */}
+              <Select value={originFilter} onValueChange={(v) => { setOriginFilter(v); setPage(1); }}>
+                <SelectTrigger className="text-xs h-9"><SelectValue placeholder="Origin" /></SelectTrigger>
+                <SelectContent>
+                  {ORIGIN_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              {/* Date Range */}
+              <div className="flex gap-1">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className={cn("h-9 text-xs flex-1 justify-start", !dateFrom && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-1 h-3 w-3" />
+                      {dateFrom ? format(dateFrom, "dd/MM/yy") : "From"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={dateFrom} onSelect={(d) => { setDateFrom(d); setPage(1); }} initialFocus className="p-3 pointer-events-auto" />
+                  </PopoverContent>
+                </Popover>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className={cn("h-9 text-xs flex-1 justify-start", !dateTo && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-1 h-3 w-3" />
+                      {dateTo ? format(dateTo, "dd/MM/yy") : "To"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={dateTo} onSelect={(d) => { setDateTo(d); setPage(1); }} initialFocus className="p-3 pointer-events-auto" />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          )}
 
           {/* Active filter chips */}
           {activeFilters.length > 0 && (
@@ -287,9 +420,7 @@ export default function Leads() {
                 </Badge>
               ))}
               {activeFilters.length > 1 && (
-                <Button variant="ghost" size="sm" className="text-xs h-6 px-2" onClick={clearAll}>
-                  Clear all
-                </Button>
+                <Button variant="ghost" size="sm" className="text-xs h-6 px-2" onClick={clearAll}>Clear all</Button>
               )}
             </div>
           )}
@@ -307,7 +438,7 @@ export default function Leads() {
               {activeFilters.length > 0 ? (
                 <>
                   <p className="text-muted-foreground mb-1">No leads match your current filters.</p>
-                  <p className="text-xs text-muted-foreground mb-3">Try adjusting or clearing your filters.</p>
+                  <p className="text-xs text-muted-foreground mb-3">Try adjusting or clearing your filters to see results.</p>
                   <Button variant="outline" size="sm" onClick={clearAll}>Clear Filters</Button>
                 </>
               ) : (
@@ -337,6 +468,7 @@ export default function Leads() {
                       <TableHead>Phone</TableHead>
                       <TableHead>Country</TableHead>
                       <TableHead>Intake</TableHead>
+                      <TableHead>University</TableHead>
                       <TableHead>Course</TableHead>
                       <TableHead>
                         <button className="flex items-center gap-1" onClick={() => toggleSort("loan_amount_required")}>
@@ -351,7 +483,7 @@ export default function Leads() {
                           Updated <ArrowUpDown className="h-3 w-3" />
                         </button>
                       </TableHead>
-                      <TableHead className="w-8" />
+                      <TableHead className="w-20" />
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -360,7 +492,11 @@ export default function Leads() {
                       return (
                         <TableRow
                           key={lead.id}
-                          className={`cursor-pointer ${attn ? "bg-yellow-50/40 dark:bg-yellow-900/5" : ""}`}
+                          className={cn(
+                            "cursor-pointer",
+                            attn && "bg-yellow-50/40 dark:bg-yellow-900/5",
+                            lead.duplicate_flag && "bg-orange-50/30 dark:bg-orange-900/5"
+                          )}
                           onClick={() => navigate(`/leads/${lead.id}`)}
                         >
                           <TableCell className="font-mono text-xs">{lead.lead_id ?? "—"}</TableCell>
@@ -375,7 +511,8 @@ export default function Leads() {
                           <TableCell className="text-sm text-muted-foreground">{lead.student_phone}</TableCell>
                           <TableCell className="text-sm">{lead.intended_study_country}</TableCell>
                           <TableCell className="text-sm text-muted-foreground">{lead.intake_term} {lead.intake_year}</TableCell>
-                          <TableCell className="text-sm max-w-[130px] truncate">{lead.course_name}</TableCell>
+                          <TableCell className="text-sm max-w-[120px] truncate" title={lead.university_name_raw ?? ""}>{lead.university_name_raw ?? "—"}</TableCell>
+                          <TableCell className="text-sm max-w-[120px] truncate" title={lead.course_name}>{lead.course_name}</TableCell>
                           <TableCell className="text-sm">
                             {lead.loan_amount_required ? `₹${Number(lead.loan_amount_required).toLocaleString("en-IN")}` : "—"}
                           </TableCell>
@@ -388,11 +525,18 @@ export default function Leads() {
                             {new Date(lead.updated_at).toLocaleDateString()}
                           </TableCell>
                           <TableCell>
-                            {lead.current_stage === "draft" && (
-                              <Button variant="ghost" size="sm" className="text-xs h-7 px-2" onClick={(e) => { e.stopPropagation(); navigate(`/leads/new?draft=${lead.id}`); }}>
-                                Resume
-                              </Button>
-                            )}
+                            <div className="flex gap-1">
+                              {lead.current_stage === "draft" && (
+                                <Button variant="ghost" size="sm" className="text-xs h-7 px-2" onClick={(e) => { e.stopPropagation(); navigate(`/leads/new?draft=${lead.id}`); }}>
+                                  Resume
+                                </Button>
+                              )}
+                              {lead.duplicate_flag && (
+                                <Button variant="ghost" size="sm" className="text-xs h-7 px-2 text-yellow-700" title="View duplicate context" onClick={(e) => { e.stopPropagation(); navigate(`/leads/${lead.id}`); }}>
+                                  <ExternalLink className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                         </TableRow>
                       );
