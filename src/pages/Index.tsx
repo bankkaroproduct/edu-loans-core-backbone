@@ -74,7 +74,7 @@ export default function Dashboard() {
       // For agent role, filter related records to only accessible leads
       const accessibleLeadIds = new Set(fetchedLeads.map((l) => l.id));
 
-      if (agentUserId) {
+      if (agentUserId || effectivePartnerId) {
         setPayoutRecords((payoutRes.data ?? []).filter((p) => accessibleLeadIds.has(p.lead_id)));
         setDocReqs((docReqRes.data ?? []).filter((d) => accessibleLeadIds.has(d.lead_id)));
         setStageHistory((historyRes.data ?? []).filter((h) => accessibleLeadIds.has(h.lead_id)));
