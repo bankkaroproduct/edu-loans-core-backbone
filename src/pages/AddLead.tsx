@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { usePartnerContext } from "@/hooks/usePartnerContext";
 import { useDuplicateCheck } from "@/hooks/useDuplicateCheck";
 import { createDownstreamRecords, fetchLeadDisplayId } from "@/hooks/useLeadWriteFlow";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,7 @@ const SOURCE_SUBTYPES = [
 export default function AddLead() {
   const navigate = useNavigate();
   const { appUser } = useAuth();
+  const { effectivePartnerId, effectiveUserId, isSimulating } = usePartnerContext();
   const { duplicates, checking, checkDuplicates } = useDuplicateCheck();
   const [submitting, setSubmitting] = useState(false);
   const [activeStep, setActiveStep] = useState<StepId>("student");
@@ -147,7 +149,7 @@ export default function AddLead() {
         return "Please describe the collateral available";
     }
 
-    if (!appUser?.partner_id) return "No partner organization found for your account";
+    if (!effectivePartnerId) return "No partner organization found for your account. Admins can use 'Test as Partner' in the sidebar.";
     return null;
   };
 
@@ -163,7 +165,7 @@ export default function AddLead() {
         lastName: form.student_last_name.trim(),
         intakeTerm: form.intake_term,
         intakeYear: form.intake_year,
-        partnerId: appUser!.partner_id!,
+        partnerId: effectivePartnerId!,
       });
       if (dups.length > 0) {
         setShowDupDialog(true);
@@ -204,8 +206,8 @@ export default function AddLead() {
       collateral_available: form.collateral_available,
       collateral_notes: form.collateral_notes.trim() || null,
       source_sub_type: form.source_sub_type || null,
-      partner_id: appUser!.partner_id!,
-      partner_user_id: appUser!.id,
+      partner_id: effectivePartnerId!,
+      partner_user_id: effectiveUserId!,
       current_stage: stage,
       current_status: status,
       source_type: "partner",
