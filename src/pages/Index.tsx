@@ -199,6 +199,7 @@ export default function Dashboard() {
       pending: sum(["pending", "triggered"]),
       approved: sum(["approved"]),
       paid: sum(["paid"]),
+      reversed: sum(["reversed"]),
       recentRecords: payoutRecords.slice(0, 5).map((p) => ({
         id: p.id, leadId: p.lead_id.slice(0, 8) + "…", amount: p.payout_amount, status: p.payout_status, updatedAt: p.updated_at,
       })),
