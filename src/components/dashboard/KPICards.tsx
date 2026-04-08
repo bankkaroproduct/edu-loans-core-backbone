@@ -46,13 +46,23 @@ function formatValue(val: number, fmt?: "currency") {
   return val.toLocaleString("en-IN");
 }
 
-export function KPICards({ data, loading }: { data: KPIData; loading: boolean }) {
+interface Props {
+  data: KPIData;
+  loading: boolean;
+  onCardClick?: (key: string) => void;
+}
+
+export function KPICards({ data, loading, onCardClick }: Props) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
       {kpiConfig.map((kpi) => {
         const Icon = kpi.icon;
         return (
-          <Card key={kpi.key} className="hover:shadow-md transition-shadow">
+          <Card
+            key={kpi.key}
+            className="hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => onCardClick?.(kpi.key)}
+          >
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-medium text-muted-foreground truncate">

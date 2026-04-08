@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Tables } from "@/integrations/supabase/types";
@@ -22,9 +24,12 @@ const statusColors: Record<string, string> = {
 const fmt = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
 export default function Payouts() {
+  const [searchParams] = useSearchParams();
+  const statusParam = searchParams.get("status");
   const [records, setRecords] = useState<PayoutRecord[]>([]);
   const [rules, setRules] = useState<PayoutRule[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<string>(statusParam ?? "all");
 
   useEffect(() => {
     const load = async () => {
@@ -39,6 +44,10 @@ export default function Payouts() {
     load();
   }, []);
 
+  const filteredRecords = statusFilter === "all"
+    ? records
+    : records.filter((r) => r.payout_status === statusFilter);
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-foreground">Payouts</h1>
@@ -51,12 +60,29 @@ export default function Payouts() {
 
         <TabsContent value="records">
           <Card>
-            <CardHeader><CardTitle className="text-lg">Payout Records</CardTitle></CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-lg">Payout Records</CardTitle>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="triggered">Triggered</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="on_hold">On Hold</SelectItem>
+                  <SelectItem value="reversed">Reversed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </CardHeader>
             <CardContent>
               {loading ? (
                 <p className="text-center py-8 text-muted-foreground">Loading...</p>
-              ) : records.length === 0 ? (
-                <p className="text-center py-8 text-muted-foreground">No payout records yet</p>
+              ) : filteredRecords.length === 0 ? (
+                <p className="text-center py-8 text-muted-foreground">No payout records found</p>
               ) : (
                 <Table>
                   <TableHeader>
@@ -70,7 +96,7 @@ export default function Payouts() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {records.map((r) => (
+                    {filteredRecords.map((r) => (
                       <TableRow key={r.id}>
                         <TableCell className="font-mono text-sm">{r.lead_id.slice(0, 8)}...</TableCell>
                         <TableCell>{r.payout_amount ? `₹${Number(r.payout_amount).toLocaleString()}` : "—"}</TableCell>

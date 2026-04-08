@@ -29,7 +29,11 @@ export function BulkUploadSnapshot({ batches, loading }: { batches: Batch[]; loa
         ) : (
           <div className="space-y-2">
             {batches.slice(0, 5).map((b) => (
-              <div key={b.id} className="flex items-center justify-between p-2 border rounded-lg text-sm">
+              <div
+                key={b.id}
+                className="flex items-center justify-between p-2 border rounded-lg text-sm cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => navigate(`/bulk-upload?batch=${b.id}`)}
+              >
                 <div className="min-w-0">
                   <p className="font-mono text-xs text-muted-foreground">{b.batch_id ?? "—"}</p>
                   <p className="text-xs truncate">{b.file_name}</p>

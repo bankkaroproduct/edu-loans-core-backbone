@@ -27,6 +27,19 @@ const categoryConfig: Record<string, { icon: React.ElementType; label: string; c
 export function PriorityAlerts({ alerts, loading }: { alerts: AlertItem[]; loading: boolean }) {
   const navigate = useNavigate();
 
+  const handleAlertClick = (alert: AlertItem) => {
+    switch (alert.category) {
+      case "upload_error":
+        navigate("/bulk-upload");
+        break;
+      case "payout_clarification":
+        navigate("/payouts");
+        break;
+      default:
+        navigate(`/leads/${alert.entityId}`);
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -60,7 +73,7 @@ export function PriorityAlerts({ alerts, loading }: { alerts: AlertItem[]; loadi
                 <div
                   key={alert.id}
                   className="flex items-start gap-3 p-2 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
-                  onClick={() => navigate(`/leads/${alert.entityId}`)}
+                  onClick={() => handleAlertClick(alert)}
                 >
                   <Icon className={`h-4 w-4 mt-0.5 shrink-0 ${config.color}`} />
                   <div className="flex-1 min-w-0">

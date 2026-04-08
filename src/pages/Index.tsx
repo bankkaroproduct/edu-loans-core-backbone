@@ -1,6 +1,8 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useRoleAccess } from "@/hooks/useRoleAccess";
 import type { Tables } from "@/integrations/supabase/types";
 
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -25,6 +27,8 @@ type Note = Tables<"lead_notes">;
 
 export default function Dashboard() {
   const { appUser } = useAuth();
+  const { agentUserId } = useRoleAccess();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
@@ -37,9 +41,17 @@ export default function Dashboard() {
 
   useEffect(() => {
     const fetchData = async () => {
+      // Build role-aware lead query
+      let leadsQ = supabase.from("student_leads").select("*").eq("is_archived", false).order("updated_at", { ascending: false }).limit(500);
+      if (agentUserId) leadsQ = leadsQ.eq("partner_user_id", agentUserId);
+
+      // Build role-aware batch query
+      let batchQ = supabase.from("bulk_upload_batches").select("*").order("uploaded_at", { ascending: false }).limit(20);
+      if (agentUserId) batchQ = batchQ.eq("uploaded_by", agentUserId);
+
       const [leadsRes, batchRes, payoutRes, docReqRes, historyRes, notesRes, partnerRes] = await Promise.all([
-        supabase.from("student_leads").select("*").eq("is_archived", false).order("updated_at", { ascending: false }).limit(500),
-        supabase.from("bulk_upload_batches").select("*").order("uploaded_at", { ascending: false }).limit(20),
+        leadsQ,
+        batchQ,
         supabase.from("partner_payout_records").select("*").order("created_at", { ascending: false }).limit(100),
         supabase.from("lead_document_requirements").select("*").limit(500),
         supabase.from("lead_stage_history").select("*").order("created_at", { ascending: false }).limit(50),
@@ -49,28 +61,39 @@ export default function Dashboard() {
           : Promise.resolve({ data: null }),
       ]);
 
-      if (leadsRes.data) setLeads(leadsRes.data);
-      if (batchRes.data) setBatches(batchRes.data);
-      if (payoutRes.data) setPayoutRecords(payoutRes.data);
-      if (docReqRes.data) setDocReqs(docReqRes.data);
-      if (historyRes.data) setStageHistory(historyRes.data);
-      if (notesRes.data) setNotes(notesRes.data);
+      const fetchedLeads = leadsRes.data ?? [];
+      setLeads(fetchedLeads);
+      setBatches(batchRes.data ?? []);
+
+      // For agent role, filter related records to only accessible leads
+      const accessibleLeadIds = new Set(fetchedLeads.map((l) => l.id));
+
+      if (agentUserId) {
+        setPayoutRecords((payoutRes.data ?? []).filter((p) => accessibleLeadIds.has(p.lead_id)));
+        setDocReqs((docReqRes.data ?? []).filter((d) => accessibleLeadIds.has(d.lead_id)));
+        setStageHistory((historyRes.data ?? []).filter((h) => accessibleLeadIds.has(h.lead_id)));
+        setNotes((notesRes.data ?? []).filter((n) => accessibleLeadIds.has(n.lead_id)));
+      } else {
+        if (payoutRes.data) setPayoutRecords(payoutRes.data);
+        if (docReqRes.data) setDocReqs(docReqRes.data);
+        if (historyRes.data) setStageHistory(historyRes.data);
+        if (notesRes.data) setNotes(notesRes.data);
+      }
+
       if (partnerRes.data && "display_name" in partnerRes.data) {
         setPartnerName(partnerRes.data.display_name);
       }
       setLoading(false);
     };
     fetchData();
-  }, [appUser?.partner_id]);
+  }, [appUser?.partner_id, agentUserId]);
 
-  // Derived filter values for dropdowns
   const destinations = useMemo(() => [...new Set(leads.map((l) => l.intended_study_country))].sort(), [leads]);
   const intakes = useMemo(() => {
     const set = new Set(leads.map((l) => `${l.intake_term} ${l.intake_year}`));
     return [...set].sort();
   }, [leads]);
 
-  // Filter leads
   const filteredLeads = useMemo(() => {
     return leads.filter((l) => {
       if (filters.dateFrom && l.created_at < filters.dateFrom) return false;
@@ -83,7 +106,6 @@ export default function Dashboard() {
     });
   }, [leads, filters]);
 
-  // KPI calculations on filtered leads
   const kpiData = useMemo<KPIData>(() => {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
@@ -112,56 +134,39 @@ export default function Dashboard() {
     };
   }, [filteredLeads, batches, payoutRecords, docReqs]);
 
-  // Pipeline counts on filtered leads
   const stageCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     filteredLeads.forEach((l) => { counts[l.current_stage] = (counts[l.current_stage] ?? 0) + 1; });
     return counts;
   }, [filteredLeads]);
 
-  // Expanded priority alerts
   const alerts = useMemo<AlertItem[]>(() => {
     const items: AlertItem[] = [];
     const now = Date.now();
     const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
 
-    // On hold
     leads.filter((l) => l.current_stage === "on_hold").forEach((l) => {
       items.push({ id: `hold-${l.id}`, leadId: l.lead_id, studentName: l.student_full_name ?? l.student_first_name, reason: "Lead is on hold — may need clarification", category: "on_hold", updatedAt: l.updated_at, entityId: l.id });
     });
-
-    // Documents pending
     leads.filter((l) => l.current_stage === "documents_pending").forEach((l) => {
       items.push({ id: `docs-${l.id}`, leadId: l.lead_id, studentName: l.student_full_name ?? l.student_first_name, reason: "Documents pending — upload required", category: "docs_pending", updatedAt: l.updated_at, entityId: l.id });
     });
-
-    // Reupload needed
     leads.filter((l) => l.current_status === "reupload_needed").forEach((l) => {
       items.push({ id: `reup-${l.id}`, leadId: l.lead_id, studentName: l.student_full_name ?? l.student_first_name, reason: "Document reupload needed", category: "reupload", updatedAt: l.updated_at, entityId: l.id });
     });
-
-    // Stuck leads (in early stages > 7 days)
     const earlyStages = ["draft", "submitted", "under_initial_review"];
     leads.filter((l) => earlyStages.includes(l.current_stage) && now - new Date(l.updated_at).getTime() > SEVEN_DAYS).forEach((l) => {
       items.push({ id: `stuck-${l.id}`, leadId: l.lead_id, studentName: l.student_full_name ?? l.student_first_name, reason: `Stuck in ${l.current_stage.replace(/_/g, " ")} for over 7 days`, category: "stuck", updatedAt: l.updated_at, entityId: l.id });
     });
-
-    // Missing mandatory fields
     leads.filter((l) => !l.student_email && !l.loan_amount_required).forEach((l) => {
       items.push({ id: `missing-${l.id}`, leadId: l.lead_id, studentName: l.student_full_name ?? l.student_first_name, reason: "Missing mandatory fields (email, loan amount)", category: "attention", updatedAt: l.updated_at, entityId: l.id });
     });
-
-    // Failed bulk uploads
     batches.filter((b) => b.failed_rows > 0).forEach((b) => {
       items.push({ id: `batch-${b.id}`, leadId: b.batch_id, studentName: b.file_name, reason: `${b.failed_rows} of ${b.total_rows} rows failed`, category: "upload_error", updatedAt: b.uploaded_at, entityId: b.id });
     });
-
-    // Payout clarification
     payoutRecords.filter((p) => p.payout_status === "on_hold").forEach((p) => {
       items.push({ id: `payout-${p.id}`, leadId: p.lead_id.slice(0, 8), studentName: "Payout Record", reason: "Payout on hold — clarification needed", category: "payout_clarification", updatedAt: p.updated_at, entityId: p.lead_id });
     });
-
-    // Partner-visible admin remarks (recent notes of type partner_visible or system)
     notes.filter((n) => n.note_type === "partner_visible" || n.note_type === "system").slice(0, 5).forEach((n) => {
       const lead = leads.find((l) => l.id === n.lead_id);
       if (lead) {
@@ -172,7 +177,6 @@ export default function Dashboard() {
     return items.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   }, [leads, batches, payoutRecords, notes]);
 
-  // Document summary
   const docSummary = useMemo<DocSummary>(() => ({
     pending: docReqs.filter((d) => d.status === "not_uploaded").length,
     underReview: docReqs.filter((d) => d.status === "under_review").length,
@@ -181,7 +185,6 @@ export default function Dashboard() {
     reuploadNeeded: docReqs.filter((d) => d.status === "reupload_needed").length,
   }), [docReqs]);
 
-  // Payout summary
   const payoutSummary = useMemo<PayoutSummary>(() => {
     const sum = (statuses: string[]) =>
       payoutRecords.filter((p) => statuses.includes(p.payout_status)).reduce((s, p) => s + (p.payout_amount ?? 0), 0);
@@ -196,11 +199,8 @@ export default function Dashboard() {
     };
   }, [payoutRecords]);
 
-  // Expanded activity feed: stage history + notes + documents + payouts + bulk uploads
   const activityItems = useMemo<ActivityItem[]>(() => {
     const items: ActivityItem[] = [];
-
-    // Stage changes
     stageHistory.slice(0, 20).forEach((h) => {
       const lead = leads.find((l) => l.id === h.lead_id);
       const stageLabel = h.new_stage.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -208,43 +208,57 @@ export default function Dashboard() {
         id: `stage-${h.id}`, label: "Stage Changed", leadId: lead?.lead_id ?? null,
         description: `${h.previous_stage ? h.previous_stage.replace(/_/g, " ") : "—"} → ${stageLabel}`,
         timestamp: h.created_at, actor: h.changed_by_role ? h.changed_by_role.replace(/_/g, " ") : "System",
-        category: "stage",
+        category: "stage", entityId: lead?.id ?? null,
       });
     });
-
-    // Partner-visible notes
     notes.filter((n) => n.note_type !== "internal").slice(0, 10).forEach((n) => {
       const lead = leads.find((l) => l.id === n.lead_id);
       items.push({
         id: `note-${n.id}`, label: "Note Added", leadId: lead?.lead_id ?? null,
         description: n.note_text.length > 80 ? n.note_text.slice(0, 80) + "…" : n.note_text,
         timestamp: n.created_at, actor: n.note_type === "system" ? "System" : "Partner",
-        category: "note",
+        category: "note", entityId: lead?.id ?? null,
       });
     });
-
-    // Bulk upload completion
     batches.slice(0, 5).forEach((b) => {
       items.push({
         id: `bulk-${b.id}`, label: "Bulk Upload", leadId: b.batch_id,
         description: `${b.file_name} — ${b.success_rows} success, ${b.failed_rows} failed`,
         timestamp: b.uploaded_at, actor: "Partner",
-        category: "bulk",
+        category: "bulk", entityId: null,
       });
     });
-
-    // Payout status updates
     payoutRecords.filter((p) => p.payout_status !== "pending").slice(0, 5).forEach((p) => {
       items.push({
         id: `payout-${p.id}`, label: "Payout Updated", leadId: p.lead_id.slice(0, 8) + "…",
         description: `Status: ${p.payout_status.replace(/_/g, " ")} — ₹${(p.payout_amount ?? 0).toLocaleString("en-IN")}`,
         timestamp: p.updated_at, actor: "System",
-        category: "payout",
+        category: "payout", entityId: null,
       });
     });
 
     return items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 20);
   }, [stageHistory, leads, notes, batches, payoutRecords]);
+
+  // KPI click handler
+  const handleKPIClick = (key: string) => {
+    const routes: Record<string, string> = {
+      totalLeads: "/leads",
+      leadsThisMonth: "/leads",
+      underReview: "/leads?stage=under_initial_review,documents_under_review,bre_evaluated",
+      documentsPending: "/leads?stage=documents_pending",
+      sentToLender: "/leads?stage=sent_to_lender,login_submitted",
+      sanctionReceived: "/leads?stage=sanction_received",
+      disbursed: "/leads?stage=disbursed",
+      rejectedDropped: "/leads?stage=rejected,dropped",
+      bulkBatchesThisMonth: "/bulk-upload",
+      pendingPayout: "/payouts?status=pending",
+      paidPayout: "/payouts?status=paid",
+      needsAttention: "/leads?attention=true",
+    };
+    const route = routes[key];
+    if (route) navigate(route);
+  };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -257,7 +271,7 @@ export default function Dashboard() {
         intakes={intakes}
       />
 
-      <KPICards data={kpiData} loading={loading} />
+      <KPICards data={kpiData} loading={loading} onCardClick={handleKPIClick} />
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">

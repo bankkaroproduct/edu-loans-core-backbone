@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Activity } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export interface ActivityItem {
   id: string;
@@ -10,6 +11,7 @@ export interface ActivityItem {
   timestamp: string;
   actor: string;
   category: "stage" | "status" | "note" | "document" | "payout" | "bulk" | "lead";
+  entityId?: string | null;
 }
 
 const categoryColors: Record<string, string> = {
@@ -23,6 +25,18 @@ const categoryColors: Record<string, string> = {
 };
 
 export function ActivityFeed({ items, loading }: { items: ActivityItem[]; loading: boolean }) {
+  const navigate = useNavigate();
+
+  const handleClick = (item: ActivityItem) => {
+    if (item.category === "bulk") {
+      navigate("/bulk-upload");
+    } else if (item.category === "payout") {
+      navigate("/payouts");
+    } else if (item.entityId) {
+      navigate(`/leads/${item.entityId}`);
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -44,7 +58,11 @@ export function ActivityFeed({ items, loading }: { items: ActivityItem[]; loadin
         ) : (
           <div className="space-y-3 max-h-72 overflow-y-auto">
             {items.map((item) => (
-              <div key={item.id} className="flex gap-3 text-sm">
+              <div
+                key={item.id}
+                className="flex gap-3 text-sm cursor-pointer hover:bg-muted/50 rounded p-1 transition-colors"
+                onClick={() => handleClick(item)}
+              >
                 <div className={`w-1.5 h-1.5 rounded-full mt-2 shrink-0 ${categoryColors[item.category] ?? "bg-primary"}`} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
