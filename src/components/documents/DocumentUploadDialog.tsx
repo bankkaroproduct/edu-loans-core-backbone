@@ -21,6 +21,7 @@ interface Props {
   requirement: DocRequirement;
   leadId: string;
   userId: string | null;
+  userRole?: string | null;
   onUploadComplete: () => void;
   currentVersionCount?: number;
 }
