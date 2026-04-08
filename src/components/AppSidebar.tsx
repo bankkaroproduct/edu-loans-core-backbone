@@ -10,6 +10,8 @@ import {
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { usePartnerContext } from "@/hooks/usePartnerContext";
+import { AdminPartnerSwitcher } from "@/components/AdminPartnerSwitcher";
 import {
   Sidebar,
   SidebarContent,
@@ -23,6 +25,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 const mainItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -41,6 +44,7 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const { appUser, signOut } = useAuth();
+  const { isSimulating, effectivePartnerName } = usePartnerContext();
 
   const isAdmin = appUser?.role === "super_admin" || appUser?.role === "admin";
 
