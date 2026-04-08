@@ -7,7 +7,7 @@ export function QuickActions() {
   const navigate = useNavigate();
 
   const actions = [
-    { label: "Add Quick Lead", icon: Plus, action: () => navigate("/leads/new?mode=quick") },
+    { label: "Add Quick Lead", icon: Plus, action: () => navigate("/leads/quick") },
     { label: "Add New Lead", icon: Plus, action: () => navigate("/leads/new") },
     { label: "Bulk Upload Leads", icon: Upload, action: () => navigate("/bulk-upload") },
     { label: "View Submitted Leads", icon: FileText, action: () => navigate("/leads") },
