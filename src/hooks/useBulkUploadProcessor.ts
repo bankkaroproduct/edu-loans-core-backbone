@@ -406,7 +406,7 @@ export async function processBulkUpload(
         source_sub_type: row.source_sub_type ?? "bulk_upload",
         student_first_name: row.student_first_name!,
         student_last_name: row.student_last_name ?? null,
-        student_full_name: fullName,
+        
         student_phone: row.student_phone!,
         student_email: row.student_email ?? null,
         student_whatsapp: row.student_whatsapp ?? null,
