@@ -148,7 +148,7 @@ export default function Payouts() {
         updated_at: r.updated_at,
       };
     });
-  }, [records, leadMap, ruleMap]);
+  }, [records, leadMap, ruleMap, userMap]);
 
   // Filter
   const filteredRows = useMemo(() => {
