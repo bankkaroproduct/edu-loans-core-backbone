@@ -82,11 +82,20 @@ export default function Payouts() {
         // Agent scoping: if agent, they can only see leads they submitted — RLS handles this
         const { data: leads } = await supabase
           .from("student_leads")
-          .select("id, lead_id, student_full_name, current_stage")
+          .select("id, lead_id, student_full_name, current_stage, partner_user_id")
           .in("id", leadIds);
         const lm: typeof leadMap = {};
-        (leads ?? []).forEach((l) => { lm[l.id] = l; });
+        (leads ?? []).forEach((l) => { lm[l.id] = { ...l, partner_user_id: l.partner_user_id ?? null }; });
         setLeadMap(lm);
+
+        // Fetch submitter names
+        const userIds = [...new Set((leads ?? []).map((l) => l.partner_user_id).filter(Boolean))] as string[];
+        if (userIds.length > 0) {
+          const { data: users } = await supabase.from("users").select("id, full_name").in("id", userIds);
+          const um: Record<string, string> = {};
+          (users ?? []).forEach((u) => { um[u.id] = u.full_name; });
+          setUserMap(um);
+        }
 
         // If agent, filter records to only leads they can see (RLS already does this, but belt-and-suspenders)
         if (agentUserId) {
