@@ -394,7 +394,7 @@ export async function processBulkUpload(
     }
 
     // Create the lead
-    const fullName = `${row.student_first_name} ${row.student_last_name ?? ""}`.trim();
+    
     const universityId = row.university_name ? master.universityMap.get(row.university_name.toLowerCase()) ?? null : null;
 
     const { data: leadData, error: leadError } = await supabase
