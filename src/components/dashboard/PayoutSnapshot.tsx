@@ -25,10 +25,10 @@ function formatINR(n: number) {
 export function PayoutSnapshot({ data, loading }: { data: PayoutSummary; loading: boolean }) {
   const navigate = useNavigate();
   const metrics = [
-    { label: "Total Accrued", value: data.totalAccrued, icon: DollarSign },
-    { label: "Pending", value: data.pending, icon: Clock },
-    { label: "Approved", value: data.approved, icon: CheckCircle },
-    { label: "Paid", value: data.paid, icon: CreditCard },
+    { label: "Total Accrued", value: data.totalAccrued, icon: DollarSign, route: "/payouts" },
+    { label: "Pending", value: data.pending, icon: Clock, route: "/payouts?status=pending" },
+    { label: "Approved", value: data.approved, icon: CheckCircle, route: "/payouts?status=approved" },
+    { label: "Paid", value: data.paid, icon: CreditCard, route: "/payouts?status=paid" },
   ];
 
   return (
@@ -48,7 +48,11 @@ export function PayoutSnapshot({ data, loading }: { data: PayoutSummary; loading
               {metrics.map((m) => {
                 const Icon = m.icon;
                 return (
-                  <div key={m.label} className="text-center p-2 rounded-lg border">
+                  <div
+                    key={m.label}
+                    className="text-center p-2 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => navigate(m.route)}
+                  >
                     <Icon className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
                     <p className="text-sm font-bold">{formatINR(m.value)}</p>
                     <p className="text-[10px] text-muted-foreground">{m.label}</p>
@@ -60,7 +64,11 @@ export function PayoutSnapshot({ data, loading }: { data: PayoutSummary; loading
               <div className="space-y-1">
                 <p className="text-xs font-medium text-muted-foreground mb-1">Recent Records</p>
                 {data.recentRecords.slice(0, 3).map((r) => (
-                  <div key={r.id} className="flex items-center justify-between text-xs p-1.5 border rounded">
+                  <div
+                    key={r.id}
+                    className="flex items-center justify-between text-xs p-1.5 border rounded cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => navigate("/payouts")}
+                  >
                     <span className="font-mono text-muted-foreground">{r.leadId}</span>
                     <span className="font-medium">{r.amount ? formatINR(r.amount) : "—"}</span>
                     <span className="capitalize text-muted-foreground">{r.status.replace(/_/g, " ")}</span>

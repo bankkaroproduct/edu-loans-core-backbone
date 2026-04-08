@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Search, Upload } from "lucide-react";
@@ -42,13 +42,22 @@ const fmt = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUppe
 
 export default function Leads() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [stageFilter, setStageFilter] = useState<string>("all");
+
+  // Read stage filter from URL query params (supports comma-separated)
+  const stageParam = searchParams.get("stage");
+  const attentionParam = searchParams.get("attention");
+  const initialStage = stageParam && !stageParam.includes(",") ? stageParam : "all";
+  const [stageFilter, setStageFilter] = useState<string>(initialStage);
+
+  // Multi-stage filter from URL (e.g. ?stage=rejected,dropped)
+  const multiStages = stageParam?.includes(",") ? stageParam.split(",") : null;
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchLeads = async () => {
       let q = supabase
         .from("student_leads")
         .select("*")
@@ -56,18 +65,30 @@ export default function Leads() {
         .order("created_at", { ascending: false })
         .limit(200);
 
-      if (stageFilter && stageFilter !== "all") {
+      if (stageFilter && stageFilter !== "all" && !multiStages) {
         q = q.eq("current_stage", stageFilter as Stage);
+      }
+
+      if (multiStages) {
+        q = q.in("current_stage", multiStages as Stage[]);
       }
 
       const { data } = await q;
       setLeads(data ?? []);
       setLoading(false);
     };
-    fetch();
-  }, [stageFilter]);
+    fetchLeads();
+  }, [stageFilter, multiStages?.join(",")]);
 
   const filtered = leads.filter((l) => {
+    // Attention filter: on_hold, documents_pending, reupload_needed, pending_info
+    if (attentionParam === "true") {
+      const needsAttention =
+        l.current_stage === "on_hold" || l.current_stage === "documents_pending" ||
+        l.current_status === "reupload_needed" || l.current_status === "pending_info";
+      if (!needsAttention) return false;
+    }
+
     if (!search) return true;
     const s = search.toLowerCase();
     return (
@@ -106,7 +127,7 @@ export default function Leads() {
                 className="pl-9"
               />
             </div>
-            <Select value={stageFilter} onValueChange={setStageFilter}>
+            <Select value={stageFilter} onValueChange={(v) => setStageFilter(v)}>
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="All Stages" />
               </SelectTrigger>
