@@ -189,7 +189,7 @@ export default function AddLead() {
     const payload = {
       student_first_name: form.student_first_name.trim(),
       student_last_name: form.student_last_name.trim() || null,
-      student_full_name: fullName || null,
+      
       student_email: form.student_email.trim() || null,
       student_phone: form.student_phone.trim(),
       student_whatsapp: form.student_whatsapp.trim() || null,
