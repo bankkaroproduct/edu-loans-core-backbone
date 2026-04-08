@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
+import { usePartnerContext } from "@/hooks/usePartnerContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -182,6 +183,7 @@ export default function Leads() {
     setLoading(true);
 
     const applyFilters = (q: any) => {
+      if (effectivePartnerId) q = q.eq("partner_id", effectivePartnerId);
       if (agentUserId) q = q.eq("partner_user_id", agentUserId);
       if (stageFilter !== "all") {
         if (stageFilter.includes(",")) q = q.in("current_stage", stageFilter.split(",") as Stage[]);

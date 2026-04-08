@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import type { Tables } from "@/integrations/supabase/types";
+import { usePartnerContext } from "@/hooks/usePartnerContext";
 
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardFilters, defaultFilters, type DashboardFilterValues } from "@/components/dashboard/DashboardFilters";
@@ -28,6 +29,7 @@ type Note = Tables<"lead_notes">;
 export default function Dashboard() {
   const { appUser } = useAuth();
   const { agentUserId } = useRoleAccess();
+  const { effectivePartnerId } = usePartnerContext();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -54,12 +56,14 @@ export default function Dashboard() {
       const [leadsRes, batchRes, payoutRes, docReqRes, historyRes, notesRes, partnerRes] = await Promise.all([
         leadsQ,
         batchQ,
-        supabase.from("partner_payout_records").select("*").order("created_at", { ascending: false }).limit(100),
+        effectivePartnerId
+          ? supabase.from("partner_payout_records").select("*").eq("partner_id", effectivePartnerId).order("created_at", { ascending: false }).limit(100)
+          : supabase.from("partner_payout_records").select("*").order("created_at", { ascending: false }).limit(100),
         supabase.from("lead_document_requirements").select("*").limit(500),
         supabase.from("lead_stage_history").select("*").order("created_at", { ascending: false }).limit(50),
         supabase.from("lead_notes").select("*").order("created_at", { ascending: false }).limit(30),
-        appUser?.partner_id
-          ? supabase.from("partner_organizations").select("display_name").eq("id", appUser.partner_id).maybeSingle()
+        effectivePartnerId
+          ? supabase.from("partner_organizations").select("display_name").eq("id", effectivePartnerId).maybeSingle()
           : Promise.resolve({ data: null }),
       ]);
 
