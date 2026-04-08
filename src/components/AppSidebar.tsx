@@ -102,11 +102,22 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
+        <AdminPartnerSwitcher collapsed={collapsed} />
         <div className="p-2">
           {!collapsed && appUser && (
             <div className="mb-2 px-2">
               <p className="text-sm font-medium text-sidebar-foreground truncate">{appUser.full_name}</p>
-              <p className="text-xs text-muted-foreground truncate">{appUser.role.replace(/_/g, " ")}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-xs text-muted-foreground truncate">{appUser.role.replace(/_/g, " ")}</p>
+                {isSimulating && (
+                  <Badge variant="outline" className="text-[9px] px-1 py-0 bg-amber-500/10 text-amber-600 border-amber-500/30">
+                    SIM
+                  </Badge>
+                )}
+              </div>
+              {isSimulating && effectivePartnerName && (
+                <p className="text-[10px] text-amber-600 truncate mt-0.5">{effectivePartnerName}</p>
+              )}
             </div>
           )}
           <Button
