@@ -136,6 +136,7 @@ export default function Payouts() {
         lead_id: r.lead_id,
         lead_display_id: lead?.lead_id ?? null,
         student_name: lead?.student_full_name ?? null,
+        submitted_by: lead?.partner_user_id ? (userMap[lead.partner_user_id] ?? null) : null,
         trigger_stage: rule?.payout_trigger_stage ?? null,
         payout_basis: rule?.payout_basis ?? null,
         payout_amount: r.payout_amount ? Number(r.payout_amount) : null,

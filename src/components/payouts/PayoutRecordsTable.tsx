@@ -9,6 +9,7 @@ export interface PayoutRecordRow {
   lead_id: string;
   lead_display_id: string | null;
   student_name: string | null;
+  submitted_by: string | null;
   trigger_stage: string | null;
   payout_basis: string | null;
   payout_amount: number | null;
