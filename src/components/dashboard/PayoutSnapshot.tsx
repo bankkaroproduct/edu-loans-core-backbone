@@ -71,7 +71,7 @@ export function PayoutSnapshot({ data, loading }: { data: PayoutSummary; loading
                     className="flex items-center justify-between text-xs p-1.5 border rounded cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => navigate(`/payouts?lead=${r.leadId}`)}
                   >
-                    <span className="font-mono text-muted-foreground">{r.leadId.slice(0, 8)}</span>
+                    <span className="font-mono text-muted-foreground">{r.leadId.slice(0, 8)}…</span>
                     <span className="font-medium">{r.amount ? formatINR(r.amount) : "—"}</span>
                     <span className="capitalize text-muted-foreground">{r.status.replace(/_/g, " ")}</span>
                   </div>
