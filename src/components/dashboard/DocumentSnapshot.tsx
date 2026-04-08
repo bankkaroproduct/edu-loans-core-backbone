@@ -15,7 +15,7 @@ export function DocumentSnapshot({ data, loading }: { data: DocSummary; loading:
   const navigate = useNavigate();
 
   const items = [
-    { label: "Pending Upload", value: data.pending, icon: FileUp, color: "text-orange-600", route: "/leads?stage=documents_pending" },
+    { label: "Pending Upload", value: data.pending, icon: FileUp, color: "text-orange-600", route: "/leads?attention=true&stage=documents_pending" },
     { label: "Under Review", value: data.underReview, icon: FileClock, color: "text-amber-600", route: "/leads?stage=documents_under_review" },
     { label: "Verified", value: data.verified, icon: FileCheck, color: "text-green-600", route: "/leads" },
     { label: "Rejected", value: data.rejected, icon: FileX, color: "text-destructive", route: "/leads?attention=true" },

@@ -155,6 +155,7 @@ export default function LeadDocuments() {
           leadId={lead.id}
           userId={userId}
           onUploadComplete={handleUploadComplete}
+          currentVersionCount={documents.filter(d => d.document_type_id === uploadTarget.document_type_id).length}
         />
       )}
     </div>

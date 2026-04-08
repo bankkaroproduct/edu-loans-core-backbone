@@ -5,7 +5,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Upload, FileText, AlertTriangle, CheckCircle, X, Info } from "lucide-react";
+import { Upload, FileText, AlertTriangle, CheckCircle, X, Info, RotateCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { DocRequirement } from "@/pages/LeadDocuments";
@@ -22,9 +22,10 @@ interface Props {
   leadId: string;
   userId: string | null;
   onUploadComplete: () => void;
+  currentVersionCount?: number;
 }
 
-export function DocumentUploadDialog({ open, onOpenChange, requirement, leadId, userId, onUploadComplete }: Props) {
+export function DocumentUploadDialog({ open, onOpenChange, requirement, leadId, userId, onUploadComplete, currentVersionCount = 0 }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -33,6 +34,7 @@ export function DocumentUploadDialog({ open, onOpenChange, requirement, leadId, 
 
   const isReupload = ["rejected", "reupload_needed"].includes(requirement.status);
   const docName = requirement.document_master?.document_name ?? "Document";
+  const nextVersion = currentVersionCount + 1;
 
   const validateFile = (f: File): string | null => {
     if (!ACCEPTED_TYPES.includes(f.type)) {
@@ -67,14 +69,6 @@ export function DocumentUploadDialog({ open, onOpenChange, requirement, leadId, 
     setError(null);
 
     try {
-      // Determine next version number
-      const { count } = await supabase
-        .from("lead_documents")
-        .select("id", { count: "exact", head: true })
-        .eq("lead_id", leadId)
-        .eq("document_type_id", requirement.document_type_id);
-
-      const nextVersion = (count ?? 0) + 1;
       const ext = file.name.split(".").pop() ?? "pdf";
       const storagePath = `${leadId}/${requirement.document_type_id}_v${nextVersion}.${ext}`;
 
@@ -91,7 +85,6 @@ export function DocumentUploadDialog({ open, onOpenChange, requirement, leadId, 
 
       setProgress(50);
 
-      // Upload file to storage
       const { error: uploadErr } = await supabase.storage
         .from("lead-documents")
         .upload(storagePath, file, { upsert: false });
@@ -100,7 +93,6 @@ export function DocumentUploadDialog({ open, onOpenChange, requirement, leadId, 
 
       setProgress(75);
 
-      // Insert document record
       const { error: insertErr } = await supabase
         .from("lead_documents")
         .insert({
@@ -119,7 +111,6 @@ export function DocumentUploadDialog({ open, onOpenChange, requirement, leadId, 
 
       setProgress(90);
 
-      // Update requirement status to uploaded
       await supabase
         .from("lead_document_requirements")
         .update({ status: "uploaded", remarks: null })
@@ -144,31 +135,50 @@ export function DocumentUploadDialog({ open, onOpenChange, requirement, leadId, 
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {isReupload ? (
-              <><AlertTriangle className="h-4 w-4 text-orange-600" /> Reupload {docName}</>
+              <><RotateCcw className="h-4 w-4 text-orange-600" /> Reupload: {docName}</>
             ) : (
-              <><Upload className="h-4 w-4 text-primary" /> Upload {docName}</>
+              <><Upload className="h-4 w-4 text-primary" /> Upload: {docName}</>
             )}
           </DialogTitle>
           <DialogDescription>
             {isReupload
-              ? "Upload a corrected version to replace the previous file."
+              ? "Upload a corrected version to replace the rejected file."
               : "Upload the required document file."}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Requirement context */}
-          {requirement.document_master?.document_category && (
-            <Badge variant="outline" className="text-xs">{requirement.document_master.document_category}</Badge>
-          )}
+          {/* Document context */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {requirement.document_master?.document_category && (
+              <Badge variant="outline" className="text-xs">{requirement.document_master.document_category}</Badge>
+            )}
+            <Badge variant="secondary" className="text-xs">
+              Will create v{nextVersion}
+            </Badge>
+            {requirement.required_flag && (
+              <Badge variant="secondary" className="text-xs">Required</Badge>
+            )}
+          </div>
 
-          {/* Show previous rejection reason */}
-          {isReupload && requirement.remarks && (
-            <div className="flex items-start gap-2 rounded-md bg-orange-50 dark:bg-orange-950/30 p-3 text-sm">
-              <Info className="h-4 w-4 text-orange-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium text-orange-800 dark:text-orange-300">Previous Issue</p>
-                <p className="text-orange-700 dark:text-orange-400 text-xs mt-0.5">{requirement.remarks}</p>
+          {/* Previous rejection reason — PROMINENT */}
+          {isReupload && (
+            <div className="rounded-md bg-orange-50 dark:bg-orange-950/30 p-3 text-sm border border-orange-200 dark:border-orange-800">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-orange-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-orange-800 dark:text-orange-300">
+                    {requirement.status === "rejected" ? "Rejection Reason" : "Reupload Reason"}
+                  </p>
+                  <p className="text-orange-700 dark:text-orange-400 text-xs mt-1">
+                    {requirement.remarks || "No specific reason provided. Please upload a corrected version of this document."}
+                  </p>
+                  {currentVersionCount > 0 && (
+                    <p className="text-orange-600 dark:text-orange-500 text-xs mt-1.5 font-medium">
+                      Current version: v{currentVersionCount} → Uploading: v{nextVersion}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -227,7 +237,7 @@ export function DocumentUploadDialog({ open, onOpenChange, requirement, leadId, 
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={uploading}>
             Cancel
           </Button>
-          <Button onClick={handleUpload} disabled={!file || uploading}>
+          <Button onClick={handleUpload} disabled={!file || uploading} variant={isReupload ? "destructive" : "default"}>
             {uploading ? "Uploading..." : isReupload ? "Reupload Document" : "Upload Document"}
           </Button>
         </DialogFooter>
