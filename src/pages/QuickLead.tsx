@@ -128,10 +128,13 @@ export default function QuickLead() {
       duplicate_flag: hasDuplicateWarning,
     };
 
+    console.log("[QuickLead] Submitting payload:", JSON.stringify(payload, null, 2));
     const { data, error } = await supabase.from("student_leads").insert(payload).select("id").single();
+    console.log("[QuickLead] Insert result:", { data, error: error?.message });
 
     if (error) {
-      toast.error(error.message);
+      console.error("[QuickLead] Insert failed:", error.message, error.details, error.hint);
+      toast.error(`Lead creation failed: ${error.message}`);
     } else if (data) {
       // Create downstream records
       await createDownstreamRecords({
