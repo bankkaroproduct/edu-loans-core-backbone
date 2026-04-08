@@ -16,11 +16,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DuplicateWarningDialog } from "@/components/leads/DuplicateWarningDialog";
 import { LeadSuccessDialog } from "@/components/leads/LeadSuccessDialog";
-import { LeadCreateDebugPanel } from "@/components/leads/LeadCreateDebugPanel";
 import { toast } from "sonner";
 import { ArrowLeft, FileText, User, GraduationCap, Wallet, MessageSquare, Eye } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
-import { buildLeadCreateDebugState, formatLeadCreateError, serializeDbError, type LeadCreateDebugState } from "@/lib/leadCreateDebug";
 
 type Country = Tables<"countries_master">;
 type University = Tables<"universities_master">;

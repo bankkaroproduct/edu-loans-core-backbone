@@ -43,6 +43,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       // Build role-aware lead query
       let leadsQ = supabase.from("student_leads").select("*").eq("is_archived", false).order("updated_at", { ascending: false }).limit(500);
       if (effectivePartnerId) leadsQ = leadsQ.eq("partner_id", effectivePartnerId);
@@ -201,7 +202,7 @@ export default function Dashboard() {
       paid: sum(["paid"]),
       reversed: sum(["reversed"]),
       recentRecords: payoutRecords.slice(0, 5).map((p) => ({
-        id: p.id, leadId: p.lead_id.slice(0, 8) + "…", amount: p.payout_amount, status: p.payout_status, updatedAt: p.updated_at,
+        id: p.id, leadId: p.lead_id, amount: p.payout_amount, status: p.payout_status, updatedAt: p.updated_at,
       })),
     };
   }, [payoutRecords]);
