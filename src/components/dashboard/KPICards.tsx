@@ -97,16 +97,16 @@ interface Props {
 
 export function KPICards({ data, loading, onCardClick }: Props) {
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       {clusters.map((cluster) => (
         <div
           key={cluster.heading}
-          className="bg-card/60 border border-border/50 rounded-xl p-5 pt-4"
+          className="bg-card/60 border border-border/50 rounded-xl px-4 py-3"
         >
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-2 mb-4">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5 mb-2.5">
             {cluster.heading}
           </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             {cluster.items.map((kpi) => {
               const Icon = kpi.icon;
               const isEmphasized = kpi.emphasized;
@@ -116,21 +116,21 @@ export function KPICards({ data, loading, onCardClick }: Props) {
                   className={`hover:shadow-lg transition-shadow cursor-pointer ${accentBorder[kpi.accent]} ${isEmphasized ? "bg-primary/5 shadow-md" : ""}`}
                   onClick={() => onCardClick?.(kpi.key)}
                 >
-                  <CardContent className="p-5">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-medium text-muted-foreground truncate">
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[11px] font-medium text-muted-foreground truncate">
                         {kpi.label}
                       </span>
-                      <Icon className={`h-5 w-5 shrink-0 ${accentIconColor[kpi.accent]}`} />
+                      <Icon className={`h-4 w-4 shrink-0 ${accentIconColor[kpi.accent]}`} />
                     </div>
                     {loading ? (
-                      <Skeleton className="h-9 w-20" />
+                      <Skeleton className="h-7 w-16" />
                     ) : (
-                      <p className={`font-extrabold text-foreground ${isEmphasized ? "text-3xl" : "text-2xl"}`}>
+                      <p className={`font-extrabold text-foreground ${isEmphasized ? "text-2xl" : "text-xl"}`}>
                         {formatValue(data[kpi.key], kpi.format)}
                       </p>
                     )}
-                    <p className="text-xs text-muted-foreground mt-1.5">
+                    <p className="text-[11px] text-muted-foreground mt-1">
                       {kpi.dynamicSub ? kpi.dynamicSub(data[kpi.key]) : kpi.sub}
                     </p>
                   </CardContent>
