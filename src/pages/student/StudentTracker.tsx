@@ -99,7 +99,7 @@ export default function StudentTracker() {
 
   // --- Health indicator ---
   const healthConfig = {
-    on_track: { label: "On Track", icon: CircleCheck, color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800", micro: "Everything looks good — no action needed from your side right now." },
+    on_track: { label: "On Track", icon: CircleCheck, color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800", micro: data?.lead_summary.current_stage === "disbursed" ? "🎉 Your loan has been disbursed — congratulations!" : data?.lead_summary.current_stage === "sanction_received" ? "🎉 Your loan has been approved! Disbursal is being processed." : "Everything looks good — no action needed from your side right now." },
     needs_attention: { label: "Needs Attention", icon: CircleAlert, color: "text-amber-600", bg: "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800", micro: "Some documents still need to be uploaded to keep your application moving." },
     action_required: { label: "Action Required", icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/5 border-destructive/20", micro: "Please address the highlighted items so your case can proceed." },
   };
