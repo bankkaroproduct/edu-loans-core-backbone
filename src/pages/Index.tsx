@@ -6,8 +6,9 @@ import { useRoleAccess } from "@/hooks/useRoleAccess";
 import type { Tables } from "@/integrations/supabase/types";
 import { usePartnerContext } from "@/hooks/usePartnerContext";
 
-import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { HeroPerformanceStrip } from "@/components/dashboard/HeroPerformanceStrip";
 import { DashboardFilters, defaultFilters, type DashboardFilterValues } from "@/components/dashboard/DashboardFilters";
+import { InsightCard } from "@/components/dashboard/InsightCard";
 import { KPICards, type KPIData } from "@/components/dashboard/KPICards";
 import { PipelineSnapshot } from "@/components/dashboard/PipelineSnapshot";
 import { PriorityAlerts, type AlertItem } from "@/components/dashboard/PriorityAlerts";
@@ -269,8 +270,8 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      <DashboardHeader appUser={appUser} partnerName={partnerName} />
+    <div className="space-y-8 max-w-7xl mx-auto">
+      <HeroPerformanceStrip appUser={appUser} partnerName={partnerName} kpiData={kpiData} loading={loading} />
 
       <DashboardFilters
         filters={filters}
@@ -279,13 +280,16 @@ export default function Dashboard() {
         intakes={intakes}
       />
 
+      {/* Action Center — full width */}
+      <PriorityAlerts alerts={alerts} loading={loading} />
+
       <KPICards data={kpiData} loading={loading} onCardClick={handleKPIClick} />
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <PipelineSnapshot stageCounts={stageCounts} loading={loading} />
         </div>
-        <PriorityAlerts alerts={alerts} loading={loading} />
+        <InsightCard kpiData={kpiData} loading={loading} />
       </div>
 
       <RecentLeads leads={filteredLeads.slice(0, 10)} loading={loading} />
