@@ -30,6 +30,7 @@ interface StudentAuthState {
 interface StudentAuthContextType extends StudentAuthState {
   sendOtp: (phone: string) => Promise<void>;
   verifyOtp: (otp: string) => Promise<boolean>;
+  resetOtp: () => void;
   logout: () => void;
   setEligibilityData: (data: EligibilityData) => void;
   eligibilityData: EligibilityData | null;
@@ -129,6 +130,10 @@ export function StudentAuthProvider({ children }: { children: ReactNode }) {
     }
   }, [state.phone, persist]);
 
+  const resetOtp = useCallback(() => {
+    persist({ ...state, otpState: "idle", isVerified: false, leads: [], studentName: null });
+  }, [state, persist]);
+
   const logout = useCallback(() => {
     sessionStorage.removeItem("student_auth");
     sessionStorage.removeItem("student_eligibility");
@@ -147,6 +152,7 @@ export function StudentAuthProvider({ children }: { children: ReactNode }) {
         ...state,
         sendOtp,
         verifyOtp,
+        resetOtp,
         logout,
         eligibilityData,
         setEligibilityData: handleSetEligibilityData,

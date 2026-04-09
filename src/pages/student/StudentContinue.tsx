@@ -121,10 +121,13 @@ export default function StudentContinue() {
                   );
                 })}
               </div>
-              <div className="mt-6">
-                <Button size="lg" className="w-full gap-2 text-base">
+              <div className="mt-6 space-y-2">
+                <Button size="lg" className="w-full gap-2 text-base" disabled>
                   {isNew ? "Start Application" : "Continue Application"} <ArrowRight className="h-4 w-4" />
                 </Button>
+                <p className="text-center text-xs text-muted-foreground">
+                  Application forms are being set up and will be available shortly.
+                </p>
               </div>
             </CardContent>
           </Card>
