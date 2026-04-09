@@ -4,6 +4,7 @@ import { StudentFooter } from "@/components/student/StudentFooter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useStudentAuth } from "@/hooks/useStudentAuth";
+import { deriveStepCompletion, deriveCurrentStep } from "@/hooks/useStudentApplication";
 import { useEffect } from "react";
 import {
   CheckCircle2, Circle, ArrowRight, Shield, Compass, HeartHandshake,
@@ -12,33 +13,12 @@ import {
 import { formatDistanceToNow } from "date-fns";
 
 const APPLICATION_STEPS = [
-  { key: "basic", label: "Basic Details", icon: FileText, desc: "Name, contact, and residence" },
-  { key: "education", label: "Education Details", icon: GraduationCap, desc: "Course, university, and intake" },
-  { key: "coapplicant", label: "Co-applicant", icon: Users, desc: "Guardian or co-applicant info" },
-  { key: "review", label: "Review & Submit", icon: ClipboardCheck, desc: "Review and submit your application" },
-  { key: "recommendations", label: "Recommendations", icon: Search, desc: "Matched lender recommendations" },
+  { key: "basic", label: "Basic Details", icon: FileText, desc: "Name, contact, and residence", path: "/student/apply/basic" },
+  { key: "education", label: "Education Details", icon: GraduationCap, desc: "Course, university, and intake", path: "/student/apply/education" },
+  { key: "coapplicant", label: "Co-applicant", icon: Users, desc: "Guardian or co-applicant info", path: "/student/apply/coapplicant" },
+  { key: "review", label: "Review & Submit", icon: ClipboardCheck, desc: "Review and submit your application", path: "/student/apply/review" },
+  { key: "recommendations", label: "Recommendations", icon: Search, desc: "Matched lender recommendations", path: "" },
 ];
-
-function deriveProgress(lead: any): number {
-  if (!lead) return 0;
-  // Check which fields are populated to determine progress
-  const hasBasic = lead.student_first_name && lead.intended_study_country;
-  const hasEducation = lead.course_name && lead.university_name_raw;
-  const hasCoapplicant = lead.coapplicant_name;
-  const isSubmitted = ["submitted", "under_initial_review", "documents_pending", "documents_under_review",
-    "bre_evaluated", "sent_to_lender", "login_submitted", "credit_query", "sanction_received", "disbursed"
-  ].includes(lead.current_stage);
-  const hasRecommendations = ["bre_evaluated", "sent_to_lender", "login_submitted", "credit_query",
-    "sanction_received", "disbursed"
-  ].includes(lead.current_stage);
-
-  if (hasRecommendations) return 5;
-  if (isSubmitted) return 4;
-  if (hasCoapplicant) return 3;
-  if (hasEducation) return 2;
-  if (hasBasic) return 1;
-  return 0;
-}
 
 export default function StudentContinue() {
   const navigate = useNavigate();
@@ -53,13 +33,26 @@ export default function StudentContinue() {
   if (!isVerified) return null;
 
   const activeLead = leads.length > 0 ? leads[0] : null;
-  const progress = deriveProgress(activeLead);
+  const completion = deriveStepCompletion(activeLead);
+  const progress = deriveCurrentStep(completion);
   const currentStepIndex = Math.min(progress, APPLICATION_STEPS.length - 1);
   const isNew = !activeLead;
   const displayName = studentName || "there";
   const lastUpdated = activeLead?.updated_at
     ? formatDistanceToNow(new Date(activeLead.updated_at), { addSuffix: true })
     : null;
+
+  // Determine where the CTA should navigate
+  const getTargetPath = () => {
+    if (completion.submitted) return ""; // already submitted
+    if (completion.coapplicant) return "/student/apply/review";
+    if (completion.education) return "/student/apply/coapplicant";
+    if (completion.basic) return "/student/apply/education";
+    return "/student/apply/basic";
+  };
+
+  const targetPath = getTargetPath();
+  const isSubmitted = completion.submitted;
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-primary/[0.02] via-background to-primary/[0.04]">
@@ -77,7 +70,9 @@ export default function StudentContinue() {
               <CheckCircle2 className="h-6 w-6 text-emerald-500" />
             </div>
             <p className="mt-1.5 text-muted-foreground">
-              {isNew
+              {isSubmitted
+                ? "Your application has been submitted! We're working on matching you with suitable lenders."
+                : isNew
                 ? "You're verified! Let's start your education loan application."
                 : "Your identity is verified. Continue your application below."}
             </p>
@@ -121,19 +116,25 @@ export default function StudentContinue() {
                   );
                 })}
               </div>
-              <div className="mt-6 space-y-2">
-                <Button size="lg" className="w-full gap-2 text-base" disabled>
-                  {isNew ? "Start Application" : "Continue Application"} <ArrowRight className="h-4 w-4" />
-                </Button>
-                <p className="text-center text-xs text-muted-foreground">
-                  Application forms are being set up and will be available shortly.
-                </p>
-              </div>
+              {!isSubmitted && (
+                <div className="mt-6">
+                  <Button size="lg" className="w-full gap-2 text-base" onClick={() => navigate(targetPath)}>
+                    {isNew ? "Start Application" : "Continue Application"} <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+              {isSubmitted && (
+                <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50/50 p-4 text-center">
+                  <CheckCircle2 className="mx-auto mb-2 h-6 w-6 text-emerald-600" />
+                  <p className="text-sm font-medium text-emerald-800">Application submitted successfully</p>
+                  <p className="mt-1 text-xs text-emerald-600">Lender recommendations will appear once your profile is reviewed.</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
           {/* Last / Next step cards */}
-          {!isNew && (
+          {!isNew && !isSubmitted && (
             <div className="mb-6 grid gap-4 sm:grid-cols-2">
               <Card className="border-emerald-200 bg-emerald-50/50">
                 <CardContent className="p-5">
@@ -164,22 +165,6 @@ export default function StudentContinue() {
                 </CardContent>
               </Card>
             </div>
-          )}
-
-          {/* Start fresh */}
-          {!isNew && (
-            <Card className="mb-6 border-amber-200/60 bg-amber-50/30">
-              <CardContent className="flex items-start gap-3 p-5">
-                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
-                <div>
-                  <h3 className="text-sm font-semibold text-foreground">Need to start a new application?</h3>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    Only use this if your current application is no longer relevant. Starting fresh will not delete your existing application — it will create a new one.
-                  </p>
-                  <Button variant="outline" size="sm" className="mt-3 text-xs">Start New Application</Button>
-                </div>
-              </CardContent>
-            </Card>
           )}
 
           {/* Reassurance cards */}

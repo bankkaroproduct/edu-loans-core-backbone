@@ -1,0 +1,265 @@
+import { useState, useCallback, useEffect } from "react";
+import { useStudentAuth } from "@/hooks/useStudentAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+
+export interface StudentFormData {
+  // Basic
+  student_full_name: string;
+  student_email: string;
+  student_phone: string;
+  student_dob: string;
+  student_gender: string;
+  city: string;
+  state: string;
+  pincode: string;
+  intended_study_country: string;
+  course_category: string;
+  loan_amount_required: string;
+  // Education
+  highest_qualification: string;
+  marks_gpa: string;
+  course_name: string;
+  university_name_raw: string;
+  intake_term: string;
+  intake_year: string;
+  test_scores: {
+    ielts?: string;
+    toefl?: string;
+    duolingo?: string;
+    gre?: string;
+    gmat?: string;
+  };
+  // Co-applicant
+  coapplicant_name: string;
+  coapplicant_relation: string;
+  coapplicant_mobile: string;
+  coapplicant_email: string;
+  coapplicant_income: string;
+  coapplicant_employment_type: string;
+  coapplicant_employer: string;
+  coapplicant_existing_emi: string;
+  collateral_available: boolean | null;
+  collateral_notes: string;
+}
+
+const EMPTY_FORM: StudentFormData = {
+  student_full_name: "", student_email: "", student_phone: "",
+  student_dob: "", student_gender: "", city: "", state: "", pincode: "",
+  intended_study_country: "", course_category: "", loan_amount_required: "",
+  highest_qualification: "", marks_gpa: "", course_name: "",
+  university_name_raw: "", intake_term: "", intake_year: "",
+  test_scores: {},
+  coapplicant_name: "", coapplicant_relation: "", coapplicant_mobile: "",
+  coapplicant_email: "", coapplicant_income: "", coapplicant_employment_type: "",
+  coapplicant_employer: "", coapplicant_existing_emi: "",
+  collateral_available: null, collateral_notes: "",
+};
+
+export type StepKey = "basic" | "education" | "coapplicant" | "review";
+
+export interface StepCompletion {
+  basic: boolean;
+  education: boolean;
+  coapplicant: boolean;
+  submitted: boolean;
+}
+
+/** Centralized step-completion logic. Used by both continue page and form pages. */
+export function deriveStepCompletion(lead: any): StepCompletion {
+  if (!lead) return { basic: false, education: false, coapplicant: false, submitted: false };
+
+  const basic = !!(lead.student_first_name || lead.student_full_name) && !!lead.intended_study_country && !!lead.student_email;
+  const education = !!lead.course_name && lead.course_name !== "Not specified" && !!lead.intake_term && !!lead.intake_year;
+  const coapplicant = !!lead.coapplicant_name && !!lead.coapplicant_relation;
+  const submitted = lead.current_stage !== "draft";
+
+  return { basic, education, coapplicant, submitted };
+}
+
+export function deriveCurrentStep(completion: StepCompletion): number {
+  if (completion.submitted) return 4;
+  if (completion.coapplicant) return 3; // ready for review
+  if (completion.education) return 2; // ready for coapplicant
+  if (completion.basic) return 1; // ready for education
+  return 0; // start at basic
+}
+
+export function useStudentApplication() {
+  const { phone, leads, isVerified } = useStudentAuth();
+  const [formData, setFormData] = useState<StudentFormData>(() => {
+    const saved = sessionStorage.getItem("student_form_draft");
+    if (saved) try { return { ...EMPTY_FORM, ...JSON.parse(saved) }; } catch { /* ignore */ }
+    return { ...EMPTY_FORM };
+  });
+  const [leadId, setLeadId] = useState<string | null>(leads?.[0]?.id || null);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Persist draft to sessionStorage on change
+  useEffect(() => {
+    sessionStorage.setItem("student_form_draft", JSON.stringify(formData));
+  }, [formData]);
+
+  // Load lead data on mount
+  useEffect(() => {
+    if (!phone || !isVerified) return;
+    loadFromServer();
+  }, [phone, isVerified]);
+
+  const loadFromServer = useCallback(async () => {
+    if (!phone) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("student-application", {
+        body: { action: "load", phone },
+      });
+      if (error) throw error;
+      if (data?.lead) {
+        setLeadId(data.lead.id);
+        populateFormFromLead(data.lead);
+      }
+    } catch (err: any) {
+      console.warn("Failed to load application:", err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [phone]);
+
+  const populateFormFromLead = (lead: any) => {
+    const ts = lead.test_scores || {};
+    setFormData(prev => ({
+      ...prev,
+      student_full_name: lead.student_full_name || lead.student_first_name || prev.student_full_name,
+      student_email: lead.student_email || prev.student_email,
+      student_phone: lead.student_phone || prev.student_phone,
+      student_dob: lead.student_dob || prev.student_dob,
+      student_gender: lead.student_gender || prev.student_gender,
+      city: lead.city || prev.city,
+      state: lead.state || prev.state,
+      pincode: lead.pincode || prev.pincode,
+      intended_study_country: lead.intended_study_country || prev.intended_study_country,
+      course_category: lead.course_category || prev.course_category,
+      loan_amount_required: lead.loan_amount_required?.toString() || prev.loan_amount_required,
+      highest_qualification: lead.highest_qualification || prev.highest_qualification,
+      marks_gpa: lead.marks_gpa || prev.marks_gpa,
+      course_name: (lead.course_name && lead.course_name !== "Not specified") ? lead.course_name : prev.course_name,
+      university_name_raw: lead.university_name_raw || prev.university_name_raw,
+      intake_term: lead.intake_term || prev.intake_term,
+      intake_year: lead.intake_year?.toString() || prev.intake_year,
+      test_scores: {
+        ielts: ts.ielts?.toString() || prev.test_scores.ielts || "",
+        toefl: ts.toefl?.toString() || prev.test_scores.toefl || "",
+        duolingo: ts.duolingo?.toString() || prev.test_scores.duolingo || "",
+        gre: ts.gre?.toString() || prev.test_scores.gre || "",
+        gmat: ts.gmat?.toString() || prev.test_scores.gmat || "",
+      },
+      coapplicant_name: lead.coapplicant_name || prev.coapplicant_name,
+      coapplicant_relation: lead.coapplicant_relation || prev.coapplicant_relation,
+      coapplicant_mobile: lead.coapplicant_mobile || prev.coapplicant_mobile,
+      coapplicant_email: lead.coapplicant_email || prev.coapplicant_email,
+      coapplicant_income: lead.coapplicant_income?.toString() || prev.coapplicant_income,
+      coapplicant_employment_type: lead.coapplicant_employment_type || prev.coapplicant_employment_type,
+      coapplicant_employer: lead.coapplicant_employer || prev.coapplicant_employer,
+      coapplicant_existing_emi: lead.coapplicant_existing_emi?.toString() || prev.coapplicant_existing_emi,
+      collateral_available: lead.collateral_available ?? prev.collateral_available,
+      collateral_notes: lead.collateral_notes || prev.collateral_notes,
+    }));
+  };
+
+  const saveStep = useCallback(async (action: "save_basic" | "save_education" | "save_coapplicant" | "submit") => {
+    if (!phone) return null;
+    setSaving(true);
+    try {
+      let payload: Record<string, unknown> = {};
+
+      if (action === "save_basic") {
+        payload = {
+          student_first_name: formData.student_full_name.split(" ")[0],
+          student_full_name: formData.student_full_name,
+          student_email: formData.student_email,
+          student_dob: formData.student_dob || null,
+          student_gender: formData.student_gender || null,
+          city: formData.city || null,
+          state: formData.state || null,
+          pincode: formData.pincode || null,
+          intended_study_country: formData.intended_study_country,
+          course_category: formData.course_category || null,
+          loan_amount_required: formData.loan_amount_required || null,
+          country_of_residence: "India",
+        };
+      } else if (action === "save_education") {
+        const scores: Record<string, number> = {};
+        if (formData.test_scores.ielts) scores.ielts = parseFloat(formData.test_scores.ielts);
+        if (formData.test_scores.toefl) scores.toefl = parseFloat(formData.test_scores.toefl);
+        if (formData.test_scores.duolingo) scores.duolingo = parseFloat(formData.test_scores.duolingo);
+        if (formData.test_scores.gre) scores.gre = parseFloat(formData.test_scores.gre);
+        if (formData.test_scores.gmat) scores.gmat = parseFloat(formData.test_scores.gmat);
+
+        payload = {
+          highest_qualification: formData.highest_qualification || null,
+          marks_gpa: formData.marks_gpa || null,
+          course_name: formData.course_name || "Not specified",
+          course_category: formData.course_category || null,
+          university_name_raw: formData.university_name_raw || null,
+          intake_term: formData.intake_term || "Fall",
+          intake_year: formData.intake_year ? parseInt(formData.intake_year) : new Date().getFullYear() + 1,
+          test_scores: scores,
+        };
+      } else if (action === "save_coapplicant") {
+        payload = {
+          coapplicant_name: formData.coapplicant_name || null,
+          coapplicant_relation: formData.coapplicant_relation || null,
+          coapplicant_mobile: formData.coapplicant_mobile || null,
+          coapplicant_email: formData.coapplicant_email || null,
+          coapplicant_income: formData.coapplicant_income || null,
+          coapplicant_employment_type: formData.coapplicant_employment_type || null,
+          coapplicant_employer: formData.coapplicant_employer || null,
+          coapplicant_existing_emi: formData.coapplicant_existing_emi || null,
+          collateral_available: formData.collateral_available,
+          collateral_notes: formData.collateral_notes || null,
+        };
+      }
+
+      const { data, error } = await supabase.functions.invoke("student-application", {
+        body: { action, phone, lead_id: leadId, data: payload },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      if (data?.lead) {
+        setLeadId(data.lead.id);
+      }
+
+      return data?.lead || null;
+    } catch (err: any) {
+      toast({ title: "Save failed", description: err.message || "Please try again.", variant: "destructive" });
+      return null;
+    } finally {
+      setSaving(false);
+    }
+  }, [phone, leadId, formData]);
+
+  const updateField = useCallback((field: keyof StudentFormData, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const updateTestScore = useCallback((key: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      test_scores: { ...prev.test_scores, [key]: value },
+    }));
+  }, []);
+
+  return {
+    formData,
+    updateField,
+    updateTestScore,
+    saveStep,
+    leadId,
+    saving,
+    loading,
+    loadFromServer,
+  };
+}
