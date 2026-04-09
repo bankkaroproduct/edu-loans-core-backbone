@@ -26,11 +26,11 @@ function formatINR(n: number) {
 export function PayoutSnapshot({ data, loading }: { data: PayoutSummary; loading: boolean }) {
   const navigate = useNavigate();
   const metrics = [
-    { label: "Total Accrued", value: data.totalAccrued, icon: DollarSign, route: "/payouts" },
-    { label: "Pending", value: data.pending, icon: Clock, route: "/payouts?status=pending" },
+    { label: "Total Earned", value: data.totalAccrued, icon: DollarSign, route: "/payouts" },
+    { label: "Coming Soon", value: data.pending, icon: Clock, route: "/payouts?status=pending", accent: "bg-amber-50 dark:bg-amber-950/20" },
     { label: "Approved", value: data.approved, icon: CheckCircle, route: "/payouts?status=approved" },
-    { label: "Paid", value: data.paid, icon: CreditCard, route: "/payouts?status=paid" },
-    ...(data.reversed > 0 ? [{ label: "Reversed", value: data.reversed, icon: AlertTriangle, route: "/payouts?status=reversed" }] : []),
+    { label: "Received", value: data.paid, icon: CreditCard, route: "/payouts?status=paid", accent: "bg-emerald-50 dark:bg-emerald-950/20" },
+    ...(data.reversed > 0 ? [{ label: "Reversed", value: data.reversed, icon: AlertTriangle, route: "/payouts?status=reversed", accent: "" }] : []),
   ];
 
   return (
@@ -52,7 +52,7 @@ export function PayoutSnapshot({ data, loading }: { data: PayoutSummary; loading
                 return (
                   <div
                     key={m.label}
-                    className="text-center p-2 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors"
+                    className={`text-center p-2 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors ${(m as any).accent ?? ""}`}
                     onClick={() => navigate(m.route)}
                   >
                     <Icon className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />

@@ -20,26 +20,38 @@ export interface KPIData {
   needsAttention: number;
 }
 
+type Accent = "green" | "amber" | "red" | "blue" | "default";
+
 const kpiConfig: {
   key: keyof KPIData;
   label: string;
   icon: React.ElementType;
   format?: "currency";
   sub?: string;
+  accent: Accent;
+  dynamicSub?: (v: number) => string;
 }[] = [
-  { key: "totalLeads", label: "Total Leads", icon: FileText, sub: "All time" },
-  { key: "leadsThisMonth", label: "This Month", icon: TrendingUp, sub: "Submitted" },
-  { key: "underReview", label: "Under Review", icon: Eye, sub: "Active cases" },
-  { key: "documentsPending", label: "Docs Pending", icon: AlertCircle, sub: "Needs upload" },
-  { key: "sentToLender", label: "Sent to Lender", icon: Send, sub: "Login pending" },
-  { key: "sanctionReceived", label: "Sanctioned", icon: CheckCircle, sub: "Approved" },
-  { key: "disbursed", label: "Disbursed", icon: DollarSign, sub: "Completed" },
-  { key: "rejectedDropped", label: "Rejected / Dropped", icon: XCircle, sub: "Closed" },
-  { key: "bulkBatchesThisMonth", label: "Bulk Batches", icon: Upload, sub: "This month" },
-  { key: "pendingPayout", label: "Payout Pending", icon: Clock, format: "currency", sub: "Awaiting" },
-  { key: "paidPayout", label: "Payout Paid", icon: CreditCard, format: "currency", sub: "Received" },
-  { key: "needsAttention", label: "Needs Attention", icon: Ban, sub: "Action required" },
+  { key: "totalLeads", label: "Total Leads", icon: FileText, sub: "All time", accent: "blue" },
+  { key: "leadsThisMonth", label: "This Month", icon: TrendingUp, sub: "Submitted", accent: "blue" },
+  { key: "underReview", label: "Under Review", icon: Eye, sub: "Active cases", accent: "amber" },
+  { key: "documentsPending", label: "Docs Pending", icon: AlertCircle, accent: "amber", dynamicSub: (v) => v > 0 ? "Action needed" : "All clear" },
+  { key: "sentToLender", label: "Sent to Lender", icon: Send, sub: "Login pending", accent: "blue" },
+  { key: "sanctionReceived", label: "Sanctioned", icon: CheckCircle, sub: "Approved", accent: "green" },
+  { key: "disbursed", label: "Disbursed", icon: DollarSign, accent: "green", dynamicSub: (v) => v > 0 ? "Great progress!" : "Pending" },
+  { key: "rejectedDropped", label: "Rejected / Dropped", icon: XCircle, sub: "Closed", accent: "red" },
+  { key: "bulkBatchesThisMonth", label: "Bulk Batches", icon: Upload, sub: "This month", accent: "default" },
+  { key: "pendingPayout", label: "Payout Pending", icon: Clock, format: "currency", sub: "Awaiting", accent: "amber" },
+  { key: "paidPayout", label: "Payout Paid", icon: CreditCard, format: "currency", sub: "Received", accent: "green" },
+  { key: "needsAttention", label: "Needs Attention", icon: Ban, accent: "red", dynamicSub: (v) => v > 0 ? "Action required" : "All clear" },
 ];
+
+const accentBorder: Record<Accent, string> = {
+  green: "border-l-4 border-l-emerald-500",
+  amber: "border-l-4 border-l-amber-500",
+  red: "border-l-4 border-l-destructive",
+  blue: "border-l-4 border-l-primary",
+  default: "",
+};
 
 function formatValue(val: number, fmt?: "currency") {
   if (fmt === "currency") return `₹${val.toLocaleString("en-IN")}`;
@@ -60,7 +72,7 @@ export function KPICards({ data, loading, onCardClick }: Props) {
         return (
           <Card
             key={kpi.key}
-            className="hover:shadow-md transition-shadow cursor-pointer"
+            className={`hover:shadow-md transition-shadow cursor-pointer ${accentBorder[kpi.accent]}`}
             onClick={() => onCardClick?.(kpi.key)}
           >
             <CardContent className="p-4">
@@ -77,7 +89,9 @@ export function KPICards({ data, loading, onCardClick }: Props) {
                   {formatValue(data[kpi.key], kpi.format)}
                 </p>
               )}
-              <p className="text-[10px] text-muted-foreground mt-1">{kpi.sub}</p>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                {kpi.dynamicSub ? kpi.dynamicSub(data[kpi.key]) : kpi.sub}
+              </p>
             </CardContent>
           </Card>
         );
