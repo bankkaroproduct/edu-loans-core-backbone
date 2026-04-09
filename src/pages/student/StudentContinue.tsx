@@ -165,39 +165,27 @@ export default function StudentContinue() {
               {/* Post-submit: state-driven CTAs */}
               {isSubmitted && (
                 <div className="mt-6 space-y-3">
+                  {/* Primary: View Application Tracker */}
+                  <Button size="lg" className="w-full gap-2 text-base" onClick={() => navigate("/student/tracker")}>
+                    <Eye className="h-4 w-4" /> View Application Tracker <ArrowRight className="h-4 w-4" />
+                  </Button>
+
                   {postSubmit.loading ? (
-                    <div className="flex items-center justify-center gap-2 py-4">
-                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                      <span className="text-sm text-muted-foreground">Checking your next steps…</span>
+                    <div className="flex items-center justify-center gap-2 py-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      <span className="text-xs text-muted-foreground">Checking next steps…</span>
                     </div>
                   ) : postSubmit.docActionNeeded > 0 ? (
-                    // Priority 1: Documents need action
-                    <>
-                      <Button size="lg" className="w-full gap-2 text-base" onClick={() => navigate("/student/documents")}>
-                        <Upload className="h-4 w-4" /> Complete Required Documents ({postSubmit.docActionNeeded} pending)
-                      </Button>
-                      {postSubmit.hasRecommendations && (
-                        <Button size="lg" variant="outline" className="w-full gap-2 text-base" onClick={() => navigate("/student/recommendations")}>
-                          <Building2 className="h-4 w-4" /> View Loan Options ({postSubmit.recommendationCount})
-                        </Button>
-                      )}
-                    </>
+                    <Button size="lg" variant="outline" className="w-full gap-2 text-base" onClick={() => navigate("/student/documents")}>
+                      <Upload className="h-4 w-4" /> Complete Required Documents ({postSubmit.docActionNeeded} pending)
+                    </Button>
                   ) : postSubmit.hasRecommendations ? (
-                    // Priority 2: Recommendations available
-                    <>
-                      <Button size="lg" className="w-full gap-2 text-base" onClick={() => navigate("/student/recommendations")}>
-                        <Building2 className="h-4 w-4" /> View Your Loan Options ({postSubmit.recommendationCount}) <ArrowRight className="h-4 w-4" />
-                      </Button>
-                      <Button size="lg" variant="outline" className="w-full gap-2 text-base" onClick={() => navigate("/student/documents")}>
-                        <FileText className="h-4 w-4" /> View Documents
-                      </Button>
-                    </>
+                    <Button size="lg" variant="outline" className="w-full gap-2 text-base" onClick={() => navigate("/student/recommendations")}>
+                      <Building2 className="h-4 w-4" /> View Loan Options ({postSubmit.recommendationCount})
+                    </Button>
                   ) : (
-                    // Priority 3: Under review
-                    <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-4 text-center">
-                      <Clock className="mx-auto mb-2 h-6 w-6 text-amber-600" />
-                      <p className="text-sm font-medium text-amber-800">Your Profile is Under Review</p>
-                      <p className="mt-1 text-xs text-amber-600">Our team is evaluating your application. Recommendations will appear once your profile is reviewed.</p>
+                    <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 text-center">
+                      <p className="text-xs text-amber-600">Your profile is under review — we'll update you soon</p>
                     </div>
                   )}
                 </div>

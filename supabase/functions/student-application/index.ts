@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 interface RequestBody {
-  action: "save_basic" | "save_education" | "save_coapplicant" | "submit" | "load" | "load_recommendations" | "load_documents";
+  action: "save_basic" | "save_education" | "save_coapplicant" | "submit" | "load" | "load_recommendations" | "load_documents" | "load_tracker";
   phone: string;
   lead_id?: string;
   data?: Record<string, unknown>;
@@ -255,6 +255,102 @@ Deno.serve(async (req) => {
           current_stage: lead.current_stage,
           updated_at: lead.updated_at,
         },
+      });
+    }
+
+    // --- LOAD TRACKER ---
+    if (action === "load_tracker") {
+      const { lead, error: resolveErr } = await resolveLead(supabaseAdmin, cleanPhone, lead_id);
+      if (resolveErr || !lead) return jsonResponse({ error: resolveErr || "No application found" }, lead_id ? 403 : 404);
+
+      if (lead.current_stage === "draft") {
+        return jsonResponse({ error: "Application not yet submitted" }, 400);
+      }
+
+      // Stage history (last 20, exclude internal_note)
+      const { data: history } = await supabaseAdmin
+        .from("lead_stage_history")
+        .select("id, new_stage, new_status, previous_stage, partner_visible_note, created_at")
+        .eq("lead_id", lead.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      // Recommendation summary
+      const { data: matches } = await supabaseAdmin
+        .from("lead_lender_matches")
+        .select("id, fit_category, recommendation_rank, lender_id")
+        .eq("lead_id", lead.id)
+        .order("recommendation_rank", { ascending: true });
+
+      const visibleMatches = (matches || []).filter((m: any) => m.fit_category !== "not_eligible");
+      let topLender: any = null;
+      if (visibleMatches.length > 0) {
+        const { data: lenderData } = await supabaseAdmin
+          .from("lenders")
+          .select("id, lender_name, processing_time_days")
+          .eq("id", visibleMatches[0].lender_id)
+          .single();
+        topLender = lenderData ? {
+          name: lenderData.lender_name,
+          fit_category: visibleMatches[0].fit_category,
+          fit_label: mapFitLabel(visibleMatches[0].fit_category),
+          processing_time_days: lenderData.processing_time_days,
+        } : null;
+      }
+
+      // Document counts
+      const { data: docReqs } = await supabaseAdmin
+        .from("lead_document_requirements")
+        .select("id, status, required_flag")
+        .eq("lead_id", lead.id);
+
+      const docs = docReqs || [];
+      const docCounts = {
+        total: docs.length,
+        pending: docs.filter((d: any) => d.status === "not_uploaded").length,
+        uploaded: docs.filter((d: any) => d.status === "uploaded").length,
+        under_review: docs.filter((d: any) => d.status === "under_review").length,
+        verified: docs.filter((d: any) => d.status === "verified").length,
+        action_needed: docs.filter((d: any) => ["rejected", "reupload_needed"].includes(d.status)).length,
+        not_required: docs.filter((d: any) => ["waived", "not_applicable"].includes(d.status)).length,
+      };
+
+      // Map timeline to student-safe events
+      const timeline = (history || []).map((h: any) => ({
+        id: h.id,
+        stage: h.new_stage,
+        stage_label: mapStageLabel(h.new_stage),
+        note: h.partner_visible_note ? sanitizeRemark(h.partner_visible_note) : null,
+        date: h.created_at,
+      }));
+
+      // Derive health
+      const hasBlockers = docCounts.action_needed > 0;
+      const hasPending = docs.filter((d: any) => d.required_flag && d.status === "not_uploaded").length > 0;
+      const health = hasBlockers ? "action_required" : hasPending ? "needs_attention" : "on_track";
+
+      return jsonResponse({
+        lead_summary: {
+          id: lead.id,
+          lead_id: lead.lead_id,
+          current_stage: lead.current_stage,
+          current_status: lead.current_status,
+          student_stage_label: mapStageLabel(lead.current_stage),
+          updated_at: lead.updated_at,
+          created_at: lead.created_at,
+          student_first_name: lead.student_first_name,
+          intended_study_country: lead.intended_study_country,
+          course_name: lead.course_name,
+          university_name_raw: lead.university_name_raw,
+          loan_amount_required: lead.loan_amount_required,
+        },
+        health,
+        lender: {
+          top_lender: topLender,
+          total_matches: visibleMatches.length,
+        },
+        documents: docCounts,
+        timeline,
       });
     }
 
@@ -530,6 +626,26 @@ function mapDocStatusLabel(status: string): string {
     case "not_applicable": return "Not Required";
     default: return "Pending";
   }
+}
+
+function mapStageLabel(stage: string): string {
+  const map: Record<string, string> = {
+    draft: "Draft",
+    submitted: "Application Submitted",
+    under_initial_review: "Under Review",
+    documents_pending: "Documents Pending",
+    documents_under_review: "Documents Under Review",
+    bre_evaluated: "Lender Matching",
+    sent_to_lender: "Application in Process",
+    login_submitted: "Application in Process",
+    credit_query: "Query Review",
+    sanction_received: "Approval Received",
+    disbursed: "Funds Released",
+    rejected: "Under Review",
+    dropped: "Application Closed",
+    on_hold: "Action Required",
+  };
+  return map[stage] || "In Progress";
 }
 
 function generateWhyBullets(lender: any, lead: any): string[] {
