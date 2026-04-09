@@ -97,10 +97,13 @@ interface Props {
 
 export function KPICards({ data, loading, onCardClick }: Props) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {clusters.map((cluster) => (
-        <div key={cluster.heading}>
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+        <div
+          key={cluster.heading}
+          className="bg-card/60 border border-border/50 rounded-xl p-5 pt-4"
+        >
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-2 mb-4">
             {cluster.heading}
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
