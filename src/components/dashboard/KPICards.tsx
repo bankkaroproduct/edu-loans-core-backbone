@@ -53,6 +53,14 @@ const accentBorder: Record<Accent, string> = {
   default: "",
 };
 
+const accentIconColor: Record<Accent, string> = {
+  green: "text-emerald-600",
+  amber: "text-amber-600",
+  red: "text-destructive",
+  blue: "text-primary",
+  default: "text-muted-foreground",
+};
+
 function formatValue(val: number, fmt?: "currency") {
   if (fmt === "currency") return `₹${val.toLocaleString("en-IN")}`;
   return val.toLocaleString("en-IN");
@@ -66,30 +74,30 @@ interface Props {
 
 export function KPICards({ data, loading, onCardClick }: Props) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
       {kpiConfig.map((kpi) => {
         const Icon = kpi.icon;
         return (
           <Card
             key={kpi.key}
-            className={`hover:shadow-md transition-shadow cursor-pointer ${accentBorder[kpi.accent]}`}
+            className={`hover:shadow-lg transition-shadow cursor-pointer ${accentBorder[kpi.accent]}`}
             onClick={() => onCardClick?.(kpi.key)}
           >
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-medium text-muted-foreground truncate">
                   {kpi.label}
                 </span>
-                <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                <Icon className={`h-5 w-5 shrink-0 ${accentIconColor[kpi.accent]}`} />
               </div>
               {loading ? (
-                <Skeleton className="h-7 w-16" />
+                <Skeleton className="h-9 w-20" />
               ) : (
-                <p className="text-xl font-bold text-foreground">
+                <p className="text-2xl sm:text-3xl font-extrabold text-foreground">
                   {formatValue(data[kpi.key], kpi.format)}
                 </p>
               )}
-              <p className="text-[10px] text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-1.5">
                 {kpi.dynamicSub ? kpi.dynamicSub(data[kpi.key]) : kpi.sub}
               </p>
             </CardContent>

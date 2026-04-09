@@ -41,13 +41,15 @@ export function InsightCard({ kpiData, loading }: Props) {
   }
 
   return (
-    <Card className="border-primary/20 bg-primary/5">
-      <CardContent className="p-4 flex items-start gap-3">
-        <Lightbulb className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm text-foreground">{message}</p>
+    <Card className="border-primary/20 bg-primary/5 shadow-sm">
+      <CardContent className="p-5 sm:p-6 flex items-start gap-4">
+        <div className="bg-primary/10 p-2.5 rounded-full shrink-0">
+          <Lightbulb className="h-5 w-5 text-primary" />
         </div>
-        <Button size="sm" variant="outline" className="shrink-0" onClick={() => navigate(route)}>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm sm:text-base text-foreground leading-relaxed">{message}</p>
+        </div>
+        <Button size="default" variant="outline" className="shrink-0 h-10 font-medium" onClick={() => navigate(route)}>
           {cta}
         </Button>
       </CardContent>
