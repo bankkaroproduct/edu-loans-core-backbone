@@ -9,12 +9,16 @@ interface StudentLead {
   lead_id: string | null;
   student_full_name: string | null;
   student_first_name: string;
+  student_email: string | null;
   current_stage: string;
   current_status: string;
   updated_at: string;
   course_name: string;
   intended_study_country: string;
+  intake_term: string;
+  intake_year: number;
   coapplicant_name: string | null;
+  coapplicant_relation: string | null;
   loan_amount_required: number | null;
   university_name_raw: string | null;
 }
@@ -171,24 +175,35 @@ export function useStudentAuth() {
 
 async function lookupLeads(phone: string): Promise<StudentLead[]> {
   try {
-    // Clean phone number — try with and without +91 prefix
-    const cleanPhone = phone.replace(/\s/g, "");
-    const variants = [cleanPhone];
-    if (cleanPhone.startsWith("+91")) variants.push(cleanPhone.slice(3));
-    else if (!cleanPhone.startsWith("+")) variants.push("+91" + cleanPhone);
+    // Use the edge function (service role) to bypass RLS
+    const { data, error } = await supabase.functions.invoke("student-application", {
+      body: { action: "load", phone },
+    });
 
-    const { data, error } = await supabase
-      .from("student_leads")
-      .select("id, lead_id, student_full_name, student_first_name, current_stage, current_status, updated_at, course_name, intended_study_country, coapplicant_name, loan_amount_required, university_name_raw")
-      .in("student_phone", variants)
-      .order("updated_at", { ascending: false })
-      .limit(10);
-
-    if (error) {
-      console.warn("Lead lookup error:", error.message);
+    if (error || !data?.lead) {
+      console.warn("Lead lookup error:", error?.message || "No lead found");
       return [];
     }
-    return (data as StudentLead[]) || [];
+
+    const lead = data.lead;
+    return [{
+      id: lead.id,
+      lead_id: lead.lead_id,
+      student_full_name: lead.student_full_name,
+      student_first_name: lead.student_first_name,
+      student_email: lead.student_email,
+      current_stage: lead.current_stage,
+      current_status: lead.current_status,
+      updated_at: lead.updated_at,
+      course_name: lead.course_name,
+      intended_study_country: lead.intended_study_country,
+      intake_term: lead.intake_term,
+      intake_year: lead.intake_year,
+      coapplicant_name: lead.coapplicant_name,
+      coapplicant_relation: lead.coapplicant_relation,
+      loan_amount_required: lead.loan_amount_required,
+      university_name_raw: lead.university_name_raw,
+    }];
   } catch {
     return [];
   }
