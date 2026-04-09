@@ -175,7 +175,6 @@ export function useStudentApplication() {
 
       if (action === "save_basic") {
         payload = {
-          student_first_name: formData.student_full_name.split(" ")[0],
           student_full_name: formData.student_full_name,
           student_email: formData.student_email,
           student_dob: formData.student_dob || null,
