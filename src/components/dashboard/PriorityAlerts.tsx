@@ -41,19 +41,19 @@ export function PriorityAlerts({ alerts, loading }: { alerts: AlertItem[]; loadi
   };
 
   return (
-    <Card className="border-l-4 border-l-amber-500">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4 text-amber-500" />
+    <Card className="border-l-[5px] border-l-amber-500 bg-amber-50/60 dark:bg-amber-950/20 shadow-md">
+      <CardHeader className="p-5 pb-3">
+        <CardTitle className="text-lg font-bold flex items-center gap-2">
+          <AlertTriangle className="h-5 w-5 text-amber-500" />
           Action Center
           {!loading && alerts.length > 0 && (
-            <span className="ml-auto text-xs font-normal bg-destructive/10 text-destructive px-2 py-0.5 rounded-full">
+            <span className="ml-auto text-xs font-semibold bg-destructive/10 text-destructive px-2.5 py-1 rounded-full">
               {alerts.length}
             </span>
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-5 pb-5">
         {loading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
@@ -72,7 +72,7 @@ export function PriorityAlerts({ alerts, loading }: { alerts: AlertItem[]; loadi
               return (
                 <div
                   key={alert.id}
-                  className="flex items-start gap-3 p-2 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
+                  className="flex items-start gap-3 p-3 rounded-lg border border-amber-200/60 dark:border-amber-800/30 bg-white/70 dark:bg-background/50 hover:bg-amber-100/50 dark:hover:bg-amber-900/20 cursor-pointer transition-colors"
                   onClick={() => handleAlertClick(alert)}
                 >
                   <Icon className={`h-4 w-4 mt-0.5 shrink-0 ${config.color}`} />
@@ -87,7 +87,7 @@ export function PriorityAlerts({ alerts, loading }: { alerts: AlertItem[]; loadi
                   </div>
                   <span className="text-[10px] text-muted-foreground whitespace-nowrap flex items-center gap-1">
                     {new Date(alert.updatedAt).toLocaleDateString()}
-                    <span className="text-primary font-medium">Resolve →</span>
+                    <span className="text-primary font-semibold">Resolve →</span>
                   </span>
                 </div>
               );

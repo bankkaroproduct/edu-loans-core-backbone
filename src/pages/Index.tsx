@@ -270,43 +270,47 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
+    <div className="space-y-6 max-w-7xl mx-auto">
       <HeroPerformanceStrip appUser={appUser} partnerName={partnerName} kpiData={kpiData} loading={loading} />
 
-      <DashboardFilters
-        filters={filters}
-        onChange={setFilters}
-        destinations={destinations}
-        intakes={intakes}
-      />
+      <div className="mt-10 space-y-8">
+        <DashboardFilters
+          filters={filters}
+          onChange={setFilters}
+          destinations={destinations}
+          intakes={intakes}
+        />
 
-      {/* Action Center — full width */}
-      <PriorityAlerts alerts={alerts} loading={loading} />
+        {/* Action Center — full width */}
+        <PriorityAlerts alerts={alerts} loading={loading} />
 
-      <KPICards data={kpiData} loading={loading} onCardClick={handleKPIClick} />
+        <KPICards data={kpiData} loading={loading} onCardClick={handleKPIClick} />
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <PipelineSnapshot stageCounts={stageCounts} loading={loading} />
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <PipelineSnapshot stageCounts={stageCounts} loading={loading} />
+          </div>
+          <InsightCard kpiData={kpiData} loading={loading} />
         </div>
-        <InsightCard kpiData={kpiData} loading={loading} />
+
+        <RecentLeads leads={filteredLeads.slice(0, 10)} loading={loading} />
+
+        <div className="rounded-xl bg-muted/30 p-6 space-y-6">
+          <div className="grid gap-6 md:grid-cols-2">
+            <DocumentSnapshot data={docSummary} loading={loading} />
+            <BulkUploadSnapshot batches={batches} loading={loading} />
+          </div>
+
+          <PayoutSnapshot data={payoutSummary} loading={loading} />
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          <ActivityFeed items={activityItems} loading={loading} />
+          <QuickActions />
+        </div>
+
+        <SystemHelp />
       </div>
-
-      <RecentLeads leads={filteredLeads.slice(0, 10)} loading={loading} />
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <DocumentSnapshot data={docSummary} loading={loading} />
-        <BulkUploadSnapshot batches={batches} loading={loading} />
-      </div>
-
-      <PayoutSnapshot data={payoutSummary} loading={loading} />
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <ActivityFeed items={activityItems} loading={loading} />
-        <QuickActions />
-      </div>
-
-      <SystemHelp />
     </div>
   );
 }

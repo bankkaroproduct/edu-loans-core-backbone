@@ -1,4 +1,3 @@
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Upload, DollarSign, Clock, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -57,70 +56,68 @@ export function HeroPerformanceStrip({ appUser, partnerName, kpiData, loading }:
   ];
 
   return (
-    <Card className="bg-primary text-primary-foreground shadow-lg overflow-hidden">
-      <div className="p-6 sm:p-8">
+    <div className="bg-gradient-to-br from-slate-900 via-primary to-slate-800 text-white rounded-2xl shadow-2xl overflow-hidden">
+      <div className="p-8 sm:p-10 lg:p-12">
+        {/* Top row: Greeting + CTAs */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          {/* Left: Greeting + Partner */}
-          <div className="space-y-1">
-            <h1 className="text-xl sm:text-2xl font-bold">
+          <div className="space-y-2">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">
               {getGreeting()}, {appUser?.full_name ?? "User"}
             </h1>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               {partnerName && (
-                <span className="text-sm font-medium opacity-90">{partnerName}</span>
+                <span className="text-base font-medium opacity-90">{partnerName}</span>
               )}
-              <span className="text-sm opacity-70">{today}</span>
+              <span className="text-sm opacity-60">{today}</span>
             </div>
-            <p className="text-xs opacity-60 mt-1">
+            <p className="text-sm opacity-50 mt-3">
               Track leads, uploads, documents, and payouts in one place
             </p>
           </div>
 
-          {/* Right: CTAs */}
-          <div className="flex flex-wrap gap-2 shrink-0">
+          <div className="flex flex-wrap gap-3 shrink-0">
             <Button
-              size="sm"
-              variant="secondary"
-              className="font-medium"
+              className="h-12 px-6 text-base font-semibold bg-white text-slate-900 hover:bg-white/90"
               onClick={() => navigate("/leads/new")}
             >
-              <Plus className="mr-1 h-4 w-4" /> Add New Lead
+              <Plus className="mr-2 h-5 w-5" /> Add New Lead
             </Button>
             <Button
-              size="sm"
               variant="outline"
-              className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
+              className="h-12 px-6 text-base font-semibold border-white/30 text-white hover:bg-white/10 bg-transparent"
               onClick={() => navigate("/bulk-upload")}
             >
-              <Upload className="mr-1 h-4 w-4" /> Bulk Upload
+              <Upload className="mr-2 h-5 w-5" /> Bulk Upload
             </Button>
           </div>
         </div>
 
         {/* Hero Metrics */}
-        <div className="grid grid-cols-3 gap-3 mt-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 mt-10">
           {heroMetrics.map((m) => {
             const Icon = m.icon;
             return (
               <div
                 key={m.label}
-                className="flex items-center gap-3 p-3 rounded-lg bg-primary-foreground/10 hover:bg-primary-foreground/15 cursor-pointer transition-colors"
+                className="flex items-center gap-4 p-5 rounded-xl bg-white/10 hover:bg-white/15 cursor-pointer transition-colors"
                 onClick={m.onClick}
               >
-                <Icon className="h-5 w-5 opacity-80 shrink-0" />
+                <div className="bg-white/10 p-3 rounded-full shrink-0">
+                  <Icon className="h-6 w-6" />
+                </div>
                 <div className="min-w-0">
                   {loading ? (
-                    <Skeleton className="h-5 w-16 bg-primary-foreground/20" />
+                    <Skeleton className="h-8 w-24 bg-white/20" />
                   ) : (
-                    <p className="text-lg font-bold truncate">{m.value}</p>
+                    <p className="text-2xl sm:text-3xl font-extrabold tracking-tight truncate">{m.value}</p>
                   )}
-                  <p className="text-[11px] opacity-70">{m.label}</p>
+                  <p className="text-xs sm:text-sm opacity-60 mt-0.5">{m.label}</p>
                 </div>
               </div>
             );
           })}
         </div>
       </div>
-    </Card>
+    </div>
   );
 }
