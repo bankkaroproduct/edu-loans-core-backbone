@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import { PartnerContextProvider } from "@/hooks/usePartnerContext";
+import { StudentAuthProvider } from "@/hooks/useStudentAuth";
 import { AppLayout } from "@/components/AppLayout";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -18,6 +19,9 @@ import Payouts from "./pages/Payouts";
 import Partners from "./pages/Partners";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import StudentLanding from "./pages/student/StudentLanding";
+import StudentLogin from "./pages/student/StudentLogin";
+import StudentContinue from "./pages/student/StudentContinue";
 
 const queryClient = new QueryClient();
 
@@ -33,8 +37,14 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <PartnerContextProvider>
+          <StudentAuthProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
+            {/* Student Portal */}
+            <Route path="/student" element={<StudentLanding />} />
+            <Route path="/student/login" element={<StudentLogin />} />
+            <Route path="/student/continue" element={<StudentContinue />} />
+            {/* Partner Portal */}
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
             <Route path="/leads/new" element={<ProtectedRoute><AddLead /></ProtectedRoute>} />
@@ -47,6 +57,7 @@ const App = () => (
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </StudentAuthProvider>
           </PartnerContextProvider>
         </AuthProvider>
       </BrowserRouter>
