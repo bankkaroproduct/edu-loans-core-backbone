@@ -305,8 +305,8 @@ export default function StudentTracker() {
                     <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
                       <FileText className="h-4 w-4 text-primary" /> Documents
                     </h2>
-                    <Button size="sm" variant="ghost" className="gap-1 text-xs h-7" onClick={() => navigate("/student/documents")}>
-                      View All <ChevronRight className="h-3 w-3" />
+                    <Button size="sm" variant={data.documents.action_needed > 0 ? "destructive" : data.documents.pending > 0 ? "default" : "ghost"} className="gap-1 text-xs h-7" onClick={() => navigate("/student/documents")}>
+                      {data.documents.action_needed > 0 ? "Resolve Issues" : data.documents.pending > 0 ? "Upload Now" : "View All"} <ChevronRight className="h-3 w-3" />
                     </Button>
                   </div>
                   {data.documents.total === 0 ? (
@@ -344,12 +344,12 @@ export default function StudentTracker() {
                       )}
                       {data.documents.pending > 0 && data.documents.action_needed === 0 && (
                         <Button size="sm" className="mt-3 w-full gap-1.5" onClick={() => navigate("/student/documents")}>
-                          <Upload className="h-3.5 w-3.5" /> Upload Pending Documents
+                          <Upload className="h-3.5 w-3.5" /> Upload {data.documents.pending} Pending Document{data.documents.pending > 1 ? "s" : ""}
                         </Button>
                       )}
                       {data.documents.action_needed > 0 && (
                         <Button size="sm" className="mt-3 w-full gap-1.5" variant="destructive" onClick={() => navigate("/student/documents")}>
-                          <Upload className="h-3.5 w-3.5" /> Fix Required Documents
+                          <AlertTriangle className="h-3.5 w-3.5" /> Resolve {data.documents.action_needed} Blocking Document{data.documents.action_needed > 1 ? "s" : ""}
                         </Button>
                       )}
                     </>
