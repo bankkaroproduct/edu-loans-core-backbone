@@ -88,9 +88,14 @@ Deno.serve(async (req) => {
 
     // --- SAVE BASIC ---
     if (action === "save_basic") {
-      const basicFields = {
-        student_first_name: data?.student_first_name as string,
-        student_full_name: data?.student_full_name as string || data?.student_first_name as string,
+      const fullName = (data?.student_full_name || data?.student_first_name || "") as string;
+      const nameParts = fullName.trim().split(/\s+/);
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : null;
+
+      const basicFields: Record<string, unknown> = {
+        student_first_name: firstName,
+        student_last_name: lastName,
         student_email: data?.student_email as string || null,
         student_phone: cleanPhone,
         student_dob: data?.student_dob as string || null,
