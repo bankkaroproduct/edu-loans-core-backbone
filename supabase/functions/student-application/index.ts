@@ -324,10 +324,54 @@ Deno.serve(async (req) => {
         date: h.created_at,
       }));
 
-      // Derive health
+      // Derive health — expanded for more meaningful states
       const hasBlockers = docCounts.action_needed > 0;
-      const hasPending = docs.filter((d: any) => d.required_flag && d.status === "not_uploaded").length > 0;
-      const health = hasBlockers ? "action_required" : hasPending ? "needs_attention" : "on_track";
+      const hasPendingRequired = docs.filter((d: any) => d.required_flag && d.status === "not_uploaded").length > 0;
+      const isOnHold = lead.current_stage === "on_hold";
+      const isQuery = lead.current_stage === "credit_query";
+      const isRejected = lead.current_stage === "rejected";
+      const health = (hasBlockers || isRejected) ? "action_required"
+        : (hasPendingRequired || isOnHold || isQuery) ? "needs_attention"
+        : "on_track";
+
+      // Derive current focus — single actionable sentence
+      let currentFocus = "We're working on your application.";
+      if (hasBlockers) {
+        currentFocus = `Re-upload ${docCounts.action_needed} document${docCounts.action_needed > 1 ? "s" : ""} that need correction to unblock your case.`;
+      } else if (hasPendingRequired) {
+        const pendingReqCount = docs.filter((d: any) => d.required_flag && d.status === "not_uploaded").length;
+        currentFocus = `Upload ${pendingReqCount} pending required document${pendingReqCount > 1 ? "s" : ""} to keep your application moving.`;
+      } else if (isRejected) {
+        currentFocus = "Your application needs further review. Our team will guide you on available options.";
+      } else if (isOnHold) {
+        currentFocus = "Your application is on hold. Our team will reach out with next steps.";
+      } else if (isQuery) {
+        currentFocus = "A query has been raised by the lender. Please keep your phone available for follow-up.";
+      } else if (["sent_to_lender", "login_submitted"].includes(lead.current_stage)) {
+        currentFocus = "Your application is being actively processed by the lender — no action needed from you.";
+      } else if (lead.current_stage === "sanction_received") {
+        currentFocus = "Great news — your loan has been approved! Disbursal will follow shortly.";
+      } else if (lead.current_stage === "disbursed") {
+        currentFocus = "Your loan has been disbursed. Congratulations!";
+      } else if (["submitted", "under_initial_review"].includes(lead.current_stage)) {
+        currentFocus = "We're reviewing your application — no action needed right now.";
+      } else if (lead.current_stage === "documents_under_review") {
+        currentFocus = "Your documents are under review. We'll update you on the next step.";
+      } else if (lead.current_stage === "bre_evaluated" && visibleMatches.length > 0) {
+        currentFocus = "Lender options are ready — review your recommended loan options.";
+      } else if (lead.current_stage === "bre_evaluated") {
+        currentFocus = "We're matching your profile with the best lending partners.";
+      }
+
+      // Derive lender processing phase
+      const activeProcessingStages = ["sent_to_lender", "login_submitted", "credit_query", "sanction_received", "disbursed"];
+      const isActivelyProcessing = activeProcessingStages.includes(lead.current_stage);
+      const lenderPhase = isActivelyProcessing
+        ? (lead.current_stage === "credit_query" ? "query_in_progress"
+          : lead.current_stage === "sanction_received" ? "approved"
+          : lead.current_stage === "disbursed" ? "disbursed"
+          : "processing")
+        : (visibleMatches.length > 0 ? "recommended" : "matching");
 
       return jsonResponse({
         lead_summary: {
@@ -345,9 +389,11 @@ Deno.serve(async (req) => {
           loan_amount_required: lead.loan_amount_required,
         },
         health,
+        current_focus: currentFocus,
         lender: {
           top_lender: topLender,
           total_matches: visibleMatches.length,
+          phase: lenderPhase,
         },
         documents: docCounts,
         timeline,
