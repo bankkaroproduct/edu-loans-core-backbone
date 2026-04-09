@@ -41,11 +41,11 @@ export function PriorityAlerts({ alerts, loading }: { alerts: AlertItem[]; loadi
   };
 
   return (
-    <Card>
+    <Card className="border-l-4 border-l-amber-500">
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           <AlertTriangle className="h-4 w-4 text-amber-500" />
-          Priority Actions
+          Action Center
           {!loading && alerts.length > 0 && (
             <span className="ml-auto text-xs font-normal bg-destructive/10 text-destructive px-2 py-0.5 rounded-full">
               {alerts.length}
@@ -65,7 +65,7 @@ export function PriorityAlerts({ alerts, loading }: { alerts: AlertItem[]; loadi
             </p>
           </div>
         ) : (
-          <div className="space-y-2 max-h-64 overflow-y-auto">
+          <div className="space-y-2 max-h-72 overflow-y-auto">
             {alerts.slice(0, 15).map((alert) => {
               const config = categoryConfig[alert.category] ?? categoryConfig.attention;
               const Icon = config.icon;
@@ -85,8 +85,9 @@ export function PriorityAlerts({ alerts, loading }: { alerts: AlertItem[]; loadi
                     </div>
                     <p className="text-xs text-muted-foreground">{alert.reason}</p>
                   </div>
-                  <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                  <span className="text-[10px] text-muted-foreground whitespace-nowrap flex items-center gap-1">
                     {new Date(alert.updatedAt).toLocaleDateString()}
+                    <span className="text-primary font-medium">Resolve →</span>
                   </span>
                 </div>
               );

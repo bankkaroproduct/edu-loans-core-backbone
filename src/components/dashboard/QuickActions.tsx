@@ -26,13 +26,13 @@ export function QuickActions() {
   const navigate = useNavigate();
 
   const actions = [
-    { label: "Add Quick Lead", icon: Plus, action: () => navigate("/leads/quick") },
-    { label: "Add New Lead", icon: Plus, action: () => navigate("/leads/new") },
+    { label: "Add New Lead", icon: Plus, action: () => navigate("/leads/new"), primary: true },
+    { label: "Add Quick Lead", icon: Plus, action: () => navigate("/leads/quick"), primary: true },
     { label: "Bulk Upload Leads", icon: Upload, action: () => navigate("/bulk-upload") },
     { label: "View Submitted Leads", icon: FileText, action: () => navigate("/leads") },
+    { label: "View Pending Documents", icon: FileSearch, action: () => navigate("/leads?attention=true&stage=documents_pending") },
     { label: "Download Bulk Template", icon: Download, action: downloadBulkTemplate },
     { label: "View Payout Summary", icon: CreditCard, action: () => navigate("/payouts") },
-    { label: "View Pending Documents", icon: FileSearch, action: () => navigate("/leads?attention=true&stage=documents_pending") },
   ];
 
   return (
@@ -45,7 +45,7 @@ export function QuickActions() {
           {actions.map((a) => {
             const Icon = a.icon;
             return (
-              <Button key={a.label} variant="outline" size="sm" onClick={a.action}>
+              <Button key={a.label} variant={(a as any).primary ? "default" : "outline"} size="sm" onClick={a.action}>
                 <Icon className="mr-1 h-3.5 w-3.5" /> {a.label}
               </Button>
             );

@@ -35,6 +35,9 @@ interface Props {
 export function PipelineSnapshot({ stageCounts, loading }: Props) {
   const navigate = useNavigate();
   const total = Object.values(stageCounts).reduce((s, v) => s + v, 0) || 1;
+  const disbursed = stageCounts["disbursed"] ?? 0;
+  const actualTotal = Object.values(stageCounts).reduce((s, v) => s + v, 0);
+  const convPct = actualTotal > 0 ? ((disbursed / actualTotal) * 100).toFixed(1) : "0";
 
   return (
     <Card>
@@ -69,9 +72,14 @@ export function PipelineSnapshot({ stageCounts, loading }: Props) {
                 </div>
               );
             })}
-            {total <= 1 && Object.values(stageCounts).every((v) => v === 0) && (
+            {actualTotal <= 0 && (
               <p className="text-sm text-muted-foreground text-center py-4">
                 No leads yet. Add your first lead to see pipeline data.
+              </p>
+            )}
+            {actualTotal > 0 && (
+              <p className="text-xs text-muted-foreground mt-3 pt-3 border-t">
+                {disbursed} of {actualTotal} leads disbursed ({convPct}% conversion)
               </p>
             )}
           </div>
