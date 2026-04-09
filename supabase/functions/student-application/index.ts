@@ -427,6 +427,7 @@ Deno.serve(async (req) => {
       const basicFields: Record<string, unknown> = {
         student_first_name: firstName,
         student_last_name: lastName,
+        student_full_name: fullName.trim(),
         student_email: data?.student_email as string || null,
         student_phone: cleanPhone,
         student_dob: data?.student_dob as string || null,
