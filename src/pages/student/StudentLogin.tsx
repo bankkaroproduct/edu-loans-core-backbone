@@ -11,7 +11,7 @@ import { ArrowLeft, Shield, Compass, BookOpen, RefreshCw } from "lucide-react";
 
 export default function StudentLogin() {
   const navigate = useNavigate();
-  const { sendOtp, verifyOtp, otpState, phone, eligibilityData } = useStudentAuth();
+  const { sendOtp, verifyOtp, resetOtp, otpState, phone, eligibilityData } = useStudentAuth();
   const [phoneInput, setPhoneInput] = useState(eligibilityData?.mobile || "");
   const [otp, setOtp] = useState("");
 
@@ -80,7 +80,7 @@ export default function StudentLogin() {
                   </p>
                   <button
                     type="button"
-                    onClick={() => window.location.reload()}
+                    onClick={() => resetOtp()}
                     className="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
                   >
                     <RefreshCw className="h-3 w-3" /> Change number

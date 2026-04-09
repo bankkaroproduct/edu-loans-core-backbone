@@ -152,6 +152,7 @@ export function StudentAuthProvider({ children }: { children: ReactNode }) {
         ...state,
         sendOtp,
         verifyOtp,
+        resetOtp,
         logout,
         eligibilityData,
         setEligibilityData: handleSetEligibilityData,
