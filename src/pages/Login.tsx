@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { Check, Shield, TrendingUp, Users, Banknote } from "lucide-react";
 
 export default function Login() {
   const { user, loading } = useAuth();
@@ -15,23 +16,90 @@ export default function Login() {
   if (user) return <Navigate to="/" replace />;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">EduLoans Partner Portal</CardTitle>
-          <CardDescription>Sign in to manage your leads and payouts</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="login">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
-            <TabsContent value="login"><LoginForm /></TabsContent>
-            <TabsContent value="signup"><SignUpForm /></TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+    <div className="flex min-h-screen flex-col lg:flex-row">
+      {/* Left Branding Panel */}
+      <div className="relative flex w-full flex-col justify-between bg-primary px-8 py-10 text-primary-foreground lg:w-[45%] lg:px-12 lg:py-16">
+        <div className="space-y-8">
+          {/* Logo / Brand */}
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight lg:text-4xl">EduLoans</h1>
+            <p className="mt-1 text-sm opacity-70">by CashKaro</p>
+          </div>
+
+          {/* Headline */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold leading-snug lg:text-2xl lg:leading-snug">
+              Simplify Education Loans for Your Students. Grow Your Business With Every Case.
+            </h2>
+            <p className="text-sm leading-relaxed opacity-80 lg:text-base">
+              One platform to manage leads, track applications, and earn payouts — without dealing with multiple lenders.
+            </p>
+          </div>
+
+          {/* Bullet Points */}
+          <ul className="space-y-3">
+            {[
+              "Multi-lender access in one place",
+              "Real-time student tracking",
+              "End-to-end processing support",
+              "Transparent payouts",
+            ].map((item) => (
+              <li key={item} className="flex items-center gap-3 text-sm lg:text-base">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-foreground/20">
+                  <Check className="h-3 w-3" />
+                </span>
+                {item}
+              </li>
+            ))}
+          </ul>
+
+          {/* Value Pills */}
+          <div className="flex flex-wrap gap-2 pt-2">
+            {[
+              { icon: Users, label: "Multi-Lender" },
+              { icon: TrendingUp, label: "Real-Time Tracking" },
+              { icon: Banknote, label: "Secure Payouts" },
+              { icon: Shield, label: "Pan-India" },
+            ].map(({ icon: Icon, label }) => (
+              <span
+                key={label}
+                className="inline-flex items-center gap-1.5 rounded-full border border-primary-foreground/20 px-3 py-1 text-xs opacity-80"
+              >
+                <Icon className="h-3 w-3" />
+                {label}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Trust line */}
+        <p className="mt-8 text-xs opacity-50 lg:mt-0">Trusted by partners across India</p>
+      </div>
+
+      {/* Right Login Panel */}
+      <div className="flex w-full items-center justify-center bg-muted/30 p-6 lg:w-[55%] lg:p-12">
+        <Card className="w-full max-w-md shadow-lg">
+          <CardHeader className="space-y-2 p-8 pb-2 text-center">
+            <CardTitle className="text-2xl font-bold">Welcome to EduLoans Partner Portal</CardTitle>
+            <CardDescription>
+              Manage your student leads, documents, and earnings — all in one place
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-8 pt-4">
+            <Tabs defaultValue="login">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="login">Sign In</TabsTrigger>
+                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              </TabsList>
+              <TabsContent value="login"><LoginForm /></TabsContent>
+              <TabsContent value="signup"><SignUpForm /></TabsContent>
+            </Tabs>
+            <p className="mt-6 text-center text-xs text-muted-foreground">
+              Secure login · Powered by CashKaro
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -60,7 +128,7 @@ function LoginForm() {
         <Label htmlFor="login-password">Password</Label>
         <Input id="login-password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
       </div>
-      <Button type="submit" className="w-full" disabled={submitting}>
+      <Button type="submit" className="h-11 w-full" disabled={submitting}>
         {submitting ? "Signing in..." : "Sign In"}
       </Button>
     </form>
@@ -97,7 +165,7 @@ function SignUpForm() {
         <Label htmlFor="signup-password">Password</Label>
         <Input id="signup-password" type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
       </div>
-      <Button type="submit" className="w-full" disabled={submitting}>
+      <Button type="submit" className="h-11 w-full" disabled={submitting}>
         {submitting ? "Creating account..." : "Sign Up"}
       </Button>
     </form>
