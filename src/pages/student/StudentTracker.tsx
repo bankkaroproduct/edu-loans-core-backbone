@@ -401,9 +401,9 @@ export default function StudentTracker() {
                   <FileText className="h-4 w-4 text-primary" />
                   <div className="text-left"><p className="text-sm font-medium">Documents</p><p className="text-[10px] text-muted-foreground">{data.documents.verified}/{data.documents.total} verified</p></div>
                 </Button>
-                <Button variant="outline" className="gap-2 justify-start h-auto py-3" onClick={() => navigate("/student/continue")}>
-                  <ArrowRight className="h-4 w-4 text-primary" />
-                  <div className="text-left"><p className="text-sm font-medium">Application</p><p className="text-[10px] text-muted-foreground">View application progress</p></div>
+                <Button variant="outline" className="gap-2 justify-start h-auto py-3" onClick={() => navigate("/student/apply/review?view=submitted")}>
+                  <Eye className="h-4 w-4 text-primary" />
+                  <div className="text-left"><p className="text-sm font-medium">View Application</p><p className="text-[10px] text-muted-foreground">Review submitted details</p></div>
                 </Button>
               </div>
 
