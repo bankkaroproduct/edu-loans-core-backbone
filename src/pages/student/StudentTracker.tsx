@@ -45,7 +45,8 @@ interface TrackerData {
     course_name: string; university_name_raw: string; loan_amount_required: number;
   };
   health: "on_track" | "needs_attention" | "action_required";
-  lender: { top_lender: { name: string; fit_label: string; processing_time_days: number | null } | null; total_matches: number };
+  current_focus: string;
+  lender: { top_lender: { name: string; fit_label: string; processing_time_days: number | null } | null; total_matches: number; phase: string };
   documents: { total: number; pending: number; uploaded: number; under_review: number; verified: number; action_needed: number; not_required: number };
   timeline: { id: string; stage: string; stage_label: string; note: string | null; date: string }[];
 }
@@ -160,6 +161,19 @@ export default function StudentTracker() {
                   <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
                     <Shield className="h-3.5 w-3.5" />
                     <span>Handled by the EduLoans team · Your dedicated case team is reviewing your profile</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* A2. Current Focus */}
+              <Card className={`shadow-sm border-l-4 ${data.health === "action_required" ? "border-l-destructive bg-destructive/[0.02]" : data.health === "needs_attention" ? "border-l-amber-500 bg-amber-50/30 dark:bg-amber-950/10" : "border-l-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/10"}`}>
+                <CardContent className="p-4 flex items-center gap-3">
+                  {data.health === "action_required" ? <AlertTriangle className="h-5 w-5 text-destructive shrink-0" /> :
+                   data.health === "needs_attention" ? <CircleAlert className="h-5 w-5 text-amber-600 shrink-0" /> :
+                   <CircleCheck className="h-5 w-5 text-emerald-600 shrink-0" />}
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Current Focus</p>
+                    <p className="text-sm font-medium text-foreground mt-0.5">{data.current_focus}</p>
                   </div>
                 </CardContent>
               </Card>
