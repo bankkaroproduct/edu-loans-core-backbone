@@ -10,7 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   CheckCircle2, Clock, AlertTriangle, ArrowRight, Shield, Compass,
   HeartHandshake, Building2, Star, ThumbsUp, Eye, RefreshCw,
-  FileText, Search, Send, Award, Banknote, HelpCircle, Loader2, Globe, Zap
+  FileText, Search, Send, Award, Banknote, HelpCircle, Loader2, Globe, Zap,
+  ArrowLeft, Mail, Phone, PartyPopper
 } from "lucide-react";
 
 interface Recommendation {
@@ -55,6 +56,9 @@ const FIT_COLORS: Record<string, { badge: string; border: string }> = {
   "Under Review": { badge: "bg-amber-100 text-amber-800 border-amber-200", border: "border-amber-200" },
 };
 
+// Positive stage check
+const POSITIVE_STAGES = ["sanction_received", "disbursed"];
+
 export default function StudentRecommendations() {
   const navigate = useNavigate();
   const { isVerified, phone, leads } = useStudentAuth();
@@ -93,6 +97,8 @@ export default function StudentRecommendations() {
 
   if (!isVerified) return null;
 
+  const isPositiveStage = leadSummary && POSITIVE_STAGES.includes(leadSummary.current_stage);
+
   const currentJourneyStep = (() => {
     if (!leadSummary) return 1;
     const stage = leadSummary.current_stage;
@@ -109,16 +115,27 @@ export default function StudentRecommendations() {
     return `₹${(amt / 100000).toFixed(1)}L`;
   };
 
+  // State-aware card CTA
+  const getCardCTA = () => {
+    if (!hasPendingDocs) return { label: "View Tracker", path: "/student/tracker" };
+    return { label: "Complete Documents", path: "/student/documents" };
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-primary/[0.02] via-background to-primary/[0.04]">
       <StudentHeader />
-      <main className="flex-1 px-4 py-8 sm:px-6">
+      <main className="flex-1 px-4 py-6 sm:px-6 sm:py-8">
         <div className="mx-auto max-w-4xl">
+
+          {/* Back to tracker */}
+          <button onClick={() => navigate("/student/tracker")} className="mb-4 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft className="h-3.5 w-3.5" /> Back to Tracker
+          </button>
 
           {/* Header */}
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Your Loan Options</h1>
-            <p className="mt-1 text-muted-foreground">
+            <p className="mt-1 text-sm text-muted-foreground sm:text-base">
               Based on your profile, here are your recommended lending partners. These may be refined as your application progresses.
             </p>
           </div>
@@ -151,8 +168,9 @@ export default function StudentRecommendations() {
               <CardContent>
                 <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-destructive" />
                 <h2 className="text-lg font-semibold">Something went wrong</h2>
-                <p className="mt-1 text-sm text-muted-foreground">We couldn't load your recommendations right now.</p>
+                <p className="mt-1 text-sm text-muted-foreground">We couldn't load your recommendations right now. Please try again.</p>
                 <Button variant="outline" className="mt-4" onClick={loadRecommendations}><RefreshCw className="mr-1 h-4 w-4" /> Try Again</Button>
+                <p className="mt-3 text-xs text-muted-foreground">If this persists, contact <a href="mailto:support@eduloans.com" className="text-primary underline">support@eduloans.com</a></p>
               </CardContent>
             </Card>
           )}
@@ -167,6 +185,9 @@ export default function StudentRecommendations() {
                   <h2 className="text-lg font-semibold text-amber-900">Your Profile is Under Review</h2>
                   <p className="mx-auto mt-1 max-w-md text-sm text-amber-700">
                     Our team is evaluating your application to find the best lending partners for you. This typically takes 1–2 business days.
+                  </p>
+                  <p className="mx-auto mt-2 max-w-md text-xs text-amber-600">
+                    No action needed from your side right now — we'll update you as soon as options are available.
                   </p>
                 </CardContent>
               </Card>
@@ -203,8 +224,22 @@ export default function StudentRecommendations() {
             <>
               {leadSummary && <SummaryStrip summary={leadSummary} formatAmount={formatAmount} />}
 
+              {/* Positive state: approved/disbursed */}
+              {isPositiveStage && (
+                <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50/60 px-4 py-3">
+                  <div className="flex items-start gap-2">
+                    <PartyPopper className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                    <p className="text-sm font-medium text-emerald-800">
+                      {leadSummary?.current_stage === "disbursed"
+                        ? "Congratulations! Your loan has been disbursed. Below are the lenders who were part of your journey."
+                        : "Great news — your loan has been approved! Disbursal will follow shortly."}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Provisional notice */}
-              {hasPendingDocs && (
+              {hasPendingDocs && !isPositiveStage && (
                 <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50/60 px-4 py-3">
                   <div className="flex items-start gap-2">
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
@@ -217,13 +252,14 @@ export default function StudentRecommendations() {
 
               {/* Recommendation cards */}
               <div className="mb-6 space-y-4">
-                {recommendations.map((rec, i) => {
+                {recommendations.map((rec) => {
                   const colors = FIT_COLORS[rec.fit_label] || FIT_COLORS["Under Review"];
+                  const cardCTA = getCardCTA();
                   return (
                     <Card key={rec.id} className={`overflow-hidden transition-shadow hover:shadow-md ${colors.border}`}>
                       <CardContent className="p-0">
                         <div className="flex flex-col sm:flex-row">
-                          <div className="flex-1 p-5 sm:p-6">
+                          <div className="flex-1 p-4 sm:p-6">
                             <div className="mb-3 flex items-center gap-3">
                               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
                                 <Building2 className="h-5 w-5 text-primary" />
@@ -267,10 +303,10 @@ export default function StudentRecommendations() {
                               className="w-full gap-1.5 sm:w-auto"
                               onClick={() => {
                                 console.log("[student.recommendation.card_clicked]", { lender: rec.lender_name });
-                                navigate("/student/documents");
+                                navigate(cardCTA.path);
                               }}
                             >
-                              Continue <ArrowRight className="h-3.5 w-3.5" />
+                              {cardCTA.label} <ArrowRight className="h-3.5 w-3.5" />
                             </Button>
                           </div>
                         </div>
@@ -304,8 +340,17 @@ export default function StudentRecommendations() {
 
               {/* Next step guidance */}
               <Card className="mb-6 border-primary/20 bg-primary/5">
-                <CardContent className="p-5 text-center">
-                  {hasPendingDocs ? (
+                <CardContent className="p-4 text-center sm:p-5">
+                  {isPositiveStage ? (
+                    <>
+                      <PartyPopper className="mx-auto mb-2 h-6 w-6 text-emerald-500" />
+                      <p className="text-sm font-medium text-foreground">
+                        {leadSummary?.current_stage === "disbursed"
+                          ? "Your loan journey is complete — congratulations!"
+                          : "Your loan has been approved! Disbursal is being processed."}
+                      </p>
+                    </>
+                  ) : hasPendingDocs ? (
                     <>
                       <FileText className="mx-auto mb-2 h-6 w-6 text-primary" />
                       <p className="text-sm font-medium text-foreground">Upload your required documents to move ahead</p>
@@ -317,6 +362,7 @@ export default function StudentRecommendations() {
                     <>
                       <CheckCircle2 className="mx-auto mb-2 h-6 w-6 text-emerald-500" />
                       <p className="text-sm font-medium text-foreground">Your application is progressing — we'll update you on next steps</p>
+                      <p className="mt-1 text-xs text-muted-foreground">No action needed from your side right now.</p>
                     </>
                   )}
                 </CardContent>
@@ -385,13 +431,13 @@ function JourneySteps({ currentStep }: { currentStep: number }) {
 
 function TrustStrip() {
   return (
-    <div className="mb-6 grid gap-4 sm:grid-cols-3">
+    <div className="mb-6 grid gap-3 sm:grid-cols-3">
       {[
         { icon: Compass, title: "Guided Support", desc: "Expert guidance through every step" },
         { icon: Building2, title: "Multi-Lender Access", desc: "Compare options in one journey" },
         { icon: Eye, title: "Real-Time Visibility", desc: "Track your case progress anytime" },
       ].map(c => (
-        <div key={c.title} className="rounded-xl border bg-card p-4 text-center shadow-sm">
+        <div key={c.title} className="rounded-xl border bg-card p-3 text-center shadow-sm sm:p-4">
           <c.icon className="mx-auto mb-1.5 h-5 w-5 text-primary" />
           <h3 className="text-xs font-semibold text-foreground">{c.title}</h3>
           <p className="mt-0.5 text-[11px] text-muted-foreground">{c.desc}</p>
@@ -404,12 +450,13 @@ function TrustStrip() {
 function SupportCTA() {
   return (
     <div className="mb-4 text-center">
-      <button
+      <a
+        href="mailto:support@eduloans.com"
         className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
         onClick={() => console.log("[student.support.clicked]", { page: "recommendations" })}
       >
         <HelpCircle className="h-4 w-4" /> Need help understanding your options?
-      </button>
+      </a>
     </div>
   );
 }

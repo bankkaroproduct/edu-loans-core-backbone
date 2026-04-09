@@ -10,7 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { StudentDocumentUploadDialog } from "@/components/student/StudentDocumentUploadDialog";
 import {
   CheckCircle2, AlertTriangle, Upload, Eye, RefreshCw, FileText, Clock,
-  Shield, Compass, HeartHandshake, HelpCircle, Loader2, AlertCircle, Info
+  Shield, Compass, HeartHandshake, HelpCircle, Loader2, AlertCircle, Info,
+  ArrowLeft, ArrowRight, PartyPopper
 } from "lucide-react";
 
 interface DocumentRequirement {
@@ -101,13 +102,15 @@ export default function StudentDocuments() {
 
   if (!isVerified) return null;
 
+  const allComplete = counts.total > 0 && counts.verified >= counts.total - counts.not_required && counts.action_needed === 0 && counts.pending === 0;
+
   // Readiness banner config
   const getReadinessBanner = () => {
     if (counts.total === 0) return { type: "empty", icon: Info, color: "border-muted bg-muted/30", textColor: "text-muted-foreground", message: "No documents have been assigned yet — check back soon." };
     if (counts.action_needed > 0) return { type: "action", icon: AlertCircle, color: "border-red-200 bg-red-50/60", textColor: "text-red-800", message: `${counts.action_needed} document${counts.action_needed > 1 ? "s" : ""} need${counts.action_needed === 1 ? "s" : ""} re-upload before your case can proceed.` };
     if (counts.pending > 0) return { type: "pending", icon: Upload, color: "border-amber-200 bg-amber-50/60", textColor: "text-amber-800", message: `${counts.pending} required document${counts.pending > 1 ? "s" : ""} still need${counts.pending === 1 ? "s" : ""} upload.` };
+    if (allComplete) return { type: "complete", icon: CheckCircle2, color: "border-emerald-200 bg-emerald-50/60", textColor: "text-emerald-800", message: "All required documents are complete!" };
     if (counts.under_review > 0 || counts.uploaded > 0) return { type: "review", icon: Clock, color: "border-blue-200 bg-blue-50/60", textColor: "text-blue-800", message: "All documents uploaded — under review." };
-    if (counts.verified >= counts.total - counts.not_required) return { type: "complete", icon: CheckCircle2, color: "border-emerald-200 bg-emerald-50/60", textColor: "text-emerald-800", message: "All required documents are complete!" };
     return { type: "review", icon: Clock, color: "border-blue-200 bg-blue-50/60", textColor: "text-blue-800", message: "Documents are being processed." };
   };
 
@@ -122,13 +125,18 @@ export default function StudentDocuments() {
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-primary/[0.02] via-background to-primary/[0.04]">
       <StudentHeader />
-      <main className="flex-1 px-4 py-8 sm:px-6">
+      <main className="flex-1 px-4 py-6 sm:px-6 sm:py-8">
         <div className="mx-auto max-w-3xl">
+
+          {/* Back to tracker */}
+          <button onClick={() => navigate("/student/tracker")} className="mb-4 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft className="h-3.5 w-3.5" /> Back to Tracker
+          </button>
 
           {/* Header */}
           <div className="mb-2">
             <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Document Center</h1>
-            <p className="mt-1 text-muted-foreground">Upload and track the documents required for your loan application.</p>
+            <p className="mt-1 text-sm text-muted-foreground sm:text-base">Upload and track the documents required for your loan application.</p>
           </div>
 
           {/* Case context */}
@@ -157,6 +165,7 @@ export default function StudentDocuments() {
                 <h2 className="text-lg font-semibold">Something went wrong</h2>
                 <p className="mt-1 text-sm text-muted-foreground">We couldn't load your documents right now.</p>
                 <Button variant="outline" className="mt-4" onClick={loadDocuments}><RefreshCw className="mr-1 h-4 w-4" /> Try Again</Button>
+                <p className="mt-3 text-xs text-muted-foreground">If this persists, contact <a href="mailto:support@eduloans.com" className="text-primary underline">support@eduloans.com</a></p>
               </CardContent>
             </Card>
           )}
@@ -195,6 +204,7 @@ export default function StudentDocuments() {
                   const config = STATUS_CONFIG[req.student_status_label] || STATUS_CONFIG["Pending Upload"];
                   const isActionNeeded = req.student_status_label === "Action Needed";
                   const isPending = req.student_status_label === "Pending Upload";
+                  const isVerifiedDoc = req.student_status_label === "Verified";
                   const StatusIcon = config.icon;
 
                   return (
@@ -202,7 +212,7 @@ export default function StudentDocuments() {
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                               <h3 className="text-sm font-semibold text-foreground">{req.document_name}</h3>
                               {req.required ? (
                                 <Badge variant="outline" className="text-[10px]">Required</Badge>
@@ -254,7 +264,7 @@ export default function StudentDocuments() {
                                 {isActionNeeded ? "Re-upload" : "Upload"}
                               </Button>
                             )}
-                            {req.student_status_label === "Verified" && (
+                            {isVerifiedDoc && (
                               <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
                                 <CheckCircle2 className="mr-1 h-3 w-3" /> Done
                               </Badge>
@@ -270,7 +280,8 @@ export default function StudentDocuments() {
                   <Card className="py-10 text-center">
                     <CardContent>
                       <FileText className="mx-auto mb-3 h-8 w-8 text-muted-foreground/40" />
-                      <p className="text-sm text-muted-foreground">No document requirements assigned yet. Check back after your application is reviewed.</p>
+                      <p className="text-sm font-medium text-muted-foreground">No document requirements assigned yet</p>
+                      <p className="mt-1 text-xs text-muted-foreground">Requirements will appear as your application is reviewed. Check back in a day or two.</p>
                     </CardContent>
                   </Card>
                 )}
@@ -280,18 +291,21 @@ export default function StudentDocuments() {
               {counts.total > 0 && (
                 <Card className="mb-6 border-primary/20 bg-primary/5">
                   <CardContent className="p-4 text-center">
-                    {counts.action_needed > 0 || counts.pending > 0 ? (
+                    {allComplete ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <PartyPopper className="h-6 w-6 text-emerald-500" />
+                        <p className="text-sm font-medium text-foreground">All documents are complete — your application is progressing!</p>
+                        <Button size="sm" variant="outline" className="mt-1 gap-1.5" onClick={() => navigate("/student/tracker")}>
+                          View Tracker <ArrowRight className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ) : counts.action_needed > 0 || counts.pending > 0 ? (
                       <p className="text-sm text-foreground">
                         <strong>Upload your pending documents</strong> so your case can move to the next stage.
                       </p>
-                    ) : counts.verified >= counts.total - counts.not_required ? (
-                      <p className="text-sm text-foreground">
-                        <CheckCircle2 className="mr-1 inline h-4 w-4 text-emerald-500" />
-                        All documents look good — your application is progressing.
-                      </p>
                     ) : (
                       <p className="text-sm text-foreground">
-                        Once your uploads are reviewed, your case will continue.
+                        Once your uploads are reviewed, your case will continue. No action needed right now.
                       </p>
                     )}
                   </CardContent>
@@ -299,13 +313,13 @@ export default function StudentDocuments() {
               )}
 
               {/* Trust strip */}
-              <div className="mb-6 grid gap-4 sm:grid-cols-3">
+              <div className="mb-6 grid gap-3 sm:grid-cols-3">
                 {[
                   { icon: Compass, title: "Guided Support", desc: "Expert guidance through every step" },
                   { icon: Shield, title: "Secure Uploads", desc: "Your documents are encrypted and protected" },
                   { icon: HeartHandshake, title: "Dedicated Handling", desc: "Your application gets personal attention" },
                 ].map(c => (
-                  <div key={c.title} className="rounded-xl border bg-card p-4 text-center shadow-sm">
+                  <div key={c.title} className="rounded-xl border bg-card p-3 text-center shadow-sm sm:p-4">
                     <c.icon className="mx-auto mb-1.5 h-5 w-5 text-primary" />
                     <h3 className="text-xs font-semibold text-foreground">{c.title}</h3>
                     <p className="mt-0.5 text-[11px] text-muted-foreground">{c.desc}</p>
@@ -315,12 +329,13 @@ export default function StudentDocuments() {
 
               {/* Support CTA */}
               <div className="mb-4 text-center">
-                <button
+                <a
+                  href="mailto:support@eduloans.com"
                   className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
                   onClick={() => console.log("[student.support.clicked]", { page: "documents" })}
                 >
                   <HelpCircle className="h-4 w-4" /> Not sure which document to upload?
-                </button>
+                </a>
               </div>
             </>
           )}
