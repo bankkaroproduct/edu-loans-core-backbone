@@ -26,6 +26,8 @@ import StudentBasicDetails from "./pages/student/StudentBasicDetails";
 import StudentEducationDetails from "./pages/student/StudentEducationDetails";
 import StudentCoapplicantDetails from "./pages/student/StudentCoapplicantDetails";
 import StudentReviewSubmit from "./pages/student/StudentReviewSubmit";
+import StudentRecommendations from "./pages/student/StudentRecommendations";
+import StudentDocuments from "./pages/student/StudentDocuments";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +54,8 @@ const App = () => (
             <Route path="/student/apply/education" element={<StudentEducationDetails />} />
             <Route path="/student/apply/coapplicant" element={<StudentCoapplicantDetails />} />
             <Route path="/student/apply/review" element={<StudentReviewSubmit />} />
+            <Route path="/student/recommendations" element={<StudentRecommendations />} />
+            <Route path="/student/documents" element={<StudentDocuments />} />
             {/* Partner Portal */}
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />

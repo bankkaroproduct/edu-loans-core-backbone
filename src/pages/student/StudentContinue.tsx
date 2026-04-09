@@ -4,11 +4,13 @@ import { StudentFooter } from "@/components/student/StudentFooter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useStudentAuth } from "@/hooks/useStudentAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { deriveStepCompletion, deriveCurrentStep } from "@/hooks/useStudentApplication";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   CheckCircle2, Circle, ArrowRight, Shield, Compass, HeartHandshake,
-  FileText, GraduationCap, Users, Search, ClipboardCheck, AlertTriangle, Clock
+  FileText, GraduationCap, Users, Search, ClipboardCheck, AlertTriangle, Clock,
+  Upload, Building2, Eye, Loader2
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -17,12 +19,20 @@ const APPLICATION_STEPS = [
   { key: "education", label: "Education Details", icon: GraduationCap, desc: "Course, university, and intake", path: "/student/apply/education" },
   { key: "coapplicant", label: "Co-applicant", icon: Users, desc: "Guardian or co-applicant info", path: "/student/apply/coapplicant" },
   { key: "review", label: "Review & Submit", icon: ClipboardCheck, desc: "Review and submit your application", path: "/student/apply/review" },
-  { key: "recommendations", label: "Recommendations", icon: Search, desc: "Matched lender recommendations", path: "" },
+  { key: "recommendations", label: "Recommendations", icon: Search, desc: "Matched lender recommendations", path: "/student/recommendations" },
 ];
+
+interface PostSubmitState {
+  loading: boolean;
+  hasRecommendations: boolean;
+  docActionNeeded: number;
+  recommendationCount: number;
+}
 
 export default function StudentContinue() {
   const navigate = useNavigate();
   const { isVerified, leads, studentName, phone } = useStudentAuth();
+  const [postSubmit, setPostSubmit] = useState<PostSubmitState>({ loading: false, hasRecommendations: false, docActionNeeded: 0, recommendationCount: 0 });
 
   useEffect(() => {
     if (!isVerified) {
@@ -30,10 +40,38 @@ export default function StudentContinue() {
     }
   }, [isVerified, navigate]);
 
-  if (!isVerified) return null;
-
   const activeLead = leads.length > 0 ? leads[0] : null;
   const completion = deriveStepCompletion(activeLead);
+  const isSubmitted = completion.submitted;
+
+  // Load post-submit state
+  useEffect(() => {
+    if (!isSubmitted || !phone || !activeLead) return;
+    setPostSubmit(s => ({ ...s, loading: true }));
+
+    Promise.all([
+      supabase.functions.invoke("student-application", {
+        body: { action: "load_recommendations", phone, lead_id: activeLead.id },
+      }),
+      supabase.functions.invoke("student-application", {
+        body: { action: "load_documents", phone, lead_id: activeLead.id },
+      }),
+    ]).then(([recRes, docRes]) => {
+      const recs = recRes.data?.recommendations || [];
+      const docCounts = docRes.data?.counts || {};
+      setPostSubmit({
+        loading: false,
+        hasRecommendations: recs.length > 0,
+        recommendationCount: recs.length,
+        docActionNeeded: (docCounts.action_needed || 0) + (docCounts.pending || 0),
+      });
+    }).catch(() => {
+      setPostSubmit(s => ({ ...s, loading: false }));
+    });
+  }, [isSubmitted, phone, activeLead?.id]);
+
+  if (!isVerified) return null;
+
   const progress = deriveCurrentStep(completion);
   const currentStepIndex = Math.min(progress, APPLICATION_STEPS.length - 1);
   const isNew = !activeLead;
@@ -42,17 +80,15 @@ export default function StudentContinue() {
     ? formatDistanceToNow(new Date(activeLead.updated_at), { addSuffix: true })
     : null;
 
-  // Determine where the CTA should navigate
+  // Pre-submit CTA
   const getTargetPath = () => {
-    if (completion.submitted) return ""; // already submitted
+    if (completion.submitted) return "";
     if (completion.coapplicant) return "/student/apply/review";
     if (completion.education) return "/student/apply/coapplicant";
     if (completion.basic) return "/student/apply/education";
     return "/student/apply/basic";
   };
-
   const targetPath = getTargetPath();
-  const isSubmitted = completion.submitted;
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-primary/[0.02] via-background to-primary/[0.04]">
@@ -116,6 +152,8 @@ export default function StudentContinue() {
                   );
                 })}
               </div>
+
+              {/* Pre-submit CTA */}
               {!isSubmitted && (
                 <div className="mt-6">
                   <Button size="lg" className="w-full gap-2 text-base" onClick={() => navigate(targetPath)}>
@@ -123,17 +161,51 @@ export default function StudentContinue() {
                   </Button>
                 </div>
               )}
+
+              {/* Post-submit: state-driven CTAs */}
               {isSubmitted && (
-                <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50/50 p-4 text-center">
-                  <CheckCircle2 className="mx-auto mb-2 h-6 w-6 text-emerald-600" />
-                  <p className="text-sm font-medium text-emerald-800">Application submitted successfully</p>
-                  <p className="mt-1 text-xs text-emerald-600">Lender recommendations will appear once your profile is reviewed.</p>
+                <div className="mt-6 space-y-3">
+                  {postSubmit.loading ? (
+                    <div className="flex items-center justify-center gap-2 py-4">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      <span className="text-sm text-muted-foreground">Checking your next steps…</span>
+                    </div>
+                  ) : postSubmit.docActionNeeded > 0 ? (
+                    // Priority 1: Documents need action
+                    <>
+                      <Button size="lg" className="w-full gap-2 text-base" onClick={() => navigate("/student/documents")}>
+                        <Upload className="h-4 w-4" /> Complete Required Documents ({postSubmit.docActionNeeded} pending)
+                      </Button>
+                      {postSubmit.hasRecommendations && (
+                        <Button size="lg" variant="outline" className="w-full gap-2 text-base" onClick={() => navigate("/student/recommendations")}>
+                          <Building2 className="h-4 w-4" /> View Loan Options ({postSubmit.recommendationCount})
+                        </Button>
+                      )}
+                    </>
+                  ) : postSubmit.hasRecommendations ? (
+                    // Priority 2: Recommendations available
+                    <>
+                      <Button size="lg" className="w-full gap-2 text-base" onClick={() => navigate("/student/recommendations")}>
+                        <Building2 className="h-4 w-4" /> View Your Loan Options ({postSubmit.recommendationCount}) <ArrowRight className="h-4 w-4" />
+                      </Button>
+                      <Button size="lg" variant="outline" className="w-full gap-2 text-base" onClick={() => navigate("/student/documents")}>
+                        <FileText className="h-4 w-4" /> View Documents
+                      </Button>
+                    </>
+                  ) : (
+                    // Priority 3: Under review
+                    <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-4 text-center">
+                      <Clock className="mx-auto mb-2 h-6 w-6 text-amber-600" />
+                      <p className="text-sm font-medium text-amber-800">Your Profile is Under Review</p>
+                      <p className="mt-1 text-xs text-amber-600">Our team is evaluating your application. Recommendations will appear once your profile is reviewed.</p>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Last / Next step cards */}
+          {/* Last / Next step cards — only for pre-submit */}
           {!isNew && !isSubmitted && (
             <div className="mb-6 grid gap-4 sm:grid-cols-2">
               <Card className="border-emerald-200 bg-emerald-50/50">

@@ -1,0 +1,343 @@
+import { useNavigate } from "react-router-dom";
+import { useEffect, useState, useCallback } from "react";
+import { StudentHeader } from "@/components/student/StudentHeader";
+import { StudentFooter } from "@/components/student/StudentFooter";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useStudentAuth } from "@/hooks/useStudentAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { StudentDocumentUploadDialog } from "@/components/student/StudentDocumentUploadDialog";
+import {
+  CheckCircle2, AlertTriangle, Upload, Eye, RefreshCw, FileText, Clock,
+  Shield, Compass, HeartHandshake, HelpCircle, Loader2, AlertCircle, Info
+} from "lucide-react";
+
+interface DocumentRequirement {
+  id: string;
+  document_type_id: string;
+  document_name: string;
+  document_category: string | null;
+  description: string | null;
+  required: boolean;
+  status: string;
+  student_status_label: string;
+  remark: string | null;
+  due_date: string | null;
+  uploaded_file: {
+    file_name: string;
+    uploaded_at: string;
+    version_number: number;
+  } | null;
+}
+
+interface DocCounts {
+  total: number;
+  pending: number;
+  uploaded: number;
+  under_review: number;
+  verified: number;
+  action_needed: number;
+  not_required: number;
+}
+
+interface LeadSummary {
+  id: string;
+  lead_id: string | null;
+  current_stage: string;
+  updated_at: string;
+}
+
+const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> = {
+  "Pending Upload": { color: "text-muted-foreground", bg: "bg-muted", icon: Upload },
+  "Uploaded": { color: "text-blue-700", bg: "bg-blue-100", icon: FileText },
+  "Being Reviewed": { color: "text-amber-700", bg: "bg-amber-100", icon: Clock },
+  "Verified": { color: "text-emerald-700", bg: "bg-emerald-100", icon: CheckCircle2 },
+  "Action Needed": { color: "text-red-700", bg: "bg-red-100", icon: AlertCircle },
+  "Not Required": { color: "text-muted-foreground", bg: "bg-muted", icon: Info },
+};
+
+export default function StudentDocuments() {
+  const navigate = useNavigate();
+  const { isVerified, phone, leads } = useStudentAuth();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [requirements, setRequirements] = useState<DocumentRequirement[]>([]);
+  const [counts, setCounts] = useState<DocCounts>({ total: 0, pending: 0, uploaded: 0, under_review: 0, verified: 0, action_needed: 0, not_required: 0 });
+  const [leadSummary, setLeadSummary] = useState<LeadSummary | null>(null);
+  const [uploadTarget, setUploadTarget] = useState<DocumentRequirement | null>(null);
+
+  useEffect(() => {
+    if (!isVerified) { navigate("/student/login"); return; }
+    loadDocuments();
+  }, [isVerified]);
+
+  const loadDocuments = useCallback(async () => {
+    setLoading(true);
+    setError(false);
+    console.log("[student.documents.viewed]");
+    try {
+      const activeLead = leads[0];
+      const { data, error: fnErr } = await supabase.functions.invoke("student-application", {
+        body: { action: "load_documents", phone, lead_id: activeLead?.id },
+      });
+      if (fnErr) throw fnErr;
+      if (data?.error) throw new Error(data.error);
+      setRequirements(data.requirements || []);
+      setCounts(data.counts || { total: 0, pending: 0, uploaded: 0, under_review: 0, verified: 0, action_needed: 0, not_required: 0 });
+      setLeadSummary(data.lead_summary);
+    } catch (err) {
+      console.error("Load documents error:", err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [phone, leads]);
+
+  const handleUploadComplete = () => {
+    setUploadTarget(null);
+    loadDocuments();
+  };
+
+  if (!isVerified) return null;
+
+  // Readiness banner config
+  const getReadinessBanner = () => {
+    if (counts.total === 0) return { type: "empty", icon: Info, color: "border-muted bg-muted/30", textColor: "text-muted-foreground", message: "No documents have been assigned yet — check back soon." };
+    if (counts.action_needed > 0) return { type: "action", icon: AlertCircle, color: "border-red-200 bg-red-50/60", textColor: "text-red-800", message: `${counts.action_needed} document${counts.action_needed > 1 ? "s" : ""} need${counts.action_needed === 1 ? "s" : ""} re-upload before your case can proceed.` };
+    if (counts.pending > 0) return { type: "pending", icon: Upload, color: "border-amber-200 bg-amber-50/60", textColor: "text-amber-800", message: `${counts.pending} required document${counts.pending > 1 ? "s" : ""} still need${counts.pending === 1 ? "s" : ""} upload.` };
+    if (counts.under_review > 0 || counts.uploaded > 0) return { type: "review", icon: Clock, color: "border-blue-200 bg-blue-50/60", textColor: "text-blue-800", message: "All documents uploaded — under review." };
+    if (counts.verified >= counts.total - counts.not_required) return { type: "complete", icon: CheckCircle2, color: "border-emerald-200 bg-emerald-50/60", textColor: "text-emerald-800", message: "All required documents are complete!" };
+    return { type: "review", icon: Clock, color: "border-blue-200 bg-blue-50/60", textColor: "text-blue-800", message: "Documents are being processed." };
+  };
+
+  const banner = getReadinessBanner();
+
+  // Sort: action needed first, then pending, then uploaded/review, then verified, then not required
+  const sortedRequirements = [...requirements].sort((a, b) => {
+    const priority: Record<string, number> = { "Action Needed": 0, "Pending Upload": 1, "Uploaded": 2, "Being Reviewed": 3, "Verified": 4, "Not Required": 5 };
+    return (priority[a.student_status_label] ?? 9) - (priority[b.student_status_label] ?? 9);
+  });
+
+  return (
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-primary/[0.02] via-background to-primary/[0.04]">
+      <StudentHeader />
+      <main className="flex-1 px-4 py-8 sm:px-6">
+        <div className="mx-auto max-w-3xl">
+
+          {/* Header */}
+          <div className="mb-2">
+            <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Document Center</h1>
+            <p className="mt-1 text-muted-foreground">Upload and track the documents required for your loan application.</p>
+          </div>
+
+          {/* Case context */}
+          {leadSummary && (
+            <div className="mb-5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+              {leadSummary.lead_id && <span>Case: <strong className="text-foreground">{leadSummary.lead_id}</strong></span>}
+              <span>· Last updated: {new Date(leadSummary.updated_at).toLocaleDateString()}</span>
+            </div>
+          )}
+
+          {/* Loading */}
+          {loading && (
+            <Card className="py-16 text-center">
+              <CardContent>
+                <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin text-primary" />
+                <p className="text-muted-foreground">Loading your documents…</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Error */}
+          {error && !loading && (
+            <Card className="py-12 text-center">
+              <CardContent>
+                <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-destructive" />
+                <h2 className="text-lg font-semibold">Something went wrong</h2>
+                <p className="mt-1 text-sm text-muted-foreground">We couldn't load your documents right now.</p>
+                <Button variant="outline" className="mt-4" onClick={loadDocuments}><RefreshCw className="mr-1 h-4 w-4" /> Try Again</Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Content */}
+          {!loading && !error && (
+            <>
+              {/* Readiness Banner */}
+              <div className={`mb-5 flex items-start gap-2.5 rounded-lg border px-4 py-3 ${banner.color}`}>
+                <banner.icon className={`mt-0.5 h-4 w-4 shrink-0 ${banner.textColor}`} />
+                <p className={`text-sm font-medium ${banner.textColor}`}>{banner.message}</p>
+              </div>
+
+              {/* Summary Strip */}
+              {counts.total > 0 && (
+                <div className="mb-5 grid grid-cols-3 gap-2 sm:grid-cols-6">
+                  {[
+                    { label: "Total", value: counts.total, color: "text-foreground" },
+                    { label: "Pending", value: counts.pending, color: "text-muted-foreground" },
+                    { label: "Uploaded", value: counts.uploaded, color: "text-blue-600" },
+                    { label: "Reviewing", value: counts.under_review, color: "text-amber-600" },
+                    { label: "Verified", value: counts.verified, color: "text-emerald-600" },
+                    { label: "Action", value: counts.action_needed, color: counts.action_needed > 0 ? "text-red-600" : "text-muted-foreground" },
+                  ].map(c => (
+                    <div key={c.label} className="rounded-lg border bg-card px-3 py-2 text-center">
+                      <p className={`text-lg font-bold ${c.color}`}>{c.value}</p>
+                      <p className="text-[10px] text-muted-foreground">{c.label}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Document Checklist */}
+              <div className="mb-6 space-y-3">
+                {sortedRequirements.map(req => {
+                  const config = STATUS_CONFIG[req.student_status_label] || STATUS_CONFIG["Pending Upload"];
+                  const isActionNeeded = req.student_status_label === "Action Needed";
+                  const isPending = req.student_status_label === "Pending Upload";
+                  const StatusIcon = config.icon;
+
+                  return (
+                    <Card key={req.id} className={`overflow-hidden transition-shadow hover:shadow-sm ${isActionNeeded ? "border-red-200" : ""}`}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-sm font-semibold text-foreground">{req.document_name}</h3>
+                              {req.required ? (
+                                <Badge variant="outline" className="text-[10px]">Required</Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-[10px] text-muted-foreground">Optional</Badge>
+                              )}
+                            </div>
+
+                            <div className="mt-1.5 flex items-center gap-1.5">
+                              <StatusIcon className={`h-3.5 w-3.5 ${config.color}`} />
+                              <span className={`text-xs font-medium ${config.color}`}>{req.student_status_label}</span>
+                            </div>
+
+                            {/* Uploaded file info */}
+                            {req.uploaded_file && (
+                              <p className="mt-1 text-[11px] text-muted-foreground">
+                                {req.uploaded_file.file_name} · v{req.uploaded_file.version_number} · {new Date(req.uploaded_file.uploaded_at).toLocaleDateString()}
+                              </p>
+                            )}
+
+                            {/* Remark / guidance for action-needed */}
+                            {isActionNeeded && req.remark && (
+                              <div className="mt-2 rounded-md bg-red-50 px-3 py-2">
+                                <p className="text-xs font-medium text-red-800">What we need:</p>
+                                <p className="text-xs text-red-700">{req.remark}</p>
+                              </div>
+                            )}
+
+                            {/* Helper for pending */}
+                            {isPending && req.required && (
+                              <p className="mt-1.5 text-[11px] text-muted-foreground">
+                                Please ensure the document is clear, complete, and matches your application details.
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="shrink-0">
+                            {(isPending || isActionNeeded) && (
+                              <Button
+                                size="sm"
+                                variant={isActionNeeded ? "default" : "outline"}
+                                className="gap-1 text-xs"
+                                onClick={() => {
+                                  console.log(isActionNeeded ? "[student.document.reupload_initiated]" : "[student.document.upload_started]", { doc: req.document_name });
+                                  setUploadTarget(req);
+                                }}
+                              >
+                                <Upload className="h-3 w-3" />
+                                {isActionNeeded ? "Re-upload" : "Upload"}
+                              </Button>
+                            )}
+                            {req.student_status_label === "Verified" && (
+                              <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
+                                <CheckCircle2 className="mr-1 h-3 w-3" /> Done
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+
+                {requirements.length === 0 && (
+                  <Card className="py-10 text-center">
+                    <CardContent>
+                      <FileText className="mx-auto mb-3 h-8 w-8 text-muted-foreground/40" />
+                      <p className="text-sm text-muted-foreground">No document requirements assigned yet. Check back after your application is reviewed.</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+
+              {/* Readiness Guidance */}
+              {counts.total > 0 && (
+                <Card className="mb-6 border-primary/20 bg-primary/5">
+                  <CardContent className="p-4 text-center">
+                    {counts.action_needed > 0 || counts.pending > 0 ? (
+                      <p className="text-sm text-foreground">
+                        <strong>Upload your pending documents</strong> so your case can move to the next stage.
+                      </p>
+                    ) : counts.verified >= counts.total - counts.not_required ? (
+                      <p className="text-sm text-foreground">
+                        <CheckCircle2 className="mr-1 inline h-4 w-4 text-emerald-500" />
+                        All documents look good — your application is progressing.
+                      </p>
+                    ) : (
+                      <p className="text-sm text-foreground">
+                        Once your uploads are reviewed, your case will continue.
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Trust strip */}
+              <div className="mb-6 grid gap-4 sm:grid-cols-3">
+                {[
+                  { icon: Compass, title: "Guided Support", desc: "Expert guidance through every step" },
+                  { icon: Shield, title: "Secure Uploads", desc: "Your documents are encrypted and protected" },
+                  { icon: HeartHandshake, title: "Dedicated Handling", desc: "Your application gets personal attention" },
+                ].map(c => (
+                  <div key={c.title} className="rounded-xl border bg-card p-4 text-center shadow-sm">
+                    <c.icon className="mx-auto mb-1.5 h-5 w-5 text-primary" />
+                    <h3 className="text-xs font-semibold text-foreground">{c.title}</h3>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">{c.desc}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Support CTA */}
+              <div className="mb-4 text-center">
+                <button
+                  className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+                  onClick={() => console.log("[student.support.clicked]", { page: "documents" })}
+                >
+                  <HelpCircle className="h-4 w-4" /> Not sure which document to upload?
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </main>
+      <StudentFooter />
+
+      {/* Upload Dialog */}
+      {uploadTarget && leadSummary && (
+        <StudentDocumentUploadDialog
+          requirement={uploadTarget}
+          leadId={leadSummary.id}
+          phone={phone!}
+          onClose={() => setUploadTarget(null)}
+          onSuccess={handleUploadComplete}
+        />
+      )}
+    </div>
+  );
+}
