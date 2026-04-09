@@ -45,7 +45,8 @@ interface TrackerData {
     course_name: string; university_name_raw: string; loan_amount_required: number;
   };
   health: "on_track" | "needs_attention" | "action_required";
-  lender: { top_lender: { name: string; fit_label: string; processing_time_days: number | null } | null; total_matches: number };
+  current_focus: string;
+  lender: { top_lender: { name: string; fit_label: string; processing_time_days: number | null } | null; total_matches: number; phase: string };
   documents: { total: number; pending: number; uploaded: number; under_review: number; verified: number; action_needed: number; not_required: number };
   timeline: { id: string; stage: string; stage_label: string; note: string | null; date: string }[];
 }
@@ -164,6 +165,19 @@ export default function StudentTracker() {
                 </CardContent>
               </Card>
 
+              {/* A2. Current Focus */}
+              <Card className={`shadow-sm border-l-4 ${data.health === "action_required" ? "border-l-destructive bg-destructive/[0.02]" : data.health === "needs_attention" ? "border-l-amber-500 bg-amber-50/30 dark:bg-amber-950/10" : "border-l-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/10"}`}>
+                <CardContent className="p-4 flex items-center gap-3">
+                  {data.health === "action_required" ? <AlertTriangle className="h-5 w-5 text-destructive shrink-0" /> :
+                   data.health === "needs_attention" ? <CircleAlert className="h-5 w-5 text-amber-600 shrink-0" /> :
+                   <CircleCheck className="h-5 w-5 text-emerald-600 shrink-0" />}
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Current Focus</p>
+                    <p className="text-sm font-medium text-foreground mt-0.5">{data.current_focus}</p>
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* B. Journey Tracker */}
               <Card className="shadow-sm">
                 <CardContent className="p-5 sm:p-6">
@@ -254,14 +268,20 @@ export default function StudentTracker() {
                         {data.lender.total_matches > 1 && (
                           <p className="text-xs text-muted-foreground mt-1">{data.lender.total_matches - 1} more option{data.lender.total_matches - 1 > 1 ? "s" : ""} available</p>
                         )}
-                        {/* Lender processing state */}
-                        <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
+                        {/* Lender phase messaging */}
+                        <p className="text-xs mt-1.5 flex items-center gap-1">
                           <Activity className="h-3 w-3" />
-                          {["sent_to_lender", "login_submitted"].includes(data.lead_summary.current_stage) ? "Application forwarded — lender is reviewing" :
-                           data.lead_summary.current_stage === "credit_query" ? "Query in progress with lender" :
-                           data.lead_summary.current_stage === "sanction_received" ? "Approved by lender" :
-                           data.lead_summary.current_stage === "disbursed" ? "Funds released" :
-                           "Profile under evaluation"}
+                          {data.lender.phase === "processing" ? (
+                            <span className="text-primary font-medium">Actively being processed — application forwarded to lender</span>
+                          ) : data.lender.phase === "query_in_progress" ? (
+                            <span className="text-amber-600 font-medium">Query in progress — lender has raised a question</span>
+                          ) : data.lender.phase === "approved" ? (
+                            <span className="text-emerald-600 font-medium">Approved by lender — sanction received</span>
+                          ) : data.lender.phase === "disbursed" ? (
+                            <span className="text-emerald-600 font-medium">Funds released by lender</span>
+                          ) : (
+                            <span className="text-muted-foreground">Recommended based on your profile — not yet in active processing</span>
+                          )}
                         </p>
                       </div>
                       <Button size="sm" variant="outline" className="shrink-0 gap-1" onClick={() => navigate("/student/recommendations")}>
@@ -272,7 +292,7 @@ export default function StudentTracker() {
                     <div className="text-center py-3">
                       <TrendingUp className="mx-auto h-6 w-6 text-muted-foreground/50 mb-2" />
                       <p className="text-sm text-muted-foreground">Lender matching is in progress</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">We're evaluating the best options for your profile</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">We're evaluating the best options for your profile. Options will appear here once available.</p>
                     </div>
                   )}
                 </CardContent>
@@ -285,8 +305,8 @@ export default function StudentTracker() {
                     <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
                       <FileText className="h-4 w-4 text-primary" /> Documents
                     </h2>
-                    <Button size="sm" variant="ghost" className="gap-1 text-xs h-7" onClick={() => navigate("/student/documents")}>
-                      View All <ChevronRight className="h-3 w-3" />
+                    <Button size="sm" variant={data.documents.action_needed > 0 ? "destructive" : data.documents.pending > 0 ? "default" : "ghost"} className="gap-1 text-xs h-7" onClick={() => navigate("/student/documents")}>
+                      {data.documents.action_needed > 0 ? "Resolve Issues" : data.documents.pending > 0 ? "Upload Now" : "View All"} <ChevronRight className="h-3 w-3" />
                     </Button>
                   </div>
                   {data.documents.total === 0 ? (
@@ -324,12 +344,12 @@ export default function StudentTracker() {
                       )}
                       {data.documents.pending > 0 && data.documents.action_needed === 0 && (
                         <Button size="sm" className="mt-3 w-full gap-1.5" onClick={() => navigate("/student/documents")}>
-                          <Upload className="h-3.5 w-3.5" /> Upload Pending Documents
+                          <Upload className="h-3.5 w-3.5" /> Upload {data.documents.pending} Pending Document{data.documents.pending > 1 ? "s" : ""}
                         </Button>
                       )}
                       {data.documents.action_needed > 0 && (
                         <Button size="sm" className="mt-3 w-full gap-1.5" variant="destructive" onClick={() => navigate("/student/documents")}>
-                          <Upload className="h-3.5 w-3.5" /> Fix Required Documents
+                          <AlertTriangle className="h-3.5 w-3.5" /> Resolve {data.documents.action_needed} Blocking Document{data.documents.action_needed > 1 ? "s" : ""}
                         </Button>
                       )}
                     </>
