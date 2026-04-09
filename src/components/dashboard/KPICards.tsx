@@ -97,40 +97,40 @@ interface Props {
 
 export function KPICards({ data, loading, onCardClick }: Props) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {clusters.map((cluster) => (
         <div
           key={cluster.heading}
-          className="bg-card/60 border border-border/50 rounded-xl px-4 py-3"
+          className="bg-card/40 border border-border/40 rounded-lg px-3 py-2"
         >
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border/40 pb-1.5 mb-2.5">
+          <h3 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground pb-1 mb-1.5">
             {cluster.heading}
           </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {cluster.items.map((kpi) => {
               const Icon = kpi.icon;
               const isEmphasized = kpi.emphasized;
               return (
                 <Card
                   key={kpi.key}
-                  className={`hover:shadow-lg transition-shadow cursor-pointer ${accentBorder[kpi.accent]} ${isEmphasized ? "bg-primary/5 shadow-md" : ""}`}
+                  className={`hover:shadow-md transition-shadow cursor-pointer ${accentBorder[kpi.accent]} ${isEmphasized ? "bg-primary/5" : ""}`}
                   onClick={() => onCardClick?.(kpi.key)}
                 >
-                  <CardContent className="p-3">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[11px] font-medium text-muted-foreground truncate">
+                  <CardContent className="px-2.5 py-2">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="text-[10px] font-medium text-muted-foreground truncate">
                         {kpi.label}
                       </span>
-                      <Icon className={`h-4 w-4 shrink-0 ${accentIconColor[kpi.accent]}`} />
+                      <Icon className={`h-3.5 w-3.5 shrink-0 ${accentIconColor[kpi.accent]}`} />
                     </div>
                     {loading ? (
-                      <Skeleton className="h-7 w-16" />
+                      <Skeleton className="h-5 w-14" />
                     ) : (
-                      <p className={`font-extrabold text-foreground ${isEmphasized ? "text-2xl" : "text-xl"}`}>
+                      <p className={`font-bold text-foreground leading-tight ${isEmphasized ? "text-lg" : "text-base"}`}>
                         {formatValue(data[kpi.key], kpi.format)}
                       </p>
                     )}
-                    <p className="text-[11px] text-muted-foreground mt-1">
+                    <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
                       {kpi.dynamicSub ? kpi.dynamicSub(data[kpi.key]) : kpi.sub}
                     </p>
                   </CardContent>
