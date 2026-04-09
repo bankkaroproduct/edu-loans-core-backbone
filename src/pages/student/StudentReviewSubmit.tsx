@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { StudentStepLayout } from "@/components/student/StudentStepLayout";
 import { useStudentAuth } from "@/hooks/useStudentAuth";
 import { useStudentApplication } from "@/hooks/useStudentApplication";
@@ -7,23 +7,25 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
-import { Pencil, CheckCircle2, Sparkles, Shield, Info } from "lucide-react";
+import { Pencil, CheckCircle2, Sparkles, Shield, Info, Lock } from "lucide-react";
 
 interface SummaryItem {
   label: string;
   value: string | null | undefined;
 }
 
-function SummaryBlock({ title, items, editPath }: { title: string; items: SummaryItem[]; editPath: string }) {
+function SummaryBlock({ title, items, editPath, readOnly }: { title: string; items: SummaryItem[]; editPath: string; readOnly?: boolean }) {
   const navigate = useNavigate();
   return (
     <Card>
       <CardContent className="p-5 sm:p-6">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{title}</h2>
-          <Button variant="ghost" size="sm" onClick={() => navigate(editPath)} className="gap-1.5 text-xs text-primary">
-            <Pencil className="h-3 w-3" /> Edit
-          </Button>
+          {!readOnly && (
+            <Button variant="ghost" size="sm" onClick={() => navigate(editPath)} className="gap-1.5 text-xs text-primary">
+              <Pencil className="h-3 w-3" /> Edit
+            </Button>
+          )}
         </div>
         <div className="grid gap-2 sm:grid-cols-2">
           {items.map(item => (
@@ -40,9 +42,13 @@ function SummaryBlock({ title, items, editPath }: { title: string; items: Summar
 
 export default function StudentReviewSubmit() {
   const navigate = useNavigate();
-  const { isVerified } = useStudentAuth();
+  const [searchParams] = useSearchParams();
+  const { isVerified, leads } = useStudentAuth();
   const { formData, saveStep, saving } = useStudentApplication();
   const [declared, setDeclared] = useState(false);
+
+  const isReadOnly = searchParams.get("view") === "submitted" || 
+    (leads[0]?.current_stage && leads[0].current_stage !== "draft");
 
   useEffect(() => {
     if (!isVerified) { navigate("/student/login"); return; }
@@ -55,7 +61,7 @@ export default function StudentReviewSubmit() {
     const result = await saveStep("submit");
     if (result) {
       toast({ title: "Application submitted!", description: "We'll start matching you with suitable lenders." });
-      navigate("/student/continue");
+      navigate("/student/tracker");
     }
   };
 
@@ -73,16 +79,25 @@ export default function StudentReviewSubmit() {
   return (
     <StudentStepLayout
       currentStep={3}
-      title="Review & Submit"
-      subtitle="Please review your information carefully before submitting"
-      onBack={() => navigate("/student/apply/coapplicant")}
+      title={isReadOnly ? "Submitted Application" : "Review & Submit"}
+      subtitle={isReadOnly ? "Your application has been submitted. Here's what you provided." : "Please review your information carefully before submitting"}
+      onBack={isReadOnly ? () => navigate("/student/tracker") : () => navigate("/student/apply/coapplicant")}
       saving={saving}
       hideContinue
     >
+      {/* Read-only banner */}
+      {isReadOnly && (
+        <div className="flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50/50 px-4 py-3">
+          <Lock className="h-4 w-4 shrink-0 text-emerald-600" />
+          <p className="text-sm text-emerald-800">This application has been submitted and is being processed. You can view but not edit the details below.</p>
+        </div>
+      )}
+
       {/* Basic Details */}
       <SummaryBlock
         title="Basic Details"
         editPath="/student/apply/basic"
+        readOnly={isReadOnly}
         items={[
           { label: "Full Name", value: formData.student_full_name },
           { label: "Email", value: formData.student_email },
@@ -101,6 +116,7 @@ export default function StudentReviewSubmit() {
       <SummaryBlock
         title="Education & Academic Details"
         editPath="/student/apply/education"
+        readOnly={isReadOnly}
         items={[
           { label: "Highest Qualification", value: formData.highest_qualification },
           { label: "Marks / GPA", value: formData.marks_gpa },
@@ -115,6 +131,7 @@ export default function StudentReviewSubmit() {
       <SummaryBlock
         title="Co-applicant Details"
         editPath="/student/apply/coapplicant"
+        readOnly={isReadOnly}
         items={[
           { label: "Name", value: formData.coapplicant_name },
           { label: "Relationship", value: formData.coapplicant_relation },
@@ -128,51 +145,62 @@ export default function StudentReviewSubmit() {
         ]}
       />
 
-      {/* Declaration */}
-      <Card className="border-primary/20">
-        <CardContent className="p-5 sm:p-6">
-          <div className="flex items-start gap-3">
-            <Checkbox
-              id="declaration"
-              checked={declared}
-              onCheckedChange={v => setDeclared(v === true)}
-              className="mt-0.5"
-            />
-            <label htmlFor="declaration" className="cursor-pointer text-sm leading-relaxed text-foreground">
-              I confirm that the information provided above is true and accurate to the best of my knowledge. I understand that providing false information may affect my application processing.{" "}
-              <a href="#" className="text-primary underline">Terms & Conditions</a> apply.
-            </label>
+      {/* Declaration + Submit — only for non-submitted */}
+      {!isReadOnly && (
+        <>
+          <Card className="border-primary/20">
+            <CardContent className="p-5 sm:p-6">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="declaration"
+                  checked={declared}
+                  onCheckedChange={v => setDeclared(v === true)}
+                  className="mt-0.5"
+                />
+                <label htmlFor="declaration" className="cursor-pointer text-sm leading-relaxed text-foreground">
+                  I confirm that the information provided above is true and accurate to the best of my knowledge. I understand that providing false information may affect my application processing.{" "}
+                  <a href="#" className="text-primary underline">Terms & Conditions</a> apply.
+                </label>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex items-start gap-2.5 rounded-lg border border-primary/10 bg-primary/[0.03] p-4">
+            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <div>
+              <p className="text-xs font-medium text-foreground">What happens next?</p>
+              <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                After you submit, we'll review your profile and match you with the most suitable lenders. You can track your application status anytime from your dashboard.
+              </p>
+            </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Submission guidance */}
-      <div className="flex items-start gap-2.5 rounded-lg border border-primary/10 bg-primary/[0.03] p-4">
-        <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-        <div>
-          <p className="text-xs font-medium text-foreground">What happens next?</p>
-          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-            After you submit, we'll review your profile and match you with the most suitable lenders. You can track your application status anytime from your dashboard.
-          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <Button variant="outline" onClick={() => navigate("/student/apply/coapplicant")} className="gap-1.5">
+              Back to Edit
+            </Button>
+            <Button
+              size="lg"
+              onClick={handleSubmit}
+              disabled={!declared || saving}
+              className="gap-2 sm:min-w-[200px]"
+            >
+              {saving ? "Submitting…" : (
+                <><CheckCircle2 className="h-4 w-4" /> Submit Application</>
+              )}
+            </Button>
+          </div>
+        </>
+      )}
+
+      {/* Read-only: back to tracker CTA */}
+      {isReadOnly && (
+        <div className="flex justify-center">
+          <Button onClick={() => navigate("/student/tracker")} className="gap-2">
+            ← Back to Tracker
+          </Button>
         </div>
-      </div>
-
-      {/* Submit CTA */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-        <Button variant="outline" onClick={() => navigate("/student/apply/coapplicant")} className="gap-1.5">
-          Back to Edit
-        </Button>
-        <Button
-          size="lg"
-          onClick={handleSubmit}
-          disabled={!declared || saving}
-          className="gap-2 sm:min-w-[200px]"
-        >
-          {saving ? "Submitting…" : (
-            <><CheckCircle2 className="h-4 w-4" /> Submit Application</>
-          )}
-        </Button>
-      </div>
+      )}
     </StudentStepLayout>
   );
 }

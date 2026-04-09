@@ -8,9 +8,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { deriveStepCompletion, deriveCurrentStep } from "@/hooks/useStudentApplication";
 import { useEffect, useState } from "react";
 import {
-  CheckCircle2, Circle, ArrowRight, Shield, Compass, HeartHandshake,
-  FileText, GraduationCap, Users, Search, ClipboardCheck, AlertTriangle, Clock,
-  Upload, Building2, Eye, Loader2
+  CheckCircle2, ArrowRight, Shield, Compass, HeartHandshake,
+  FileText, GraduationCap, Users, ClipboardCheck, Clock,
+  Upload, Building2, Eye, Loader2, PartyPopper
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -19,7 +19,6 @@ const APPLICATION_STEPS = [
   { key: "education", label: "Education Details", icon: GraduationCap, desc: "Course, university, and intake", path: "/student/apply/education" },
   { key: "coapplicant", label: "Co-applicant", icon: Users, desc: "Guardian or co-applicant info", path: "/student/apply/coapplicant" },
   { key: "review", label: "Review & Submit", icon: ClipboardCheck, desc: "Review and submit your application", path: "/student/apply/review" },
-  { key: "recommendations", label: "Recommendations", icon: Search, desc: "Matched lender recommendations", path: "/student/recommendations" },
 ];
 
 interface PostSubmitState {
@@ -27,12 +26,13 @@ interface PostSubmitState {
   hasRecommendations: boolean;
   docActionNeeded: number;
   recommendationCount: number;
+  stage: string;
 }
 
 export default function StudentContinue() {
   const navigate = useNavigate();
   const { isVerified, leads, studentName, phone } = useStudentAuth();
-  const [postSubmit, setPostSubmit] = useState<PostSubmitState>({ loading: false, hasRecommendations: false, docActionNeeded: 0, recommendationCount: 0 });
+  const [postSubmit, setPostSubmit] = useState<PostSubmitState>({ loading: false, hasRecommendations: false, docActionNeeded: 0, recommendationCount: 0, stage: "" });
 
   useEffect(() => {
     if (!isVerified) {
@@ -44,33 +44,14 @@ export default function StudentContinue() {
   const completion = deriveStepCompletion(activeLead);
   const isSubmitted = completion.submitted;
 
-  // Load post-submit state
+  // Auto-redirect submitted students to tracker
   useEffect(() => {
-    if (!isSubmitted || !phone || !activeLead) return;
-    setPostSubmit(s => ({ ...s, loading: true }));
+    if (isSubmitted && activeLead) {
+      navigate("/student/tracker", { replace: true });
+    }
+  }, [isSubmitted, activeLead, navigate]);
 
-    Promise.all([
-      supabase.functions.invoke("student-application", {
-        body: { action: "load_recommendations", phone, lead_id: activeLead.id },
-      }),
-      supabase.functions.invoke("student-application", {
-        body: { action: "load_documents", phone, lead_id: activeLead.id },
-      }),
-    ]).then(([recRes, docRes]) => {
-      const recs = recRes.data?.recommendations || [];
-      const docCounts = docRes.data?.counts || {};
-      setPostSubmit({
-        loading: false,
-        hasRecommendations: recs.length > 0,
-        recommendationCount: recs.length,
-        docActionNeeded: (docCounts.action_needed || 0) + (docCounts.pending || 0),
-      });
-    }).catch(() => {
-      setPostSubmit(s => ({ ...s, loading: false }));
-    });
-  }, [isSubmitted, phone, activeLead?.id]);
-
-  if (!isVerified) return null;
+  if (!isVerified || isSubmitted) return null;
 
   const progress = deriveCurrentStep(completion);
   const currentStepIndex = Math.min(progress, APPLICATION_STEPS.length - 1);
@@ -80,9 +61,7 @@ export default function StudentContinue() {
     ? formatDistanceToNow(new Date(activeLead.updated_at), { addSuffix: true })
     : null;
 
-  // Pre-submit CTA
   const getTargetPath = () => {
-    if (completion.submitted) return "";
     if (completion.coapplicant) return "/student/apply/review";
     if (completion.education) return "/student/apply/coapplicant";
     if (completion.basic) return "/student/apply/education";
@@ -94,7 +73,7 @@ export default function StudentContinue() {
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-primary/[0.02] via-background to-primary/[0.04]">
       <StudentHeader />
 
-      <main className="flex-1 px-4 py-10 sm:px-6">
+      <main className="flex-1 px-4 py-8 sm:px-6 sm:py-10">
         <div className="mx-auto max-w-3xl">
 
           {/* Welcome header */}
@@ -106,9 +85,7 @@ export default function StudentContinue() {
               <CheckCircle2 className="h-6 w-6 text-emerald-500" />
             </div>
             <p className="mt-1.5 text-muted-foreground">
-              {isSubmitted
-                ? "Your application has been submitted! We're working on matching you with suitable lenders."
-                : isNew
+              {isNew
                 ? "You're verified! Let's start your education loan application."
                 : "Your identity is verified. Continue your application below."}
             </p>
@@ -116,7 +93,7 @@ export default function StudentContinue() {
 
           {/* Progress container */}
           <Card className="mb-6 shadow-md">
-            <CardContent className="p-6 sm:p-8">
+            <CardContent className="p-5 sm:p-8">
               <h2 className="mb-5 text-lg font-semibold text-foreground">Application Progress</h2>
               <div className="flex flex-col gap-0">
                 {APPLICATION_STEPS.map((step, i) => {
@@ -154,47 +131,16 @@ export default function StudentContinue() {
               </div>
 
               {/* Pre-submit CTA */}
-              {!isSubmitted && (
-                <div className="mt-6">
-                  <Button size="lg" className="w-full gap-2 text-base" onClick={() => navigate(targetPath)}>
-                    {isNew ? "Start Application" : "Continue Application"} <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-
-              {/* Post-submit: state-driven CTAs */}
-              {isSubmitted && (
-                <div className="mt-6 space-y-3">
-                  {/* Primary: View Application Tracker */}
-                  <Button size="lg" className="w-full gap-2 text-base" onClick={() => navigate("/student/tracker")}>
-                    <Eye className="h-4 w-4" /> View Application Tracker <ArrowRight className="h-4 w-4" />
-                  </Button>
-
-                  {postSubmit.loading ? (
-                    <div className="flex items-center justify-center gap-2 py-2">
-                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                      <span className="text-xs text-muted-foreground">Checking next steps…</span>
-                    </div>
-                  ) : postSubmit.docActionNeeded > 0 ? (
-                    <Button size="lg" variant="outline" className="w-full gap-2 text-base" onClick={() => navigate("/student/documents")}>
-                      <Upload className="h-4 w-4" /> Complete Required Documents ({postSubmit.docActionNeeded} pending)
-                    </Button>
-                  ) : postSubmit.hasRecommendations ? (
-                    <Button size="lg" variant="outline" className="w-full gap-2 text-base" onClick={() => navigate("/student/recommendations")}>
-                      <Building2 className="h-4 w-4" /> View Loan Options ({postSubmit.recommendationCount})
-                    </Button>
-                  ) : (
-                    <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 text-center">
-                      <p className="text-xs text-amber-600">Your profile is under review — we'll update you soon</p>
-                    </div>
-                  )}
-                </div>
-              )}
+              <div className="mt-6">
+                <Button size="lg" className="w-full gap-2 text-base" onClick={() => navigate(targetPath)}>
+                  {isNew ? "Start Application" : "Continue Application"} <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
-          {/* Last / Next step cards — only for pre-submit */}
-          {!isNew && !isSubmitted && (
+          {/* Last / Next step cards */}
+          {!isNew && (
             <div className="mb-6 grid gap-4 sm:grid-cols-2">
               <Card className="border-emerald-200 bg-emerald-50/50">
                 <CardContent className="p-5">
@@ -234,10 +180,10 @@ export default function StudentContinue() {
               { icon: Shield, title: "Secure Journey", desc: "Your data is encrypted and protected" },
               { icon: HeartHandshake, title: "Ongoing Support", desc: "Help is available whenever you need it" },
             ].map(c => (
-              <div key={c.title} className="rounded-xl border bg-card p-5 text-center shadow-sm">
-                <c.icon className="mx-auto mb-2 h-6 w-6 text-primary" />
-                <h3 className="text-sm font-semibold text-foreground">{c.title}</h3>
-                <p className="mt-0.5 text-xs text-muted-foreground">{c.desc}</p>
+              <div key={c.title} className="rounded-xl border bg-card p-4 text-center shadow-sm sm:p-5">
+                <c.icon className="mx-auto mb-2 h-5 w-5 text-primary sm:h-6 sm:w-6" />
+                <h3 className="text-xs font-semibold text-foreground sm:text-sm">{c.title}</h3>
+                <p className="mt-0.5 text-[11px] text-muted-foreground sm:text-xs">{c.desc}</p>
               </div>
             ))}
           </div>

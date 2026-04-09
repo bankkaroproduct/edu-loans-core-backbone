@@ -99,7 +99,7 @@ export default function StudentTracker() {
 
   // --- Health indicator ---
   const healthConfig = {
-    on_track: { label: "On Track", icon: CircleCheck, color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800", micro: "Everything looks good — no action needed from your side right now." },
+    on_track: { label: "On Track", icon: CircleCheck, color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800", micro: data?.lead_summary.current_stage === "disbursed" ? "🎉 Your loan has been disbursed — congratulations!" : data?.lead_summary.current_stage === "sanction_received" ? "🎉 Your loan has been approved! Disbursal is being processed." : "Everything looks good — no action needed from your side right now." },
     needs_attention: { label: "Needs Attention", icon: CircleAlert, color: "text-amber-600", bg: "bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800", micro: "Some documents still need to be uploaded to keep your application moving." },
     action_required: { label: "Action Required", icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/5 border-destructive/20", micro: "Please address the highlighted items so your case can proceed." },
   };
@@ -107,16 +107,16 @@ export default function StudentTracker() {
   // --- Next step guidance ---
   function getGuidance(d: TrackerData) {
     const stage = d.lead_summary.current_stage;
-    if (d.documents.action_needed > 0) return { text: `Re-upload ${d.documents.action_needed} document${d.documents.action_needed > 1 ? "s" : ""} that need${d.documents.action_needed === 1 ? "s" : ""} correction`, cta: "Complete Documents", path: "/student/documents", icon: Upload };
-    if (d.documents.pending > 0) return { text: `Upload ${d.documents.pending} pending document${d.documents.pending > 1 ? "s" : ""} to move your case forward`, cta: "Upload Documents", path: "/student/documents", icon: Upload };
-    if (["submitted", "under_initial_review"].includes(stage)) return { text: "We're reviewing your application — no action needed right now", cta: null, path: null, icon: Clock };
-    if (["documents_under_review"].includes(stage)) return { text: "Your documents are under review. We'll update you on the next step.", cta: null, path: null, icon: Eye };
-    if (["bre_evaluated"].includes(stage)) return { text: "We're matching your profile with suitable lenders", cta: d.lender.total_matches > 0 ? "View Loan Options" : null, path: d.lender.total_matches > 0 ? "/student/recommendations" : null, icon: TrendingUp };
-    if (["sent_to_lender", "login_submitted"].includes(stage)) return { text: "Your application is being processed by the lender", cta: null, path: null, icon: Building2 };
-    if (stage === "credit_query") return { text: "A query has been raised — please keep your phone available for follow-up", cta: null, path: null, icon: Phone };
-    if (stage === "sanction_received") return { text: "Great news — your loan has been approved! Disbursal will follow.", cta: null, path: null, icon: CircleCheck };
-    if (stage === "disbursed") return { text: "Your loan has been disbursed! Congratulations on your journey.", cta: null, path: null, icon: CircleCheck };
-    return { text: "We're working on your application. Check back soon for updates.", cta: null, path: null, icon: Clock };
+    if (d.documents.action_needed > 0) return { text: `Re-upload ${d.documents.action_needed} document${d.documents.action_needed > 1 ? "s" : ""} that need${d.documents.action_needed === 1 ? "s" : ""} correction`, cta: "Resolve Blocking Documents", path: "/student/documents", icon: Upload, variant: "destructive" as const };
+    if (d.documents.pending > 0) return { text: `Upload ${d.documents.pending} pending document${d.documents.pending > 1 ? "s" : ""} to move your case forward`, cta: "Upload Documents", path: "/student/documents", icon: Upload, variant: "default" as const };
+    if (["submitted", "under_initial_review"].includes(stage)) return { text: "We're reviewing your application — no action needed right now", cta: null, path: null, icon: Clock, variant: "default" as const };
+    if (["documents_under_review"].includes(stage)) return { text: "Your documents are under review. We'll update you on the next step.", cta: null, path: null, icon: Eye, variant: "default" as const };
+    if (["bre_evaluated"].includes(stage)) return { text: "We're matching your profile with suitable lenders", cta: d.lender.total_matches > 0 ? "View Loan Options" : null, path: d.lender.total_matches > 0 ? "/student/recommendations" : null, icon: TrendingUp, variant: "default" as const };
+    if (["sent_to_lender", "login_submitted"].includes(stage)) return { text: "Your application is being processed by the lender", cta: null, path: null, icon: Building2, variant: "default" as const };
+    if (stage === "credit_query") return { text: "A query has been raised — please keep your phone available for follow-up", cta: null, path: null, icon: Phone, variant: "default" as const };
+    if (stage === "sanction_received") return { text: "🎉 Great news — your loan has been approved! Disbursal will follow shortly.", cta: null, path: null, icon: CircleCheck, variant: "default" as const };
+    if (stage === "disbursed") return { text: "🎉 Your loan has been disbursed! Congratulations on starting your journey.", cta: null, path: null, icon: CircleCheck, variant: "default" as const };
+    return { text: "We're working on your application. Check back soon for updates.", cta: null, path: null, icon: Clock, variant: "default" as const };
   }
 
   return (
@@ -401,9 +401,9 @@ export default function StudentTracker() {
                   <FileText className="h-4 w-4 text-primary" />
                   <div className="text-left"><p className="text-sm font-medium">Documents</p><p className="text-[10px] text-muted-foreground">{data.documents.verified}/{data.documents.total} verified</p></div>
                 </Button>
-                <Button variant="outline" className="gap-2 justify-start h-auto py-3" onClick={() => navigate("/student/continue")}>
-                  <ArrowRight className="h-4 w-4 text-primary" />
-                  <div className="text-left"><p className="text-sm font-medium">Application</p><p className="text-[10px] text-muted-foreground">View application progress</p></div>
+                <Button variant="outline" className="gap-2 justify-start h-auto py-3" onClick={() => navigate("/student/apply/review?view=submitted")}>
+                  <Eye className="h-4 w-4 text-primary" />
+                  <div className="text-left"><p className="text-sm font-medium">View Application</p><p className="text-[10px] text-muted-foreground">Review submitted details</p></div>
                 </Button>
               </div>
 
