@@ -107,16 +107,16 @@ export default function StudentTracker() {
   // --- Next step guidance ---
   function getGuidance(d: TrackerData) {
     const stage = d.lead_summary.current_stage;
-    if (d.documents.action_needed > 0) return { text: `Re-upload ${d.documents.action_needed} document${d.documents.action_needed > 1 ? "s" : ""} that need${d.documents.action_needed === 1 ? "s" : ""} correction`, cta: "Complete Documents", path: "/student/documents", icon: Upload };
-    if (d.documents.pending > 0) return { text: `Upload ${d.documents.pending} pending document${d.documents.pending > 1 ? "s" : ""} to move your case forward`, cta: "Upload Documents", path: "/student/documents", icon: Upload };
-    if (["submitted", "under_initial_review"].includes(stage)) return { text: "We're reviewing your application — no action needed right now", cta: null, path: null, icon: Clock };
-    if (["documents_under_review"].includes(stage)) return { text: "Your documents are under review. We'll update you on the next step.", cta: null, path: null, icon: Eye };
-    if (["bre_evaluated"].includes(stage)) return { text: "We're matching your profile with suitable lenders", cta: d.lender.total_matches > 0 ? "View Loan Options" : null, path: d.lender.total_matches > 0 ? "/student/recommendations" : null, icon: TrendingUp };
-    if (["sent_to_lender", "login_submitted"].includes(stage)) return { text: "Your application is being processed by the lender", cta: null, path: null, icon: Building2 };
-    if (stage === "credit_query") return { text: "A query has been raised — please keep your phone available for follow-up", cta: null, path: null, icon: Phone };
-    if (stage === "sanction_received") return { text: "Great news — your loan has been approved! Disbursal will follow.", cta: null, path: null, icon: CircleCheck };
-    if (stage === "disbursed") return { text: "Your loan has been disbursed! Congratulations on your journey.", cta: null, path: null, icon: CircleCheck };
-    return { text: "We're working on your application. Check back soon for updates.", cta: null, path: null, icon: Clock };
+    if (d.documents.action_needed > 0) return { text: `Re-upload ${d.documents.action_needed} document${d.documents.action_needed > 1 ? "s" : ""} that need${d.documents.action_needed === 1 ? "s" : ""} correction`, cta: "Resolve Blocking Documents", path: "/student/documents", icon: Upload, variant: "destructive" as const };
+    if (d.documents.pending > 0) return { text: `Upload ${d.documents.pending} pending document${d.documents.pending > 1 ? "s" : ""} to move your case forward`, cta: "Upload Documents", path: "/student/documents", icon: Upload, variant: "default" as const };
+    if (["submitted", "under_initial_review"].includes(stage)) return { text: "We're reviewing your application — no action needed right now", cta: null, path: null, icon: Clock, variant: "default" as const };
+    if (["documents_under_review"].includes(stage)) return { text: "Your documents are under review. We'll update you on the next step.", cta: null, path: null, icon: Eye, variant: "default" as const };
+    if (["bre_evaluated"].includes(stage)) return { text: "We're matching your profile with suitable lenders", cta: d.lender.total_matches > 0 ? "View Loan Options" : null, path: d.lender.total_matches > 0 ? "/student/recommendations" : null, icon: TrendingUp, variant: "default" as const };
+    if (["sent_to_lender", "login_submitted"].includes(stage)) return { text: "Your application is being processed by the lender", cta: null, path: null, icon: Building2, variant: "default" as const };
+    if (stage === "credit_query") return { text: "A query has been raised — please keep your phone available for follow-up", cta: null, path: null, icon: Phone, variant: "default" as const };
+    if (stage === "sanction_received") return { text: "🎉 Great news — your loan has been approved! Disbursal will follow shortly.", cta: null, path: null, icon: CircleCheck, variant: "default" as const };
+    if (stage === "disbursed") return { text: "🎉 Your loan has been disbursed! Congratulations on starting your journey.", cta: null, path: null, icon: CircleCheck, variant: "default" as const };
+    return { text: "We're working on your application. Check back soon for updates.", cta: null, path: null, icon: Clock, variant: "default" as const };
   }
 
   return (
