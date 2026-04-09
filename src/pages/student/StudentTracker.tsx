@@ -268,14 +268,20 @@ export default function StudentTracker() {
                         {data.lender.total_matches > 1 && (
                           <p className="text-xs text-muted-foreground mt-1">{data.lender.total_matches - 1} more option{data.lender.total_matches - 1 > 1 ? "s" : ""} available</p>
                         )}
-                        {/* Lender processing state */}
-                        <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
+                        {/* Lender phase messaging */}
+                        <p className="text-xs mt-1.5 flex items-center gap-1">
                           <Activity className="h-3 w-3" />
-                          {["sent_to_lender", "login_submitted"].includes(data.lead_summary.current_stage) ? "Application forwarded — lender is reviewing" :
-                           data.lead_summary.current_stage === "credit_query" ? "Query in progress with lender" :
-                           data.lead_summary.current_stage === "sanction_received" ? "Approved by lender" :
-                           data.lead_summary.current_stage === "disbursed" ? "Funds released" :
-                           "Profile under evaluation"}
+                          {data.lender.phase === "processing" ? (
+                            <span className="text-primary font-medium">Actively being processed — application forwarded to lender</span>
+                          ) : data.lender.phase === "query_in_progress" ? (
+                            <span className="text-amber-600 font-medium">Query in progress — lender has raised a question</span>
+                          ) : data.lender.phase === "approved" ? (
+                            <span className="text-emerald-600 font-medium">Approved by lender — sanction received</span>
+                          ) : data.lender.phase === "disbursed" ? (
+                            <span className="text-emerald-600 font-medium">Funds released by lender</span>
+                          ) : (
+                            <span className="text-muted-foreground">Recommended based on your profile — not yet in active processing</span>
+                          )}
                         </p>
                       </div>
                       <Button size="sm" variant="outline" className="shrink-0 gap-1" onClick={() => navigate("/student/recommendations")}>
@@ -286,7 +292,7 @@ export default function StudentTracker() {
                     <div className="text-center py-3">
                       <TrendingUp className="mx-auto h-6 w-6 text-muted-foreground/50 mb-2" />
                       <p className="text-sm text-muted-foreground">Lender matching is in progress</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">We're evaluating the best options for your profile</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">We're evaluating the best options for your profile. Options will appear here once available.</p>
                     </div>
                   )}
                 </CardContent>
