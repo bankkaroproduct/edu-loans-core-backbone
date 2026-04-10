@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
+import { PageHeader } from "@/components/shared/PageHeader";
 import {
   processBulkUpload,
   generateErrorReportCSV,
@@ -394,10 +395,10 @@ export default function BulkUpload() {
           <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Bulk Upload Leads</h1>
-            <p className="text-sm text-muted-foreground">Upload multiple student leads using the standard CSV template</p>
-          </div>
+          <PageHeader
+            title="Bulk Upload Leads"
+            description="Upload multiple student leads using the standard CSV template"
+          />
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={downloadTemplate}>

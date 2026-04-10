@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/shared/PageHeader";
 import type { Tables } from "@/integrations/supabase/types";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -336,26 +337,23 @@ export default function Leads() {
   return (
     <div className="space-y-5">
       {/* ── Header ── */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Submitted Leads</h1>
-          <p className="text-sm text-muted-foreground">Track and manage all submitted partner leads from one place.</p>
-        </div>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => navigate("/leads/quick")}>
-            <Zap className="mr-1 h-4 w-4" /> Quick Lead
-          </Button>
-          <Button size="sm" onClick={() => navigate("/leads/new")}>
-            <Plus className="mr-1 h-4 w-4" /> Add Lead
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => navigate("/bulk-upload")}>
-            <Upload className="mr-1 h-4 w-4" /> Bulk Upload
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Submitted Leads"
+        description="Track and manage all submitted partner leads from one place."
+      >
+        <Button size="sm" variant="outline" onClick={() => navigate("/leads/quick")}>
+          <Zap className="mr-1 h-4 w-4" /> Quick Lead
+        </Button>
+        <Button size="sm" onClick={() => navigate("/leads/new")}>
+          <Plus className="mr-1 h-4 w-4" /> Add Lead
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => navigate("/bulk-upload")}>
+          <Upload className="mr-1 h-4 w-4" /> Bulk Upload
+        </Button>
+      </PageHeader>
 
       {/* ── Summary Strip ── */}
-      <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+      <div className="flex gap-2 overflow-x-auto pb-1">
         {SUMMARY_ITEMS.map((s) => (
           <button
             key={s.key}
@@ -366,12 +364,12 @@ export default function Leads() {
               setPage(1);
             }}
             className={cn(
-              "rounded-lg border p-2.5 text-center hover:bg-muted/50 transition-colors",
+              "rounded-lg border px-4 py-3 text-center hover:bg-muted/50 transition-colors min-w-[100px] shrink-0",
               stageFilter === s.key && "ring-2 ring-primary/40"
             )}
           >
             <p className={`text-lg font-bold ${s.color}`}>{summaryCounts[s.key] ?? 0}</p>
-            <p className="text-[10px] text-muted-foreground leading-tight">{s.label}</p>
+            <p className="text-xs text-muted-foreground leading-tight">{s.label}</p>
           </button>
         ))}
       </div>

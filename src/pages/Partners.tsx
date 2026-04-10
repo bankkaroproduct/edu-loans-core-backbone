@@ -4,6 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { Tables } from "@/integrations/supabase/types";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { PageSkeleton } from "@/components/shared/PageSkeleton";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { Building2 } from "lucide-react";
 
 type Partner = Tables<"partner_organizations">;
 
@@ -35,14 +39,14 @@ export default function Partners() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-foreground">Partners</h1>
+      <PageHeader title="Partners" description="Manage partner organizations and their details." />
       <Card>
         <CardHeader><CardTitle className="text-lg">Partner Organizations</CardTitle></CardHeader>
         <CardContent>
           {loading ? (
-            <p className="text-center py-8 text-muted-foreground">Loading...</p>
+            <PageSkeleton variant="table" />
           ) : partners.length === 0 ? (
-            <p className="text-center py-8 text-muted-foreground">No partners found</p>
+            <EmptyState icon={Building2} title="No Partners Found" description="Partner organizations will appear here once added to the system." />
           ) : (
             <Table>
               <TableHeader>

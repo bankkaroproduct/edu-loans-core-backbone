@@ -273,7 +273,7 @@ export default function Dashboard() {
     <div className="space-y-6 max-w-7xl mx-auto">
       <HeroPerformanceStrip appUser={appUser} partnerName={partnerName} kpiData={kpiData} loading={loading} />
 
-      <div className="mt-10 space-y-8">
+      <div className="mt-6 space-y-6">
         <DashboardFilters
           filters={filters}
           onChange={setFilters}

@@ -56,8 +56,8 @@ export function HeroPerformanceStrip({ appUser, partnerName, kpiData, loading }:
   ];
 
   return (
-    <div className="bg-gradient-to-br from-slate-900 via-primary to-slate-800 text-white rounded-2xl shadow-2xl overflow-hidden">
-      <div className="p-8 sm:p-10 lg:p-12">
+    <div className="bg-primary text-primary-foreground rounded-2xl shadow-xl overflow-hidden">
+      <div className="p-6 sm:p-8 lg:p-10">
         {/* Top row: Greeting + CTAs */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="space-y-2">
@@ -77,14 +77,14 @@ export function HeroPerformanceStrip({ appUser, partnerName, kpiData, loading }:
 
           <div className="flex flex-wrap gap-3 shrink-0">
             <Button
-              className="h-12 px-6 text-base font-semibold bg-white text-slate-900 hover:bg-white/90"
+              className="h-12 px-6 text-base font-semibold bg-primary-foreground text-primary hover:bg-primary-foreground/90"
               onClick={() => navigate("/leads/new")}
             >
               <Plus className="mr-2 h-5 w-5" /> Add New Lead
             </Button>
             <Button
               variant="outline"
-              className="h-12 px-6 text-base font-semibold border-white/30 text-white hover:bg-white/10 bg-transparent"
+              className="h-12 px-6 text-base font-semibold border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 bg-transparent"
               onClick={() => navigate("/bulk-upload")}
             >
               <Upload className="mr-2 h-5 w-5" /> Bulk Upload
@@ -99,15 +99,15 @@ export function HeroPerformanceStrip({ appUser, partnerName, kpiData, loading }:
             return (
               <div
                 key={m.label}
-                className="flex items-center gap-4 p-5 rounded-xl bg-white/10 hover:bg-white/15 cursor-pointer transition-colors"
+                className="flex items-center gap-4 p-5 rounded-xl bg-primary-foreground/10 hover:bg-primary-foreground/15 cursor-pointer transition-colors"
                 onClick={m.onClick}
               >
-                <div className="bg-white/10 p-3 rounded-full shrink-0">
+                <div className="bg-primary-foreground/10 p-3 rounded-full shrink-0">
                   <Icon className="h-6 w-6" />
                 </div>
                 <div className="min-w-0">
                   {loading ? (
-                    <Skeleton className="h-8 w-24 bg-white/20" />
+                    <Skeleton className="h-8 w-24 bg-primary-foreground/20" />
                   ) : (
                     <p className="text-2xl sm:text-3xl font-extrabold tracking-tight truncate">{m.value}</p>
                   )}
