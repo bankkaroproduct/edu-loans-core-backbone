@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { StageBadge, StatusBadge, formatStageLabel } from "@/components/dashboard/StageBadge";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Copy, Edit, FileText, Play } from "lucide-react";
+import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Lead = Tables<"student_leads">;
