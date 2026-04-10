@@ -87,7 +87,7 @@ export function LeadDetailHeader({ lead, submittedByName, isDraft }: Props) {
               <Edit className="h-4 w-4 mr-1" /> Edit Lead
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={() => toast.info("Document module coming soon")}>
+          <Button variant="outline" size="sm" onClick={() => navigate(`/leads/${lead.id}/documents`)}>
             <FileText className="h-4 w-4 mr-1" /> Documents
           </Button>
         </div>

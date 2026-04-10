@@ -5,6 +5,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 
+import { PageHeader } from "@/components/shared/PageHeader";
+import { PageSkeleton } from "@/components/shared/PageSkeleton";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { Database } from "lucide-react";
+
 const fmt = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
 function MasterTable({ table, columns }: { table: string; columns: { key: string; label: string }[] }) {
@@ -20,8 +25,8 @@ function MasterTable({ table, columns }: { table: string; columns: { key: string
     load();
   }, [table]);
 
-  if (loading) return <p className="text-center py-4 text-muted-foreground">Loading...</p>;
-  if (data.length === 0) return <p className="text-center py-4 text-muted-foreground">No records</p>;
+  if (loading) return <PageSkeleton variant="table" />;
+  if (data.length === 0) return <EmptyState icon={Database} title="No Records" description="No data available for this category." />;
 
   return (
     <Table>
@@ -54,7 +59,7 @@ function MasterTable({ table, columns }: { table: string; columns: { key: string
 export default function Settings() {
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-foreground">Settings & Master Data</h1>
+      <PageHeader title="Settings & Master Data" description="View and manage system configuration and reference data." />
 
       <Tabs defaultValue="countries">
         <TabsList className="flex-wrap">

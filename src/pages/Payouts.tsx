@@ -14,6 +14,8 @@ import { PayoutFilters } from "@/components/payouts/PayoutFilters";
 import { PayoutRecordsTable, type PayoutRecordRow, type SortField, type SortDir } from "@/components/payouts/PayoutRecordsTable";
 import { PayoutStatusLegend } from "@/components/payouts/PayoutStatusLegend";
 import { PayoutEmptyState } from "@/components/payouts/PayoutEmptyState";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { PageSkeleton } from "@/components/shared/PageSkeleton";
 
 type PayoutRecord = Tables<"partner_payout_records">;
 type PayoutRule = Tables<"partner_payout_rules">;
@@ -217,21 +219,13 @@ export default function Payouts() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Payouts & Earnings</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Track partner earnings and payout status by lead milestone. Pending payouts move to paid once eligible milestones are reached and settlement is completed.
-        </p>
-      </div>
+      <PageHeader
+        title="Payouts & Earnings"
+        description="Track partner earnings and payout status by lead milestone."
+      />
 
       {loading ? (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-[90px]" />)}
-          </div>
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-[300px] w-full" />
-        </div>
+        <PageSkeleton variant="cards" />
       ) : (
         <Tabs defaultValue="records">
           <TabsList>
