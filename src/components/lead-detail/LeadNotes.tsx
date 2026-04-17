@@ -16,9 +16,13 @@ interface Props {
   notes: Note[];
   userId: string | null;
   onNoteAdded: () => void;
+  /** When true, hides the composer regardless of userId. Default false. */
+  readOnly?: boolean;
+  /** "partner_visible" hides internal notes (default). "all" shows everything. */
+  noteScope?: "partner_visible" | "all";
 }
 
-export function LeadNotes({ leadId, notes, userId, onNoteAdded }: Props) {
+export function LeadNotes({ leadId, notes, userId, onNoteAdded, readOnly = false, noteScope = "partner_visible" }: Props) {
   const [newNote, setNewNote] = useState("");
   const [adding, setAdding] = useState(false);
 
@@ -40,7 +44,14 @@ export function LeadNotes({ leadId, notes, userId, onNoteAdded }: Props) {
     setAdding(false);
   };
 
-  const partnerNotes = notes.filter(n => n.note_type !== "internal");
+  const visibleNotes = noteScope === "all"
+    ? notes
+    : notes.filter(n => n.note_type !== "internal");
+
+  const showComposer = !readOnly && !!userId;
+
+  const labelFor = (type: string) =>
+    type === "system" ? "System" : type === "internal" ? "Internal" : type === "partner_visible" ? "Partner Note" : "Update";
 
   return (
     <Card>
@@ -50,7 +61,7 @@ export function LeadNotes({ leadId, notes, userId, onNoteAdded }: Props) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {userId && (
+        {showComposer && (
           <>
             <div className="flex gap-2">
               <Textarea
@@ -68,19 +79,24 @@ export function LeadNotes({ leadId, notes, userId, onNoteAdded }: Props) {
           </>
         )}
 
-        {partnerNotes.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-4">No notes yet. Add a note to keep track of updates.</p>
+        {visibleNotes.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            {readOnly ? "No notes recorded for this lead yet." : "No notes yet. Add a note to keep track of updates."}
+          </p>
         ) : (
           <div className="space-y-3 max-h-[400px] overflow-y-auto">
-            {partnerNotes.map((n) => (
+            {visibleNotes.map((n) => (
               <div key={n.id} className="border rounded-md p-3">
                 <div className="flex items-center justify-between mb-1">
-                  <Badge variant="outline" className="text-[10px]">
-                    {n.note_type === "system" ? "System" : n.note_type === "partner_visible" ? "Partner Note" : "Update"}
+                  <Badge
+                    variant={n.note_type === "internal" ? "secondary" : "outline"}
+                    className="text-[10px]"
+                  >
+                    {labelFor(n.note_type)}
                   </Badge>
                   <span className="text-[10px] text-muted-foreground">{new Date(n.created_at).toLocaleString()}</span>
                 </div>
-                <p className="text-sm">{n.note_text}</p>
+                <p className="text-sm whitespace-pre-wrap">{n.note_text}</p>
               </div>
             ))}
           </div>

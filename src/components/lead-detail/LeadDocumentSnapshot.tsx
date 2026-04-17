@@ -23,9 +23,10 @@ const STATUS_CONFIG: Record<string, { icon: typeof CheckCircle; color: string; l
 interface Props {
   requirements: DocReq[];
   leadId: string;
+  readOnly?: boolean;
 }
 
-export function LeadDocumentSnapshot({ requirements, leadId }: Props) {
+export function LeadDocumentSnapshot({ requirements, leadId, readOnly = false }: Props) {
   const navigate = useNavigate();
 
   const counts = {
@@ -54,9 +55,11 @@ export function LeadDocumentSnapshot({ requirements, leadId }: Props) {
           <CardTitle className="text-base flex items-center gap-2">
             <FileText className="h-4 w-4 text-primary" /> Document Checklist
           </CardTitle>
-          <Button variant="outline" size="sm" onClick={() => navigate(`/leads/${leadId}/documents`)}>
-            Manage Documents <ArrowRight className="h-3 w-3 ml-1" />
-          </Button>
+          {!readOnly && (
+            <Button variant="outline" size="sm" onClick={() => navigate(`/leads/${leadId}/documents`)}>
+              Manage Documents <ArrowRight className="h-3 w-3 ml-1" />
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -131,7 +134,7 @@ export function LeadDocumentSnapshot({ requirements, leadId }: Props) {
                     </div>
                   );
                 })}
-                {requirements.length > 4 && (
+                {requirements.length > 4 && !readOnly && (
                   <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => navigate(`/leads/${leadId}/documents`)}>
                     View all {requirements.length} documents →
                   </Button>
