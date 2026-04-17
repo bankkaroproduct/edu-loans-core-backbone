@@ -11,6 +11,7 @@ import { AdminRoute } from "@/components/AdminRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminLogin from "./pages/admin/AdminLogin";
 import AdminLeads from "./pages/admin/AdminLeads";
 import AdminLeadDetail from "./pages/admin/AdminLeadDetail";
 import AdminPlaceholder from "./pages/admin/AdminPlaceholder";
@@ -78,7 +79,8 @@ const App = () => (
             <Route path="/master-data" element={<ProtectedRoute><MasterData /></ProtectedRoute>} />
             <Route path="/partners" element={<ProtectedRoute><Partners /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-            {/* Admin Console */}
+            {/* Admin Console — separate portal */}
+            <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
             <Route path="/admin/leads" element={<AdminRoute><AdminLeads /></AdminRoute>} />
             <Route path="/admin/leads/:id" element={<AdminRoute><AdminLeadDetail /></AdminRoute>} />
@@ -86,8 +88,10 @@ const App = () => (
             <Route path="/admin/underwriting" element={<AdminRoute><AdminPlaceholder title="Underwriting" description="BRE evaluation, lender matching, and credit query workflows." /></AdminRoute>} />
             <Route path="/admin/disbursements" element={<AdminRoute><AdminPlaceholder title="Disbursements" description="Sanction tracking and disbursement reconciliation." /></AdminRoute>} />
             <Route path="/admin/reports" element={<AdminRoute><AdminPlaceholder title="Reports" description="Cross-partner analytics, payouts, and operational reports." /></AdminRoute>} />
+            <Route path="/admin/partners" element={<AdminRoute><AdminPlaceholder title="Partner Management" description="Manage partner organizations, branches, and users." /></AdminRoute>} />
             <Route path="/admin/lenders" element={<AdminRoute><AdminPlaceholder title="Lender Management" description="Manage lender catalog, mappings, and BRE rules." /></AdminRoute>} />
             <Route path="/admin/universities" element={<AdminRoute><AdminPlaceholder title="University Management" description="Manage the universities master and lender mappings." /></AdminRoute>} />
+            <Route path="/admin/settings" element={<AdminRoute><AdminPlaceholder title="Admin Settings" description="System-wide configuration, roles, and access management." /></AdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </StudentAuthProvider>
