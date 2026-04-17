@@ -81,8 +81,7 @@ export default function QuickLead() {
     return null;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     const err = validate();
     if (err) return toast.error(err);
 
@@ -192,7 +191,7 @@ export default function QuickLead() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="space-y-5">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Student & Contact</CardTitle>
@@ -276,11 +275,11 @@ export default function QuickLead() {
 
         <div className="flex gap-3 justify-end sticky bottom-4 bg-background/80 backdrop-blur p-3 rounded-lg border">
           <Button type="button" variant="outline" onClick={() => navigate(-1)}>Cancel</Button>
-          <Button type="submit" disabled={submitting || checking}>
+          <Button type="button" onClick={handleSubmit} disabled={submitting || checking}>
             {submitting ? "Submitting..." : checking ? "Checking..." : "Submit Quick Lead"}
           </Button>
         </div>
-      </form>
+      </div>
 
       <DuplicateWarningDialog
         open={showDupDialog}
