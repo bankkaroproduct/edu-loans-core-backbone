@@ -63,7 +63,7 @@ export function getTemplateCSV(): string {
   return ALL_HEADERS.join(",") + "\n";
 }
 
-function parseCSVLine(line: string): string[] {
+function parseDelimitedLine(line: string, delimiter: string): string[] {
   const result: string[] = [];
   let current = "";
   let inQuotes = false;
@@ -75,7 +75,7 @@ function parseCSVLine(line: string): string[] {
       else { current += ch; }
     } else {
       if (ch === '"') { inQuotes = true; }
-      else if (ch === ",") { result.push(current.trim()); current = ""; }
+      else if (ch === delimiter) { result.push(current.trim()); current = ""; }
       else { current += ch; }
     }
   }
@@ -83,19 +83,60 @@ function parseCSVLine(line: string): string[] {
   return result;
 }
 
-export function parseCSV(text: string): { headers: string[]; rows: Record<string, string>[] } | { error: string } {
+/**
+ * Auto-detect the delimiter from the header row. Supports comma (`,`) and tilde (`~`).
+ * Strategy:
+ *   1. Count occurrences of each candidate delimiter outside of quotes in the header row.
+ *   2. Pick whichever produces the most fields (and at least 2).
+ *   3. If counts tie, prefer comma (the standard CSV default).
+ */
+function detectDelimiter(headerLine: string): "," | "~" {
+  const candidates: Array<"," | "~"> = [",", "~"];
+  let best: "," | "~" = ",";
+  let bestCount = -1;
+  for (const d of candidates) {
+    const fields = parseDelimitedLine(headerLine, d);
+    const count = fields.length;
+    if (count > bestCount) {
+      best = d;
+      bestCount = count;
+    }
+  }
+  return best;
+}
+
+export function parseCSV(text: string): { headers: string[]; rows: Record<string, string>[]; delimiter: string } | { error: string } {
   const lines = text.split(/\r?\n/).filter((l) => l.trim() !== "");
   if (lines.length < 1) return { error: "File is empty" };
 
-  const rawHeaders = parseCSVLine(lines[0]);
-  const headers = rawHeaders.map((h) => h.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, ""));
+  const normalize = (raw: string[]) =>
+    raw.map((h) => h.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, ""));
 
-  const missing = REQUIRED_HEADERS.filter((r) => !headers.includes(r));
+  // First attempt: auto-detected delimiter
+  let delimiter: "," | "~" = detectDelimiter(lines[0]);
+  let headers = normalize(parseDelimitedLine(lines[0], delimiter));
+  let missing = REQUIRED_HEADERS.filter((r) => !headers.includes(r));
+
+  // Fallback: if detection produced a single mega-field but the other delimiter appears,
+  // retry with the alternate delimiter.
+  if (missing.length > 0) {
+    const alt: "," | "~" = delimiter === "," ? "~" : ",";
+    if (lines[0].includes(alt)) {
+      const altHeaders = normalize(parseDelimitedLine(lines[0], alt));
+      const altMissing = REQUIRED_HEADERS.filter((r) => !altHeaders.includes(r));
+      if (altMissing.length < missing.length) {
+        delimiter = alt;
+        headers = altHeaders;
+        missing = altMissing;
+      }
+    }
+  }
+
   if (missing.length > 0) return { error: `Missing required columns: ${missing.join(", ")}` };
 
   const rows: Record<string, string>[] = [];
   for (let i = 1; i < lines.length; i++) {
-    const values = parseCSVLine(lines[i]);
+    const values = parseDelimitedLine(lines[i], delimiter);
     const row: Record<string, string> = {};
     headers.forEach((h, idx) => { row[h] = (values[idx] ?? "").trim(); });
     if (Object.values(row).some((v) => v !== "")) rows.push(row);
@@ -104,7 +145,7 @@ export function parseCSV(text: string): { headers: string[]; rows: Record<string
   if (rows.length === 0) return { error: "No data rows found" };
   if (rows.length > 1000) return { error: `File contains ${rows.length} rows. Maximum is 1000 per batch.` };
 
-  return { headers, rows };
+  return { headers, rows, delimiter };
 }
 
 function normBool(val: string): boolean | null {
