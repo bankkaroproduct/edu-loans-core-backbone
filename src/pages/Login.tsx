@@ -10,10 +10,15 @@ import { toast } from "sonner";
 import { Check, Shield, TrendingUp, Users, Banknote } from "lucide-react";
 
 export default function Login() {
-  const { user, loading } = useAuth();
+  const { user, appUser, loading } = useAuth();
 
   if (loading) return <div className="flex min-h-screen items-center justify-center"><p className="text-muted-foreground">Loading...</p></div>;
-  if (user) return <Navigate to="/" replace />;
+  if (user && appUser) {
+    const role = appUser.role;
+    if (role === "super_admin" || role === "admin") return <Navigate to="/admin" replace />;
+    return <Navigate to="/" replace />;
+  }
+  if (user && !appUser) return <div className="flex min-h-screen items-center justify-center"><p className="text-muted-foreground">Loading profile...</p></div>;
 
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
