@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { PartnerContextProvider } from "@/hooks/usePartnerContext";
 import { StudentAuthProvider } from "@/hooks/useStudentAuth";
 import { AppLayout } from "@/components/AppLayout";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Leads from "./pages/Leads";
@@ -37,12 +38,13 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => (
 );
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
           <PartnerContextProvider>
           <StudentAuthProvider>
           <Routes>
@@ -75,8 +77,9 @@ const App = () => (
           </PartnerContextProvider>
         </AuthProvider>
       </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

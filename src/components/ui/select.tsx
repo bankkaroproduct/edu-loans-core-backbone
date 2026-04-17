@@ -4,7 +4,23 @@ import { Check, ChevronDown, ChevronUp } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-const Select = SelectPrimitive.Root;
+/**
+ * Defensive wrapper around Radix Select.Root.
+ * Radix throws "NotFoundError: Failed to execute 'removeChild' on 'Node'" when
+ * controlled `value` is the empty string "" (it conflicts with the placeholder
+ * sentinel). We coerce "" → undefined here so every consumer is safe by default.
+ */
+const Select = ({
+  value,
+  defaultValue,
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Root>) => (
+  <SelectPrimitive.Root
+    value={value === "" ? undefined : value}
+    defaultValue={defaultValue === "" ? undefined : defaultValue}
+    {...props}
+  />
+);
 
 const SelectGroup = SelectPrimitive.Group;
 
