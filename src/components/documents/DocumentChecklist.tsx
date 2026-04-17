@@ -4,8 +4,72 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   CheckCircle, Clock, XCircle, AlertTriangle, Upload, Eye,
-  FileText, ShieldCheck, Ban, RotateCcw, Info, History
+  FileText, ShieldCheck, Ban, RotateCcw, Info, History, ShieldAlert, HelpCircle
 } from "lucide-react";
+
+type ValidationFlag = "ok" | "warn_name" | "warn_type" | "review_needed" | "inconclusive";
+
+function ValidationChip({ result }: { result: any }) {
+  if (!result || typeof result !== "object") return null;
+  const flag: ValidationFlag = result.overall_flag ?? "ok";
+  const extracted = result.name_check?.extracted_name_candidate;
+  const expected = result.name_check?.expected_name;
+  const matched = result.name_check?.matched_name_tokens ?? [];
+  const overridden = !!result.override;
+
+  const config: Record<ValidationFlag, { label: string; icon: typeof CheckCircle; cls: string; tip: string }> = {
+    ok: {
+      label: "Authenticated",
+      icon: ShieldCheck,
+      cls: "bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800",
+      tip: "File contents match the expected document type and applicant name.",
+    },
+    warn_name: {
+      label: "Name may not match",
+      icon: AlertTriangle,
+      cls: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800",
+      tip: extracted && expected
+        ? `Extracted "${extracted}" but application has "${expected}". Matched ${matched.length} token(s). If correct, no action needed.`
+        : "We could not confidently match the name on the document with the application.",
+    },
+    warn_type: {
+      label: "Type unconfirmed",
+      icon: AlertTriangle,
+      cls: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800",
+      tip: "We could not confirm this file matches the expected document type. Please verify.",
+    },
+    review_needed: {
+      label: overridden ? "Flagged for review" : "Possible wrong type",
+      icon: ShieldAlert,
+      cls: "bg-destructive/10 text-destructive border-destructive/30",
+      tip: overridden
+        ? "User confirmed upload despite a type mismatch. Admin will review."
+        : "This file does not appear to be the expected document type.",
+    },
+    inconclusive: {
+      label: "Validation pending",
+      icon: HelpCircle,
+      cls: "bg-muted text-muted-foreground border-border",
+      tip: result.extraction?.method === "skipped_image_phase1"
+        ? "Image uploads will be auto-validated in a future update. The file is stored and visible to reviewers."
+        : "We could not extract text from this file (e.g. scanned PDF). It is stored and will be reviewed manually.",
+    },
+  };
+
+  const c = config[flag];
+  const Icon = c.icon;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium cursor-help ${c.cls}`}>
+          <Icon className="h-3 w-3" /> {c.label}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-xs">{c.tip}</TooltipContent>
+    </Tooltip>
+  );
+}
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { DocRequirement, DocFile } from "@/pages/LeadDocuments";
@@ -110,6 +174,13 @@ export function DocumentChecklist({ requirements, documents, onUpload, leadId }:
                         <Badge variant="outline" className="text-[9px] text-muted-foreground">Optional</Badge>
                       )}
                     </div>
+
+                    {/* Validation chip */}
+                    {latestDoc?.validation_result && (
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <ValidationChip result={latestDoc.validation_result} />
+                      </div>
+                    )}
 
                     {/* Latest file info */}
                     {latestDoc && (
