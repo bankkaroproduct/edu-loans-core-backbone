@@ -18,6 +18,7 @@ import { DuplicateWarningDialog } from "@/components/leads/DuplicateWarningDialo
 import { LeadSuccessDialog } from "@/components/leads/LeadSuccessDialog";
 import { toast } from "sonner";
 import { ArrowLeft, FileText, User, GraduationCap, Wallet, MessageSquare, Eye } from "lucide-react";
+import { normalizePhone, isValidIndianPhone } from "@/lib/phone";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Country = Tables<"countries_master">;
@@ -134,7 +135,7 @@ export default function AddLead() {
   const validate = (isDraft: boolean): string | null => {
     if (!form.student_first_name.trim()) return "Student first name is required";
     if (!form.student_phone.trim()) return "Phone number is required";
-    if (!/^\+?[\d\s-]{7,15}$/.test(form.student_phone.trim())) return "Phone number format is invalid";
+    if (!isValidIndianPhone(form.student_phone)) return "Phone must be a valid 10-digit Indian number (with or without +91)";
     if (form.student_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.student_email.trim())) return "Email format is invalid";
 
     if (!isDraft) {
@@ -160,7 +161,7 @@ export default function AddLead() {
 
     if (!asDraft) {
       const dups = await checkDuplicates({
-        phone: form.student_phone.trim(),
+        phone: normalizePhone(form.student_phone) ?? form.student_phone.trim(),
         email: form.student_email.trim() || undefined,
         firstName: form.student_first_name.trim(),
         lastName: form.student_last_name.trim(),
@@ -189,8 +190,8 @@ export default function AddLead() {
       student_last_name: form.student_last_name.trim() || null,
       
       student_email: form.student_email.trim() || null,
-      student_phone: form.student_phone.trim(),
-      student_whatsapp: form.student_whatsapp.trim() || null,
+      student_phone: normalizePhone(form.student_phone) ?? form.student_phone.trim(),
+      student_whatsapp: form.student_whatsapp.trim() ? (normalizePhone(form.student_whatsapp) ?? form.student_whatsapp.trim()) : null,
       city: form.city.trim() || null,
       state: form.state.trim() || null,
       country_of_residence: form.country_of_residence || null,
