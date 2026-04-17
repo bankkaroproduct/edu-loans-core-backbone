@@ -1361,6 +1361,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      country_to_iso: { Args: { _name: string }; Returns: string }
       get_user_partner_id: { Args: { _auth_id: string }; Returns: string }
       get_user_role: {
         Args: { _auth_id: string }
@@ -1375,6 +1376,11 @@ export type Database = {
       }
       is_admin_or_super: { Args: { _auth_id: string }; Returns: boolean }
       normalize_phone: { Args: { _phone: string }; Returns: string }
+      seed_lead_document_requirements: {
+        Args: { p_lead_id: string }
+        Returns: number
+      }
+      seed_lead_lender_matches: { Args: { p_lead_id: string }; Returns: number }
     }
     Enums: {
       app_role: "super_admin" | "admin" | "partner_admin" | "partner_agent"
