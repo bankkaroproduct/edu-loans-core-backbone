@@ -15,6 +15,7 @@ import { DuplicateWarningDialog } from "@/components/leads/DuplicateWarningDialo
 import { LeadSuccessDialog } from "@/components/leads/LeadSuccessDialog";
 import { toast } from "sonner";
 import { ArrowLeft, Zap } from "lucide-react";
+import { normalizePhone, isValidIndianPhone } from "@/lib/phone";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Country = Tables<"countries_master">;
@@ -68,7 +69,7 @@ export default function QuickLead() {
   const validate = (): string | null => {
     if (!form.student_first_name.trim()) return "Student first name is required";
     if (!form.student_phone.trim()) return "Phone number is required";
-    if (!/^\+?[\d\s-]{7,15}$/.test(form.student_phone.trim())) return "Phone number format is invalid";
+    if (!isValidIndianPhone(form.student_phone)) return "Phone must be a valid 10-digit Indian number (with or without +91)";
     if (form.student_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.student_email.trim())) return "Email format is invalid";
     if (!form.intended_study_country) return "Study country is required";
     if (!form.intake_term) return "Intake term is required";
@@ -85,8 +86,11 @@ export default function QuickLead() {
     const err = validate();
     if (err) return toast.error(err);
 
+    const canonicalPhone = normalizePhone(form.student_phone)!;
+    const canonicalWhatsapp = form.student_whatsapp.trim() ? normalizePhone(form.student_whatsapp) : null;
+
     const dups = await checkDuplicates({
-      phone: form.student_phone.trim(),
+      phone: canonicalPhone,
       email: form.student_email.trim() || undefined,
       firstName: form.student_first_name.trim(),
       lastName: form.student_last_name.trim(),
@@ -100,19 +104,24 @@ export default function QuickLead() {
       return;
     }
 
-    await createLead(false);
+    await createLead(false, canonicalPhone, canonicalWhatsapp);
   };
 
-  const createLead = async (hasDuplicateWarning: boolean) => {
+  const createLead = async (hasDuplicateWarning: boolean, canonicalPhoneArg?: string, canonicalWhatsappArg?: string | null) => {
     setSubmitting(true);
     setShowDupDialog(false);
+
+    const canonicalPhone = canonicalPhoneArg ?? normalizePhone(form.student_phone) ?? form.student_phone.trim();
+    const canonicalWhatsapp = canonicalWhatsappArg !== undefined
+      ? canonicalWhatsappArg
+      : (form.student_whatsapp.trim() ? normalizePhone(form.student_whatsapp) : null);
 
     const payload = {
       student_first_name: form.student_first_name.trim(),
       student_last_name: form.student_last_name.trim() || null,
-      student_phone: form.student_phone.trim(),
+      student_phone: canonicalPhone,
       student_email: form.student_email.trim() || null,
-      student_whatsapp: form.student_whatsapp.trim() || null,
+      student_whatsapp: canonicalWhatsapp,
       city: form.city.trim() || null,
       intended_study_country: form.intended_study_country,
       intake_term: form.intake_term,

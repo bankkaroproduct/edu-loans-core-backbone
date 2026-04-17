@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { createDownstreamRecords } from "@/hooks/useLeadWriteFlow";
 import type { Tables } from "@/integrations/supabase/types";
+import { normalizePhone } from "@/lib/phone";
 
 type AppUser = Tables<"users">;
 
@@ -224,7 +225,9 @@ function detectIntraFileDuplicates(rows: ParsedRow[]): Map<number, { matchRow: n
   const nameIntakeMap = new Map<string, number>();
 
   for (const row of rows) {
-    const phone = row.student_phone?.replace(/[\s\-()]/g, "");
+    // Use canonical phone form for intra-file dedup so "9876543210" and "+919876543210"
+    // collide as expected.
+    const phone = normalizePhone(row.student_phone);
     if (phone && phoneMap.has(phone)) {
       dups.set(row.rowNumber, { matchRow: phoneMap.get(phone)!, reason: `Duplicate phone matches row ${phoneMap.get(phone)}` });
       continue;
@@ -250,17 +253,18 @@ function detectIntraFileDuplicates(rows: ParsedRow[]): Map<number, { matchRow: n
 }
 
 async function checkSystemDuplicate(row: ParsedRow, partnerId: string): Promise<{ isDuplicate: boolean; matchedLeadId?: string; matchedDisplayId?: string; reason?: string }> {
-  const phone = row.student_phone?.replace(/[\s\-()]/g, "");
-  if (phone) {
+  // Always look up by canonical +91XXXXXXXXXX form so we hit the same value the trigger stores.
+  const canonicalPhone = normalizePhone(row.student_phone);
+  if (canonicalPhone) {
     const { data } = await supabase
       .from("student_leads")
       .select("id,lead_id,student_full_name")
       .eq("partner_id", partnerId)
-      .eq("student_phone", phone)
+      .eq("student_phone", canonicalPhone)
       .eq("is_archived", false)
       .limit(1);
     if (data && data.length > 0) {
-      return { isDuplicate: true, matchedLeadId: data[0].id, matchedDisplayId: data[0].lead_id ?? undefined, reason: `Phone ${phone} matches existing lead ${data[0].lead_id ?? data[0].id}` };
+      return { isDuplicate: true, matchedLeadId: data[0].id, matchedDisplayId: data[0].lead_id ?? undefined, reason: `Phone ${canonicalPhone} matches existing lead ${data[0].lead_id ?? data[0].id}` };
     }
   }
 
