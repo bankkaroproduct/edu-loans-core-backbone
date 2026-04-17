@@ -78,18 +78,14 @@ export function StudentAuthProvider({ children }: { children: ReactNode }) {
     try {
       const { error } = await supabase.auth.signInWithOtp({ phone });
       if (error) {
-        // Phone auth may not be configured yet
-        if (error.message?.includes("Phone") || error.message?.includes("provider")) {
-          toast({
-            title: "Phone login not yet configured",
-            description: "OTP verification will be available soon. For now, we've sent a demo OTP.",
-            variant: "destructive",
-          });
-          // Still move to otp_sent so the UI flow is testable
-          persist({ ...state, phone, otpState: "otp_sent", isVerified: false, leads: [], studentName: null });
-          return;
-        }
-        throw error;
+        // Phone provider not configured / unavailable → do NOT fake-advance the flow.
+        setState(s => ({ ...s, otpState: "idle", phone: null }));
+        toast({
+          title: "OTP service unavailable",
+          description: "We can't send a verification code right now. Please try again later or contact support.",
+          variant: "destructive",
+        });
+        return;
       }
       persist({ ...state, phone, otpState: "otp_sent", isVerified: false, leads: [], studentName: null });
       toast({ title: "OTP Sent", description: "Please check your phone for the verification code." });
@@ -110,16 +106,14 @@ export function StudentAuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) {
-        // If phone auth isn't configured, simulate success for UI testing
-        if (error.message?.includes("Phone") || error.message?.includes("provider") || error.message?.includes("Token")) {
-          // Attempt to look up leads by phone anyway
-          const leads = await lookupLeads(state.phone);
-          const name = leads.length > 0 ? leads[0].student_full_name || leads[0].student_first_name : null;
-          persist({ phone: state.phone, isVerified: true, otpState: "verified", leads, studentName: name });
-          toast({ title: "Verified!", description: "Welcome to EduLoans." });
-          return true;
-        }
-        throw error;
+        // Real verification failure (wrong code, expired, provider error) — never fake success.
+        setState(s => ({ ...s, otpState: "otp_sent" }));
+        toast({
+          title: "Verification failed",
+          description: error.message || "Invalid OTP. Please try again.",
+          variant: "destructive",
+        });
+        return false;
       }
 
       const leads = await lookupLeads(state.phone);

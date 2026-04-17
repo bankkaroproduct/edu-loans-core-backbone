@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
+import { normalizePhone } from "@/lib/phone";
 
 export type DuplicateLead = Pick<
   Tables<"student_leads">,
@@ -29,13 +30,15 @@ export function useDuplicateCheck() {
 
       const selectFields = "id,lead_id,student_full_name,student_phone,student_email,current_stage,current_status,created_at,intake_term,intake_year";
 
-      // Check by phone
-      if (params.phone?.trim()) {
+      // Check by phone — always normalize to +91XXXXXXXXXX so lookup matches the canonical
+      // form stored by the DB trigger. Falls back to raw input if normalization fails.
+      const canonicalPhone = normalizePhone(params.phone) ?? params.phone?.trim();
+      if (canonicalPhone) {
         const { data } = await supabase
           .from("student_leads")
           .select(selectFields)
           .eq("partner_id", params.partnerId)
-          .eq("student_phone", params.phone.trim())
+          .eq("student_phone", canonicalPhone)
           .eq("is_archived", false)
           .limit(5);
         data?.forEach((d) => {

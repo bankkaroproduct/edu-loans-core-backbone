@@ -27,12 +27,22 @@ function sanitizeRemark(remark: string | null): string | null {
   return remark;
 }
 
-// Resolve lead by phone and optionally verify lead_id ownership
+// Normalize phone to canonical +91XXXXXXXXXX form (mirrors DB normalize_phone()).
+function normalizePhone(input: string | null | undefined): string | null {
+  if (!input) return null;
+  const digits = String(input).replace(/\D/g, "");
+  let local = digits;
+  if (local.length === 12 && local.startsWith("91")) local = local.slice(2);
+  if (local.length !== 10) return null;
+  return `+91${local}`;
+}
+
+// Resolve lead by canonical phone and optionally verify lead_id ownership.
+// Always uses the normalized form — DB rows are stored normalized via trigger.
 async function resolveLead(supabaseAdmin: any, cleanPhone: string, leadId?: string) {
-  const variants = [cleanPhone, cleanPhone.slice(3)];
+  const canonical = normalizePhone(cleanPhone) ?? cleanPhone;
 
   if (leadId) {
-    // Verify the lead_id belongs to this phone
     const { data: lead, error } = await supabaseAdmin
       .from("student_leads")
       .select("*")
@@ -41,18 +51,17 @@ async function resolveLead(supabaseAdmin: any, cleanPhone: string, leadId?: stri
 
     if (error || !lead) return { lead: null, error: "Lead not found" };
 
-    const leadPhone = lead.student_phone?.replace(/\s/g, "");
-    if (!variants.includes(leadPhone) && !variants.includes(leadPhone?.replace(/^\+91/, ""))) {
+    const leadCanonical = normalizePhone(lead.student_phone);
+    if (leadCanonical !== canonical) {
       return { lead: null, error: "Phone does not match this application" };
     }
     return { lead, error: null };
   }
 
-  // Find by phone
   const { data: leads, error } = await supabaseAdmin
     .from("student_leads")
     .select("*")
-    .in("student_phone", variants)
+    .eq("student_phone", canonical)
     .order("updated_at", { ascending: false })
     .limit(1);
 
@@ -89,11 +98,11 @@ Deno.serve(async (req) => {
 
     // --- LOAD ---
     if (action === "load") {
-      const variants = [cleanPhone, cleanPhone.slice(3)];
+      const canonical = normalizePhone(cleanPhone) ?? cleanPhone;
       const { data: leads, error } = await supabaseAdmin
         .from("student_leads")
         .select("*")
-        .in("student_phone", variants)
+        .eq("student_phone", canonical)
         .order("updated_at", { ascending: false })
         .limit(1);
 
@@ -404,31 +413,56 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Missing data payload" }, 400);
     }
 
-    // For write actions, resolve lead
+    // For write actions, resolve lead by canonical phone
+    const canonicalPhone = normalizePhone(cleanPhone) ?? cleanPhone;
     let existingLeadId = lead_id;
+    let existingLead: any = null;
     if (!existingLeadId) {
-      const variants = [cleanPhone, cleanPhone.slice(3)];
       const { data: existing } = await supabaseAdmin
         .from("student_leads")
-        .select("id")
-        .in("student_phone", variants)
+        .select("*")
+        .eq("student_phone", canonicalPhone)
         .order("updated_at", { ascending: false })
         .limit(1);
-      if (existing && existing.length > 0) existingLeadId = existing[0].id;
+      if (existing && existing.length > 0) {
+        existingLeadId = existing[0].id;
+        existingLead = existing[0];
+      }
+    } else {
+      const { data: existing } = await supabaseAdmin
+        .from("student_leads")
+        .select("*")
+        .eq("id", existingLeadId)
+        .single();
+      existingLead = existing;
     }
 
     // --- SAVE BASIC ---
     if (action === "save_basic") {
-      const fullName = (data?.student_full_name || data?.student_first_name || "") as string;
-      const nameParts = fullName.trim().split(/\s+/);
-      const firstName = nameParts[0] || "";
-      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : null;
+      const incomingFullName = (data?.student_full_name || "") as string;
+      const incomingFirst = (data?.student_first_name || "") as string;
+      const incomingLast = (data?.student_last_name || "") as string;
+
+      // Preserve existing first/last when present; only derive from full_name as a last resort.
+      // This prevents the "Sanjay Mehra Mehra" / partner-name-clobber class of bugs.
+      let firstName = incomingFirst.trim() || existingLead?.student_first_name || "";
+      let lastName: string | null = incomingLast.trim() || existingLead?.student_last_name || null;
+
+      if ((!firstName || !lastName) && incomingFullName.trim()) {
+        const parts = incomingFullName.trim().split(/\s+/);
+        if (!firstName) firstName = parts[0] || "";
+        if (!lastName && parts.length > 1) lastName = parts.slice(1).join(" ");
+      }
+
+      // Derive a clean full_name (no duplication) from first+last
+      const derivedFullName = [firstName, lastName].filter(Boolean).join(" ").trim() || incomingFullName.trim() || null;
 
       const basicFields: Record<string, unknown> = {
         student_first_name: firstName,
         student_last_name: lastName,
+        student_full_name: derivedFullName,
         student_email: data?.student_email as string || null,
-        student_phone: cleanPhone,
+        student_phone: canonicalPhone,
         student_dob: data?.student_dob as string || null,
         student_gender: data?.student_gender as string || null,
         city: data?.city as string || null,
