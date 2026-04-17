@@ -19,6 +19,7 @@ import BulkUpload from "./pages/BulkUpload";
 import Payouts from "./pages/Payouts";
 import Partners from "./pages/Partners";
 import Settings from "./pages/Settings";
+import MasterData from "./pages/MasterData";
 import NotFound from "./pages/NotFound";
 import StudentLanding from "./pages/student/StudentLanding";
 import StudentLogin from "./pages/student/StudentLogin";
@@ -69,6 +70,7 @@ const App = () => (
             <Route path="/leads/:id/documents" element={<ProtectedRoute><LeadDocuments /></ProtectedRoute>} />
             <Route path="/bulk-upload" element={<ProtectedRoute><BulkUpload /></ProtectedRoute>} />
             <Route path="/payouts" element={<ProtectedRoute><Payouts /></ProtectedRoute>} />
+            <Route path="/master-data" element={<ProtectedRoute><MasterData /></ProtectedRoute>} />
             <Route path="/partners" element={<ProtectedRoute><Partners /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />

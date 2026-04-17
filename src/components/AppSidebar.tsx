@@ -6,6 +6,7 @@ import {
   CreditCard,
   Settings,
   LogOut,
+  BookOpen,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -32,6 +33,7 @@ const mainItems = [
   { title: "Leads", url: "/leads", icon: FileText },
   { title: "Bulk Upload", url: "/bulk-upload", icon: Upload },
   { title: "Payouts", url: "/payouts", icon: CreditCard },
+  { title: "Master Data", url: "/master-data", icon: BookOpen },
 ];
 
 const adminItems = [
