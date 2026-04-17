@@ -137,7 +137,7 @@ export default function StudentLanding() {
             </div>
             <div className="space-y-1.5">
               <Label>Target Country</Label>
-              <Select value={form.targetCountry} onValueChange={v => setForm(f => ({ ...f, targetCountry: v }))}>
+              <Select value={form.targetCountry || undefined} onValueChange={v => setForm(f => ({ ...f, targetCountry: v }))}>
                 <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
                 <SelectContent>
                   {countries.map(c => <SelectItem key={c.id} value={c.country_name}>{c.country_name}</SelectItem>)}
