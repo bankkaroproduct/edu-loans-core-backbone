@@ -149,13 +149,18 @@ export default function StudentLanding() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Target Country</Label>
-              <Select value={form.targetCountry || undefined} onValueChange={v => setForm(f => ({ ...f, targetCountry: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
-                <SelectContent>
-                  {countries.map(c => <SelectItem key={c.id} value={c.country_name}>{c.country_name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="elig-country">Target Country</Label>
+              <select
+                id="elig-country"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={form.targetCountry}
+                onChange={e => setForm(f => ({ ...f, targetCountry: e.target.value }))}
+              >
+                <option value="" disabled>Select country</option>
+                {countries.map(c => (
+                  <option key={c.id} value={c.country_name}>{c.country_name}</option>
+                ))}
+              </select>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="elig-amount">Loan Amount (₹)</Label>
