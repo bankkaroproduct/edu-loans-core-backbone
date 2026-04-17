@@ -22,7 +22,7 @@ type Country = Tables<"countries_master">;
 type Intake = Tables<"intake_master">;
 
 const STAGE = "submitted" as const;
-const STATUS = "pending_info" as const;
+const STATUS = "awaiting_verification" as const;
 
 export default function QuickLead() {
   const navigate = useNavigate();
