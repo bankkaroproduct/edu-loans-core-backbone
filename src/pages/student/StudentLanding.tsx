@@ -32,7 +32,7 @@ const BENEFITS = [
 
 const FAQS = [
   { q: "Am I eligible for an education loan?", a: "Eligibility depends on factors like your chosen course, university, co-applicant income, and collateral availability. Our quick eligibility check helps you understand your options before you apply." },
-  { q: "What is the typical processing timeline?", a: "Once you submit your complete application with documents, most lenders process within 7–15 working days. We help you stay informed at every stage." },
+  { q: "What is the typical processing timeline?", a: "Once you submit your complete application with documents, most lenders process within 7-15 working days. We help you stay informed at every stage." },
   { q: "Do I need to apply to all lenders separately?", a: "No. EduLoans matches you with the most suitable lenders based on your profile. You fill in your details once, and we handle the rest." },
   { q: "How can I track my application status?", a: "After submission, you can log in anytime to see the current status of your application, from document review to final approval." },
   { q: "Are there any hidden charges?", a: "EduLoans does not charge students any advisory or processing fee. The only costs involved are those set by the lender as part of the loan agreement." },
@@ -46,9 +46,16 @@ export default function StudentLanding() {
   const [form, setForm] = useState<EligibilityData>({ fullName: "", mobile: "", targetCountry: "", loanAmount: "" });
 
   useEffect(() => {
-    supabase.from("countries_master").select("id, country_name").eq("active_flag", true).order("country_name").then(({ data }) => {
-      if (data) setCountries(data);
-    });
+    let cancelled = false;
+    supabase
+      .from("countries_master")
+      .select("id, country_name")
+      .eq("active_flag", true)
+      .order("country_name")
+      .then(({ data }) => {
+        if (!cancelled && data) setCountries(data);
+      });
+    return () => { cancelled = true; };
   }, []);
 
   const handleEligibility = (e: React.FormEvent) => {
@@ -66,23 +73,30 @@ export default function StudentLanding() {
     navigate("/student/login");
   };
 
+  const scrollToEligibility = () => {
+    const el = document.getElementById("eligibility");
+    if (el) el.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <StudentHeader />
 
-      {/* ── Hero ── */}
+      {/* Hero */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary/[0.03] via-background to-primary/[0.06]">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 md:grid-cols-2 md:items-center md:py-24">
           <div className="flex flex-col gap-6">
             <h1 className="text-4xl font-extrabold leading-[1.1] tracking-tight text-foreground sm:text-5xl">
               Your Education Loan,{" "}
-              <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Simplified</span>
+              <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                Simplified
+              </span>
             </h1>
             <p className="max-w-lg text-lg leading-relaxed text-muted-foreground">
               Compare trusted lenders, get guided support at every step, and track your application — all in one place. No confusion, no hidden fees.
             </p>
             <div className="flex flex-wrap gap-3">
-              <Button size="lg" onClick={() => document.getElementById("eligibility")?.scrollIntoView({ behavior: "smooth" })} className="gap-2 text-base">
+              <Button size="lg" onClick={scrollToEligibility} className="gap-2 text-base">
                 Start My Journey <ArrowRight className="h-4 w-4" />
               </Button>
               <Button size="lg" variant="outline" onClick={() => navigate("/student/login")} className="text-base">
@@ -96,7 +110,6 @@ export default function StudentLanding() {
             </div>
           </div>
 
-          {/* Right decorative panel */}
           <div className="relative hidden md:flex md:justify-center">
             <div className="relative h-80 w-72">
               <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary/20 to-primary/5 shadow-xl" />
@@ -116,7 +129,7 @@ export default function StudentLanding() {
         </div>
       </section>
 
-      {/* ── Eligibility Check ── */}
+      {/* Eligibility */}
       <section id="eligibility" className="border-y bg-muted/30 py-14">
         <div className="mx-auto max-w-3xl px-4 sm:px-6">
           <div className="mb-8 text-center">
@@ -146,7 +159,7 @@ export default function StudentLanding() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="elig-amount">Loan Amount (₹)</Label>
-              <Input id="elig-amount" placeholder="e.g. 2000000" type="number" value={form.loanAmount} onChange={e => setForm(f => ({ ...f, loanAmount: e.target.value }))} />
+              <Input id="elig-amount" placeholder="e.g. 2000000" type="number" inputMode="numeric" value={form.loanAmount} onChange={e => setForm(f => ({ ...f, loanAmount: e.target.value }))} />
             </div>
             <div className="sm:col-span-2">
               <Button type="submit" size="lg" className="w-full gap-2 text-base">
@@ -157,7 +170,7 @@ export default function StudentLanding() {
         </div>
       </section>
 
-      {/* ── Benefits ── */}
+      {/* Benefits */}
       <section className="py-14">
         <div className="mx-auto grid max-w-5xl gap-6 px-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
           {BENEFITS.map(b => (
@@ -172,7 +185,7 @@ export default function StudentLanding() {
         </div>
       </section>
 
-      {/* ── How It Works ── */}
+      {/* How It Works */}
       <section id="how-it-works" className="border-y bg-muted/20 py-14">
         <div className="mx-auto max-w-4xl px-4 sm:px-6">
           <div className="mb-10 text-center">
@@ -182,7 +195,6 @@ export default function StudentLanding() {
           <div className="relative flex flex-col gap-0">
             {STEPS.map((s, i) => (
               <div key={s.label} className="relative flex gap-5 pb-10 last:pb-0">
-                {/* connector line */}
                 {i < STEPS.length - 1 && (
                   <div className="absolute left-[22px] top-12 h-[calc(100%-2rem)] w-px bg-border" />
                 )}
@@ -190,9 +202,7 @@ export default function StudentLanding() {
                   <s.icon className="h-5 w-5" />
                 </div>
                 <div className="pt-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold uppercase text-muted-foreground">Step {i + 1}</span>
-                  </div>
+                  <span className="text-xs font-semibold uppercase text-muted-foreground">Step {i + 1}</span>
                   <h3 className="text-base font-semibold text-foreground">{s.label}</h3>
                   <p className="text-sm text-muted-foreground">{s.desc}</p>
                 </div>
@@ -202,7 +212,7 @@ export default function StudentLanding() {
         </div>
       </section>
 
-      {/* ── Guided Journey ── */}
+      {/* Guided Journey */}
       <section className="py-14">
         <div className="mx-auto max-w-4xl px-4 sm:px-6">
           <div className="mb-8 text-center">
@@ -227,7 +237,7 @@ export default function StudentLanding() {
         </div>
       </section>
 
-      {/* ── FAQ ── */}
+      {/* FAQ */}
       <section id="faq" className="border-t bg-muted/20 py-14">
         <div className="mx-auto max-w-3xl px-4 sm:px-6">
           <div className="mb-8 text-center">
