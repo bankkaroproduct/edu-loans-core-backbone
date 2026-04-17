@@ -375,6 +375,7 @@ export type Database = {
           uploaded_at: string
           uploaded_by_role: Database["public"]["Enums"]["app_role"] | null
           uploaded_by_user_id: string | null
+          validation_result: Json | null
           verification_remark: string | null
           verification_status: Database["public"]["Enums"]["document_status_enum"]
           verified_at: string | null
@@ -393,6 +394,7 @@ export type Database = {
           uploaded_at?: string
           uploaded_by_role?: Database["public"]["Enums"]["app_role"] | null
           uploaded_by_user_id?: string | null
+          validation_result?: Json | null
           verification_remark?: string | null
           verification_status?: Database["public"]["Enums"]["document_status_enum"]
           verified_at?: string | null
@@ -411,6 +413,7 @@ export type Database = {
           uploaded_at?: string
           uploaded_by_role?: Database["public"]["Enums"]["app_role"] | null
           uploaded_by_user_id?: string | null
+          validation_result?: Json | null
           verification_remark?: string | null
           verification_status?: Database["public"]["Enums"]["document_status_enum"]
           verified_at?: string | null
