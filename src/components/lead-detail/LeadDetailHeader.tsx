@@ -22,9 +22,12 @@ interface Props {
   lead: Lead;
   submittedByName: string | null;
   isDraft: boolean;
+  backTo?: string;
+  backLabel?: string;
+  hideActions?: boolean;
 }
 
-export function LeadDetailHeader({ lead, submittedByName, isDraft }: Props) {
+export function LeadDetailHeader({ lead, submittedByName, isDraft, backTo = "/leads", backLabel = "Back to Submitted Leads", hideActions = false }: Props) {
   const navigate = useNavigate();
   const needsAttention = ATTENTION_STAGES.includes(lead.current_stage) || ATTENTION_STATUSES.includes(lead.current_status) || lead.duplicate_flag;
 
@@ -38,10 +41,10 @@ export function LeadDetailHeader({ lead, submittedByName, isDraft }: Props) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/leads")} className="shrink-0">
+        <Button variant="ghost" size="icon" onClick={() => navigate(backTo)} className="shrink-0">
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <span className="text-sm text-muted-foreground">Back to Submitted Leads</span>
+        <span className="text-sm text-muted-foreground">{backLabel}</span>
       </div>
 
       <div className="flex flex-col lg:flex-row lg:items-start gap-4">
@@ -77,20 +80,22 @@ export function LeadDetailHeader({ lead, submittedByName, isDraft }: Props) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap shrink-0">
-          {isDraft ? (
-            <Button size="sm" onClick={() => navigate(`/leads/new?draft=${lead.id}`)}>
-              <Play className="h-4 w-4 mr-1" /> Resume Draft
+        {!hideActions && (
+          <div className="flex items-center gap-2 flex-wrap shrink-0">
+            {isDraft ? (
+              <Button size="sm" onClick={() => navigate(`/leads/new?draft=${lead.id}`)}>
+                <Play className="h-4 w-4 mr-1" /> Resume Draft
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => navigate(`/leads/new?edit=${lead.id}`)}>
+                <Edit className="h-4 w-4 mr-1" /> Edit Lead
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={() => navigate(`/leads/${lead.id}/documents`)}>
+              <FileText className="h-4 w-4 mr-1" /> Documents
             </Button>
-          ) : (
-            <Button variant="outline" size="sm" onClick={() => navigate(`/leads/new?edit=${lead.id}`)}>
-              <Edit className="h-4 w-4 mr-1" /> Edit Lead
-            </Button>
-          )}
-          <Button variant="outline" size="sm" onClick={() => navigate(`/leads/${lead.id}/documents`)}>
-            <FileText className="h-4 w-4 mr-1" /> Documents
-          </Button>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

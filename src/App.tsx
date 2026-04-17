@@ -11,6 +11,8 @@ import { AdminRoute } from "@/components/AdminRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminLeads from "./pages/admin/AdminLeads";
+import AdminLeadDetail from "./pages/admin/AdminLeadDetail";
 import AdminPlaceholder from "./pages/admin/AdminPlaceholder";
 import Login from "./pages/Login";
 import Leads from "./pages/Leads";
@@ -78,7 +80,8 @@ const App = () => (
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             {/* Admin Console */}
             <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-            <Route path="/admin/leads" element={<AdminRoute><AdminPlaceholder title="Lead Queue" description="Cross-partner lead inbox with bulk actions and filters." /></AdminRoute>} />
+            <Route path="/admin/leads" element={<AdminRoute><AdminLeads /></AdminRoute>} />
+            <Route path="/admin/leads/:id" element={<AdminRoute><AdminLeadDetail /></AdminRoute>} />
             <Route path="/admin/pipeline" element={<AdminRoute><AdminPlaceholder title="Pipeline" description="Drag-and-drop lifecycle management across all stages." /></AdminRoute>} />
             <Route path="/admin/underwriting" element={<AdminRoute><AdminPlaceholder title="Underwriting" description="BRE evaluation, lender matching, and credit query workflows." /></AdminRoute>} />
             <Route path="/admin/disbursements" element={<AdminRoute><AdminPlaceholder title="Disbursements" description="Sanction tracking and disbursement reconciliation." /></AdminRoute>} />
