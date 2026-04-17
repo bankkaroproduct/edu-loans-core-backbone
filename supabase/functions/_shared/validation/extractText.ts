@@ -1,9 +1,9 @@
-// PDF text extraction using pdfjs-serverless (Deno-friendly fork of pdf.js).
-// Phase 1: PDF only. Images return a "skipped" result so the caller can produce
-// a consistent "inconclusive" flag.
+// PDF text extraction. Phase 1: PDF only. Images return "skipped" so caller produces "inconclusive".
+//
+// We use `unpdf` which is a Deno-native PDF text extractor (serverless build of pdf.js).
+// `npm:` specifier is preferred over esm.sh for stability in edge-runtime.
 
-// Using esm.sh for Deno compatibility
-import { getDocument } from "https://esm.sh/pdfjs-serverless@0.5.0";
+import { extractText, getDocumentProxy } from "npm:unpdf@0.12.1";
 
 export interface ExtractionOutput {
   method: "pdf_text" | "skipped_image_phase1" | "none";
@@ -16,49 +16,25 @@ export async function extractTextFromUpload(
   fileBytes: Uint8Array,
   mimeType: string,
 ): Promise<ExtractionOutput> {
-  // Images — Phase 1 doesn't OCR them
   if (mimeType.startsWith("image/")) {
-    return {
-      method: "skipped_image_phase1",
-      text: "",
-      success: false,
-      error: null,
-    };
+    return { method: "skipped_image_phase1", text: "", success: false, error: null };
   }
 
   if (mimeType !== "application/pdf") {
-    return {
-      method: "none",
-      text: "",
-      success: false,
-      error: `Unsupported mime: ${mimeType}`,
-    };
+    return { method: "none", text: "", success: false, error: `Unsupported mime: ${mimeType}` };
   }
 
   try {
-    const loadingTask = getDocument({
-      data: fileBytes,
-      // Disable worker (not needed in Deno) and font/image fetches
-      disableFontFace: true,
-      useSystemFonts: false,
-    });
-    const pdf = await loadingTask.promise;
-    const parts: string[] = [];
-    const maxPages = Math.min(pdf.numPages, 10); // Cap at first 10 pages — keeps latency low
-    for (let i = 1; i <= maxPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      const pageText = content.items
-        .map((item: any) => ("str" in item ? item.str : ""))
-        .join(" ");
-      parts.push(pageText);
-    }
-    const text = parts.join("\n").replace(/\s+/g, " ").trim();
+    const pdf = await getDocumentProxy(fileBytes);
+    const { text } = await extractText(pdf, { mergePages: true });
+    const merged = (Array.isArray(text) ? text.join("\n") : text || "")
+      .replace(/\s+/g, " ")
+      .trim();
     return {
       method: "pdf_text",
-      text,
-      success: text.length > 0,
-      error: text.length === 0 ? "No extractable text (likely scanned PDF)" : null,
+      text: merged,
+      success: merged.length > 0,
+      error: merged.length === 0 ? "No extractable text (likely scanned PDF)" : null,
     };
   } catch (err) {
     return {
