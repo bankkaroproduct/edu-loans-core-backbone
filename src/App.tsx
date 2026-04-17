@@ -7,8 +7,11 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { PartnerContextProvider } from "@/hooks/usePartnerContext";
 import { StudentAuthProvider } from "@/hooks/useStudentAuth";
 import { AppLayout } from "@/components/AppLayout";
+import { AdminRoute } from "@/components/AdminRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminPlaceholder from "./pages/admin/AdminPlaceholder";
 import Login from "./pages/Login";
 import Leads from "./pages/Leads";
 import AddLead from "./pages/AddLead";
@@ -73,6 +76,15 @@ const App = () => (
             <Route path="/master-data" element={<ProtectedRoute><MasterData /></ProtectedRoute>} />
             <Route path="/partners" element={<ProtectedRoute><Partners /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            {/* Admin Console */}
+            <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+            <Route path="/admin/leads" element={<AdminRoute><AdminPlaceholder title="Lead Queue" description="Cross-partner lead inbox with bulk actions and filters." /></AdminRoute>} />
+            <Route path="/admin/pipeline" element={<AdminRoute><AdminPlaceholder title="Pipeline" description="Drag-and-drop lifecycle management across all stages." /></AdminRoute>} />
+            <Route path="/admin/underwriting" element={<AdminRoute><AdminPlaceholder title="Underwriting" description="BRE evaluation, lender matching, and credit query workflows." /></AdminRoute>} />
+            <Route path="/admin/disbursements" element={<AdminRoute><AdminPlaceholder title="Disbursements" description="Sanction tracking and disbursement reconciliation." /></AdminRoute>} />
+            <Route path="/admin/reports" element={<AdminRoute><AdminPlaceholder title="Reports" description="Cross-partner analytics, payouts, and operational reports." /></AdminRoute>} />
+            <Route path="/admin/lenders" element={<AdminRoute><AdminPlaceholder title="Lender Management" description="Manage lender catalog, mappings, and BRE rules." /></AdminRoute>} />
+            <Route path="/admin/universities" element={<AdminRoute><AdminPlaceholder title="University Management" description="Manage the universities master and lender mappings." /></AdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </StudentAuthProvider>

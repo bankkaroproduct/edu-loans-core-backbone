@@ -7,6 +7,13 @@ import {
   Settings,
   LogOut,
   BookOpen,
+  Shield,
+  Inbox,
+  GitBranch,
+  Gavel,
+  Banknote,
+  BarChart3,
+  GraduationCap,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -36,8 +43,16 @@ const mainItems = [
   { title: "Master Data", url: "/master-data", icon: BookOpen },
 ];
 
-const adminItems = [
+const adminConsoleItems = [
+  { title: "Admin Dashboard", url: "/admin", icon: Shield, end: true },
+  { title: "Lead Queue", url: "/admin/leads", icon: Inbox },
+  { title: "Pipeline", url: "/admin/pipeline", icon: GitBranch },
+  { title: "Underwriting", url: "/admin/underwriting", icon: Gavel },
+  { title: "Disbursements", url: "/admin/disbursements", icon: Banknote },
+  { title: "Reports", url: "/admin/reports", icon: BarChart3 },
   { title: "Partners", url: "/partners", icon: Users },
+  { title: "Lenders", url: "/admin/lenders", icon: Banknote },
+  { title: "Universities", url: "/admin/universities", icon: GraduationCap },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
@@ -80,14 +95,15 @@ export function AppSidebar() {
 
         {isAdmin && (
           <SidebarGroup>
-            <SidebarGroupLabel>{!collapsed && "Admin"}</SidebarGroupLabel>
+            <SidebarGroupLabel>{!collapsed && "Admin Console"}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {adminItems.map((item) => (
+                {adminConsoleItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
                       <NavLink
                         to={item.url}
+                        end={item.end}
                         className="hover:bg-sidebar-accent/50"
                         activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
                       >
