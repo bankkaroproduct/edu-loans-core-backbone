@@ -46,9 +46,11 @@ export default function StudentLanding() {
   const [form, setForm] = useState<EligibilityData>({ fullName: "", mobile: "", targetCountry: "", loanAmount: "" });
 
   useEffect(() => {
+    let cancelled = false;
     supabase.from("countries_master").select("id, country_name").eq("active_flag", true).order("country_name").then(({ data }) => {
-      if (data) setCountries(data);
+      if (!cancelled && data) setCountries(data);
     });
+    return () => { cancelled = true; };
   }, []);
 
   const handleEligibility = (e: React.FormEvent) => {
@@ -66,6 +68,11 @@ export default function StudentLanding() {
     navigate("/student/login");
   };
 
+  const scrollToEligibility = () => {
+    const el = document.getElementById("eligibility");
+    if (el) el.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <StudentHeader />
@@ -75,14 +82,14 @@ export default function StudentLanding() {
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 md:grid-cols-2 md:items-center md:py-24">
           <div className="flex flex-col gap-6">
             <h1 className="text-4xl font-extrabold leading-[1.1] tracking-tight text-foreground sm:text-5xl">
-              Your Education Loan,{" "}
+              <span>Your Education Loan, </span>
               <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Simplified</span>
             </h1>
             <p className="max-w-lg text-lg leading-relaxed text-muted-foreground">
               Compare trusted lenders, get guided support at every step, and track your application — all in one place. No confusion, no hidden fees.
             </p>
             <div className="flex flex-wrap gap-3">
-              <Button size="lg" onClick={() => document.getElementById("eligibility")?.scrollIntoView({ behavior: "smooth" })} className="gap-2 text-base">
+              <Button size="lg" onClick={scrollToEligibility} className="gap-2 text-base">
                 Start My Journey <ArrowRight className="h-4 w-4" />
               </Button>
               <Button size="lg" variant="outline" onClick={() => navigate("/student/login")} className="text-base">
@@ -146,7 +153,7 @@ export default function StudentLanding() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="elig-amount">Loan Amount (₹)</Label>
-              <Input id="elig-amount" placeholder="e.g. 2000000" type="number" value={form.loanAmount} onChange={e => setForm(f => ({ ...f, loanAmount: e.target.value }))} />
+              <Input id="elig-amount" placeholder="e.g. 2000000" type="number" inputMode="numeric" value={form.loanAmount} onChange={e => setForm(f => ({ ...f, loanAmount: e.target.value }))} />
             </div>
             <div className="sm:col-span-2">
               <Button type="submit" size="lg" className="w-full gap-2 text-base">
@@ -182,7 +189,6 @@ export default function StudentLanding() {
           <div className="relative flex flex-col gap-0">
             {STEPS.map((s, i) => (
               <div key={s.label} className="relative flex gap-5 pb-10 last:pb-0">
-                {/* connector line */}
                 {i < STEPS.length - 1 && (
                   <div className="absolute left-[22px] top-12 h-[calc(100%-2rem)] w-px bg-border" />
                 )}
