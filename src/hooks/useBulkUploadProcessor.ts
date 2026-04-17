@@ -145,7 +145,7 @@ export function parseCSV(text: string): { headers: string[]; rows: Record<string
   if (rows.length === 0) return { error: "No data rows found" };
   if (rows.length > 1000) return { error: `File contains ${rows.length} rows. Maximum is 1000 per batch.` };
 
-  return { headers, rows };
+  return { headers, rows, delimiter };
 }
 
 function normBool(val: string): boolean | null {
