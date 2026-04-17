@@ -5,7 +5,6 @@ import { StudentFooter } from "@/components/student/StudentFooter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useStudentAuth, EligibilityData } from "@/hooks/useStudentAuth";
 import { supabase } from "@/integrations/supabase/client";
