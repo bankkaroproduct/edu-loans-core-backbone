@@ -1,13 +1,15 @@
 import { useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { AppLayout } from "@/components/AppLayout";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
- * Gate for /admin/* routes. Allows only super_admin and admin roles.
- * Partner / student / unauthenticated users are redirected.
+ * Gate for /admin/* routes (excluding /admin/login).
+ * - Unauthenticated → /admin/login
+ * - Authenticated but not admin → / (with toast)
+ * - Admin → renders inside the dedicated AdminLayout
  */
 export function AdminRoute({ children }: { children: React.ReactNode }) {
   const { user, appUser, loading } = useAuth();
@@ -37,12 +39,12 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+    return <Navigate to="/admin/login" replace state={{ from: location }} />;
   }
 
   if (!isAdmin) {
     return <Navigate to="/" replace />;
   }
 
-  return <AppLayout>{children}</AppLayout>;
+  return <AdminLayout>{children}</AdminLayout>;
 }
