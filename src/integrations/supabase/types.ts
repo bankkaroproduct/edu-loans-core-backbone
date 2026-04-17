@@ -1374,6 +1374,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin_or_super: { Args: { _auth_id: string }; Returns: boolean }
+      normalize_phone: { Args: { _phone: string }; Returns: string }
     }
     Enums: {
       app_role: "super_admin" | "admin" | "partner_admin" | "partner_agent"
