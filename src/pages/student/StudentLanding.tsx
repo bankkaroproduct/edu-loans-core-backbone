@@ -1,8 +1,14 @@
+import { StudentHeader } from "@/components/student/StudentHeader";
+import { StudentFooter } from "@/components/student/StudentFooter";
+
 export default function StudentLanding() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-6">
-      <h1 className="text-4xl font-bold text-foreground">Student Landing — Diagnostic</h1>
-      <p className="mt-2 text-muted-foreground">If you can see this, the page mounts cleanly.</p>
+    <div className="flex min-h-screen flex-col bg-background">
+      <StudentHeader />
+      <main className="flex-1 p-6">
+        <h1 className="text-4xl font-bold text-foreground">Student Landing — Diagnostic 2 (Header+Footer)</h1>
+      </main>
+      <StudentFooter />
     </div>
   );
 }
