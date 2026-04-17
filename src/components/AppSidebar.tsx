@@ -1,6 +1,5 @@
 import {
   LayoutDashboard,
-  Users,
   FileText,
   Upload,
   CreditCard,
@@ -8,12 +7,6 @@ import {
   LogOut,
   BookOpen,
   Shield,
-  Inbox,
-  GitBranch,
-  Gavel,
-  Banknote,
-  BarChart3,
-  GraduationCap,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -41,19 +34,6 @@ const mainItems = [
   { title: "Bulk Upload", url: "/bulk-upload", icon: Upload },
   { title: "Payouts", url: "/payouts", icon: CreditCard },
   { title: "Master Data", url: "/master-data", icon: BookOpen },
-];
-
-const adminConsoleItems = [
-  { title: "Admin Dashboard", url: "/admin", icon: Shield, end: true },
-  { title: "Lead Queue", url: "/admin/leads", icon: Inbox },
-  { title: "Pipeline", url: "/admin/pipeline", icon: GitBranch },
-  { title: "Underwriting", url: "/admin/underwriting", icon: Gavel },
-  { title: "Disbursements", url: "/admin/disbursements", icon: Banknote },
-  { title: "Reports", url: "/admin/reports", icon: BarChart3 },
-  { title: "Partners", url: "/partners", icon: Users },
-  { title: "Lenders", url: "/admin/lenders", icon: Banknote },
-  { title: "Universities", url: "/admin/universities", icon: GraduationCap },
-  { title: "Settings", url: "/settings", icon: Settings },
 ];
 
 export function AppSidebar() {
