@@ -562,7 +562,7 @@ Deno.serve(async (req) => {
       if (!existingLeadId) return jsonResponse({ error: "No existing application found." }, 400);
       const { data: updated, error } = await supabaseAdmin
         .from("student_leads")
-        .update({ current_stage: "submitted" as const, current_status: "new" as const })
+        .update({ current_stage: "submitted" as const, current_status: "awaiting_verification" as const })
         .eq("id", existingLeadId)
         .select()
         .single();
