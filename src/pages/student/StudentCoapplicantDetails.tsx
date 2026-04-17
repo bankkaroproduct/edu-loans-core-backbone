@@ -31,7 +31,28 @@ export default function StudentCoapplicantDetails() {
     formData.course_name && `📚 ${formData.course_name}`,
   ].filter(Boolean);
 
+  const validateCoapplicant = (): string | null => {
+    if (!formData.coapplicant_name?.trim()) return "Co-applicant full name is required";
+    if (!formData.coapplicant_relation?.trim()) return "Co-applicant relationship is required";
+    const income = parseFloat(formData.coapplicant_income);
+    if (!formData.coapplicant_income || isNaN(income) || income <= 0) {
+      return "Co-applicant monthly income is required and must be a positive number";
+    }
+    if (formData.coapplicant_mobile && formData.coapplicant_mobile.length !== 10) {
+      return "Co-applicant mobile must be a 10-digit number";
+    }
+    if (formData.coapplicant_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.coapplicant_email)) {
+      return "Co-applicant email format is invalid";
+    }
+    if (formData.collateral_available === true && !formData.collateral_notes?.trim()) {
+      return "Please describe the collateral";
+    }
+    return null;
+  };
+
   const handleContinue = async () => {
+    const err = validateCoapplicant();
+    if (err) { toast({ title: "Please complete required fields", description: err, variant: "destructive" }); return; }
     const result = await saveStep("save_coapplicant");
     if (result) {
       toast({ title: "Co-applicant details saved" });
@@ -40,6 +61,7 @@ export default function StudentCoapplicantDetails() {
   };
 
   const handleSaveExit = async () => {
+    // Save & exit allows partial drafts — no hard validation here.
     await saveStep("save_coapplicant");
     toast({ title: "Progress saved" });
     navigate("/student/continue");

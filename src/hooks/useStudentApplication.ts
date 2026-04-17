@@ -65,11 +65,19 @@ export interface StepCompletion {
   submitted: boolean;
 }
 
-/** Centralized step-completion logic. Used by both continue page and form pages. */
+/** Centralized step-completion logic. Used by both continue page and form pages.
+ *  Step 1 (basic) is considered complete as soon as we have a name + phone + intended country.
+ *  Email is preferred but NOT required — partner-originated leads commonly lack email and
+ *  must not be reset back to step 1 when the student logs in to continue.
+ */
 export function deriveStepCompletion(lead: any): StepCompletion {
   if (!lead) return { basic: false, education: false, coapplicant: false, submitted: false };
 
-  const basic = !!(lead.student_first_name || lead.student_full_name) && !!lead.intended_study_country && !!lead.student_email;
+  const hasName = !!(lead.student_first_name || lead.student_full_name);
+  const hasPhone = !!lead.student_phone;
+  const hasCountry = !!lead.intended_study_country;
+  const basic = hasName && hasPhone && hasCountry;
+
   const education = !!lead.course_name && lead.course_name !== "Not specified" && !!lead.intake_term && !!lead.intake_year;
   const coapplicant = !!lead.coapplicant_name && !!lead.coapplicant_relation;
   const submitted = lead.current_stage !== "draft";

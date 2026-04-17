@@ -53,6 +53,15 @@ export default function StudentLanding() {
 
   const handleEligibility = (e: React.FormEvent) => {
     e.preventDefault();
+    if (form.mobile.length !== 10) {
+      alert("Please enter a valid 10-digit mobile number");
+      return;
+    }
+    const amt = parseFloat(form.loanAmount);
+    if (!form.loanAmount || isNaN(amt) || amt <= 0) {
+      alert("Please enter a valid loan amount in rupees");
+      return;
+    }
     setEligibilityData(form);
     navigate("/student/login");
   };
