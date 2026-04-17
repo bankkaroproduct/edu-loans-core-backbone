@@ -649,7 +649,7 @@ async function handleUploadDocument(req: Request, supabaseAdmin: any) {
     if (uploadErr) return jsonResponse({ error: "File upload failed: " + uploadErr.message }, 500);
 
     // Insert lead_documents row
-    const { error: insertErr } = await supabaseAdmin
+    const { data: insertedDoc, error: insertErr } = await supabaseAdmin
       .from("lead_documents")
       .insert({
         lead_id: lead.id,
@@ -661,9 +661,11 @@ async function handleUploadDocument(req: Request, supabaseAdmin: any) {
         is_latest: true,
         verification_status: "uploaded",
         uploaded_by_role: "partner_agent", // closest role for student uploads
-      });
+      })
+      .select("id")
+      .single();
 
-    if (insertErr) return jsonResponse({ error: "Document record failed: " + insertErr.message }, 500);
+    if (insertErr || !insertedDoc) return jsonResponse({ error: "Document record failed: " + (insertErr?.message ?? "unknown") }, 500);
 
     // Update requirement status to uploaded
     await supabaseAdmin
@@ -671,7 +673,35 @@ async function handleUploadDocument(req: Request, supabaseAdmin: any) {
       .update({ status: "uploaded", remarks: null })
       .eq("id", requirementId);
 
-    return jsonResponse({ success: true, version: versionNumber });
+    // Run validation inline (Phase 1 — fast PDF parse). Failures don't block the upload.
+    let validation_result: unknown = null;
+    let soft_block = false;
+    try {
+      const validateUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/validate-document`;
+      const valRes = await fetch(validateUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({ lead_document_id: insertedDoc.id }),
+      });
+      if (valRes.ok) {
+        const valBody = await valRes.json();
+        validation_result = valBody.validation_result;
+        soft_block = !!valBody.soft_block;
+      }
+    } catch (e) {
+      console.error("[student-application] validation call failed", e);
+    }
+
+    return jsonResponse({
+      success: true,
+      version: versionNumber,
+      lead_document_id: insertedDoc.id,
+      validation_result,
+      soft_block,
+    });
   } catch (err) {
     return jsonResponse({ error: err.message || "Upload error" }, 500);
   }
