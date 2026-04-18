@@ -246,8 +246,8 @@ function ChangeStageDialog({
           </div>
 
           {warning && (
-            <div className="rounded-md border border-warning bg-warning/10 p-3 text-xs space-y-2">
-              <div className="flex items-center gap-2 text-warning-foreground font-medium">
+            <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs space-y-2">
+              <div className="flex items-center gap-2 text-destructive font-medium">
                 <AlertTriangle className="h-4 w-4" />
                 {breWarn && `${unverifiedRequiredCount} required document(s) are not verified.`}
                 {disbursedWarn && "No 'Sanction Received' stage found in history."}
