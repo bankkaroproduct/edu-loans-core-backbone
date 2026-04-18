@@ -240,6 +240,16 @@ export default function Leads() {
         const s = `%${search.trim()}%`;
         q = q.or(`student_first_name.ilike.${s},student_last_name.ilike.${s},student_phone.ilike.${s},student_email.ilike.${s},lead_id.ilike.${s},course_name.ilike.${s},university_name_raw.ilike.${s}`);
       }
+      if (batchIdFilter) {
+        if (batchLeadIds === null) {
+          // Still resolving — match nothing yet to avoid showing all leads
+          q = q.eq("id", "00000000-0000-0000-0000-000000000000");
+        } else if (batchLeadIds.length === 0) {
+          q = q.eq("id", "00000000-0000-0000-0000-000000000000");
+        } else {
+          q = q.in("id", batchLeadIds);
+        }
+      }
       return q;
     };
 
