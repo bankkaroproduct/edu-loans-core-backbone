@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { NotificationBell } from "@/components/NotificationBell";
 import { useAuth } from "@/hooks/useAuth";
 import { usePartnerContext } from "@/hooks/usePartnerContext";
 import { Navigate } from "react-router-dom";
@@ -37,8 +38,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
         <AppSidebar />
         <div className="flex-1 flex flex-col">
           <SimulationBanner />
-          <header className="h-12 flex items-center border-b px-4">
+          <header className="h-12 flex items-center justify-between border-b px-4">
             <SidebarTrigger />
+            <NotificationBell />
           </header>
           <main className="flex-1 p-6">{children}</main>
         </div>
