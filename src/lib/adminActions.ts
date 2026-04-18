@@ -5,8 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import type { LeadStage, LeadStatus } from "./leadTransitions";
 
 export type AdminActionResult<T = unknown> =
-  | { ok: true; data: T }
-  | { ok: false; error: string };
+  | { ok: true; data: T; error?: undefined }
+  | { ok: false; data?: undefined; error: string };
 
 function toErrorMessage(err: unknown): string {
   if (!err) return "Unknown error";

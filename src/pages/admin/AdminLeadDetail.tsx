@@ -1,21 +1,20 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { AlertCircle, RefreshCw, ArrowLeft, Settings2 } from "lucide-react";
+import { AlertCircle, RefreshCw, ArrowLeft } from "lucide-react";
 import { LeadDetailHeader } from "@/components/lead-detail/LeadDetailHeader";
 import { LeadSummaryStrip } from "@/components/lead-detail/LeadSummaryStrip";
 import { LeadProfileSection } from "@/components/lead-detail/LeadProfileSection";
 import { LeadLifecycleProgress } from "@/components/lead-detail/LeadLifecycleProgress";
 import { LeadTimeline } from "@/components/lead-detail/LeadTimeline";
-import { LeadNotes } from "@/components/lead-detail/LeadNotes";
-import { LeadDocumentSnapshot } from "@/components/lead-detail/LeadDocumentSnapshot";
 import { LeadDuplicateContext } from "@/components/lead-detail/LeadDuplicateContext";
 import { LeadPayoutSnapshot } from "@/components/lead-detail/LeadPayoutSnapshot";
 import { AdminPartnerCard } from "@/components/admin/AdminPartnerCard";
+import { AdminStageStatusPanel } from "@/components/admin/AdminStageStatusPanel";
+import { AdminDocumentReviewPanel } from "@/components/admin/AdminDocumentReviewPanel";
+import { AdminInternalNotes } from "@/components/admin/AdminInternalNotes";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Lead = Tables<"student_leads">;
@@ -24,6 +23,15 @@ type Note = Tables<"lead_notes">;
 type PayoutRecord = Tables<"partner_payout_records">;
 type PartnerOrg = Tables<"partner_organizations">;
 
+interface DocReq {
+  id: string;
+  document_type_id: string;
+  status: string;
+  required_flag: boolean;
+  remarks: string | null;
+  document_master?: { document_name: string; document_category: string | null } | null;
+}
+
 interface State {
   loading: boolean;
   error: string | null;
@@ -31,7 +39,7 @@ interface State {
   lead: Lead | null;
   history: History[];
   notes: Note[];
-  docRequirements: any[];
+  docRequirements: DocReq[];
   payouts: PayoutRecord[];
   partner: PartnerOrg | null;
   submittedByName: string | null;
@@ -59,7 +67,6 @@ export default function AdminLeadDetail() {
     if (!id) return;
     setState((s) => ({ ...s, loading: true, error: null, notFound: false }));
     try {
-      // Fetch lead first to know partner_id / partner_user_id
       const leadRes = await supabase.from("student_leads").select("*").eq("id", id).maybeSingle();
       if (leadRes.error) throw leadRes.error;
       if (!leadRes.data) {
@@ -68,7 +75,6 @@ export default function AdminLeadDetail() {
       }
       const lead = leadRes.data;
 
-      // Parallel fetch — full history & notes (no silent cap), reqs, payouts, partner, user
       const [histRes, notesRes, docRes, payoutRes, partnerRes, userRes] = await Promise.all([
         supabase.from("lead_stage_history").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
         supabase.from("lead_notes").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
@@ -76,10 +82,10 @@ export default function AdminLeadDetail() {
         supabase.from("partner_payout_records").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
         lead.partner_id
           ? supabase.from("partner_organizations").select("*").eq("id", lead.partner_id).maybeSingle()
-          : Promise.resolve({ data: null, error: null } as any),
+          : Promise.resolve({ data: null, error: null } as never),
         lead.partner_user_id
           ? supabase.from("users").select("full_name").eq("id", lead.partner_user_id).maybeSingle()
-          : Promise.resolve({ data: null, error: null } as any),
+          : Promise.resolve({ data: null, error: null } as never),
       ]);
 
       const errs = [histRes.error, notesRes.error, docRes.error, payoutRes.error, partnerRes.error, userRes.error].filter(Boolean);
@@ -92,19 +98,19 @@ export default function AdminLeadDetail() {
         lead,
         history: histRes.data ?? [],
         notes: notesRes.data ?? [],
-        docRequirements: docRes.data ?? [],
+        docRequirements: (docRes.data ?? []) as DocReq[],
         payouts: payoutRes.data ?? [],
         partner: (partnerRes.data ?? null) as PartnerOrg | null,
-        submittedByName: (userRes.data as any)?.full_name ?? null,
+        submittedByName: (userRes.data as { full_name?: string } | null)?.full_name ?? null,
       });
-    } catch (e: any) {
-      setState({ ...initialState, loading: false, error: e?.message ?? "Failed to load lead" });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Failed to load lead";
+      setState({ ...initialState, loading: false, error: message });
     }
   }, [id]);
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
-  // ===== Loading =====
   if (state.loading) {
     return (
       <div className="max-w-6xl mx-auto space-y-6 py-4">
@@ -126,7 +132,6 @@ export default function AdminLeadDetail() {
     );
   }
 
-  // ===== Not found =====
   if (state.notFound) {
     return (
       <div className="max-w-6xl mx-auto text-center py-20 space-y-3">
@@ -139,7 +144,6 @@ export default function AdminLeadDetail() {
     );
   }
 
-  // ===== Error =====
   if (state.error || !state.lead) {
     return (
       <div className="max-w-6xl mx-auto py-10">
@@ -168,9 +172,13 @@ export default function AdminLeadDetail() {
   const isDraft = lead.current_stage === "draft";
   const isStudentDirect = lead.source_type === "student_direct";
 
+  const unverifiedRequiredCount = docRequirements.filter(
+    (r) => r.required_flag && r.status !== "verified" && r.status !== "waived" && r.status !== "not_applicable",
+  ).length;
+  const hasSanctionInHistory = history.some((h) => h.new_stage === "sanction_received");
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      {/* Header (admin context: back to queue, no edit/upload actions) */}
       <LeadDetailHeader
         lead={lead}
         submittedByName={submittedByName}
@@ -180,56 +188,36 @@ export default function AdminLeadDetail() {
         hideActions
       />
 
-      {/* Summary strip */}
       <LeadSummaryStrip lead={lead} />
-
-      {/* Lifecycle progress */}
       <LeadLifecycleProgress lead={lead} />
-
-      {/* Duplicate context (renders only when flagged) */}
       <LeadDuplicateContext lead={lead} />
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left column: profile, documents (read-only), notes (all scope, read-only) */}
         <div className="lg:col-span-2 space-y-6">
           <LeadProfileSection lead={lead} submittedByName={submittedByName} />
 
-          <LeadDocumentSnapshot
-            requirements={docRequirements}
+          <AdminDocumentReviewPanel
             leadId={lead.id}
-            readOnly
+            requirements={docRequirements}
+            onChanged={loadAll}
           />
 
-          <LeadNotes
+          <AdminInternalNotes
             leadId={lead.id}
             notes={notes}
-            userId={null}
-            onNoteAdded={() => {}}
-            readOnly
-            noteScope="all"
+            onNoteAdded={loadAll}
           />
         </div>
 
-        {/* Right column: partner card, future-actions placeholder, timeline, payouts */}
         <div className="space-y-6">
           <AdminPartnerCard partner={partner} isStudentDirect={isStudentDirect} />
 
-          {/* Future Action Area (placeholder for next prompt) */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Settings2 className="h-4 w-4 text-primary" /> Lead Actions
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-md border border-dashed p-4 text-center space-y-1">
-                <Badge variant="outline" className="text-[10px]">Coming next</Badge>
-                <p className="text-xs text-muted-foreground">
-                  Stage transitions, lender assignment, approve / reject, document re-upload requests, and admin notes will live here.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <AdminStageStatusPanel
+            lead={lead}
+            unverifiedRequiredCount={unverifiedRequiredCount}
+            hasSanctionInHistory={hasSanctionInHistory}
+            onChanged={loadAll}
+          />
 
           <LeadTimeline history={history} notes={notes} />
 
