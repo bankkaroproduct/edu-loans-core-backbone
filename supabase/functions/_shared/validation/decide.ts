@@ -103,7 +103,11 @@ export function decide(input: DecideInput): ValidationResult {
     : null;
 
   // If extraction failed or was skipped (Phase 1 image path), produce inconclusive — no warnings.
+  // EXCEPT for Tier-1 strict docs (PAN/ITR/SALARY_SLIP/BANK_STMT): a random image or a
+  // scanned PDF with no extractable text is no longer acceptable as "pending"; promote to
+  // review_needed so the soft-block dialog fires and admins see a clear flag.
   if (!extractionSucceeded) {
+    const strict = rule.tier === "strict";
     return {
       validated_at: new Date().toISOString(),
       validator_version: VALIDATOR_VERSION,
@@ -115,8 +119,8 @@ export function decide(input: DecideInput): ValidationResult {
       },
       type_check: {
         expected_code: input.documentCode,
-        verdict: "skipped",
-        confidence: "none",
+        verdict: strict ? "type_mismatch_high" : "skipped",
+        confidence: strict ? "high" : "none",
         matched_keywords: [],
         matched_regex: false,
       },
@@ -129,7 +133,7 @@ export function decide(input: DecideInput): ValidationResult {
         verdict: "skipped",
         score: 0,
       },
-      overall_flag: "inconclusive",
+      overall_flag: strict ? "review_needed" : "inconclusive",
     };
   }
 
