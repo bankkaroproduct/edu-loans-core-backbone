@@ -273,8 +273,6 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      <AddLeadsHero />
-
       <HeroPerformanceStrip appUser={appUser} partnerName={partnerName} kpiData={kpiData} loading={loading} />
 
       <div className="mt-6 space-y-6">
@@ -310,10 +308,7 @@ export default function Dashboard() {
           <PayoutSnapshot data={payoutSummary} loading={loading} />
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          <ActivityFeed items={activityItems} loading={loading} />
-          <QuickActions />
-        </div>
+        <ActivityFeed items={activityItems} loading={loading} />
 
         <SystemHelp />
       </div>
