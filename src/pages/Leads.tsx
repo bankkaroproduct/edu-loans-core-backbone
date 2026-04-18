@@ -105,6 +105,7 @@ export default function Leads() {
   const paramDateTo = searchParams.get("date_to") ?? "";
   const paramSubmittedBy = searchParams.get("submitted_by") ?? "";
   const paramSourceSubtype = searchParams.get("source_subtype") ?? "";
+  const paramBatchId = searchParams.get("batch_id") ?? "";
 
   // ── State ──
   const [leads, setLeads] = useState<Lead[]>([]);
