@@ -133,7 +133,7 @@ export default function LeadDetail() {
           <LeadProfileSection lead={lead} submittedByName={submittedByName} />
 
           {/* G. Document Snapshot */}
-          <LeadDocumentSnapshot requirements={docRequirements} leadId={lead.id} />
+          <LeadDocumentSnapshot requirements={docRequirements} leadId={lead.id} onChanged={loadData} />
 
           {/* F. Notes */}
           <LeadNotes leadId={lead.id} notes={notes} userId={userId} onNoteAdded={refreshNotes} />
