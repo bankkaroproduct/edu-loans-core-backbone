@@ -1364,6 +1364,38 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_add_lead_note: {
+        Args: {
+          _lead_id: string
+          _note_text: string
+          _note_type?: Database["public"]["Enums"]["note_type_enum"]
+        }
+        Returns: Json
+      }
+      admin_change_lead_stage: {
+        Args: {
+          _change_reason?: string
+          _internal_note?: string
+          _lead_id: string
+          _new_stage: Database["public"]["Enums"]["lead_stage_enum"]
+          _new_status: Database["public"]["Enums"]["lead_status_enum"]
+          _override?: boolean
+          _partner_visible_note?: string
+        }
+        Returns: Json
+      }
+      admin_change_lead_status: {
+        Args: {
+          _change_reason?: string
+          _lead_id: string
+          _new_status: Database["public"]["Enums"]["lead_status_enum"]
+        }
+        Returns: Json
+      }
+      admin_review_document: {
+        Args: { _action: string; _document_id: string; _remark?: string }
+        Returns: Json
+      }
       country_to_iso: { Args: { _name: string }; Returns: string }
       get_user_partner_id: { Args: { _auth_id: string }; Returns: string }
       get_user_role: {
