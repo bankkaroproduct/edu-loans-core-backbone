@@ -1,0 +1,1 @@
+DELETE FROM notifications_queue WHERE recipient_user_id='44444444-4444-4444-4444-444444444444' AND message_body IN ('Lead EL-PL-000001 moved from Submitted to Under Initial Review', 'PAN card uploaded for Sanjay Mehra (EL-PL-000001)', 'Welcome to EduLoans! Your dashboard is ready.');

@@ -2,10 +2,21 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Edit, FileText, Info, Play } from "lucide-react";
-import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
+import type { Database } from "@/integrations/supabase/types";
 
 type Lead = Tables<"student_leads">;
+type Stage = Database["public"]["Enums"]["lead_stage_enum"];
+
+// Partner can edit while admin review is still in early/partner-actionable stages.
+// Once the lead is sent to a lender or reaches a terminal stage, edits are locked.
+const EDITABLE_STAGES: Stage[] = [
+  "submitted",
+  "under_initial_review",
+  "documents_pending",
+  "documents_under_review",
+  "on_hold",
+];
 
 const GUIDANCE_MAP: Record<string, string> = {
   draft: "This lead is saved as a draft. Resume it to complete and submit.",
@@ -33,6 +44,7 @@ interface Props {
 export function LeadActionPanel({ lead }: Props) {
   const navigate = useNavigate();
   const isDraft = lead.current_stage === "draft";
+  const isEditable = !isDraft && EDITABLE_STAGES.includes(lead.current_stage);
   const guidance = isDraft
     ? GUIDANCE_MAP.draft
     : GUIDANCE_MAP[lead.current_status] ?? "Monitor this lead for updates.";
@@ -56,7 +68,7 @@ export function LeadActionPanel({ lead }: Props) {
               <Play className="h-4 w-4 mr-1" /> Resume Draft
             </Button>
           )}
-          {!isDraft && lead.current_stage === "submitted" && (
+          {isEditable && (
             <Button size="sm" variant="outline" onClick={() => navigate(`/leads/new?edit=${lead.id}`)}>
               <Edit className="h-4 w-4 mr-1" /> Edit Lead
             </Button>
