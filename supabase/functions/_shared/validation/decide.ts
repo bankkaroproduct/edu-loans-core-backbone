@@ -103,7 +103,11 @@ export function decide(input: DecideInput): ValidationResult {
     : null;
 
   // If extraction failed or was skipped (Phase 1 image path), produce inconclusive — no warnings.
+  // EXCEPT for Tier-1 strict docs (PAN/ITR/SALARY_SLIP/BANK_STMT): a random image or a
+  // scanned PDF with no extractable text is no longer acceptable as "pending"; promote to
+  // review_needed so the soft-block dialog fires and admins see a clear flag.
   if (!extractionSucceeded) {
+    const strict = rule.tier === "strict";
     return {
       validated_at: new Date().toISOString(),
       validator_version: VALIDATOR_VERSION,
@@ -115,8 +119,8 @@ export function decide(input: DecideInput): ValidationResult {
       },
       type_check: {
         expected_code: input.documentCode,
-        verdict: "skipped",
-        confidence: "none",
+        verdict: strict ? "type_mismatch_high" : "skipped",
+        confidence: strict ? "high" : "none",
         matched_keywords: [],
         matched_regex: false,
       },
@@ -129,7 +133,7 @@ export function decide(input: DecideInput): ValidationResult {
         verdict: "skipped",
         score: 0,
       },
-      overall_flag: "inconclusive",
+      overall_flag: strict ? "review_needed" : "inconclusive",
     };
   }
 
@@ -149,8 +153,8 @@ export function decide(input: DecideInput): ValidationResult {
     typeVerdict = "type_unconfirmed";
     typeConfidence = "low";
   } else {
-    // Zero signals — for strong rules, treat as high-confidence mismatch
-    if (rule.typeStrength === "strong") {
+    // Zero signals — for strict-tier or strong-strength rules, treat as high-confidence mismatch
+    if (rule.tier === "strict" || rule.typeStrength === "strong") {
       typeVerdict = "type_mismatch_high";
       typeConfidence = "high";
     } else {
@@ -225,11 +229,23 @@ export function decide(input: DecideInput): ValidationResult {
   };
 }
 
-// Whether the result should produce a soft-block "Upload anyway?" prompt
+// Whether the result should produce a soft-block "Upload anyway?" prompt.
+// Triggers for: (a) any high-confidence type mismatch on a strong/strict rule, OR
+// (b) any Tier-1 strict doc whose overall_flag is review_needed/inconclusive/warn_type
+// (covers random images, scanned PDFs, and zero-signal PDFs uniformly).
 export function shouldSoftBlock(result: ValidationResult, code: string | null): boolean {
   if (!code) return false;
   const rule = getRuleForCode(code);
   if (!rule) return false;
+  if (rule.tier === "strict") {
+    if (
+      result.overall_flag === "review_needed" ||
+      result.overall_flag === "inconclusive" ||
+      result.overall_flag === "warn_type"
+    ) {
+      return true;
+    }
+  }
   return (
     result.type_check.verdict === "type_mismatch_high" &&
     result.type_check.confidence === "high" &&

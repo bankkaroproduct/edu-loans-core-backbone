@@ -9,6 +9,16 @@ import {
 
 type ValidationFlag = "ok" | "warn_name" | "warn_type" | "review_needed" | "inconclusive";
 
+// Doc-specific copy for the strict (Tier-1) financial/identity documents.
+// Used when the validator could not confirm the upload and produced a soft-blocked state
+// (random image, scanned PDF, or zero-signal PDF). Falls back to the generic message otherwise.
+const STRICT_DOC_COPY: Record<string, string> = {
+  PAN: "This file may not be a valid PAN card. Please upload a clear PDF or confirm to continue.",
+  ITR: "This file may not be a valid Income Tax Return. Please review before continuing.",
+  SALARY_SLIP: "This file may not be a valid Salary Slip. Please review before continuing.",
+  BANK_STMT: "This file may not be a valid Bank Statement. Please review before continuing.",
+};
+
 function ValidationChip({ result }: { result: any }) {
   if (!result || typeof result !== "object") return null;
   const flag: ValidationFlag = result.overall_flag ?? "ok";
@@ -16,6 +26,11 @@ function ValidationChip({ result }: { result: any }) {
   const expected = result.name_check?.expected_name;
   const matched = result.name_check?.matched_name_tokens ?? [];
   const overridden = !!result.override;
+  const expectedCode: string | null = result.type_check?.expected_code ?? null;
+  const strictCopy = expectedCode ? STRICT_DOC_COPY[expectedCode] : undefined;
+  const noExtraction = result.extraction?.method === "skipped_image_phase1"
+    || (result.extraction && !result.extraction.success)
+    || (result.extraction?.text_length ?? 0) === 0;
 
   const config: Record<ValidationFlag, { label: string; icon: typeof CheckCircle; cls: string; tip: string }> = {
     ok: {
@@ -36,15 +51,19 @@ function ValidationChip({ result }: { result: any }) {
       label: "Type unconfirmed",
       icon: AlertTriangle,
       cls: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800",
-      tip: "We could not confirm this file matches the expected document type. Please verify.",
+      tip: strictCopy ?? "We could not confirm this file matches the expected document type. Please verify.",
     },
     review_needed: {
-      label: overridden ? "Flagged for review" : "Possible wrong type",
+      label: overridden
+        ? "Flagged for review"
+        : strictCopy
+          ? `May not be a valid ${expectedCode === "ITR" ? "Income Tax Return" : expectedCode === "SALARY_SLIP" ? "Salary Slip" : expectedCode === "BANK_STMT" ? "Bank Statement" : "PAN"}`
+          : "Possible wrong type",
       icon: ShieldAlert,
       cls: "bg-destructive/10 text-destructive border-destructive/30",
       tip: overridden
         ? "User confirmed upload despite a type mismatch. Admin will review."
-        : "This file does not appear to be the expected document type.",
+        : strictCopy ?? "This file does not appear to be the expected document type.",
     },
     inconclusive: {
       label: "Validation pending",

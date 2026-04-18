@@ -4,6 +4,10 @@
 
 export type NameSubject = "student" | "coapplicant" | "none";
 export type Strength = "strong" | "medium" | "weak" | "none";
+// Tier governs how strict we are when extracted signal is empty/weak.
+// "strict" = Tier 1: financial/identity; image uploads + zero-text PDFs + zero-signal PDFs
+//   are promoted to review_needed + soft-block. "medium"/"weak" keep current Phase-1 behavior.
+export type Tier = "strict" | "medium" | "weak";
 
 export interface DocRule {
   // Keywords that, if found (case-insensitive), are evidence the file is the right type
@@ -18,6 +22,8 @@ export interface DocRule {
   typeStrength: Strength;
   // Strength of expectation for name-matching
   nameStrength: Strength;
+  // Strictness tier — controls promotion of weak/empty signals
+  tier: Tier;
 }
 
 // Each rule's keywords are lowercase. Matching is case-insensitive (we lowercase the text).
@@ -29,6 +35,7 @@ export const DOCUMENT_RULES: Record<string, DocRule> = {
     nameSubject: "student", // overridden to coapplicant when slot is for coapplicant
     typeStrength: "strong",
     nameStrength: "strong",
+    tier: "strict",
   },
   AADHAAR: {
     keywords: ["aadhaar", "aadhar", "unique identification", "government of india", "uidai"],
@@ -37,6 +44,7 @@ export const DOCUMENT_RULES: Record<string, DocRule> = {
     nameSubject: "student",
     typeStrength: "strong",
     nameStrength: "strong",
+    tier: "medium",
   },
   PASSPORT: {
     keywords: ["republic of india", "passport", "type/", "place of birth", "date of issue"],
@@ -45,6 +53,7 @@ export const DOCUMENT_RULES: Record<string, DocRule> = {
     nameSubject: "student",
     typeStrength: "strong",
     nameStrength: "strong",
+    tier: "medium",
   },
   MARK_10: {
     keywords: ["secondary", "10th", "class x", "matriculation", "marksheet", "central board", "board of"],
@@ -53,6 +62,7 @@ export const DOCUMENT_RULES: Record<string, DocRule> = {
     nameSubject: "student",
     typeStrength: "medium",
     nameStrength: "medium",
+    tier: "medium",
   },
   MARK_12: {
     keywords: ["senior secondary", "12th", "class xii", "intermediate", "marksheet", "central board", "board of", "higher secondary"],
@@ -61,6 +71,7 @@ export const DOCUMENT_RULES: Record<string, DocRule> = {
     nameSubject: "student",
     typeStrength: "medium",
     nameStrength: "medium",
+    tier: "medium",
   },
   GRAD_MARK: {
     keywords: ["university", "bachelor", "marksheet", "grade card", "transcript", "semester", "cgpa", "sgpa"],
@@ -69,6 +80,7 @@ export const DOCUMENT_RULES: Record<string, DocRule> = {
     nameSubject: "student",
     typeStrength: "medium",
     nameStrength: "medium",
+    tier: "medium",
   },
   GRAD_DEGREE: {
     keywords: ["university", "bachelor", "degree", "conferred", "awarded", "convocation"],
@@ -77,6 +89,7 @@ export const DOCUMENT_RULES: Record<string, DocRule> = {
     nameSubject: "student",
     typeStrength: "medium",
     nameStrength: "medium",
+    tier: "medium",
   },
   ADMIT_LETTER: {
     keywords: ["admission", "offer", "admit", "congratulations", "we are pleased", "accepted"],
@@ -85,6 +98,7 @@ export const DOCUMENT_RULES: Record<string, DocRule> = {
     nameSubject: "student",
     typeStrength: "medium",
     nameStrength: "medium",
+    tier: "medium",
   },
   I20_CAS: {
     keywords: ["i-20", "form i-20", "sevis", "cas", "confirmation of acceptance", "coe", "confirmation of enrolment"],
@@ -93,6 +107,7 @@ export const DOCUMENT_RULES: Record<string, DocRule> = {
     nameSubject: "student",
     typeStrength: "medium",
     nameStrength: "medium",
+    tier: "medium",
   },
   IELTS_TOEFL: {
     keywords: ["ielts", "toefl", "test report form", "overall band", "test of english"],
@@ -101,6 +116,7 @@ export const DOCUMENT_RULES: Record<string, DocRule> = {
     nameSubject: "student",
     typeStrength: "medium",
     nameStrength: "medium",
+    tier: "medium",
   },
   GRE_SCORE: {
     keywords: ["gre", "graduate record", "verbal reasoning", "quantitative reasoning", "analytical writing"],
@@ -109,6 +125,7 @@ export const DOCUMENT_RULES: Record<string, DocRule> = {
     nameSubject: "student",
     typeStrength: "medium",
     nameStrength: "medium",
+    tier: "medium",
   },
   SALARY_SLIP: {
     keywords: ["salary", "pay slip", "payslip", "net pay", "gross pay", "earnings", "basic", "hra", "employee id", "salary slip"],
@@ -117,6 +134,7 @@ export const DOCUMENT_RULES: Record<string, DocRule> = {
     nameSubject: "coapplicant",
     typeStrength: "strong",
     nameStrength: "strong",
+    tier: "strict",
   },
   ITR: {
     keywords: ["income tax", "itr", "assessment year", "itr-v", "verification form", "acknowledgement number"],
@@ -125,6 +143,7 @@ export const DOCUMENT_RULES: Record<string, DocRule> = {
     nameSubject: "coapplicant",
     typeStrength: "strong",
     nameStrength: "strong",
+    tier: "strict",
   },
   BANK_STMT: {
     keywords: ["statement of account", "account statement", "ifsc", "balance", "transaction", "branch"],
@@ -133,6 +152,7 @@ export const DOCUMENT_RULES: Record<string, DocRule> = {
     nameSubject: "coapplicant",
     typeStrength: "medium",
     nameStrength: "medium",
+    tier: "strict",
   },
   PROPERTY_DOC: {
     keywords: ["sale deed", "conveyance", "registrar", "property", "khata", "patta", "title deed"],
@@ -141,6 +161,7 @@ export const DOCUMENT_RULES: Record<string, DocRule> = {
     nameSubject: "none",
     typeStrength: "weak",
     nameStrength: "none",
+    tier: "weak",
   },
 };
 
