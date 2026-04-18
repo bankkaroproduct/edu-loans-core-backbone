@@ -122,6 +122,8 @@ export default function Leads() {
   const [intakeYearFilter, setIntakeYearFilter] = useState(paramIntakeYear || "all");
   const [submittedByFilter, setSubmittedByFilter] = useState(paramSubmittedBy || "all");
   const [sourceSubtypeFilter, setSourceSubtypeFilter] = useState(paramSourceSubtype || "all");
+  const [batchIdFilter, setBatchIdFilter] = useState(paramBatchId || "");
+  const [batchLeadIds, setBatchLeadIds] = useState<string[] | null>(null);
   const [dateFrom, setDateFrom] = useState<Date | undefined>(paramDateFrom ? new Date(paramDateFrom) : undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(paramDateTo ? new Date(paramDateTo) : undefined);
   const [sortKey, setSortKey] = useState<SortKey>("updated_at");
