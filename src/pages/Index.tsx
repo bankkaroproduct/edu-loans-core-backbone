@@ -16,11 +16,9 @@ import { RecentLeads } from "@/components/dashboard/RecentLeads";
 import { DocumentSnapshot, type DocSummary } from "@/components/dashboard/DocumentSnapshot";
 import { BulkUploadSnapshot } from "@/components/dashboard/BulkUploadSnapshot";
 import { PayoutSnapshot, type PayoutSummary } from "@/components/dashboard/PayoutSnapshot";
-import { QuickActions } from "@/components/dashboard/QuickActions";
 import { ActivityFeed, type ActivityItem } from "@/components/dashboard/ActivityFeed";
 import { SystemHelp } from "@/components/dashboard/SystemHelp";
 import { OnboardingEmptyState } from "@/components/dashboard/OnboardingEmptyState";
-import { AddLeadsHero } from "@/components/dashboard/AddLeadsHero";
 
 type Lead = Tables<"student_leads">;
 type Batch = Tables<"bulk_upload_batches">;
