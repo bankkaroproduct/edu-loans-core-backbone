@@ -4,6 +4,10 @@
 
 export type NameSubject = "student" | "coapplicant" | "none";
 export type Strength = "strong" | "medium" | "weak" | "none";
+// Tier governs how strict we are when extracted signal is empty/weak.
+// "strict" = Tier 1: financial/identity; image uploads + zero-text PDFs + zero-signal PDFs
+//   are promoted to review_needed + soft-block. "medium"/"weak" keep current Phase-1 behavior.
+export type Tier = "strict" | "medium" | "weak";
 
 export interface DocRule {
   // Keywords that, if found (case-insensitive), are evidence the file is the right type
@@ -18,6 +22,8 @@ export interface DocRule {
   typeStrength: Strength;
   // Strength of expectation for name-matching
   nameStrength: Strength;
+  // Strictness tier — controls promotion of weak/empty signals
+  tier: Tier;
 }
 
 // Each rule's keywords are lowercase. Matching is case-insensitive (we lowercase the text).
