@@ -105,6 +105,7 @@ export default function Leads() {
   const paramDateTo = searchParams.get("date_to") ?? "";
   const paramSubmittedBy = searchParams.get("submitted_by") ?? "";
   const paramSourceSubtype = searchParams.get("source_subtype") ?? "";
+  const paramBatchId = searchParams.get("batch_id") ?? "";
 
   // ── State ──
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -121,6 +122,8 @@ export default function Leads() {
   const [intakeYearFilter, setIntakeYearFilter] = useState(paramIntakeYear || "all");
   const [submittedByFilter, setSubmittedByFilter] = useState(paramSubmittedBy || "all");
   const [sourceSubtypeFilter, setSourceSubtypeFilter] = useState(paramSourceSubtype || "all");
+  const [batchIdFilter, setBatchIdFilter] = useState(paramBatchId || "");
+  const [batchLeadIds, setBatchLeadIds] = useState<string[] | null>(null);
   const [dateFrom, setDateFrom] = useState<Date | undefined>(paramDateFrom ? new Date(paramDateFrom) : undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(paramDateTo ? new Date(paramDateTo) : undefined);
   const [sortKey, setSortKey] = useState<SortKey>("updated_at");
@@ -179,6 +182,29 @@ export default function Leads() {
     }
   }, []);
 
+  // ── Resolve batch_id (BULK-NNNNNN) → list of created lead IDs ──
+  useEffect(() => {
+    if (!batchIdFilter) { setBatchLeadIds(null); return; }
+    let cancelled = false;
+    (async () => {
+      const { data: batch } = await supabase
+        .from("bulk_upload_batches")
+        .select("id")
+        .eq("batch_id", batchIdFilter)
+        .maybeSingle();
+      if (cancelled) return;
+      if (!batch) { setBatchLeadIds([]); return; }
+      const { data: rows } = await supabase
+        .from("bulk_upload_row_results")
+        .select("created_lead_id")
+        .eq("batch_id", batch.id)
+        .not("created_lead_id", "is", null);
+      if (cancelled) return;
+      setBatchLeadIds((rows ?? []).map((r) => r.created_lead_id!).filter(Boolean));
+    })();
+    return () => { cancelled = true; };
+  }, [batchIdFilter]);
+
   // ── Fetch leads ──
   const fetchLeads = useCallback(async () => {
     setLoading(true);
@@ -213,6 +239,16 @@ export default function Leads() {
       if (search.trim()) {
         const s = `%${search.trim()}%`;
         q = q.or(`student_first_name.ilike.${s},student_last_name.ilike.${s},student_phone.ilike.${s},student_email.ilike.${s},lead_id.ilike.${s},course_name.ilike.${s},university_name_raw.ilike.${s}`);
+      }
+      if (batchIdFilter) {
+        if (batchLeadIds === null) {
+          // Still resolving — match nothing yet to avoid showing all leads
+          q = q.eq("id", "00000000-0000-0000-0000-000000000000");
+        } else if (batchLeadIds.length === 0) {
+          q = q.eq("id", "00000000-0000-0000-0000-000000000000");
+        } else {
+          q = q.in("id", batchLeadIds);
+        }
       }
       return q;
     };
@@ -273,7 +309,7 @@ export default function Leads() {
     } else {
       setDupMatches({});
     }
-  }, [stageFilter, statusFilter, duplicateFilter, attentionFilter, originFilter, submittedByFilter, sourceSubtypeFilter, countryFilter, intakeTermFilter, intakeYearFilter, dateFrom, dateTo, search, sortKey, sortDir, page, agentUserId, effectivePartnerId]);
+  }, [stageFilter, statusFilter, duplicateFilter, attentionFilter, originFilter, submittedByFilter, sourceSubtypeFilter, countryFilter, intakeTermFilter, intakeYearFilter, dateFrom, dateTo, search, sortKey, sortDir, page, agentUserId, effectivePartnerId, batchIdFilter, batchLeadIds]);
 
   useEffect(() => { fetchLeads(); }, [fetchLeads]);
 
@@ -293,9 +329,10 @@ export default function Leads() {
     if (dateFrom) p.set("date_from", dateFrom.toISOString().split("T")[0]);
     if (dateTo) p.set("date_to", dateTo.toISOString().split("T")[0]);
     if (search) p.set("q", search);
+    if (batchIdFilter) p.set("batch_id", batchIdFilter);
     if (page > 1) p.set("page", String(page));
     setSearchParams(p, { replace: true });
-  }, [stageFilter, statusFilter, attentionFilter, duplicateFilter, originFilter, submittedByFilter, sourceSubtypeFilter, countryFilter, intakeTermFilter, intakeYearFilter, dateFrom, dateTo, search, page]);
+  }, [stageFilter, statusFilter, attentionFilter, duplicateFilter, originFilter, submittedByFilter, sourceSubtypeFilter, countryFilter, intakeTermFilter, intakeYearFilter, dateFrom, dateTo, search, batchIdFilter, page]);
 
   // ── Active filter chips ──
   const submittedByName = useMemo(() => {

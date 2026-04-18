@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePartnerContext } from "@/hooks/usePartnerContext";
@@ -53,10 +53,17 @@ const SOURCE_SUBTYPES = [
 
 export default function AddLead() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const draftId = searchParams.get("draft");
+  const editId = searchParams.get("edit");
+  const hydrateId = draftId ?? editId;
+  const isEditMode = Boolean(editId);
+
   const { user, appUser } = useAuth();
   const { effectivePartnerId, effectiveUserId, isSimulating } = usePartnerContext();
   const { duplicates, checking, checkDuplicates } = useDuplicateCheck();
   const [submitting, setSubmitting] = useState(false);
+  const [hydrating, setHydrating] = useState(Boolean(hydrateId));
   const [activeStep, setActiveStep] = useState<StepId>("student");
   const [showDupDialog, setShowDupDialog] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -110,6 +117,56 @@ export default function AddLead() {
       setIntakes(i.data ?? []);
     });
   }, []);
+
+  // Hydrate form when resuming a draft or editing an existing lead
+  useEffect(() => {
+    if (!hydrateId) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("student_leads")
+        .select("*")
+        .eq("id", hydrateId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (error || !data) {
+        toast.error("Could not load lead for editing");
+        setHydrating(false);
+        navigate("/leads", { replace: true });
+        return;
+      }
+      // Strip +91 prefix for display so user can edit naturally
+      const stripPrefix = (p: string | null) => (p ? p.replace(/^\+91/, "") : "");
+      setForm({
+        student_first_name: data.student_first_name ?? "",
+        student_last_name: data.student_last_name ?? "",
+        student_email: data.student_email ?? "",
+        student_phone: stripPrefix(data.student_phone),
+        student_whatsapp: stripPrefix(data.student_whatsapp),
+        city: data.city ?? "",
+        state: data.state ?? "",
+        country_of_residence: data.country_of_residence ?? "",
+        intended_study_country: data.intended_study_country ?? "",
+        intake_term: data.intake_term ?? "",
+        intake_year: data.intake_year ?? 0,
+        course_name: data.course_name ?? "",
+        course_name_raw: "",
+        university_name_raw: data.university_name_raw ?? "",
+        university_id: data.university_id ?? "",
+        loan_amount_required: data.loan_amount_required != null ? String(data.loan_amount_required) : "",
+        coapplicant_name: data.coapplicant_name ?? "",
+        coapplicant_relation: data.coapplicant_relation ?? "",
+        coapplicant_income: data.coapplicant_income != null ? String(data.coapplicant_income) : "",
+        collateral_available: data.collateral_available ?? false,
+        collateral_notes: data.collateral_notes ?? "",
+        source_sub_type: data.source_sub_type ?? "",
+        partner_remark: "",
+      });
+      setIsDirty(false);
+      setHydrating(false);
+    })();
+    return () => { cancelled = true; };
+  }, [hydrateId, navigate]);
 
   // Unsaved changes protection
   useEffect(() => {
@@ -168,6 +225,7 @@ export default function AddLead() {
         intakeTerm: form.intake_term,
         intakeYear: form.intake_year,
         partnerId: effectivePartnerId!,
+        excludeId: editId ?? draftId ?? null,
       });
       if (dups.length > 0) {
         setShowDupDialog(true);
@@ -216,35 +274,75 @@ export default function AddLead() {
       duplicate_flag: hasDuplicateWarning,
     };
 
-    const { data, error } = await supabase.from("student_leads").insert(payload).select("id").single();
+    // Decide insert vs update
+    // - editId: always update (preserve created_at, lead_id, partner_id ownership)
+    // - draftId + asDraft: update existing draft in place
+    // - draftId + submit: update draft → submitted (stage transition)
+    const updateTargetId = editId ?? draftId ?? null;
+    let resultLeadId: string | null = null;
+    let opError: any = null;
 
-    if (error) {
-      console.error("[AddLead] Insert failed:", error.message, error.details, error.hint);
-      toast.error(`Lead insert failed: ${error.message}`);
-    } else if (data) {
-      const downstream = await createDownstreamRecords({
-        leadId: data.id,
-        appUser: appUser!,
-        stage,
-        status,
-        isDraft: asDraft,
-        hasDuplicateOverride: hasDuplicateWarning,
-        partnerRemark: form.partner_remark,
-      });
+    if (updateTargetId) {
+      // Update existing record. Don't overwrite partner_id/partner_user_id on edit.
+      const updatePayload: any = { ...payload };
+      delete updatePayload.partner_id;
+      delete updatePayload.partner_user_id;
+      delete updatePayload.source_type;
+      // Preserve duplicate_flag from existing unless we're explicitly setting it now
+      if (!hasDuplicateWarning) delete updatePayload.duplicate_flag;
+      const { data, error } = await supabase
+        .from("student_leads")
+        .update(updatePayload)
+        .eq("id", updateTargetId)
+        .select("id")
+        .single();
+      resultLeadId = data?.id ?? null;
+      opError = error;
+    } else {
+      const { data, error } = await supabase.from("student_leads").insert(payload).select("id").single();
+      resultLeadId = data?.id ?? null;
+      opError = error;
+    }
 
-      if (!downstream.ok) {
-        toast.error(`Lead row created, but downstream failed: ${downstream.failedStep}`);
-        setSubmitting(false);
-        return;
+    if (opError) {
+      console.error("[AddLead] Save failed:", opError.message, opError.details, opError.hint);
+      toast.error(`Lead save failed: ${opError.message}`);
+    } else if (resultLeadId) {
+      // Skip downstream history/audit creation on update — the DB stage trigger handles it.
+      // Only create downstream artifacts on first insert.
+      if (!updateTargetId) {
+        const downstream = await createDownstreamRecords({
+          leadId: resultLeadId,
+          appUser: appUser!,
+          stage,
+          status,
+          isDraft: asDraft,
+          hasDuplicateOverride: hasDuplicateWarning,
+          partnerRemark: form.partner_remark,
+        });
+
+        if (!downstream.ok) {
+          toast.error(`Lead row created, but downstream failed: ${downstream.failedStep}`);
+          setSubmitting(false);
+          return;
+        }
+      } else if (form.partner_remark.trim()) {
+        // Add partner remark as a note on edit/draft-resume
+        await supabase.from("lead_notes").insert({
+          lead_id: resultLeadId,
+          note_type: "partner_visible",
+          note_text: form.partner_remark.trim(),
+          created_by: appUser!.id,
+        });
       }
 
-      const displayIdResult = await fetchLeadDisplayId(data.id);
+      const displayIdResult = await fetchLeadDisplayId(resultLeadId);
 
       if (displayIdResult.error) {
-        toast.error(`Lead created, but could not fetch display ID`);
+        toast.error(`Lead saved, but could not fetch display ID`);
       }
 
-      setCreatedLeadId(data.id);
+      setCreatedLeadId(resultLeadId);
       setCreatedLeadDisplayId(displayIdResult.displayId);
       setIsDraftSuccess(asDraft);
       setIsDirty(false);
@@ -268,6 +366,21 @@ export default function AddLead() {
     </div>
   );
 
+  if (hydrating) {
+    return (
+      <div className="max-w-4xl mx-auto py-12 text-center text-muted-foreground text-sm">
+        Loading lead for editing…
+      </div>
+    );
+  }
+
+  const headingTitle = draftId ? "Resume Draft Lead" : isEditMode ? "Edit Lead" : "Add New Lead";
+  const headingDesc = draftId
+    ? "Continue where you left off. Submit when complete or save again as draft."
+    : isEditMode
+      ? "Update lead details. Changes are tracked in the lead timeline."
+      : "Create a complete lead record for smoother downstream review and lender matching.";
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
@@ -276,11 +389,14 @@ export default function AddLead() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" /> Add New Lead
+            <FileText className="h-5 w-5 text-primary" /> {headingTitle}
+            {(draftId || isEditMode) && (
+              <Badge variant="outline" className="ml-1 text-[10px]">
+                {draftId ? "DRAFT" : "EDIT"}
+              </Badge>
+            )}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Create a complete lead record for smoother downstream review and lender matching.
-          </p>
+          <p className="text-sm text-muted-foreground mt-1">{headingDesc}</p>
         </div>
       </div>
 
@@ -551,11 +667,13 @@ export default function AddLead() {
           <div className="flex gap-3 justify-between sticky bottom-4 bg-background/80 backdrop-blur p-3 rounded-lg border">
             <Button variant="outline" onClick={() => setActiveStep("notes")}>← Back to Edit</Button>
             <div className="flex gap-3">
-              <Button type="button" variant="secondary" disabled={submitting || checking} onClick={() => handleSubmit(true)}>
-                Save as Draft
-              </Button>
+              {!isEditMode && (
+                <Button type="button" variant="secondary" disabled={submitting || checking} onClick={() => handleSubmit(true)}>
+                  {draftId ? "Save Draft" : "Save as Draft"}
+                </Button>
+              )}
               <Button type="button" disabled={submitting || checking} onClick={() => handleSubmit(false)}>
-                {submitting ? "Submitting..." : checking ? "Checking..." : "Submit Lead"}
+                {submitting ? "Saving..." : checking ? "Checking..." : isEditMode ? "Save Changes" : "Submit Lead"}
               </Button>
             </div>
           </div>

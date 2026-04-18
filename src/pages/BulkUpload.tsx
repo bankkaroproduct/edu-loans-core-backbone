@@ -602,7 +602,7 @@ export default function BulkUpload() {
 
                   {/* Next-step actions */}
                   <div className="flex flex-wrap gap-2">
-                    <Button size="sm" onClick={() => navigate("/leads")}>
+                    <Button size="sm" onClick={() => navigate(`/leads?batch_id=${summary.batchId}`)}>
                       <FileText className="mr-1 h-3.5 w-3.5" /> View Created Leads
                     </Button>
                     {(summary.failed > 0 || summary.duplicates > 0) && (
