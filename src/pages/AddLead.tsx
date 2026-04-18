@@ -225,6 +225,7 @@ export default function AddLead() {
         intakeTerm: form.intake_term,
         intakeYear: form.intake_year,
         partnerId: effectivePartnerId!,
+        excludeId: editId ?? draftId ?? null,
       });
       if (dups.length > 0) {
         setShowDupDialog(true);
