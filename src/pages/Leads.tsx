@@ -309,7 +309,7 @@ export default function Leads() {
     } else {
       setDupMatches({});
     }
-  }, [stageFilter, statusFilter, duplicateFilter, attentionFilter, originFilter, submittedByFilter, sourceSubtypeFilter, countryFilter, intakeTermFilter, intakeYearFilter, dateFrom, dateTo, search, sortKey, sortDir, page, agentUserId, effectivePartnerId]);
+  }, [stageFilter, statusFilter, duplicateFilter, attentionFilter, originFilter, submittedByFilter, sourceSubtypeFilter, countryFilter, intakeTermFilter, intakeYearFilter, dateFrom, dateTo, search, sortKey, sortDir, page, agentUserId, effectivePartnerId, batchIdFilter, batchLeadIds]);
 
   useEffect(() => { fetchLeads(); }, [fetchLeads]);
 
@@ -329,9 +329,10 @@ export default function Leads() {
     if (dateFrom) p.set("date_from", dateFrom.toISOString().split("T")[0]);
     if (dateTo) p.set("date_to", dateTo.toISOString().split("T")[0]);
     if (search) p.set("q", search);
+    if (batchIdFilter) p.set("batch_id", batchIdFilter);
     if (page > 1) p.set("page", String(page));
     setSearchParams(p, { replace: true });
-  }, [stageFilter, statusFilter, attentionFilter, duplicateFilter, originFilter, submittedByFilter, sourceSubtypeFilter, countryFilter, intakeTermFilter, intakeYearFilter, dateFrom, dateTo, search, page]);
+  }, [stageFilter, statusFilter, attentionFilter, duplicateFilter, originFilter, submittedByFilter, sourceSubtypeFilter, countryFilter, intakeTermFilter, intakeYearFilter, dateFrom, dateTo, search, batchIdFilter, page]);
 
   // ── Active filter chips ──
   const submittedByName = useMemo(() => {
