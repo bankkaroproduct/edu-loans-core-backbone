@@ -53,10 +53,17 @@ const SOURCE_SUBTYPES = [
 
 export default function AddLead() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const draftId = searchParams.get("draft");
+  const editId = searchParams.get("edit");
+  const hydrateId = draftId ?? editId;
+  const isEditMode = Boolean(editId);
+
   const { user, appUser } = useAuth();
   const { effectivePartnerId, effectiveUserId, isSimulating } = usePartnerContext();
   const { duplicates, checking, checkDuplicates } = useDuplicateCheck();
   const [submitting, setSubmitting] = useState(false);
+  const [hydrating, setHydrating] = useState(Boolean(hydrateId));
   const [activeStep, setActiveStep] = useState<StepId>("student");
   const [showDupDialog, setShowDupDialog] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
