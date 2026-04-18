@@ -20,6 +20,7 @@ import { QuickActions } from "@/components/dashboard/QuickActions";
 import { ActivityFeed, type ActivityItem } from "@/components/dashboard/ActivityFeed";
 import { SystemHelp } from "@/components/dashboard/SystemHelp";
 import { OnboardingEmptyState } from "@/components/dashboard/OnboardingEmptyState";
+import { AddLeadsHero } from "@/components/dashboard/AddLeadsHero";
 
 type Lead = Tables<"student_leads">;
 type Batch = Tables<"bulk_upload_batches">;
