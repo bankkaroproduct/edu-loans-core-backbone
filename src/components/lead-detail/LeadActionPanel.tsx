@@ -56,7 +56,7 @@ export function LeadActionPanel({ lead }: Props) {
               <Play className="h-4 w-4 mr-1" /> Resume Draft
             </Button>
           )}
-          {!isDraft && (
+          {!isDraft && lead.current_stage === "submitted" && (
             <Button size="sm" variant="outline" onClick={() => navigate(`/leads/new?edit=${lead.id}`)}>
               <Edit className="h-4 w-4 mr-1" /> Edit Lead
             </Button>

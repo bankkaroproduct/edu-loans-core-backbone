@@ -23,8 +23,6 @@ import LeadDetail from "./pages/LeadDetail";
 import LeadDocuments from "./pages/LeadDocuments";
 import BulkUpload from "./pages/BulkUpload";
 import Payouts from "./pages/Payouts";
-import Partners from "./pages/Partners";
-import Settings from "./pages/Settings";
 import MasterData from "./pages/MasterData";
 import NotFound from "./pages/NotFound";
 import StudentLanding from "./pages/student/StudentLanding";
@@ -77,8 +75,6 @@ const App = () => (
             <Route path="/bulk-upload" element={<ProtectedRoute><BulkUpload /></ProtectedRoute>} />
             <Route path="/payouts" element={<ProtectedRoute><Payouts /></ProtectedRoute>} />
             <Route path="/master-data" element={<ProtectedRoute><MasterData /></ProtectedRoute>} />
-            <Route path="/partners" element={<ProtectedRoute><Partners /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             {/* Admin Console — separate portal */}
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
