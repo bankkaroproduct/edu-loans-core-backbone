@@ -78,8 +78,9 @@ export function useDuplicateCheck() {
         });
       }
 
-      setDuplicates(found);
-      return found;
+      const filtered = params.excludeId ? found.filter((d) => d.id !== params.excludeId) : found;
+      setDuplicates(filtered);
+      return filtered;
     } finally {
       setChecking(false);
     }
