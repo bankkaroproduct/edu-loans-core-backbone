@@ -16,6 +16,7 @@ interface DuplicateCheckParams {
   intakeTerm?: string;
   intakeYear?: number;
   partnerId: string;
+  excludeId?: string | null;
 }
 
 export function useDuplicateCheck() {
