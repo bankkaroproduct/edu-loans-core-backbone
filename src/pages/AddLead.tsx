@@ -273,35 +273,75 @@ export default function AddLead() {
       duplicate_flag: hasDuplicateWarning,
     };
 
-    const { data, error } = await supabase.from("student_leads").insert(payload).select("id").single();
+    // Decide insert vs update
+    // - editId: always update (preserve created_at, lead_id, partner_id ownership)
+    // - draftId + asDraft: update existing draft in place
+    // - draftId + submit: update draft → submitted (stage transition)
+    const updateTargetId = editId ?? draftId ?? null;
+    let resultLeadId: string | null = null;
+    let opError: any = null;
 
-    if (error) {
-      console.error("[AddLead] Insert failed:", error.message, error.details, error.hint);
-      toast.error(`Lead insert failed: ${error.message}`);
-    } else if (data) {
-      const downstream = await createDownstreamRecords({
-        leadId: data.id,
-        appUser: appUser!,
-        stage,
-        status,
-        isDraft: asDraft,
-        hasDuplicateOverride: hasDuplicateWarning,
-        partnerRemark: form.partner_remark,
-      });
+    if (updateTargetId) {
+      // Update existing record. Don't overwrite partner_id/partner_user_id on edit.
+      const updatePayload: any = { ...payload };
+      delete updatePayload.partner_id;
+      delete updatePayload.partner_user_id;
+      delete updatePayload.source_type;
+      // Preserve duplicate_flag from existing unless we're explicitly setting it now
+      if (!hasDuplicateWarning) delete updatePayload.duplicate_flag;
+      const { data, error } = await supabase
+        .from("student_leads")
+        .update(updatePayload)
+        .eq("id", updateTargetId)
+        .select("id")
+        .single();
+      resultLeadId = data?.id ?? null;
+      opError = error;
+    } else {
+      const { data, error } = await supabase.from("student_leads").insert(payload).select("id").single();
+      resultLeadId = data?.id ?? null;
+      opError = error;
+    }
 
-      if (!downstream.ok) {
-        toast.error(`Lead row created, but downstream failed: ${downstream.failedStep}`);
-        setSubmitting(false);
-        return;
+    if (opError) {
+      console.error("[AddLead] Save failed:", opError.message, opError.details, opError.hint);
+      toast.error(`Lead save failed: ${opError.message}`);
+    } else if (resultLeadId) {
+      // Skip downstream history/audit creation on update — the DB stage trigger handles it.
+      // Only create downstream artifacts on first insert.
+      if (!updateTargetId) {
+        const downstream = await createDownstreamRecords({
+          leadId: resultLeadId,
+          appUser: appUser!,
+          stage,
+          status,
+          isDraft: asDraft,
+          hasDuplicateOverride: hasDuplicateWarning,
+          partnerRemark: form.partner_remark,
+        });
+
+        if (!downstream.ok) {
+          toast.error(`Lead row created, but downstream failed: ${downstream.failedStep}`);
+          setSubmitting(false);
+          return;
+        }
+      } else if (form.partner_remark.trim()) {
+        // Add partner remark as a note on edit/draft-resume
+        await supabase.from("lead_notes").insert({
+          lead_id: resultLeadId,
+          note_type: "partner_visible",
+          note_text: form.partner_remark.trim(),
+          created_by: appUser!.id,
+        });
       }
 
-      const displayIdResult = await fetchLeadDisplayId(data.id);
+      const displayIdResult = await fetchLeadDisplayId(resultLeadId);
 
       if (displayIdResult.error) {
-        toast.error(`Lead created, but could not fetch display ID`);
+        toast.error(`Lead saved, but could not fetch display ID`);
       }
 
-      setCreatedLeadId(data.id);
+      setCreatedLeadId(resultLeadId);
       setCreatedLeadDisplayId(displayIdResult.displayId);
       setIsDraftSuccess(asDraft);
       setIsDirty(false);
