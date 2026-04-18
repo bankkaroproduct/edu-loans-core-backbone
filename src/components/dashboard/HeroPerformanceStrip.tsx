@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Plus, Upload, DollarSign, Clock, AlertTriangle } from "lucide-react";
+import { Plus, Upload, DollarSign, Clock, AlertTriangle, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Tables } from "@/integrations/supabase/types";
