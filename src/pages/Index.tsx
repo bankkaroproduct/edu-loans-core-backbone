@@ -19,6 +19,7 @@ import { PayoutSnapshot, type PayoutSummary } from "@/components/dashboard/Payou
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { ActivityFeed, type ActivityItem } from "@/components/dashboard/ActivityFeed";
 import { SystemHelp } from "@/components/dashboard/SystemHelp";
+import { OnboardingEmptyState } from "@/components/dashboard/OnboardingEmptyState";
 
 type Lead = Tables<"student_leads">;
 type Batch = Tables<"bulk_upload_batches">;
@@ -269,11 +270,15 @@ export default function Dashboard() {
     if (route) navigate(route);
   };
 
+  const isFirstRun = !loading && leads.length === 0;
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <HeroPerformanceStrip appUser={appUser} partnerName={partnerName} kpiData={kpiData} loading={loading} />
 
       <div className="mt-6 space-y-6">
+        {isFirstRun && <OnboardingEmptyState partnerName={partnerName} />}
+
         <DashboardFilters
           filters={filters}
           onChange={setFilters}
