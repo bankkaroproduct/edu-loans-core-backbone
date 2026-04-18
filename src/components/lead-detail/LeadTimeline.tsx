@@ -83,8 +83,19 @@ export function LeadTimeline({ history, notes }: Props) {
 
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Badge variant="outline" className="text-[10px]">
-                      {evt.type === "stage_change" ? "Stage Change" : evt.type === "system" ? "System" : "Note"}
+                    <Badge
+                      variant={evt.noteType === "internal" ? "secondary" : "outline"}
+                      className="text-[10px]"
+                    >
+                      {evt.type === "stage_change"
+                        ? "Stage Change"
+                        : evt.type === "system"
+                          ? "System"
+                          : evt.noteType === "internal"
+                            ? "Internal Note"
+                            : evt.noteType === "partner_visible"
+                              ? "Partner Note"
+                              : "Note"}
                     </Badge>
                     <span className="text-[10px] text-muted-foreground">{evt.actor}</span>
                     <span className="text-[10px] text-muted-foreground">
@@ -106,7 +117,11 @@ export function LeadTimeline({ history, notes }: Props) {
                   )}
 
                   {evt.noteText && (
-                    <p className="text-sm bg-muted/50 rounded p-2">{evt.noteText}</p>
+                    <p className={`text-sm rounded p-2 ${
+                      evt.noteType === "internal"
+                        ? "bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900"
+                        : "bg-muted/50"
+                    }`}>{evt.noteText}</p>
                   )}
                 </div>
               </div>
