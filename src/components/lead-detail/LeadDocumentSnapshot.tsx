@@ -1,13 +1,13 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileText, Upload, CheckCircle, AlertTriangle, Clock, XCircle, ArrowRight } from "lucide-react";
-import type { Tables } from "@/integrations/supabase/types";
-
-type DocReq = Tables<"lead_document_requirements"> & {
-  document_master?: { document_name: string; document_category: string | null } | null;
-};
+import { useRoleAccess } from "@/hooks/useRoleAccess";
+import { supabase } from "@/integrations/supabase/client";
+import { DocumentUploadDialog } from "@/components/documents/DocumentUploadDialog";
+import type { DocRequirement } from "@/pages/LeadDocuments";
 
 const STATUS_CONFIG: Record<string, { icon: typeof CheckCircle; color: string; label: string }> = {
   verified: { icon: CheckCircle, color: "text-green-600", label: "Verified" },
@@ -21,13 +21,17 @@ const STATUS_CONFIG: Record<string, { icon: typeof CheckCircle; color: string; l
 };
 
 interface Props {
-  requirements: DocReq[];
+  requirements: DocRequirement[];
   leadId: string;
   readOnly?: boolean;
+  onChanged?: () => void;
 }
 
-export function LeadDocumentSnapshot({ requirements, leadId, readOnly = false }: Props) {
+export function LeadDocumentSnapshot({ requirements, leadId, readOnly = false, onChanged }: Props) {
   const navigate = useNavigate();
+  const { userId, role } = useRoleAccess();
+  const [uploadTarget, setUploadTarget] = useState<DocRequirement | null>(null);
+  const [versionCounts, setVersionCounts] = useState<Record<string, number>>({});
 
   const counts = {
     total: requirements.length,
@@ -48,6 +52,17 @@ export function LeadDocumentSnapshot({ requirements, leadId, readOnly = false }:
   const pendingDocs = requirements.filter(r => r.status === "not_uploaded");
   const priorityDocs = [...blockerDocs, ...pendingDocs].slice(0, 4);
 
+  const startUpload = async (req: DocRequirement) => {
+    // Fetch current version count for this requirement so the dialog increments correctly
+    const { count } = await supabase
+      .from("lead_documents")
+      .select("id", { count: "exact", head: true })
+      .eq("lead_id", leadId)
+      .eq("document_type_id", req.document_type_id);
+    setVersionCounts((prev) => ({ ...prev, [req.id]: count ?? 0 }));
+    setUploadTarget(req);
+  };
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -63,12 +78,10 @@ export function LeadDocumentSnapshot({ requirements, leadId, readOnly = false }:
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Status summary with blocker awareness */}
         {requirements.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">No document requirements set for this lead yet.</p>
         ) : (
           <>
-            {/* Blocker / status banner */}
             {allVerified && (
               <div className="flex items-center gap-2 rounded-md bg-green-50 dark:bg-green-950/20 p-2.5 text-sm text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800">
                 <CheckCircle className="h-4 w-4 shrink-0" />
@@ -93,7 +106,6 @@ export function LeadDocumentSnapshot({ requirements, leadId, readOnly = false }:
               </div>
             )}
 
-            {/* Summary counts */}
             <div className="flex gap-4 flex-wrap text-xs">
               <span className="text-muted-foreground">Total: <span className="font-semibold text-foreground">{counts.total}</span></span>
               <span className="text-green-700 dark:text-green-400">Verified: <span className="font-semibold">{counts.verified}</span></span>
@@ -103,13 +115,14 @@ export function LeadDocumentSnapshot({ requirements, leadId, readOnly = false }:
               {counts.reupload > 0 && <span className="text-orange-600">Reupload: <span className="font-semibold">{counts.reupload}</span></span>}
             </div>
 
-            {/* Priority items: blockers + pending first */}
             {priorityDocs.length > 0 && (
               <div className="space-y-1.5">
                 {priorityDocs.map(req => {
                   const cfg = STATUS_CONFIG[req.status] ?? STATUS_CONFIG.not_uploaded;
                   const Icon = cfg.icon;
                   const isBlocker = ["rejected", "reupload_needed"].includes(req.status);
+                  const isPending = req.status === "not_uploaded";
+                  const canUpload = !readOnly && (isPending || isBlocker);
                   return (
                     <div key={req.id} className={`flex items-center justify-between rounded-md border p-2.5 ${
                       isBlocker ? "border-destructive/30 bg-destructive/5" : ""
@@ -125,12 +138,25 @@ export function LeadDocumentSnapshot({ requirements, leadId, readOnly = false }:
                           )}
                         </div>
                       </div>
-                      <Badge
-                        variant={isBlocker ? "destructive" : "outline"}
-                        className="text-[10px] shrink-0 ml-2"
-                      >
-                        {cfg.label}
-                      </Badge>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Badge
+                          variant={isBlocker ? "destructive" : "outline"}
+                          className="text-[10px]"
+                        >
+                          {cfg.label}
+                        </Badge>
+                        {canUpload && (
+                          <Button
+                            size="sm"
+                            variant={isBlocker ? "destructive" : "outline"}
+                            className="h-7 px-2 text-xs"
+                            onClick={() => startUpload(req)}
+                          >
+                            <Upload className="h-3 w-3 mr-1" />
+                            {isBlocker ? "Reupload" : "Upload"}
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -144,6 +170,22 @@ export function LeadDocumentSnapshot({ requirements, leadId, readOnly = false }:
           </>
         )}
       </CardContent>
+
+      {uploadTarget && (
+        <DocumentUploadDialog
+          open={Boolean(uploadTarget)}
+          onOpenChange={(o) => { if (!o) setUploadTarget(null); }}
+          requirement={uploadTarget}
+          leadId={leadId}
+          userId={userId}
+          userRole={role}
+          currentVersionCount={versionCounts[uploadTarget.id] ?? 0}
+          onUploadComplete={() => {
+            setUploadTarget(null);
+            onChanged?.();
+          }}
+        />
+      )}
     </Card>
   );
 }
