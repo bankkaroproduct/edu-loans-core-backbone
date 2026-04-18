@@ -182,6 +182,29 @@ export default function Leads() {
     }
   }, []);
 
+  // ── Resolve batch_id (BULK-NNNNNN) → list of created lead IDs ──
+  useEffect(() => {
+    if (!batchIdFilter) { setBatchLeadIds(null); return; }
+    let cancelled = false;
+    (async () => {
+      const { data: batch } = await supabase
+        .from("bulk_upload_batches")
+        .select("id")
+        .eq("batch_id", batchIdFilter)
+        .maybeSingle();
+      if (cancelled) return;
+      if (!batch) { setBatchLeadIds([]); return; }
+      const { data: rows } = await supabase
+        .from("bulk_upload_row_results")
+        .select("created_lead_id")
+        .eq("batch_id", batch.id)
+        .not("created_lead_id", "is", null);
+      if (cancelled) return;
+      setBatchLeadIds((rows ?? []).map((r) => r.created_lead_id!).filter(Boolean));
+    })();
+    return () => { cancelled = true; };
+  }, [batchIdFilter]);
+
   // ── Fetch leads ──
   const fetchLeads = useCallback(async () => {
     setLoading(true);
