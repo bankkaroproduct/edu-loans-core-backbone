@@ -365,6 +365,21 @@ export default function AddLead() {
     </div>
   );
 
+  if (hydrating) {
+    return (
+      <div className="max-w-4xl mx-auto py-12 text-center text-muted-foreground text-sm">
+        Loading lead for editing…
+      </div>
+    );
+  }
+
+  const headingTitle = draftId ? "Resume Draft Lead" : isEditMode ? "Edit Lead" : "Add New Lead";
+  const headingDesc = draftId
+    ? "Continue where you left off. Submit when complete or save again as draft."
+    : isEditMode
+      ? "Update lead details. Changes are tracked in the lead timeline."
+      : "Create a complete lead record for smoother downstream review and lender matching.";
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
@@ -373,11 +388,14 @@ export default function AddLead() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" /> Add New Lead
+            <FileText className="h-5 w-5 text-primary" /> {headingTitle}
+            {(draftId || isEditMode) && (
+              <Badge variant="outline" className="ml-1 text-[10px]">
+                {draftId ? "DRAFT" : "EDIT"}
+              </Badge>
+            )}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Create a complete lead record for smoother downstream review and lender matching.
-          </p>
+          <p className="text-sm text-muted-foreground mt-1">{headingDesc}</p>
         </div>
       </div>
 
