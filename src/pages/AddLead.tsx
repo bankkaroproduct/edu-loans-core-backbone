@@ -118,6 +118,56 @@ export default function AddLead() {
     });
   }, []);
 
+  // Hydrate form when resuming a draft or editing an existing lead
+  useEffect(() => {
+    if (!hydrateId) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("student_leads")
+        .select("*")
+        .eq("id", hydrateId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (error || !data) {
+        toast.error("Could not load lead for editing");
+        setHydrating(false);
+        navigate("/leads", { replace: true });
+        return;
+      }
+      // Strip +91 prefix for display so user can edit naturally
+      const stripPrefix = (p: string | null) => (p ? p.replace(/^\+91/, "") : "");
+      setForm({
+        student_first_name: data.student_first_name ?? "",
+        student_last_name: data.student_last_name ?? "",
+        student_email: data.student_email ?? "",
+        student_phone: stripPrefix(data.student_phone),
+        student_whatsapp: stripPrefix(data.student_whatsapp),
+        city: data.city ?? "",
+        state: data.state ?? "",
+        country_of_residence: data.country_of_residence ?? "",
+        intended_study_country: data.intended_study_country ?? "",
+        intake_term: data.intake_term ?? "",
+        intake_year: data.intake_year ?? 0,
+        course_name: data.course_name ?? "",
+        course_name_raw: "",
+        university_name_raw: data.university_name_raw ?? "",
+        university_id: data.university_id ?? "",
+        loan_amount_required: data.loan_amount_required != null ? String(data.loan_amount_required) : "",
+        coapplicant_name: data.coapplicant_name ?? "",
+        coapplicant_relation: data.coapplicant_relation ?? "",
+        coapplicant_income: data.coapplicant_income != null ? String(data.coapplicant_income) : "",
+        collateral_available: data.collateral_available ?? false,
+        collateral_notes: data.collateral_notes ?? "",
+        source_sub_type: data.source_sub_type ?? "",
+        partner_remark: "",
+      });
+      setIsDirty(false);
+      setHydrating(false);
+    })();
+    return () => { cancelled = true; };
+  }, [hydrateId, navigate]);
+
   // Unsaved changes protection
   useEffect(() => {
     if (!isDirty) return;
