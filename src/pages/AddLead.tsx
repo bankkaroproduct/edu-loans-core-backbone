@@ -666,11 +666,13 @@ export default function AddLead() {
           <div className="flex gap-3 justify-between sticky bottom-4 bg-background/80 backdrop-blur p-3 rounded-lg border">
             <Button variant="outline" onClick={() => setActiveStep("notes")}>← Back to Edit</Button>
             <div className="flex gap-3">
-              <Button type="button" variant="secondary" disabled={submitting || checking} onClick={() => handleSubmit(true)}>
-                Save as Draft
-              </Button>
+              {!isEditMode && (
+                <Button type="button" variant="secondary" disabled={submitting || checking} onClick={() => handleSubmit(true)}>
+                  {draftId ? "Save Draft" : "Save as Draft"}
+                </Button>
+              )}
               <Button type="button" disabled={submitting || checking} onClick={() => handleSubmit(false)}>
-                {submitting ? "Submitting..." : checking ? "Checking..." : "Submit Lead"}
+                {submitting ? "Saving..." : checking ? "Checking..." : isEditMode ? "Save Changes" : "Submit Lead"}
               </Button>
             </div>
           </div>
