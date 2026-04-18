@@ -78,6 +78,13 @@ export function HeroPerformanceStrip({ appUser, partnerName, kpiData, loading }:
           <div className="flex flex-wrap gap-3 shrink-0">
             <Button
               className="h-12 px-6 text-base font-semibold bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+              onClick={() => navigate("/leads/quick")}
+            >
+              <Zap className="mr-2 h-5 w-5" /> Add Quick Lead
+            </Button>
+            <Button
+              variant="outline"
+              className="h-12 px-6 text-base font-semibold border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 bg-transparent"
               onClick={() => navigate("/leads/new")}
             >
               <Plus className="mr-2 h-5 w-5" /> Add New Lead
