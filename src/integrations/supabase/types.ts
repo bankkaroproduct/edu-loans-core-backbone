@@ -1062,6 +1062,36 @@ export type Database = {
           },
         ]
       }
+      qa_results_admin_ops: {
+        Row: {
+          actual: string | null
+          evidence: string | null
+          expected: string | null
+          ran_at: string | null
+          scenario: string | null
+          scenario_no: number | null
+          status: string | null
+        }
+        Insert: {
+          actual?: string | null
+          evidence?: string | null
+          expected?: string | null
+          ran_at?: string | null
+          scenario?: string | null
+          scenario_no?: number | null
+          status?: string | null
+        }
+        Update: {
+          actual?: string | null
+          evidence?: string | null
+          expected?: string | null
+          ran_at?: string | null
+          scenario?: string | null
+          scenario_no?: number | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       student_leads: {
         Row: {
           assigned_admin_id: string | null
