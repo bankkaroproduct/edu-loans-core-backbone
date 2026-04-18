@@ -37,7 +37,8 @@ export default function AdminLogin() {
     }
   }, [loading, user, appUser, navigate, location.state]);
 
-  // If a partner/student is already authenticated, send them away — admin login is not for them.
+  // If a partner/student is already authenticated, send them to the partner login entry point.
+  // (Login.tsx will then route them onward to / based on role.)
   if (!loading && user && appUser && appUser.role !== "super_admin" && appUser.role !== "admin") {
     return <Navigate to="/" replace />;
   }

@@ -20,7 +20,7 @@ function SimulationBanner() {
 }
 
 export function AppLayout({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, appUser, loading } = useAuth();
 
   if (loading) {
     return (
@@ -31,6 +31,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
   }
 
   if (!user) return <Navigate to="/login" replace />;
+
+  // Block admins from rendering inside the partner shell — they belong in /admin/*.
+  // Keeps the two portal experiences fully separate even if an admin lands on a partner URL.
+  if (appUser && (appUser.role === "super_admin" || appUser.role === "admin")) {
+    return <Navigate to="/admin" replace />;
+  }
 
   return (
     <SidebarProvider>
