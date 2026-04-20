@@ -29,14 +29,16 @@ interface Props {
   backLabel?: string;
   hideActions?: boolean;
   hasPendingEditRequest?: boolean;
+  appliedEditCount?: number;
   onRequestEdit?: () => void;
 }
 
-export function LeadDetailHeader({ lead, submittedByName, isDraft, backTo = "/leads", backLabel = "Back to Submitted Leads", hideActions = false, hasPendingEditRequest = false, onRequestEdit }: Props) {
+export function LeadDetailHeader({ lead, submittedByName, isDraft, backTo = "/leads", backLabel = "Back to Submitted Leads", hideActions = false, hasPendingEditRequest = false, appliedEditCount = 0, onRequestEdit }: Props) {
   const navigate = useNavigate();
   const { isAdmin } = useRoleAccess();
   const isTerminal = TERMINAL_STAGES.includes(lead.current_stage);
   const needsAttention = ATTENTION_STAGES.includes(lead.current_stage) || ATTENTION_STATUSES.includes(lead.current_status) || lead.duplicate_flag;
+  const editLimitReached = appliedEditCount >= 10;
 
   const copyLeadId = () => {
     if (lead.lead_id) {
@@ -111,27 +113,39 @@ export function LeadDetailHeader({ lead, submittedByName, isDraft, backTo = "/le
                 <Edit className="h-4 w-4 mr-1" /> Edit Lead
               </Button>
             ) : (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={onRequestEdit}
-                      disabled={isTerminal || hasPendingEditRequest || !onRequestEdit}
-                    >
-                      <Pencil className="h-4 w-4 mr-1" /> Request Edit
-                    </Button>
+              <div className="flex items-center gap-2">
+                {!isDraft && (
+                  <span
+                    className="text-[11px] text-muted-foreground tabular-nums"
+                    title="Approved edits applied to this lead"
+                  >
+                    Edits used: {appliedEditCount}/10
                   </span>
-                </TooltipTrigger>
-                {(isTerminal || hasPendingEditRequest) && (
-                  <TooltipContent>
-                    {hasPendingEditRequest
-                      ? "An edit request is already pending admin review."
-                      : `Lead is in terminal stage (${lead.current_stage}) and cannot be edited.`}
-                  </TooltipContent>
                 )}
-              </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onRequestEdit}
+                        disabled={isTerminal || hasPendingEditRequest || editLimitReached || !onRequestEdit}
+                      >
+                        <Pencil className="h-4 w-4 mr-1" /> Request Edit
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {(isTerminal || hasPendingEditRequest || editLimitReached) && (
+                    <TooltipContent>
+                      {editLimitReached
+                        ? "This lead has reached the maximum approved edit limit (10/10). Please contact admin for further changes."
+                        : hasPendingEditRequest
+                        ? "An edit request is already pending admin review."
+                        : `Lead is in terminal stage (${lead.current_stage}) and cannot be edited.`}
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </div>
             )}
             <Button variant="outline" size="sm" onClick={() => navigate(`/leads/${lead.id}/documents`)}>
               <FileText className="h-4 w-4 mr-1" /> Documents
