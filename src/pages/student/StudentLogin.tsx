@@ -100,9 +100,10 @@ export default function StudentLogin() {
                     </InputOTPGroup>
                   </InputOTP>
                   {typeof window !== "undefined" && sessionStorage.getItem("student_otp_fallback") === "1" && (
-                    <p className="text-xs text-muted-foreground">
-                      Preview mode — use <span className="font-mono font-semibold text-foreground">123456</span> to continue.
-                    </p>
+                    <div className="mt-1 inline-flex items-center gap-1.5 rounded-md border border-primary/20 bg-primary/5 px-2.5 py-1 text-xs text-muted-foreground">
+                      <Shield className="h-3 w-3 text-primary" />
+                      <span>Preview mode active — use OTP <span className="font-mono font-semibold text-foreground">123456</span> to continue</span>
+                    </div>
                   )}
                 </div>
 
