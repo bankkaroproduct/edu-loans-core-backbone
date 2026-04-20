@@ -82,6 +82,7 @@ const App = () => (
             <Route path="/admin/leads" element={<AdminRoute><AdminLeads /></AdminRoute>} />
             <Route path="/admin/leads/:id" element={<AdminRoute><AdminLeadDetail /></AdminRoute>} />
             <Route path="/admin/edit-requests" element={<AdminRoute><AdminEditRequests /></AdminRoute>} />
+            <Route path="/admin/requests" element={<AdminRoute><AdminEditRequests /></AdminRoute>} />
             <Route path="/admin/pipeline" element={<AdminRoute><AdminPlaceholder title="Pipeline" description="Drag-and-drop lifecycle management across all stages." /></AdminRoute>} />
             <Route path="/admin/underwriting" element={<AdminRoute><AdminPlaceholder title="Underwriting" description="BRE evaluation, lender matching, and credit query workflows." /></AdminRoute>} />
             <Route path="/admin/disbursements" element={<AdminRoute><AdminPlaceholder title="Disbursements" description="Sanction tracking and disbursement reconciliation." /></AdminRoute>} />
