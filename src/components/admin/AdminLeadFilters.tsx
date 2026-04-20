@@ -147,159 +147,185 @@ export function AdminLeadFilters({
 
   return (
     <div className="space-y-3">
-      {/* Row 1: search + source */}
-      <div className="flex flex-col lg:flex-row gap-2">
-        <div className="relative flex-1">
+      {/* Row 1: search (9) + source (3) */}
+      <div className="grid grid-cols-2 md:grid-cols-6 lg:grid-cols-12 gap-2">
+        <div className="relative col-span-2 md:col-span-6 lg:col-span-9">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search by name, phone, or lead ID…"
             value={searchInput}
             onChange={(e) => onSearchInputChange(e.target.value)}
-            className="pl-9 h-9"
+            className="pl-9 h-9 w-full"
           />
         </div>
-        <Select value={filters.source} onValueChange={(v) => set("source", v as SourceFilter)}>
-          <SelectTrigger className="w-full lg:w-[200px] h-9 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {SOURCE_OPTIONS.map((o) => (
-              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="col-span-2 md:col-span-6 lg:col-span-3">
+          <Select value={filters.source} onValueChange={(v) => set("source", v as SourceFilter)}>
+            <SelectTrigger className="w-full h-9 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {SOURCE_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {/* Row 2: stage / status / country / partner / date */}
-      <div className="flex flex-wrap gap-2">
-        <Select value={filters.stage} onValueChange={(v) => set("stage", v as any)}>
-          <SelectTrigger className="w-[170px] h-9 text-xs">
-            <SelectValue placeholder="Stage" />
-          </SelectTrigger>
-          <SelectContent className="max-h-[300px]">
-            <SelectItem value="all">All Stages</SelectItem>
-            {stages.map((s) => (
-              <SelectItem key={s.stage_key} value={s.stage_key}>{s.stage_label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {/* Row 2: stage / status / country / partner / from / to (6 × col-span-2) */}
+      <div className="grid grid-cols-2 md:grid-cols-6 lg:grid-cols-12 gap-2">
+        <div className="col-span-1 md:col-span-2 lg:col-span-2">
+          <Select value={filters.stage} onValueChange={(v) => set("stage", v as any)}>
+            <SelectTrigger className="w-full h-9 text-xs">
+              <SelectValue placeholder="Stage" />
+            </SelectTrigger>
+            <SelectContent className="max-h-[300px]">
+              <SelectItem value="all">All Stages</SelectItem>
+              {stages.map((s) => (
+                <SelectItem key={s.stage_key} value={s.stage_key}>{s.stage_label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-        <Select value={filters.status} onValueChange={(v) => set("status", v as any)}>
-          <SelectTrigger className="w-[170px] h-9 text-xs">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent className="max-h-[300px]">
-            <SelectItem value="all">All Statuses</SelectItem>
-            {statuses.map((s) => (
-              <SelectItem key={s.status_key} value={s.status_key}>{s.status_label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="col-span-1 md:col-span-2 lg:col-span-2">
+          <Select value={filters.status} onValueChange={(v) => set("status", v as any)}>
+            <SelectTrigger className="w-full h-9 text-xs">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent className="max-h-[300px]">
+              <SelectItem value="all">All Statuses</SelectItem>
+              {statuses.map((s) => (
+                <SelectItem key={s.status_key} value={s.status_key}>{s.status_label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-        <Select value={filters.country} onValueChange={(v) => set("country", v)}>
-          <SelectTrigger className="w-[170px] h-9 text-xs">
-            <SelectValue placeholder="Country" />
-          </SelectTrigger>
-          <SelectContent className="max-h-[300px]">
-            <SelectItem value="all">All Countries</SelectItem>
-            {countries.map((c) => (
-              <SelectItem key={c.country_name} value={c.country_name}>{c.country_name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="col-span-1 md:col-span-2 lg:col-span-2">
+          <Select value={filters.country} onValueChange={(v) => set("country", v)}>
+            <SelectTrigger className="w-full h-9 text-xs">
+              <SelectValue placeholder="Country" />
+            </SelectTrigger>
+            <SelectContent className="max-h-[300px]">
+              <SelectItem value="all">All Countries</SelectItem>
+              {countries.map((c) => (
+                <SelectItem key={c.country_name} value={c.country_name}>{c.country_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-        <Select value={filters.partnerId} onValueChange={(v) => set("partnerId", v)}>
-          <SelectTrigger className="w-[190px] h-9 text-xs">
-            <SelectValue placeholder="Partner" />
-          </SelectTrigger>
-          <SelectContent className="max-h-[300px]">
-            <SelectItem value="all">All Partners</SelectItem>
-            {partners.map((p) => (
-              <SelectItem key={p.id} value={p.id}>{p.display_name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="col-span-1 md:col-span-2 lg:col-span-2">
+          <Select value={filters.partnerId} onValueChange={(v) => set("partnerId", v)}>
+            <SelectTrigger className="w-full h-9 text-xs">
+              <SelectValue placeholder="Partner" />
+            </SelectTrigger>
+            <SelectContent className="max-h-[300px]">
+              <SelectItem value="all">All Partners</SelectItem>
+              {partners.map((p) => (
+                <SelectItem key={p.id} value={p.id}>{p.display_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className={cn("h-9 text-xs", !filters.dateFrom && "text-muted-foreground")}>
-              <CalendarIcon className="mr-1 h-3.5 w-3.5" />
-              {filters.dateFrom ? format(filters.dateFrom, "dd MMM") : "From"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar mode="single" selected={filters.dateFrom} onSelect={(d) => set("dateFrom", d)} initialFocus />
-          </PopoverContent>
-        </Popover>
+        <div className="col-span-1 md:col-span-2 lg:col-span-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className={cn("w-full h-9 text-xs justify-start font-normal", !filters.dateFrom && "text-muted-foreground")}>
+                <CalendarIcon className="mr-1 h-3.5 w-3.5 shrink-0" />
+                {filters.dateFrom ? format(filters.dateFrom, "dd MMM yyyy") : "From"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="single" selected={filters.dateFrom} onSelect={(d) => set("dateFrom", d)} initialFocus />
+            </PopoverContent>
+          </Popover>
+        </div>
 
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="sm" className={cn("h-9 text-xs", !filters.dateTo && "text-muted-foreground")}>
-              <CalendarIcon className="mr-1 h-3.5 w-3.5" />
-              {filters.dateTo ? format(filters.dateTo, "dd MMM") : "To"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar mode="single" selected={filters.dateTo} onSelect={(d) => set("dateTo", d)} initialFocus />
-          </PopoverContent>
-        </Popover>
+        <div className="col-span-1 md:col-span-2 lg:col-span-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className={cn("w-full h-9 text-xs justify-start font-normal", !filters.dateTo && "text-muted-foreground")}>
+                <CalendarIcon className="mr-1 h-3.5 w-3.5 shrink-0" />
+                {filters.dateTo ? format(filters.dateTo, "dd MMM yyyy") : "To"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar mode="single" selected={filters.dateTo} onSelect={(d) => set("dateTo", d)} initialFocus />
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
 
-      {/* Row 3: business bifurcation — Type / Entry Mode / Region / Loan Range / Intake / Loan Type */}
-      <div className="flex flex-wrap gap-2">
-        <Select value={filters.type} onValueChange={(v) => set("type", v as TypeFilter)}>
-          <SelectTrigger className="w-[150px] h-9 text-xs">
-            <SelectValue placeholder="Type" />
-          </SelectTrigger>
-          <SelectContent>
-            {TYPE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-          </SelectContent>
-        </Select>
+      {/* Row 3: business bifurcation — Type / Entry Mode / Region / Loan Range / Intake / Loan Type (6 × col-span-2) */}
+      <div className="grid grid-cols-2 md:grid-cols-6 lg:grid-cols-12 gap-2">
+        <div className="col-span-1 md:col-span-2 lg:col-span-2">
+          <Select value={filters.type} onValueChange={(v) => set("type", v as TypeFilter)}>
+            <SelectTrigger className="w-full h-9 text-xs">
+              <SelectValue placeholder="Type" />
+            </SelectTrigger>
+            <SelectContent>
+              {TYPE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
 
-        <Select value={filters.entryMode} onValueChange={(v) => set("entryMode", v as EntryModeFilter)}>
-          <SelectTrigger className="w-[170px] h-9 text-xs">
-            <SelectValue placeholder="Entry Mode" />
-          </SelectTrigger>
-          <SelectContent>
-            {ENTRY_MODE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <div className="col-span-1 md:col-span-2 lg:col-span-2">
+          <Select value={filters.entryMode} onValueChange={(v) => set("entryMode", v as EntryModeFilter)}>
+            <SelectTrigger className="w-full h-9 text-xs">
+              <SelectValue placeholder="Entry Mode" />
+            </SelectTrigger>
+            <SelectContent>
+              {ENTRY_MODE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
 
-        <Select value={filters.region} onValueChange={(v) => set("region", v as RegionFilter)}>
-          <SelectTrigger className="w-[170px] h-9 text-xs">
-            <SelectValue placeholder="Region" />
-          </SelectTrigger>
-          <SelectContent>
-            {REGION_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <div className="col-span-1 md:col-span-2 lg:col-span-2">
+          <Select value={filters.region} onValueChange={(v) => set("region", v as RegionFilter)}>
+            <SelectTrigger className="w-full h-9 text-xs">
+              <SelectValue placeholder="Region" />
+            </SelectTrigger>
+            <SelectContent>
+              {REGION_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
 
-        <Select value={filters.loanRange} onValueChange={(v) => set("loanRange", v as LoanRangeFilter)}>
-          <SelectTrigger className="w-[160px] h-9 text-xs">
-            <SelectValue placeholder="Loan Range" />
-          </SelectTrigger>
-          <SelectContent>
-            {LOAN_RANGE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <div className="col-span-1 md:col-span-2 lg:col-span-2">
+          <Select value={filters.loanRange} onValueChange={(v) => set("loanRange", v as LoanRangeFilter)}>
+            <SelectTrigger className="w-full h-9 text-xs">
+              <SelectValue placeholder="Loan Range" />
+            </SelectTrigger>
+            <SelectContent>
+              {LOAN_RANGE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
 
-        <Select value={filters.intake} onValueChange={(v) => set("intake", v as IntakeFilter)}>
-          <SelectTrigger className="w-[140px] h-9 text-xs">
-            <SelectValue placeholder="Intake" />
-          </SelectTrigger>
-          <SelectContent>
-            {INTAKE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <div className="col-span-1 md:col-span-2 lg:col-span-2">
+          <Select value={filters.intake} onValueChange={(v) => set("intake", v as IntakeFilter)}>
+            <SelectTrigger className="w-full h-9 text-xs">
+              <SelectValue placeholder="Intake" />
+            </SelectTrigger>
+            <SelectContent>
+              {INTAKE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
 
-        <Select value={filters.loanType} onValueChange={(v) => set("loanType", v as LoanTypeFilter)}>
-          <SelectTrigger className="w-[160px] h-9 text-xs">
-            <SelectValue placeholder="Loan Type" />
-          </SelectTrigger>
-          <SelectContent>
-            {LOAN_TYPE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <div className="col-span-1 md:col-span-2 lg:col-span-2">
+          <Select value={filters.loanType} onValueChange={(v) => set("loanType", v as LoanTypeFilter)}>
+            <SelectTrigger className="w-full h-9 text-xs">
+              <SelectValue placeholder="Loan Type" />
+            </SelectTrigger>
+            <SelectContent>
+              {LOAN_TYPE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Active chips */}
