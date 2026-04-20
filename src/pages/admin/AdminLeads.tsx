@@ -315,7 +315,6 @@ export default function AdminLeads() {
       let q: any = supabase.from("student_leads")
         .select("*", { count: "exact", head: true })
         .eq("is_archived", false);
-      if (filters.source !== "all") q = q.eq("source_type", filters.source);
       if (overrideStage) q = q.eq("current_stage", overrideStage);
       else if (filters.stage !== "all") q = q.eq("current_stage", filters.stage);
       if (overrideStatuses) q = q.in("current_status", overrideStatuses);
