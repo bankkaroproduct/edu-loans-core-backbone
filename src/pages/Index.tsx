@@ -7,7 +7,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { usePartnerContext } from "@/hooks/usePartnerContext";
 
 import { HeroPerformanceStrip, type LoanMetric, type SecondaryLoanMetric } from "@/components/dashboard/HeroPerformanceStrip";
-import { KPICards, type KPIData } from "@/components/dashboard/KPICards";
+import type { KPIData } from "@/components/dashboard/KPICards";
 import { PriorityAlerts, type AlertItem } from "@/components/dashboard/PriorityAlerts";
 import { RecentLeads } from "@/components/dashboard/RecentLeads";
 import { DocumentSnapshot, type DocSummary } from "@/components/dashboard/DocumentSnapshot";
@@ -92,33 +92,31 @@ export default function Dashboard() {
     fetchData();
   }, [effectivePartnerId, agentUserId]);
 
+  // Slim KPI memo — only fields the HeroPerformanceStrip consumes
+  // (paidPayout, pendingPayout, needsAttention). KPICards block was removed.
   const kpiData = useMemo<KPIData>(() => {
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    const reviewStages = ["under_initial_review", "documents_under_review", "bre_evaluated"];
     const pendingPayout = payoutRecords.filter((p) => p.payout_status === "pending" || p.payout_status === "triggered");
     const paidPayout = payoutRecords.filter((p) => p.payout_status === "paid");
-    const docsNeedingAction = docReqs.filter((d) => ["not_uploaded", "reupload_needed"].includes(d.status));
     const needsAttention = leads.filter((l) =>
       l.current_stage === "on_hold" || l.current_stage === "documents_pending" ||
       l.current_status === "reupload_needed" || l.current_status === "pending_info"
     );
 
     return {
-      totalLeads: leads.length,
-      leadsThisMonth: leads.filter((l) => l.created_at >= monthStart).length,
-      underReview: leads.filter((l) => reviewStages.includes(l.current_stage)).length,
-      documentsPending: docsNeedingAction.length,
-      sentToLender: leads.filter((l) => ["sent_to_lender", "login_submitted"].includes(l.current_stage)).length,
-      sanctionReceived: leads.filter((l) => l.current_stage === "sanction_received").length,
-      disbursed: leads.filter((l) => l.current_stage === "disbursed").length,
-      rejectedDropped: leads.filter((l) => ["rejected", "dropped"].includes(l.current_stage)).length,
-      bulkBatchesThisMonth: batches.filter((b) => b.uploaded_at >= monthStart).length,
+      totalLeads: 0,
+      leadsThisMonth: 0,
+      underReview: 0,
+      documentsPending: 0,
+      sentToLender: 0,
+      sanctionReceived: 0,
+      disbursed: 0,
+      rejectedDropped: 0,
+      bulkBatchesThisMonth: 0,
       pendingPayout: pendingPayout.reduce((s, p) => s + (p.payout_amount ?? 0), 0),
       paidPayout: paidPayout.reduce((s, p) => s + (p.payout_amount ?? 0), 0),
       needsAttention: needsAttention.length,
     };
-  }, [leads, batches, payoutRecords, docReqs]);
+  }, [leads, payoutRecords]);
 
   // Loan metrics for hero — independent of any UI filter, partner-scoped via RLS.
   // Active = exclude draft, disbursed, rejected, dropped.
@@ -177,8 +175,10 @@ export default function Dashboard() {
     leads.filter((l) => !l.student_email && !l.loan_amount_required).forEach((l) => {
       items.push({ id: `missing-${l.id}`, leadId: l.lead_id, studentName: l.student_full_name ?? l.student_first_name, reason: "Missing mandatory fields (email, loan amount)", category: "attention", updatedAt: l.updated_at, entityId: l.id });
     });
+    // Only surface batches with REAL validation/insert failures.
+    // Duplicate-only batches are informational and visible in batch history; they do not belong in the action center.
     batches.filter((b) => b.failed_rows > 0).forEach((b) => {
-      items.push({ id: `batch-${b.id}`, leadId: b.batch_id, studentName: b.file_name, reason: `${b.failed_rows} of ${b.total_rows} rows failed`, category: "upload_error", updatedAt: b.uploaded_at, entityId: b.id });
+      items.push({ id: `batch-${b.id}`, leadId: b.batch_id, studentName: b.file_name, reason: `${b.failed_rows} of ${b.total_rows} rows failed validation`, category: "upload_error", updatedAt: b.uploaded_at, entityId: b.id });
     });
     payoutRecords.filter((p) => p.payout_status === "on_hold").forEach((p) => {
       items.push({ id: `payout-${p.id}`, leadId: p.lead_id.slice(0, 8), studentName: "Payout Record", reason: "Payout on hold — clarification needed", category: "payout_clarification", updatedAt: p.updated_at, entityId: p.lead_id });
@@ -257,26 +257,6 @@ export default function Dashboard() {
     return items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 20);
   }, [stageHistory, leads, notes, batches, payoutRecords]);
 
-  // KPI click handler
-  const handleKPIClick = (key: string) => {
-    const routes: Record<string, string> = {
-      totalLeads: "/leads",
-      leadsThisMonth: "/leads",
-      underReview: "/leads?stage=under_initial_review,documents_under_review,bre_evaluated",
-      documentsPending: "/leads?stage=documents_pending",
-      sentToLender: "/leads?stage=sent_to_lender,login_submitted",
-      sanctionReceived: "/leads?stage=sanction_received",
-      disbursed: "/leads?stage=disbursed",
-      rejectedDropped: "/leads?stage=rejected,dropped",
-      bulkBatchesThisMonth: "/bulk-upload",
-      pendingPayout: "/payouts?status=pending",
-      paidPayout: "/payouts?status=paid",
-      needsAttention: "/leads?attention=true",
-    };
-    const route = routes[key];
-    if (route) navigate(route);
-  };
-
   const isFirstRun = !loading && leads.length === 0;
 
   return (
@@ -295,8 +275,6 @@ export default function Dashboard() {
 
         {/* Action Center — full width, with internal filters/sort */}
         <PriorityAlerts alerts={alerts} loading={loading} />
-
-        <KPICards data={kpiData} loading={loading} onCardClick={handleKPIClick} />
 
         <RecentLeads leads={leads.slice(0, 10)} loading={loading} />
 

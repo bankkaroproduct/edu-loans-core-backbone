@@ -79,11 +79,18 @@ export function LeadDetailHeader({ lead, submittedByName, isDraft, backTo = "/le
             <Badge variant="secondary" className="text-xs">{getOriginLabel(lead)}</Badge>
           </div>
 
-          <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
-            {submittedByName && <span>Submitted by: {submittedByName}</span>}
+          {/* Compact timestamp row directly under status badges (Reading A) */}
+          <div className="flex items-center gap-x-3 gap-y-1 text-xs text-muted-foreground flex-wrap">
             <span>Submitted on: {new Date(lead.created_at).toLocaleString()}</span>
+            <span aria-hidden>·</span>
             <span>Updated: {new Date(lead.updated_at).toLocaleString()}</span>
           </div>
+
+          {submittedByName && (
+            <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
+              <span>Submitted by: {submittedByName}</span>
+            </div>
+          )}
         </div>
 
         {!hideActions && (
