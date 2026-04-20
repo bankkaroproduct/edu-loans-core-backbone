@@ -10,7 +10,7 @@ import {
   Settings,
   LogOut,
   ArrowLeftRight,
-  ClipboardList,
+  ClipboardCheck,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
@@ -29,11 +29,12 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useAdminPendingRequests } from "@/hooks/useAdminPendingRequests";
 
 const adminItems = [
   { title: "Admin Dashboard", url: "/admin", icon: Shield, end: true },
   { title: "Lead Queue", url: "/admin/leads", icon: Inbox },
-  { title: "Edit Requests", url: "/admin/edit-requests", icon: ClipboardList },
+  { title: "Requests & Approvals", url: "/admin/requests", icon: ClipboardCheck, badgeKey: "pendingRequests" as const },
   { title: "Pipeline", url: "/admin/pipeline", icon: GitBranch },
   { title: "Underwriting", url: "/admin/underwriting", icon: Gavel },
   { title: "Disbursements", url: "/admin/disbursements", icon: Banknote },
@@ -52,6 +53,7 @@ export function AdminSidebar() {
   const collapsed = state === "collapsed";
   const { appUser, signOut } = useAuth();
   const navigate = useNavigate();
+  const { count: pendingRequests } = useAdminPendingRequests();
 
   const handleSignOut = async () => {
     await signOut();
@@ -72,25 +74,36 @@ export function AdminSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {adminItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      end={item.end}
-                      className="hover:bg-sidebar-accent/50"
-                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-                    >
-                      <item.icon className="mr-2 h-4 w-4 shrink-0" />
-                      {!collapsed && (
-                        <span className="flex items-center justify-between w-full">
-                          <span className="truncate">{item.title}</span>
-                        </span>
-                      )}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {adminItems.map((item) => {
+                const showBadge = item.badgeKey === "pendingRequests" && pendingRequests > 0;
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.url}
+                        end={item.end}
+                        className="hover:bg-sidebar-accent/50"
+                        activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                      >
+                        <item.icon className="mr-2 h-4 w-4 shrink-0" />
+                        {!collapsed && (
+                          <span className="flex items-center justify-between w-full gap-2">
+                            <span className="truncate">{item.title}</span>
+                            {showBadge && (
+                              <Badge
+                                variant="secondary"
+                                className="h-4 px-1.5 text-[10px] font-medium bg-amber-100 text-amber-900 border border-amber-200"
+                              >
+                                {pendingRequests > 99 ? "99+" : pendingRequests}
+                              </Badge>
+                            )}
+                          </span>
+                        )}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
