@@ -6,7 +6,7 @@ import { useRoleAccess } from "@/hooks/useRoleAccess";
 import type { Tables } from "@/integrations/supabase/types";
 import { usePartnerContext } from "@/hooks/usePartnerContext";
 
-import { HeroPerformanceStrip, type LoanMetric } from "@/components/dashboard/HeroPerformanceStrip";
+import { HeroPerformanceStrip, type LoanMetric, type SecondaryLoanMetric } from "@/components/dashboard/HeroPerformanceStrip";
 import { KPICards, type KPIData } from "@/components/dashboard/KPICards";
 import { PriorityAlerts, type AlertItem } from "@/components/dashboard/PriorityAlerts";
 import { RecentLeads } from "@/components/dashboard/RecentLeads";
@@ -136,6 +136,25 @@ export default function Dashboard() {
       { key: "disbursed", label: "Total Disbursed", count: disbursed.length, amount: sumAmount(disbursed) },
     ];
   }, [leads]);
+
+  // Secondary loan metrics — visually de-emphasized supporting context
+  const secondaryLoanMetrics = useMemo<SecondaryLoanMetric[]>(() => {
+    const sumAmount = (rows: Lead[]) => rows.reduce((s, l) => s + (l.loan_amount_required ?? 0), 0);
+    const rejected = leads.filter((l) => ["rejected", "dropped"].includes(l.current_stage));
+
+    const sumPayout = (statuses: string[]) =>
+      payoutRecords
+        .filter((p) => statuses.includes(p.payout_status))
+        .reduce((s, p) => s + (p.payout_amount ?? 0), 0);
+    const countPayout = (statuses: string[]) =>
+      payoutRecords.filter((p) => statuses.includes(p.payout_status)).length;
+
+    return [
+      { key: "rejected", label: "Total Loan Rejected", count: rejected.length, amount: sumAmount(rejected) },
+      { key: "payout_released", label: "Total Payout Released", count: countPayout(["paid"]), amount: sumPayout(["paid"]) },
+      { key: "payout_pending", label: "Pending Payout", count: countPayout(["pending", "triggered"]), amount: sumPayout(["pending", "triggered"]) },
+    ];
+  }, [leads, payoutRecords]);
 
   const alerts = useMemo<AlertItem[]>(() => {
     const items: AlertItem[] = [];
@@ -267,6 +286,7 @@ export default function Dashboard() {
         partnerName={partnerName}
         kpiData={kpiData}
         loanMetrics={loanMetrics}
+        secondaryLoanMetrics={secondaryLoanMetrics}
         loading={loading}
       />
 

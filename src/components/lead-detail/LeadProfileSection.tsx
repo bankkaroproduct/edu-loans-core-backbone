@@ -5,10 +5,19 @@ import type { Tables } from "@/integrations/supabase/types";
 type Lead = Tables<"student_leads">;
 
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
+  const hasValue = value !== null && value !== undefined && value !== "";
   return (
-    <div>
+    <div className="min-w-0">
       <span className="text-muted-foreground text-xs">{label}</span>
-      <p className="text-sm font-medium">{value || "—"}</p>
+      <p
+        className={
+          hasValue
+            ? "text-sm font-medium break-words"
+            : "text-sm italic text-muted-foreground/70"
+        }
+      >
+        {hasValue ? value : "Please provide details"}
+      </p>
     </div>
   );
 }

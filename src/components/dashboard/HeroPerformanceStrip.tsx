@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Plus, Upload, DollarSign, Clock, AlertTriangle, Zap, Activity, CheckCircle2, Banknote } from "lucide-react";
+import { Plus, Upload, DollarSign, Clock, AlertTriangle, Zap, Activity, CheckCircle2, Banknote, XCircle, Wallet, Hourglass } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Tables } from "@/integrations/supabase/types";
@@ -9,6 +9,13 @@ type AppUser = Tables<"users">;
 
 export interface LoanMetric {
   key: "active" | "sanctioned" | "disbursed";
+  label: string;
+  count: number;
+  amount: number;
+}
+
+export interface SecondaryLoanMetric {
+  key: "rejected" | "payout_released" | "payout_pending";
   label: string;
   count: number;
   amount: number;
@@ -30,6 +37,7 @@ interface Props {
   partnerName: string | null;
   kpiData: KPIData;
   loanMetrics: LoanMetric[];
+  secondaryLoanMetrics?: SecondaryLoanMetric[];
   loading: boolean;
 }
 
@@ -39,7 +47,13 @@ const loanIconMap: Record<LoanMetric["key"], React.ElementType> = {
   disbursed: Banknote,
 };
 
-export function HeroPerformanceStrip({ appUser, partnerName, kpiData, loanMetrics, loading }: Props) {
+const secondaryIconMap: Record<SecondaryLoanMetric["key"], React.ElementType> = {
+  rejected: XCircle,
+  payout_released: Wallet,
+  payout_pending: Hourglass,
+};
+
+export function HeroPerformanceStrip({ appUser, partnerName, kpiData, loanMetrics, secondaryLoanMetrics, loading }: Props) {
   const navigate = useNavigate();
   const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long",
@@ -139,10 +153,11 @@ export function HeroPerformanceStrip({ appUser, partnerName, kpiData, loanMetric
           })}
         </div>
 
-        {/* Loan Business Metrics — count + INR */}
+        {/* Loan Business Metrics — count + INR (PRIMARY row) */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 mt-6">
           {loanMetrics.map((m) => {
             const Icon = loanIconMap[m.key];
+            const amountStr = formatINR(m.amount);
             return (
               <div
                 key={m.key}
@@ -163,7 +178,7 @@ export function HeroPerformanceStrip({ appUser, partnerName, kpiData, loanMetric
                         <p className="text-2xl sm:text-3xl font-extrabold tracking-tight">{m.count}</p>
                         <span className="text-xs opacity-60">{m.count === 1 ? "lead" : "leads"}</span>
                       </div>
-                      <p className="text-sm font-semibold opacity-90 truncate">{formatINR(m.amount)}</p>
+                      <p className="text-sm font-semibold opacity-90 truncate" title={amountStr}>{amountStr}</p>
                     </>
                   )}
                   <p className="text-xs opacity-60 mt-0.5">{m.label}</p>
@@ -172,6 +187,43 @@ export function HeroPerformanceStrip({ appUser, partnerName, kpiData, loanMetric
             );
           })}
         </div>
+
+        {/* Secondary loan/payout metrics — visually de-emphasized supporting context */}
+        {secondaryLoanMetrics && secondaryLoanMetrics.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 mt-4 opacity-80">
+            {secondaryLoanMetrics.map((m) => {
+              const Icon = secondaryIconMap[m.key];
+              const amountStr = formatINR(m.amount);
+              return (
+                <div
+                  key={m.key}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary-foreground/[0.04] border border-primary-foreground/10"
+                >
+                  <div className="bg-primary-foreground/10 p-2 rounded-full shrink-0">
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    {loading ? (
+                      <>
+                        <Skeleton className="h-5 w-16 bg-primary-foreground/20 mb-1" />
+                        <Skeleton className="h-3 w-24 bg-primary-foreground/15" />
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-baseline gap-2">
+                          <p className="text-lg sm:text-xl font-bold tracking-tight">{m.count}</p>
+                          <span className="text-[10px] opacity-60">{m.key === "rejected" ? (m.count === 1 ? "lead" : "leads") : "records"}</span>
+                        </div>
+                        <p className="text-xs font-medium opacity-80 truncate" title={amountStr}>{amountStr}</p>
+                      </>
+                    )}
+                    <p className="text-[11px] opacity-60 mt-0.5 truncate" title={m.label}>{m.label}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -8,10 +8,21 @@ interface Props {
 }
 
 function Item({ label, value }: { label: string; value: string | null | undefined }) {
+  const hasValue = value !== null && value !== undefined && value !== "";
+  const display = hasValue ? value! : "Please provide details";
   return (
     <div className="min-w-0">
       <p className="text-xs text-muted-foreground truncate">{label}</p>
-      <p className="text-sm font-medium truncate">{value || "—"}</p>
+      <p
+        className={
+          hasValue
+            ? "text-sm font-medium truncate"
+            : "text-sm italic text-muted-foreground/70 truncate"
+        }
+        title={display}
+      >
+        {display}
+      </p>
     </div>
   );
 }
