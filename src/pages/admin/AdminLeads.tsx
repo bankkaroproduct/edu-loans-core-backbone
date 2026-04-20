@@ -400,6 +400,16 @@ export default function AdminLeads() {
       active: filters.stage === "sanction_received",
       apply: () => { setFilters({ ...filters, stage: "sanction_received" as StageEnum, status: "all" }); setPage(1); },
     },
+    {
+      label: "Stale > 48h",
+      active: false,
+      apply: () => {
+        const d = new Date();
+        d.setHours(d.getHours() - 48);
+        setFilters({ ...filters, dateTo: d, stage: "all", status: "all" });
+        setPage(1);
+      },
+    },
   ];
 
   return (
