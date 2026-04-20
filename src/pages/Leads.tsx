@@ -378,9 +378,6 @@ export default function Leads() {
         title="Submitted Leads"
         description="Track and manage all submitted partner leads from one place."
       >
-        <Button size="sm" variant="outline" onClick={() => navigate("/leads/quick")}>
-          <Zap className="mr-1 h-4 w-4" /> Quick Lead
-        </Button>
         <Button size="sm" onClick={() => navigate("/leads/new")}>
           <Plus className="mr-1 h-4 w-4" /> Add Lead
         </Button>
@@ -596,6 +593,11 @@ export default function Leads() {
                       <TableHead>Stage</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>
+                        <button className="flex items-center gap-1 whitespace-nowrap" onClick={() => toggleSort("created_at")}>
+                          Submitted On <ArrowUpDown className="h-3 w-3" />
+                        </button>
+                      </TableHead>
+                      <TableHead>
                         <button className="flex items-center gap-1" onClick={() => toggleSort("updated_at")}>
                           Updated <ArrowUpDown className="h-3 w-3" />
                         </button>
@@ -639,6 +641,9 @@ export default function Leads() {
                           </TableCell>
                           <TableCell><StageBadge stage={lead.current_stage} /></TableCell>
                           <TableCell><StatusBadge status={lead.current_status} /></TableCell>
+                          <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                            {new Date(lead.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                          </TableCell>
                           <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                             {new Date(lead.updated_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                           </TableCell>

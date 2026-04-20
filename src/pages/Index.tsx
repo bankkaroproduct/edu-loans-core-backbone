@@ -8,8 +8,7 @@ import { usePartnerContext } from "@/hooks/usePartnerContext";
 
 import { HeroPerformanceStrip, type LoanMetric, type SecondaryLoanMetric } from "@/components/dashboard/HeroPerformanceStrip";
 import type { KPIData } from "@/components/dashboard/KPICards";
-import { PriorityAlerts, type AlertItem } from "@/components/dashboard/PriorityAlerts";
-import { RecentLeads } from "@/components/dashboard/RecentLeads";
+import { YourLeads } from "@/components/dashboard/YourLeads";
 import { DocumentSnapshot, type DocSummary } from "@/components/dashboard/DocumentSnapshot";
 import { BulkUploadSnapshot } from "@/components/dashboard/BulkUploadSnapshot";
 import { PayoutSnapshot, type PayoutSummary } from "@/components/dashboard/PayoutSnapshot";
@@ -154,45 +153,6 @@ export default function Dashboard() {
     ];
   }, [leads, payoutRecords]);
 
-  const alerts = useMemo<AlertItem[]>(() => {
-    const items: AlertItem[] = [];
-    const now = Date.now();
-    const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-
-    leads.filter((l) => l.current_stage === "on_hold").forEach((l) => {
-      items.push({ id: `hold-${l.id}`, leadId: l.lead_id, studentName: l.student_full_name ?? l.student_first_name, reason: "Lead is on hold — may need clarification", category: "on_hold", updatedAt: l.updated_at, entityId: l.id });
-    });
-    leads.filter((l) => l.current_stage === "documents_pending").forEach((l) => {
-      items.push({ id: `docs-${l.id}`, leadId: l.lead_id, studentName: l.student_full_name ?? l.student_first_name, reason: "Documents pending — upload required", category: "docs_pending", updatedAt: l.updated_at, entityId: l.id });
-    });
-    leads.filter((l) => l.current_status === "reupload_needed").forEach((l) => {
-      items.push({ id: `reup-${l.id}`, leadId: l.lead_id, studentName: l.student_full_name ?? l.student_first_name, reason: "Document reupload needed", category: "reupload", updatedAt: l.updated_at, entityId: l.id });
-    });
-    const earlyStages = ["draft", "submitted", "under_initial_review"];
-    leads.filter((l) => earlyStages.includes(l.current_stage) && now - new Date(l.updated_at).getTime() > SEVEN_DAYS).forEach((l) => {
-      items.push({ id: `stuck-${l.id}`, leadId: l.lead_id, studentName: l.student_full_name ?? l.student_first_name, reason: `Stuck in ${l.current_stage.replace(/_/g, " ")} for over 7 days`, category: "stuck", updatedAt: l.updated_at, entityId: l.id });
-    });
-    leads.filter((l) => !l.student_email && !l.loan_amount_required).forEach((l) => {
-      items.push({ id: `missing-${l.id}`, leadId: l.lead_id, studentName: l.student_full_name ?? l.student_first_name, reason: "Missing mandatory fields (email, loan amount)", category: "attention", updatedAt: l.updated_at, entityId: l.id });
-    });
-    // Only surface batches with REAL validation/insert failures.
-    // Duplicate-only batches are informational and visible in batch history; they do not belong in the action center.
-    batches.filter((b) => b.failed_rows > 0).forEach((b) => {
-      items.push({ id: `batch-${b.id}`, leadId: b.batch_id, studentName: b.file_name, reason: `${b.failed_rows} of ${b.total_rows} rows failed validation`, category: "upload_error", updatedAt: b.uploaded_at, entityId: b.id });
-    });
-    payoutRecords.filter((p) => p.payout_status === "on_hold").forEach((p) => {
-      items.push({ id: `payout-${p.id}`, leadId: p.lead_id.slice(0, 8), studentName: "Payout Record", reason: "Payout on hold — clarification needed", category: "payout_clarification", updatedAt: p.updated_at, entityId: p.lead_id });
-    });
-    notes.filter((n) => n.note_type === "partner_visible" || n.note_type === "system").slice(0, 5).forEach((n) => {
-      const lead = leads.find((l) => l.id === n.lead_id);
-      if (lead) {
-        items.push({ id: `remark-${n.id}`, leadId: lead.lead_id, studentName: lead.student_full_name ?? lead.student_first_name, reason: n.note_text.length > 60 ? n.note_text.slice(0, 60) + "…" : n.note_text, category: "admin_remark", updatedAt: n.created_at, entityId: lead.id });
-      }
-    });
-
-    return items.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-  }, [leads, batches, payoutRecords, notes]);
-
   const docSummary = useMemo<DocSummary>(() => ({
     pending: docReqs.filter((d) => d.status === "not_uploaded").length,
     underReview: docReqs.filter((d) => d.status === "under_review").length,
@@ -260,7 +220,7 @@ export default function Dashboard() {
   const isFirstRun = !loading && leads.length === 0;
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-5 max-w-7xl mx-auto">
       <HeroPerformanceStrip
         appUser={appUser}
         partnerName={partnerName}
@@ -270,22 +230,17 @@ export default function Dashboard() {
         loading={loading}
       />
 
-      <div className="mt-6 space-y-6">
+      <div className="space-y-5">
         {isFirstRun && <OnboardingEmptyState partnerName={partnerName} />}
 
-        {/* Action Center — full width, with internal filters/sort */}
-        <PriorityAlerts alerts={alerts} loading={loading} />
+        <YourLeads leads={leads} loading={loading} />
 
-        <RecentLeads leads={leads.slice(0, 10)} loading={loading} />
-
-        <div className="rounded-xl bg-muted/30 p-6 space-y-6">
-          <div className="grid gap-6 md:grid-cols-2">
-            <DocumentSnapshot data={docSummary} loading={loading} />
-            <BulkUploadSnapshot batches={batches} loading={loading} />
-          </div>
-
-          <PayoutSnapshot data={payoutSummary} loading={loading} />
+        <div className="grid gap-5 md:grid-cols-2">
+          <DocumentSnapshot data={docSummary} loading={loading} />
+          <BulkUploadSnapshot batches={batches} loading={loading} />
         </div>
+
+        <PayoutSnapshot data={payoutSummary} loading={loading} />
 
         <ActivityFeed items={activityItems} loading={loading} />
 
