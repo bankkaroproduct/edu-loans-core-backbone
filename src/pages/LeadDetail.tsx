@@ -13,12 +13,16 @@ import { LeadDocumentSnapshot } from "@/components/lead-detail/LeadDocumentSnaps
 import { LeadDuplicateContext } from "@/components/lead-detail/LeadDuplicateContext";
 import { LeadActionPanel } from "@/components/lead-detail/LeadActionPanel";
 import { LeadPayoutSnapshot } from "@/components/lead-detail/LeadPayoutSnapshot";
+import { LeadEditRequestDialog } from "@/components/lead-detail/LeadEditRequestDialog";
+import { LeadEditRequestBanner } from "@/components/lead-detail/LeadEditRequestBanner";
+import { LeadEditRequestHistory } from "@/components/lead-detail/LeadEditRequestHistory";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Lead = Tables<"student_leads">;
 type History = Tables<"lead_stage_history">;
 type Note = Tables<"lead_notes">;
 type PayoutRecord = Tables<"partner_payout_records">;
+type EditRequest = Tables<"lead_edit_requests">;
 
 export default function LeadDetail() {
   const { id } = useParams<{ id: string }>();
