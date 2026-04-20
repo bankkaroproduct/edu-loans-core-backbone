@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { AdminLayout } from "@/components/admin/AdminLayout";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { PageSkeleton } from "@/components/shared/PageSkeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,26 +22,24 @@ export default function AdminMasterData() {
   const schema = MASTER_SCHEMAS[activeKey];
 
   return (
-    <AdminLayout>
-      <div className="space-y-6">
-        <PageHeader
-          title="Master Data"
-          description="Manage system reference data — countries, universities, courses, lifecycle, documents."
-        />
+    <div className="space-y-6 max-w-screen-2xl mx-auto">
+      <PageHeader
+        title="Master Data"
+        description="Manage system reference data — countries, universities, courses, lifecycle, documents."
+      />
 
-        <Tabs value={activeKey} onValueChange={setActiveKey}>
-          <TabsList className="flex w-full flex-wrap h-auto gap-1 bg-muted p-1">
-            {MASTER_KEYS.map((k) => (
-              <TabsTrigger key={k} value={k} className="text-xs flex-1 min-w-[110px]">
-                {MASTER_SCHEMAS[k].label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
+      <Tabs value={activeKey} onValueChange={setActiveKey}>
+        <TabsList className="flex w-full flex-wrap h-auto gap-1 bg-muted p-1">
+          {MASTER_KEYS.map((k) => (
+            <TabsTrigger key={k} value={k} className="text-xs flex-1 min-w-[110px]">
+              {MASTER_SCHEMAS[k].label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
-        <MasterDataTable schema={schema} key={activeKey} />
-      </div>
-    </AdminLayout>
+      <MasterDataTable schema={schema} key={activeKey} />
+    </div>
   );
 }
 
