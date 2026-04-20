@@ -26,7 +26,7 @@ export function useAdminPendingRequests() {
 
   useEffect(() => {
     const ch = supabase
-      .channel("admin-pending-edit-requests")
+      .channel(`admin-pending-edit-requests-${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "lead_edit_requests" },
