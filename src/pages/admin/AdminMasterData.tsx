@@ -26,9 +26,8 @@ export default function AdminMasterData() {
     <AdminLayout>
       <div className="space-y-6">
         <PageHeader
-          icon={Database}
           title="Master Data"
-          subtitle="Manage system reference data — countries, universities, courses, lifecycle, documents."
+          description="Manage system reference data — countries, universities, courses, lifecycle, documents."
         />
 
         <Tabs value={activeKey} onValueChange={setActiveKey}>
