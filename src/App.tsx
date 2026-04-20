@@ -16,6 +16,7 @@ import AdminLeads from "./pages/admin/AdminLeads";
 import AdminLeadDetail from "./pages/admin/AdminLeadDetail";
 import AdminPlaceholder from "./pages/admin/AdminPlaceholder";
 import AdminEditRequests from "./pages/admin/AdminEditRequests";
+import AdminMasterData from "./pages/admin/AdminMasterData";
 import Login from "./pages/Login";
 import Leads from "./pages/Leads";
 import AddLead from "./pages/AddLead";
@@ -87,6 +88,7 @@ const App = () => (
             <Route path="/admin/underwriting" element={<AdminRoute><AdminPlaceholder title="Underwriting" description="BRE evaluation, lender matching, and credit query workflows." /></AdminRoute>} />
             <Route path="/admin/disbursements" element={<AdminRoute><AdminPlaceholder title="Disbursements" description="Sanction tracking and disbursement reconciliation." /></AdminRoute>} />
             <Route path="/admin/reports" element={<AdminRoute><AdminPlaceholder title="Reports" description="Cross-partner analytics, payouts, and operational reports." /></AdminRoute>} />
+            <Route path="/admin/master-data" element={<AdminRoute><AdminMasterData /></AdminRoute>} />
             <Route path="/admin/partners" element={<AdminRoute><AdminPlaceholder title="Partner Management" description="Manage partner organizations, branches, and users." /></AdminRoute>} />
             <Route path="/admin/lenders" element={<AdminRoute><AdminPlaceholder title="Lender Management" description="Manage lender catalog, mappings, and BRE rules." /></AdminRoute>} />
             <Route path="/admin/universities" element={<AdminRoute><AdminPlaceholder title="University Management" description="Manage the universities master and lender mappings." /></AdminRoute>} />
