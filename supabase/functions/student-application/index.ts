@@ -195,7 +195,7 @@ Deno.serve(async (req) => {
       // Fetch requirements with document master
       const { data: requirements, error: reqErr } = await supabaseAdmin
         .from("lead_document_requirements")
-        .select("id, document_type_id, status, required_flag, remarks, due_date, document_master:document_type_id(id, document_name, document_code, document_category, description)")
+        .select("id, document_type_id, status, required_flag, remarks, due_date, document_master:document_type_id(id, document_name, document_code, document_category, description, applicable_for)")
         .eq("lead_id", lead.id);
 
       if (reqErr) return jsonResponse({ error: reqErr.message }, 500);
@@ -229,7 +229,9 @@ Deno.serve(async (req) => {
           id: req.id,
           document_type_id: req.document_type_id,
           document_name: req.document_master?.document_name || "Document",
+          document_code: req.document_master?.document_code || null,
           document_category: req.document_master?.document_category || null,
+          applicable_for: (req.document_master as any)?.applicable_for || "student",
           description: req.document_master?.description || null,
           required: req.required_flag,
           status: req.status,
@@ -263,6 +265,8 @@ Deno.serve(async (req) => {
           lead_id: lead.lead_id,
           current_stage: lead.current_stage,
           updated_at: lead.updated_at,
+          student_full_name: lead.student_full_name || `${lead.student_first_name ?? ""} ${lead.student_last_name ?? ""}`.trim() || null,
+          coapplicant_name: lead.coapplicant_name || null,
         },
       });
     }

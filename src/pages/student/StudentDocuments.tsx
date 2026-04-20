@@ -18,7 +18,9 @@ interface DocumentRequirement {
   id: string;
   document_type_id: string;
   document_name: string;
+  document_code?: string | null;
   document_category: string | null;
+  applicable_for?: string | null;
   description: string | null;
   required: boolean;
   status: string;
@@ -47,6 +49,8 @@ interface LeadSummary {
   lead_id: string | null;
   current_stage: string;
   updated_at: string;
+  student_full_name?: string | null;
+  coapplicant_name?: string | null;
 }
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> = {
@@ -349,6 +353,12 @@ export default function StudentDocuments() {
           requirement={uploadTarget}
           leadId={leadSummary.id}
           phone={phone!}
+          expectedSubject={uploadTarget.applicable_for === "coapplicant" ? "coapplicant" : "student"}
+          expectedName={
+            uploadTarget.applicable_for === "coapplicant"
+              ? leadSummary.coapplicant_name ?? null
+              : leadSummary.student_full_name ?? null
+          }
           onClose={() => setUploadTarget(null)}
           onSuccess={handleUploadComplete}
         />
