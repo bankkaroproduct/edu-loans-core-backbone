@@ -1,0 +1,208 @@
+import { useEffect, useMemo, useState } from "react";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { PageSkeleton } from "@/components/shared/PageSkeleton";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Search, Plus, Pencil, Power, Banknote } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
+import { LenderDrawer } from "@/components/admin/LenderDrawer";
+
+type Lender = Tables<"lenders">;
+type StatusFilter = "all" | "active" | "inactive";
+
+export default function AdminLenders() {
+  const [lenders, setLenders] = useState<Lender[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [editing, setEditing] = useState<Lender | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("lenders")
+        .select("*")
+        .order("lender_name");
+      if (cancelled) return;
+      if (error) toast({ title: "Failed to load", description: error.message, variant: "destructive" });
+      setLenders(data ?? []);
+      setLoading(false);
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [refreshKey]);
+
+  const filtered = useMemo(() => {
+    return lenders.filter((l) => {
+      if (statusFilter === "active" && !l.active_flag) return false;
+      if (statusFilter === "inactive" && l.active_flag) return false;
+      if (search.trim()) {
+        const q = search.trim().toLowerCase();
+        return (
+          l.lender_name.toLowerCase().includes(q) ||
+          l.lender_code.toLowerCase().includes(q) ||
+          (l.lender_type ?? "").toLowerCase().includes(q)
+        );
+      }
+      return true;
+    });
+  }, [lenders, search, statusFilter]);
+
+  const handleToggle = async (row: Lender) => {
+    const newVal = !row.active_flag;
+    const { error } = await supabase.from("lenders").update({ active_flag: newVal }).eq("id", row.id);
+    if (error) toast({ title: "Update failed", description: error.message, variant: "destructive" });
+    else {
+      toast({ title: newVal ? "Activated" : "Deactivated" });
+      setRefreshKey((k) => k + 1);
+    }
+  };
+
+  const openCreate = () => { setEditing(null); setDrawerOpen(true); };
+  const openEdit = (row: Lender) => { setEditing(row); setDrawerOpen(true); };
+
+  return (
+    <div className="space-y-6 max-w-screen-2xl mx-auto">
+      <PageHeader
+        title="Lenders"
+        description="Manage lender catalog and supported configurations."
+      >
+        <Button onClick={openCreate} size="sm">
+          <Plus className="h-4 w-4 mr-1.5" /> Add Lender
+        </Button>
+      </PageHeader>
+
+      <Card>
+        <CardContent className="p-4 space-y-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 min-w-[240px] max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search by name, code, or type…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+            </div>
+            <Select value={statusFilter} onValueChange={(v: StatusFilter) => setStatusFilter(v)}>
+              <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All status</SelectItem>
+                <SelectItem value="active">Active only</SelectItem>
+                <SelectItem value="inactive">Inactive only</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="text-xs text-muted-foreground">
+            Showing {filtered.length} of {lenders.length} lenders
+          </div>
+
+          {loading ? (
+            <PageSkeleton variant="table" />
+          ) : (
+            <div className="border rounded-md overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/40">
+                    <TableHead className="text-xs font-medium w-[110px]">Code</TableHead>
+                    <TableHead className="text-xs font-medium">Lender Name</TableHead>
+                    <TableHead className="text-xs font-medium">Type</TableHead>
+                    <TableHead className="text-xs font-medium">Loan Range</TableHead>
+                    <TableHead className="text-xs font-medium">Loan Types</TableHead>
+                    <TableHead className="text-xs font-medium">Countries</TableHead>
+                    <TableHead className="text-xs font-medium w-[90px]">Days</TableHead>
+                    <TableHead className="text-xs font-medium w-[100px]">Status</TableHead>
+                    <TableHead className="text-xs font-medium w-[120px] text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center text-sm text-muted-foreground py-8">
+                        No lenders match your filters.
+                      </TableCell>
+                    </TableRow>
+                  ) : filtered.map((l) => (
+                    <TableRow key={l.id} className="hover:bg-muted/20">
+                      <TableCell className="text-xs py-2.5 font-mono">{l.lender_code}</TableCell>
+                      <TableCell className="text-sm py-2.5">
+                        <div className="flex items-center gap-2">
+                          <div className="rounded bg-primary/10 p-1.5">
+                            <Banknote className="h-3.5 w-3.5 text-primary" />
+                          </div>
+                          <span className="font-medium">{l.lender_name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-xs py-2.5 text-muted-foreground">{l.lender_type ?? "—"}</TableCell>
+                      <TableCell className="text-xs py-2.5 tabular-nums">
+                        {l.loan_amount_min || l.loan_amount_max ? (
+                          <span>
+                            {l.loan_amount_min ? `₹${(l.loan_amount_min / 100000).toFixed(0)}L` : "—"}
+                            {" – "}
+                            {l.loan_amount_max ? `₹${(l.loan_amount_max / 100000).toFixed(0)}L` : "—"}
+                          </span>
+                        ) : <span className="text-muted-foreground">—</span>}
+                      </TableCell>
+                      <TableCell className="py-2.5">
+                        <div className="flex gap-1">
+                          {l.supports_collateral && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Coll.</Badge>}
+                          {l.supports_unsecured && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Unsec.</Badge>}
+                          {!l.supports_collateral && !l.supports_unsecured && <span className="text-muted-foreground text-xs">—</span>}
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-2.5">
+                        {l.supported_countries && l.supported_countries.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {l.supported_countries.slice(0, 3).map((c) => (
+                              <Badge key={c} variant="outline" className="text-[10px] px-1.5 py-0 font-mono">{c}</Badge>
+                            ))}
+                            {l.supported_countries.length > 3 && (
+                              <span className="text-[10px] text-muted-foreground">+{l.supported_countries.length - 3}</span>
+                            )}
+                          </div>
+                        ) : <span className="text-muted-foreground text-xs">—</span>}
+                      </TableCell>
+                      <TableCell className="text-xs py-2.5 tabular-nums text-muted-foreground">
+                        {l.processing_time_days ?? "—"}
+                      </TableCell>
+                      <TableCell className="py-2.5">
+                        {l.active_flag ? (
+                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] px-1.5 py-0">Active</Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-slate-100 text-slate-600 border-slate-200 text-[10px] px-1.5 py-0">Inactive</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="py-2.5 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => openEdit(l)}>
+                            <Pencil className="h-3.5 w-3.5 mr-1" />Edit
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => handleToggle(l)} title={l.active_flag ? "Deactivate" : "Activate"}>
+                            <Power className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <LenderDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        record={editing}
+        onSaved={() => setRefreshKey((k) => k + 1)}
+      />
+    </div>
+  );
+}
