@@ -14,7 +14,7 @@ import type { Tables } from "@/integrations/supabase/types";
 type Lead = Tables<"student_leads">;
 
 export type DocRequirement = Tables<"lead_document_requirements"> & {
-  document_master?: { document_name: string; document_category: string | null } | null;
+  document_master?: { document_name: string; document_category: string | null; document_code?: string | null; applicable_for?: string | null } | null;
 };
 
 export type DocFile = Tables<"lead_documents"> & {
@@ -50,7 +50,7 @@ export default function LeadDocuments() {
     const [reqRes, docRes] = await Promise.all([
       supabase
         .from("lead_document_requirements")
-        .select("*, document_master(document_name, document_category)")
+        .select("*, document_master(document_name, document_category, document_code, applicable_for)")
         .eq("lead_id", id)
         .order("created_at"),
       supabase
@@ -153,6 +153,8 @@ export default function LeadDocuments() {
           onOpenChange={(open) => !open && setUploadTarget(null)}
           requirement={uploadTarget}
           leadId={lead.id}
+          lead={lead}
+          applicableFor={uploadTarget.document_master?.applicable_for ?? null}
           userId={userId}
           userRole={role}
           onUploadComplete={handleUploadComplete}
