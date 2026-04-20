@@ -1,0 +1,1 @@
+UPDATE public.users SET is_active = true, updated_at = now() WHERE email = 'raghav@cashkaro.com' AND role = 'super_admin';
