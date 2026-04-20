@@ -85,6 +85,12 @@ export default function AdminLeads() {
     partnerId: searchParams.get("partner") ?? "all",
     dateFrom: searchParams.get("from") ? new Date(searchParams.get("from")!) : undefined,
     dateTo: searchParams.get("to") ? new Date(searchParams.get("to")!) : undefined,
+    type: (searchParams.get("type") as any) ?? "all",
+    entryMode: (searchParams.get("entry") as any) ?? "all",
+    region: (searchParams.get("region") as any) ?? "all",
+    loanRange: (searchParams.get("loan") as any) ?? "all",
+    intake: (searchParams.get("intake") as any) ?? "all",
+    loanType: (searchParams.get("loantype") as any) ?? "all",
   }), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [filters, setFilters] = useState<AdminLeadFilterState>(initialFilters);
