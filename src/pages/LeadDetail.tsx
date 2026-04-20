@@ -34,9 +34,11 @@ export default function LeadDetail() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [docRequirements, setDocRequirements] = useState<any[]>([]);
   const [payouts, setPayouts] = useState<PayoutRecord[]>([]);
+  const [editRequests, setEditRequests] = useState<EditRequest[]>([]);
   const [submittedByName, setSubmittedByName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!id) return;
