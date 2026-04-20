@@ -15,7 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { StageBadge, StatusBadge, formatStageLabel } from "@/components/dashboard/StageBadge";
 import {
   Plus, Search, Upload, X, ChevronLeft, ChevronRight, ArrowUpDown,
-  AlertTriangle, FileText, Zap, Filter, LayoutList, CalendarIcon, ChevronDown,
+  AlertTriangle, FileText, Filter, LayoutList, CalendarIcon, ChevronDown,
   ExternalLink, Eye,
 } from "lucide-react";
 import { format } from "date-fns";
