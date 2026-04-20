@@ -13,12 +13,16 @@ import { LeadDocumentSnapshot } from "@/components/lead-detail/LeadDocumentSnaps
 import { LeadDuplicateContext } from "@/components/lead-detail/LeadDuplicateContext";
 import { LeadActionPanel } from "@/components/lead-detail/LeadActionPanel";
 import { LeadPayoutSnapshot } from "@/components/lead-detail/LeadPayoutSnapshot";
+import { LeadEditRequestDialog } from "@/components/lead-detail/LeadEditRequestDialog";
+import { LeadEditRequestBanner } from "@/components/lead-detail/LeadEditRequestBanner";
+import { LeadEditRequestHistory } from "@/components/lead-detail/LeadEditRequestHistory";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Lead = Tables<"student_leads">;
 type History = Tables<"lead_stage_history">;
 type Note = Tables<"lead_notes">;
 type PayoutRecord = Tables<"partner_payout_records">;
+type EditRequest = Tables<"lead_edit_requests">;
 
 export default function LeadDetail() {
   const { id } = useParams<{ id: string }>();
@@ -30,9 +34,11 @@ export default function LeadDetail() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [docRequirements, setDocRequirements] = useState<any[]>([]);
   const [payouts, setPayouts] = useState<PayoutRecord[]>([]);
+  const [editRequests, setEditRequests] = useState<EditRequest[]>([]);
   const [submittedByName, setSubmittedByName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!id) return;
@@ -48,18 +54,19 @@ export default function LeadDetail() {
     const lead = leadRes.data;
     setLead(lead);
 
-    // Parallel fetch all related data
-    const [histRes, notesRes, docRes, payoutRes] = await Promise.all([
+    const [histRes, notesRes, docRes, payoutRes, editRes] = await Promise.all([
       supabase.from("lead_stage_history").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
       supabase.from("lead_notes").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
       supabase.from("lead_document_requirements").select("*, document_master(document_name, document_category)").eq("lead_id", id).order("created_at"),
       supabase.from("partner_payout_records").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
+      supabase.from("lead_edit_requests").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
     ]);
 
     setHistory(histRes.data ?? []);
     setNotes(notesRes.data ?? []);
     setDocRequirements(docRes.data ?? []);
     setPayouts(payoutRes.data ?? []);
+    setEditRequests(editRes.data ?? []);
 
     // Fetch submitted by user name
     if (lead.partner_user_id) {
@@ -111,19 +118,25 @@ export default function LeadDetail() {
   }
 
   const isDraft = lead.current_stage === "draft";
+  const pendingRequest = editRequests.find((r) => r.status === "pending") ?? null;
+  const latestRequest = pendingRequest ?? editRequests[0] ?? null;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      {/* A. Header */}
-      <LeadDetailHeader lead={lead} submittedByName={submittedByName} isDraft={isDraft} />
+      <LeadDetailHeader
+        lead={lead}
+        submittedByName={submittedByName}
+        isDraft={isDraft}
+        hasPendingEditRequest={!!pendingRequest}
+        onRequestEdit={() => setEditDialogOpen(true)}
+      />
 
-      {/* B. Summary Strip */}
+      <LeadEditRequestBanner request={latestRequest} />
+
       <LeadSummaryStrip lead={lead} />
 
-      {/* D. Lifecycle Progress */}
       <LeadLifecycleProgress lead={lead} />
 
-      {/* H. Duplicate Context */}
       <LeadDuplicateContext lead={lead} />
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -137,20 +150,25 @@ export default function LeadDetail() {
 
           {/* F. Notes */}
           <LeadNotes leadId={lead.id} notes={notes} userId={userId} onNoteAdded={refreshNotes} />
+
+          {/* Edit Request History */}
+          <LeadEditRequestHistory requests={editRequests} />
         </div>
 
         {/* Right column: Timeline + Actions + Payout */}
         <div className="space-y-6">
-          {/* I. Action Panel */}
           <LeadActionPanel lead={lead} />
-
-          {/* E. Timeline */}
           <LeadTimeline history={history} notes={notes} />
-
-          {/* K. Payout Snapshot */}
           <LeadPayoutSnapshot payouts={payouts} leadId={id!} />
         </div>
       </div>
+
+      <LeadEditRequestDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        lead={lead}
+        onSubmitted={loadData}
+      />
     </div>
   );
 }

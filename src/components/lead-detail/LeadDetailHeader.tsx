@@ -2,11 +2,14 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { StageBadge, StatusBadge, formatStageLabel } from "@/components/dashboard/StageBadge";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Copy, Edit, FileText, Play } from "lucide-react";
+import { ArrowLeft, Copy, Edit, FileText, Play, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { useRoleAccess } from "@/hooks/useRoleAccess";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Lead = Tables<"student_leads">;
+const TERMINAL_STAGES = ["disbursed", "rejected", "dropped"];
 
 const ATTENTION_STAGES = ["documents_pending", "on_hold", "credit_query"];
 const ATTENTION_STATUSES = ["pending_info", "reupload_needed", "query_raised"];
@@ -25,10 +28,14 @@ interface Props {
   backTo?: string;
   backLabel?: string;
   hideActions?: boolean;
+  hasPendingEditRequest?: boolean;
+  onRequestEdit?: () => void;
 }
 
-export function LeadDetailHeader({ lead, submittedByName, isDraft, backTo = "/leads", backLabel = "Back to Submitted Leads", hideActions = false }: Props) {
+export function LeadDetailHeader({ lead, submittedByName, isDraft, backTo = "/leads", backLabel = "Back to Submitted Leads", hideActions = false, hasPendingEditRequest = false, onRequestEdit }: Props) {
   const navigate = useNavigate();
+  const { isAdmin } = useRoleAccess();
+  const isTerminal = TERMINAL_STAGES.includes(lead.current_stage);
   const needsAttention = ATTENTION_STAGES.includes(lead.current_stage) || ATTENTION_STATUSES.includes(lead.current_status) || lead.duplicate_flag;
 
   const copyLeadId = () => {
@@ -99,10 +106,32 @@ export function LeadDetailHeader({ lead, submittedByName, isDraft, backTo = "/le
               <Button size="sm" onClick={() => navigate(`/leads/new?draft=${lead.id}`)}>
                 <Play className="h-4 w-4 mr-1" /> Resume Draft
               </Button>
-            ) : (
+            ) : isAdmin ? (
               <Button variant="outline" size="sm" onClick={() => navigate(`/leads/new?edit=${lead.id}`)}>
                 <Edit className="h-4 w-4 mr-1" /> Edit Lead
               </Button>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onRequestEdit}
+                      disabled={isTerminal || hasPendingEditRequest || !onRequestEdit}
+                    >
+                      <Pencil className="h-4 w-4 mr-1" /> Request Edit
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                {(isTerminal || hasPendingEditRequest) && (
+                  <TooltipContent>
+                    {hasPendingEditRequest
+                      ? "An edit request is already pending admin review."
+                      : `Lead is in terminal stage (${lead.current_stage}) and cannot be edited.`}
+                  </TooltipContent>
+                )}
+              </Tooltip>
             )}
             <Button variant="outline" size="sm" onClick={() => navigate(`/leads/${lead.id}/documents`)}>
               <FileText className="h-4 w-4 mr-1" /> Documents

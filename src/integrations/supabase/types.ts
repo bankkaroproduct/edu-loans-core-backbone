@@ -451,6 +451,57 @@ export type Database = {
           },
         ]
       }
+      lead_edit_requests: {
+        Row: {
+          admin_decision_note: string | null
+          applied_at: string | null
+          applied_changes: Json | null
+          created_at: string
+          decided_at: string | null
+          decided_by_user_id: string | null
+          id: string
+          lead_id: string
+          partner_id: string
+          partner_reason: string | null
+          requested_by_user_id: string
+          requested_changes: Json
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_decision_note?: string | null
+          applied_at?: string | null
+          applied_changes?: Json | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by_user_id?: string | null
+          id?: string
+          lead_id: string
+          partner_id: string
+          partner_reason?: string | null
+          requested_by_user_id: string
+          requested_changes?: Json
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_decision_note?: string | null
+          applied_at?: string | null
+          applied_changes?: Json | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by_user_id?: string | null
+          id?: string
+          lead_id?: string
+          partner_id?: string
+          partner_reason?: string | null
+          requested_by_user_id?: string
+          requested_changes?: Json
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       lead_lender_matches: {
         Row: {
           bre_output_json: Json | null
@@ -1427,6 +1478,15 @@ export type Database = {
         Returns: Json
       }
       country_to_iso: { Args: { _name: string }; Returns: string }
+      decide_edit_request: {
+        Args: {
+          _action: string
+          _approved_fields?: string[]
+          _decision_note?: string
+          _request_id: string
+        }
+        Returns: Json
+      }
       get_user_partner_id: { Args: { _auth_id: string }; Returns: string }
       get_user_role: {
         Args: { _auth_id: string }
@@ -1446,6 +1506,10 @@ export type Database = {
         Returns: number
       }
       seed_lead_lender_matches: { Args: { p_lead_id: string }; Returns: number }
+      submit_edit_request: {
+        Args: { _changes: Json; _lead_id: string; _reason: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "super_admin" | "admin" | "partner_admin" | "partner_agent"
