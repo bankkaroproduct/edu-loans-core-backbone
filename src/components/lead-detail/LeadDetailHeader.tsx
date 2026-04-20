@@ -28,10 +28,14 @@ interface Props {
   backTo?: string;
   backLabel?: string;
   hideActions?: boolean;
+  hasPendingEditRequest?: boolean;
+  onRequestEdit?: () => void;
 }
 
-export function LeadDetailHeader({ lead, submittedByName, isDraft, backTo = "/leads", backLabel = "Back to Submitted Leads", hideActions = false }: Props) {
+export function LeadDetailHeader({ lead, submittedByName, isDraft, backTo = "/leads", backLabel = "Back to Submitted Leads", hideActions = false, hasPendingEditRequest = false, onRequestEdit }: Props) {
   const navigate = useNavigate();
+  const { isAdmin } = useRoleAccess();
+  const isTerminal = TERMINAL_STAGES.includes(lead.current_stage);
   const needsAttention = ATTENTION_STAGES.includes(lead.current_stage) || ATTENTION_STATUSES.includes(lead.current_status) || lead.duplicate_flag;
 
   const copyLeadId = () => {
