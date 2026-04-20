@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { AdminLayout } from "@/components/admin/AdminLayout";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { PageSkeleton } from "@/components/shared/PageSkeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
