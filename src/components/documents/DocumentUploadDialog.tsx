@@ -22,6 +22,8 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   requirement: DocRequirement;
   leadId: string;
+  lead?: LeadNameFields | null;
+  applicableFor?: string | null;
   userId: string | null;
   userRole?: string | null;
   onUploadComplete: () => void;
@@ -30,17 +32,20 @@ interface Props {
 
 type UploadPhase = "idle" | "uploading" | "validating" | "soft_block" | "done";
 
-export function DocumentUploadDialog({ open, onOpenChange, requirement, leadId, userId, userRole, onUploadComplete, currentVersionCount = 0 }: Props) {
+export function DocumentUploadDialog({ open, onOpenChange, requirement, leadId, lead, applicableFor, userId, userRole, onUploadComplete, currentVersionCount = 0 }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [phase, setPhase] = useState<UploadPhase>("idle");
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [softBlockInfo, setSoftBlockInfo] = useState<{ docName: string; uploadedDocId: string } | null>(null);
+  const [softBlockInfo, setSoftBlockInfo] = useState<{ docName: string; uploadedDocId: string; docCode: string | null } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const uploading = phase === "uploading" || phase === "validating";
   const isReupload = ["rejected", "reupload_needed"].includes(requirement.status);
-  const docName = requirement.document_master?.document_name ?? "Document";
+  const docCode = (requirement as any).document_master?.document_code ?? null;
+  const docName = displayDocName(docCode, requirement.document_master?.document_name ?? "Document");
+  const subject = subjectForApplicableFor(applicableFor);
+  const expectedName = getReferenceName(lead ?? null, subject);
   const nextVersion = currentVersionCount + 1;
 
   const validateFile = (f: File): string | null => {
