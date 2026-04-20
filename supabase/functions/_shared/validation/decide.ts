@@ -230,25 +230,48 @@ export function decide(input: DecideInput): ValidationResult {
 }
 
 // Whether the result should produce a soft-block "Upload anyway?" prompt.
-// Triggers for: (a) any high-confidence type mismatch on a strong/strict rule, OR
-// (b) any Tier-1 strict doc whose overall_flag is review_needed/inconclusive/warn_type
-// (covers random images, scanned PDFs, and zero-signal PDFs uniformly).
+//
+// Type-strictness vs name-strength are intentionally separate here:
+//   - TYPE issues on strict-tier docs always soft-block (covers random images,
+//     scanned PDFs, zero-signal PDFs uniformly across PAN/AADHAAR/marksheets/etc).
+//   - NAME issues only soft-block when the doc has nameStrength = "strong"
+//     (PAN, AADHAAR, PASSPORT, SALARY_SLIP, ITR, BANK_STMT). Education,
+//     admission and scorecard docs use nameStrength = "medium" → name
+//     mismatch shows a chip but never blocks the upload.
 export function shouldSoftBlock(result: ValidationResult, code: string | null): boolean {
   if (!code) return false;
   const rule = getRuleForCode(code);
   if (!rule) return false;
+
+  // (a) Type-level soft-block: strict-tier docs with type/extraction problems.
   if (rule.tier === "strict") {
     if (
       result.overall_flag === "review_needed" ||
       result.overall_flag === "inconclusive" ||
       result.overall_flag === "warn_type"
     ) {
-      return true;
+      // BUT: if this is purely a name-warning that got promoted to review_needed,
+      // we still want to honour the nameStrength rule below.
+      // review_needed here is type-driven (verdict === type_mismatch_high), so allow.
+      if (result.type_check.verdict === "type_mismatch_high" || result.overall_flag !== "warn_name") {
+        return true;
+      }
     }
   }
-  return (
+
+  // (b) High-confidence type mismatch on any strong-typeStrength rule.
+  if (
     result.type_check.verdict === "type_mismatch_high" &&
     result.type_check.confidence === "high" &&
     rule.typeStrength === "strong"
-  );
+  ) {
+    return true;
+  }
+
+  // (c) Name-level soft-block: only when nameStrength is "strong".
+  if (result.overall_flag === "warn_name" && rule.nameStrength === "strong") {
+    return true;
+  }
+
+  return false;
 }
