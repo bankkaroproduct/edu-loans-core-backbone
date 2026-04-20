@@ -369,6 +369,24 @@ export default function AdminLeads() {
             />
           )}
 
+          {/* Quick filter chips */}
+          <div className="flex flex-wrap gap-2">
+            {quickChips.map((c) => (
+              <button
+                key={c.label}
+                type="button"
+                onClick={c.apply}
+                className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                  c.active
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-background hover:bg-muted text-foreground"
+                }`}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+
           {/* Result summary */}
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>
