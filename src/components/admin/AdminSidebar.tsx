@@ -1,53 +1,35 @@
 import {
-  Shield,
-  Inbox,
-  GitBranch,
-  Gavel,
-  Banknote,
-  BarChart3,
-  GraduationCap,
-  Users,
-  Settings,
-  LogOut,
-  ArrowLeftRight,
-  ClipboardCheck,
-  Database,
+  Shield, Inbox, Banknote, GraduationCap, Users, LogOut, ArrowLeftRight,
+  ClipboardCheck, Database, FilePlus, Upload,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarFooter,
-  useSidebar,
+  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
+  SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAdminPendingRequests } from "@/hooks/useAdminPendingRequests";
+import { AdminPartnerSwitcher } from "@/components/AdminPartnerSwitcher";
 
 const adminItems = [
   { title: "Admin Dashboard", url: "/admin", icon: Shield, end: true },
   { title: "Lead Queue", url: "/admin/leads", icon: Inbox },
   { title: "Requests & Approvals", url: "/admin/requests", icon: ClipboardCheck, badgeKey: "pendingRequests" as const },
-  { title: "Pipeline", url: "/admin/pipeline", icon: GitBranch },
-  { title: "Underwriting", url: "/admin/underwriting", icon: Gavel },
-  { title: "Disbursements", url: "/admin/disbursements", icon: Banknote },
-  { title: "Reports", url: "/admin/reports", icon: BarChart3 },
+];
+
+const leadOpsItems = [
+  { title: "Add Lead", url: "/admin/leads/new", icon: FilePlus },
+  { title: "Bulk Upload", url: "/admin/leads/bulk", icon: Upload },
 ];
 
 const adminMasterItems = [
   { title: "Master Data", url: "/admin/master-data", icon: Database },
   { title: "Partners", url: "/admin/partners", icon: Users },
   { title: "Lenders", url: "/admin/lenders", icon: Banknote },
-  { title: "Universities", url: "/admin/universities", icon: GraduationCap },
-  { title: "Settings", url: "/admin/settings", icon: Settings },
+  { title: "Universities", url: "/admin/master-data?tab=universities", icon: GraduationCap },
 ];
 
 export function AdminSidebar() {
@@ -107,6 +89,29 @@ export function AdminSidebar() {
                 );
               })}
             </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>{!collapsed && "Lead Operations"}</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {leadOpsItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      className="hover:bg-sidebar-accent/50"
+                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                    >
+                      <item.icon className="mr-2 h-4 w-4" />
+                      {!collapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+            <AdminPartnerSwitcher collapsed={collapsed} />
           </SidebarGroupContent>
         </SidebarGroup>
 

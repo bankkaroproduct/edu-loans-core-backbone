@@ -1,13 +1,13 @@
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Building2, Banknote, GraduationCap } from "lucide-react";
+import { FileText, Building2, Banknote, FilePlus } from "lucide-react";
 
 const actions = [
   { label: "Manage Leads", icon: FileText, to: "/admin/leads" },
-  { label: "Manage Partners", icon: Building2, to: "/partners" },
+  { label: "Add New Lead", icon: FilePlus, to: "/admin/leads/new" },
+  { label: "Manage Partners", icon: Building2, to: "/admin/partners" },
   { label: "Manage Lenders", icon: Banknote, to: "/admin/lenders" },
-  { label: "Manage Universities", icon: GraduationCap, to: "/admin/universities" },
 ];
 
 export function AdminQuickActions() {

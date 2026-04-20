@@ -7,10 +7,13 @@ type StatusEnum = Database["public"]["Enums"]["lead_status_enum"];
 
 export interface AdminMetrics {
   totalLeads: number;
-  activeApplications: number;
-  partnerLeads: number;
-  studentDirectLeads: number;
-  pendingReview: number;
+  pendingAdminActions: number;
+  requestsPendingApproval: number;
+  documentsPendingReview: number;
+  sentToLender: number;
+  sanctionReceived: number;
+  disbursed: number;
+  activePartners: number;
 }
 
 export interface PipelineStage {
@@ -97,29 +100,40 @@ export function useAdminDashboard() {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ---- Metrics (5 head:true count queries; no rows fetched) ----
+  // ---- Metrics: 8 ops-meaningful counts (head:true, no rows fetched) ----
   const fetchMetrics = useCallback(async () => {
     setMetrics((s) => ({ ...s, loading: true, error: null }));
     try {
-      const base = () => supabase.from("student_leads").select("*", { count: "exact", head: true }).eq("is_archived", false);
-      const [total, active, partnerCnt, studentCnt, pending] = await Promise.all([
-        base(),
-        base().not("current_stage", "in", "(disbursed,rejected,dropped,on_hold)"),
-        base().eq("source_type", "partner"),
-        base().eq("source_type", "student_direct"),
-        base().in("current_status", PENDING_REVIEW_STATUSES),
+      const leadsBase = () => supabase.from("student_leads").select("*", { count: "exact", head: true }).eq("is_archived", false);
+      const [
+        total, pendingReq, docsToVerify, sentLender, sanction, disb, activePart,
+      ] = await Promise.all([
+        leadsBase(),
+        supabase.from("lead_edit_requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("lead_documents").select("*", { count: "exact", head: true }).eq("is_latest", true).eq("verification_status", "uploaded"),
+        leadsBase().eq("current_stage", "sent_to_lender"),
+        leadsBase().eq("current_stage", "sanction_received"),
+        leadsBase().eq("current_stage", "disbursed"),
+        supabase.from("partner_organizations").select("*", { count: "exact", head: true }).eq("status", "active").eq("is_archived", false),
       ]);
-      const errs = [total.error, active.error, partnerCnt.error, studentCnt.error, pending.error].filter(Boolean);
+      const errs = [total.error, pendingReq.error, docsToVerify.error, sentLender.error, sanction.error, disb.error, activePart.error].filter(Boolean);
       if (errs.length) throw errs[0];
+
+      const requestsPendingApproval = pendingReq.count ?? 0;
+      const documentsPendingReview = docsToVerify.count ?? 0;
+
       setMetrics({
         loading: false,
         error: null,
         data: {
           totalLeads: total.count ?? 0,
-          activeApplications: active.count ?? 0,
-          partnerLeads: partnerCnt.count ?? 0,
-          studentDirectLeads: studentCnt.count ?? 0,
-          pendingReview: pending.count ?? 0,
+          pendingAdminActions: requestsPendingApproval + documentsPendingReview,
+          requestsPendingApproval,
+          documentsPendingReview,
+          sentToLender: sentLender.count ?? 0,
+          sanctionReceived: sanction.count ?? 0,
+          disbursed: disb.count ?? 0,
+          activePartners: activePart.count ?? 0,
         },
       });
     } catch (e: any) {
