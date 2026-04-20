@@ -61,10 +61,20 @@ export default function AddLead() {
   const isEditMode = Boolean(editId);
 
   const { user, appUser } = useAuth();
+  const { isAdmin } = useRoleAccess();
   const { effectivePartnerId, effectiveUserId, isSimulating } = usePartnerContext();
   const { duplicates, checking, checkDuplicates } = useDuplicateCheck();
   const [submitting, setSubmitting] = useState(false);
   const [hydrating, setHydrating] = useState(Boolean(hydrateId));
+
+  // Partner guard: block direct lead-edit URL for non-admins; route them to Request Edit.
+  useEffect(() => {
+    if (!editId) return;
+    if (appUser && !isAdmin) {
+      toast.info("Partners can't edit leads directly. Use 'Request Edit' from the lead detail page.");
+      navigate(`/leads/${editId}`, { replace: true });
+    }
+  }, [editId, appUser, isAdmin, navigate]);
   const [activeStep, setActiveStep] = useState<StepId>("student");
   const [showDupDialog, setShowDupDialog] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
