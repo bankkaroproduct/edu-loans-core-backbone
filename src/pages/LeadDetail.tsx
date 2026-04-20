@@ -118,19 +118,25 @@ export default function LeadDetail() {
   }
 
   const isDraft = lead.current_stage === "draft";
+  const pendingRequest = editRequests.find((r) => r.status === "pending") ?? null;
+  const latestRequest = pendingRequest ?? editRequests[0] ?? null;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      {/* A. Header */}
-      <LeadDetailHeader lead={lead} submittedByName={submittedByName} isDraft={isDraft} />
+      <LeadDetailHeader
+        lead={lead}
+        submittedByName={submittedByName}
+        isDraft={isDraft}
+        hasPendingEditRequest={!!pendingRequest}
+        onRequestEdit={() => setEditDialogOpen(true)}
+      />
 
-      {/* B. Summary Strip */}
+      <LeadEditRequestBanner request={latestRequest} />
+
       <LeadSummaryStrip lead={lead} />
 
-      {/* D. Lifecycle Progress */}
       <LeadLifecycleProgress lead={lead} />
 
-      {/* H. Duplicate Context */}
       <LeadDuplicateContext lead={lead} />
 
       <div className="grid gap-6 lg:grid-cols-3">
