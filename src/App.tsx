@@ -15,6 +15,7 @@ import AdminLogin from "./pages/admin/AdminLogin";
 import AdminLeads from "./pages/admin/AdminLeads";
 import AdminLeadDetail from "./pages/admin/AdminLeadDetail";
 import AdminPlaceholder from "./pages/admin/AdminPlaceholder";
+import AdminEditRequests from "./pages/admin/AdminEditRequests";
 import Login from "./pages/Login";
 import Leads from "./pages/Leads";
 import AddLead from "./pages/AddLead";
@@ -80,6 +81,7 @@ const App = () => (
             <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
             <Route path="/admin/leads" element={<AdminRoute><AdminLeads /></AdminRoute>} />
             <Route path="/admin/leads/:id" element={<AdminRoute><AdminLeadDetail /></AdminRoute>} />
+            <Route path="/admin/edit-requests" element={<AdminRoute><AdminEditRequests /></AdminRoute>} />
             <Route path="/admin/pipeline" element={<AdminRoute><AdminPlaceholder title="Pipeline" description="Drag-and-drop lifecycle management across all stages." /></AdminRoute>} />
             <Route path="/admin/underwriting" element={<AdminRoute><AdminPlaceholder title="Underwriting" description="BRE evaluation, lender matching, and credit query workflows." /></AdminRoute>} />
             <Route path="/admin/disbursements" element={<AdminRoute><AdminPlaceholder title="Disbursements" description="Sanction tracking and disbursement reconciliation." /></AdminRoute>} />

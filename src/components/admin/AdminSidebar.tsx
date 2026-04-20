@@ -10,6 +10,7 @@ import {
   Settings,
   LogOut,
   ArrowLeftRight,
+  ClipboardList,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
@@ -32,6 +33,7 @@ import { Badge } from "@/components/ui/badge";
 const adminItems = [
   { title: "Admin Dashboard", url: "/admin", icon: Shield, end: true },
   { title: "Lead Queue", url: "/admin/leads", icon: Inbox },
+  { title: "Edit Requests", url: "/admin/edit-requests", icon: ClipboardList },
   { title: "Pipeline", url: "/admin/pipeline", icon: GitBranch },
   { title: "Underwriting", url: "/admin/underwriting", icon: Gavel },
   { title: "Disbursements", url: "/admin/disbursements", icon: Banknote },

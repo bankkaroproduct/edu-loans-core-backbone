@@ -150,20 +150,25 @@ export default function LeadDetail() {
 
           {/* F. Notes */}
           <LeadNotes leadId={lead.id} notes={notes} userId={userId} onNoteAdded={refreshNotes} />
+
+          {/* Edit Request History */}
+          <LeadEditRequestHistory requests={editRequests} />
         </div>
 
         {/* Right column: Timeline + Actions + Payout */}
         <div className="space-y-6">
-          {/* I. Action Panel */}
           <LeadActionPanel lead={lead} />
-
-          {/* E. Timeline */}
           <LeadTimeline history={history} notes={notes} />
-
-          {/* K. Payout Snapshot */}
           <LeadPayoutSnapshot payouts={payouts} leadId={id!} />
         </div>
       </div>
+
+      <LeadEditRequestDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        lead={lead}
+        onSubmitted={loadData}
+      />
     </div>
   );
 }
