@@ -11,6 +11,7 @@ import {
   LogOut,
   ArrowLeftRight,
   ClipboardCheck,
+  Database,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
@@ -42,6 +43,7 @@ const adminItems = [
 ];
 
 const adminMasterItems = [
+  { title: "Master Data", url: "/admin/master-data", icon: Database },
   { title: "Partners", url: "/admin/partners", icon: Users },
   { title: "Lenders", url: "/admin/lenders", icon: Banknote },
   { title: "Universities", url: "/admin/universities", icon: GraduationCap },
