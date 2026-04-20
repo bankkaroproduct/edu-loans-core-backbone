@@ -515,13 +515,23 @@ export async function processBulkUpload(
   }
 
   // 6. Update batch summary
-  const batchStatus = failedCount === 0 && duplicateCount === 0 ? "completed"
-    : successCount === 0 ? "failed"
-    : "completed_with_errors";
+  // Status rules:
+  //   completed              = no fail AND no duplicate
+  //   completed_with_errors  = any fail OR any duplicate (but at least one success)
+  //   failed                 = zero success AND at least one real failure
+  // Note: failed_rows stores REAL validation/insert failures only.
+  // Duplicates are tracked per-row in bulk_upload_row_results (validation_status='duplicate')
+  // and derivable as: total_rows - success_rows - failed_rows.
+  const batchStatus =
+    failedCount === 0 && duplicateCount === 0
+      ? "completed"
+      : successCount === 0 && failedCount > 0
+        ? "failed"
+        : "completed_with_errors";
 
   await supabase.from("bulk_upload_batches").update({
     success_rows: successCount,
-    failed_rows: failedCount + duplicateCount,
+    failed_rows: failedCount,
     batch_status: batchStatus as any,
     processed_at: new Date().toISOString(),
   }).eq("id", batchDbId);
