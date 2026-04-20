@@ -52,7 +52,11 @@ const SOURCE_SUBTYPES = [
   { value: "other", label: "Other" },
 ];
 
-export default function AddLead() {
+interface AddLeadProps {
+  hideOwnHeader?: boolean;
+}
+
+export default function AddLead({ hideOwnHeader = false }: AddLeadProps = {}) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const draftId = searchParams.get("draft");
@@ -397,22 +401,24 @@ export default function AddLead() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate(backTarget)}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" /> {headingTitle}
-            {(draftId || isEditMode) && (
-              <Badge variant="outline" className="ml-1 text-[10px]">
-                {draftId ? "DRAFT" : "EDIT"}
-              </Badge>
-            )}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">{headingDesc}</p>
+      {!hideOwnHeader && (
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate(backTarget)}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" /> {headingTitle}
+              {(draftId || isEditMode) && (
+                <Badge variant="outline" className="ml-1 text-[10px]">
+                  {draftId ? "DRAFT" : "EDIT"}
+                </Badge>
+              )}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">{headingDesc}</p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Step progress */}
       <div className="flex items-center gap-1 overflow-x-auto pb-1">
