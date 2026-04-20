@@ -22,8 +22,8 @@ interface Props {
   fetchCount: () => Promise<number>;
   /** Returns the full data payload. Called only when user clicks export. */
   fetchData: () => Promise<ReportResult<any>>;
-  /** Bumps when filters change so we re-fetch the count. */
-  filterVersion: number;
+  /** Changes when filters change so we re-fetch the count. */
+  filterVersion: string;
   icon: React.ReactNode;
 }
 
