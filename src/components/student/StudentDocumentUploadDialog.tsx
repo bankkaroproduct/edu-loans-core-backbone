@@ -1,13 +1,16 @@
 import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Upload, CheckCircle2, Loader2, FileText, X, AlertTriangle } from "lucide-react";
+import { AlertCircle, Upload, CheckCircle2, Loader2, FileText, X, AlertTriangle, User } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { displayDocName, softBlockMessage } from "@/lib/docCopy";
 
 interface Requirement {
   id: string;
   document_type_id: string;
   document_name: string;
+  document_code?: string | null;
+  applicable_for?: string | null;
   student_status_label: string;
   remark: string | null;
 }
@@ -16,6 +19,8 @@ interface Props {
   requirement: Requirement;
   leadId: string;
   phone: string;
+  expectedName?: string | null;
+  expectedSubject?: "student" | "coapplicant";
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -23,13 +28,15 @@ interface Props {
 const ALLOWED_TYPES = ["application/pdf", "image/jpeg", "image/png", "image/jpg"];
 const MAX_SIZE = 10 * 1024 * 1024;
 
-export function StudentDocumentUploadDialog({ requirement, leadId, phone, onClose, onSuccess }: Props) {
+export function StudentDocumentUploadDialog({ requirement, leadId, phone, expectedName, expectedSubject = "student", onClose, onSuccess }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [softBlock, setSoftBlock] = useState<{ uploadedDocId: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const isReupload = requirement.student_status_label === "Action Needed";
+  const docCode = requirement.document_code ?? null;
+  const friendlyDocName = displayDocName(docCode, requirement.document_name);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
