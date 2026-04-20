@@ -99,6 +99,11 @@ export default function AdminLeads() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Health strip counts (filter-aware: same WHERE except status/stage overrides)
+  const [healthCounts, setHealthCounts] = useState<{
+    total: number; pendingReview: number; withLender: number; sanction: number;
+  }>({ total: 0, pendingReview: 0, withLender: 0, sanction: 0 });
+
   // Debounce search
   const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
