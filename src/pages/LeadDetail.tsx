@@ -54,18 +54,19 @@ export default function LeadDetail() {
     const lead = leadRes.data;
     setLead(lead);
 
-    // Parallel fetch all related data
-    const [histRes, notesRes, docRes, payoutRes] = await Promise.all([
+    const [histRes, notesRes, docRes, payoutRes, editRes] = await Promise.all([
       supabase.from("lead_stage_history").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
       supabase.from("lead_notes").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
       supabase.from("lead_document_requirements").select("*, document_master(document_name, document_category)").eq("lead_id", id).order("created_at"),
       supabase.from("partner_payout_records").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
+      supabase.from("lead_edit_requests").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
     ]);
 
     setHistory(histRes.data ?? []);
     setNotes(notesRes.data ?? []);
     setDocRequirements(docRes.data ?? []);
     setPayouts(payoutRes.data ?? []);
+    setEditRequests(editRes.data ?? []);
 
     // Fetch submitted by user name
     if (lead.partner_user_id) {
