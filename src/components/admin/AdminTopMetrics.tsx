@@ -1,7 +1,10 @@
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Users, Activity, Building2, GraduationCap, ClipboardList, AlertCircle, RefreshCw } from "lucide-react";
+import {
+  Users, Inbox, ClipboardCheck, FileSearch, Send, BadgeCheck, Banknote, Building2,
+  AlertCircle, RefreshCw,
+} from "lucide-react";
 import type { AdminMetrics } from "@/hooks/useAdminDashboard";
 
 interface Props {
@@ -12,12 +15,21 @@ interface Props {
 }
 
 const cards = [
-  { key: "totalLeads", label: "Total Leads", icon: Users },
-  { key: "activeApplications", label: "Active Applications", icon: Activity },
-  { key: "partnerLeads", label: "Partner Leads", icon: Building2 },
-  { key: "studentDirectLeads", label: "Student-Direct", icon: GraduationCap },
-  { key: "pendingReview", label: "Pending Review", icon: ClipboardList },
+  { key: "totalLeads", label: "Total Leads", icon: Users, tone: "primary" },
+  { key: "pendingAdminActions", label: "Pending Admin Actions", icon: Inbox, tone: "amber" },
+  { key: "requestsPendingApproval", label: "Requests Pending", icon: ClipboardCheck, tone: "amber" },
+  { key: "documentsPendingReview", label: "Docs to Verify", icon: FileSearch, tone: "amber" },
+  { key: "sentToLender", label: "Sent to Lender", icon: Send, tone: "primary" },
+  { key: "sanctionReceived", label: "Sanction Received", icon: BadgeCheck, tone: "emerald" },
+  { key: "disbursed", label: "Disbursed", icon: Banknote, tone: "emerald" },
+  { key: "activePartners", label: "Active Partners", icon: Building2, tone: "primary" },
 ] as const;
+
+const toneStyles: Record<string, { bg: string; fg: string }> = {
+  primary: { bg: "bg-primary/10", fg: "text-primary" },
+  amber: { bg: "bg-amber-100", fg: "text-amber-700" },
+  emerald: { bg: "bg-emerald-100", fg: "text-emerald-700" },
+};
 
 export function AdminTopMetrics({ data, loading, error, onRetry }: Props) {
   if (error) {
@@ -40,22 +52,25 @@ export function AdminTopMetrics({ data, loading, error, onRetry }: Props) {
   }
 
   return (
-    <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+    <div className="grid gap-3 grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8">
       {cards.map((c) => {
         const value = data ? (data as any)[c.key] : null;
+        const tone = toneStyles[c.tone];
         return (
-          <Card key={c.key} className="p-4">
-            <div className="flex items-start justify-between">
-              <div className="space-y-1.5">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{c.label}</p>
+          <Card key={c.key} className="p-3.5">
+            <div className="flex items-start justify-between gap-2">
+              <div className="space-y-1 min-w-0">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide leading-tight">
+                  {c.label}
+                </p>
                 {loading || value === null ? (
-                  <Skeleton className="h-8 w-16" />
+                  <Skeleton className="h-7 w-12" />
                 ) : (
-                  <p className="text-2xl font-bold tabular-nums">{value.toLocaleString("en-IN")}</p>
+                  <p className="text-xl font-bold tabular-nums">{value.toLocaleString("en-IN")}</p>
                 )}
               </div>
-              <div className="rounded-lg bg-primary/10 p-2">
-                <c.icon className="h-4 w-4 text-primary" />
+              <div className={`rounded-md ${tone.bg} p-1.5 shrink-0`}>
+                <c.icon className={`h-3.5 w-3.5 ${tone.fg}`} />
               </div>
             </div>
           </Card>

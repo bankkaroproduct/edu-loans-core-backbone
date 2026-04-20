@@ -4,9 +4,7 @@ import { RefreshCw, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import { AdminTopMetrics } from "@/components/admin/AdminTopMetrics";
-import { AdminPipelineSnapshot } from "@/components/admin/AdminPipelineSnapshot";
 import { AdminLeadQueue } from "@/components/admin/AdminLeadQueue";
-import { AdminSystemAlerts } from "@/components/admin/AdminSystemAlerts";
 import { AdminQuickActions } from "@/components/admin/AdminQuickActions";
 import { AdminRequestsSnapshot } from "@/components/admin/AdminRequestsSnapshot";
 import { formatDistanceToNow } from "date-fns";
@@ -14,7 +12,7 @@ import { formatDistanceToNow } from "date-fns";
 export default function AdminDashboard() {
   const { appUser } = useAuth();
   const {
-    metrics, pipeline, queue, alerts,
+    metrics, pipeline, queue,
     filters, setFilters,
     lastRefreshedAt, refreshAll,
   } = useAdminDashboard();
@@ -53,11 +51,14 @@ export default function AdminDashboard() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <AdminPipelineSnapshot
-            data={pipeline.data}
-            loading={pipeline.loading}
-            error={pipeline.error}
+          <AdminLeadQueue
+            data={queue.data}
+            loading={queue.loading}
+            error={queue.error}
             onRetry={refreshAll}
+            filters={filters}
+            onFiltersChange={setFilters}
+            pipelineStages={pipeline.data}
           />
         </div>
         <div className="space-y-6">
@@ -65,23 +66,6 @@ export default function AdminDashboard() {
           <AdminQuickActions />
         </div>
       </div>
-
-      <AdminLeadQueue
-        data={queue.data}
-        loading={queue.loading}
-        error={queue.error}
-        onRetry={refreshAll}
-        filters={filters}
-        onFiltersChange={setFilters}
-        pipelineStages={pipeline.data}
-      />
-
-      <AdminSystemAlerts
-        data={alerts.data}
-        loading={alerts.loading}
-        error={alerts.error}
-        onRetry={refreshAll}
-      />
     </div>
   );
 }
