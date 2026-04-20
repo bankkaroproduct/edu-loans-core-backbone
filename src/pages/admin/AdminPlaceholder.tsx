@@ -10,7 +10,7 @@ interface AdminPlaceholderProps {
 
 export default function AdminPlaceholder({ title, description }: AdminPlaceholderProps) {
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 max-w-screen-2xl mx-auto">
       <PageHeader
         title={title}
         description={description ?? "This module is part of the Admin Portal foundation. Full functionality ships in upcoming prompts."}
