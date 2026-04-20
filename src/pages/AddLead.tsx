@@ -19,6 +19,7 @@ import { LeadSuccessDialog } from "@/components/leads/LeadSuccessDialog";
 import { toast } from "sonner";
 import { ArrowLeft, FileText, User, GraduationCap, Wallet, MessageSquare, Eye } from "lucide-react";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phone";
+import { useRoleAccess } from "@/hooks/useRoleAccess";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Country = Tables<"countries_master">;
