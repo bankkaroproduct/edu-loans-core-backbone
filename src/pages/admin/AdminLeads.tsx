@@ -231,6 +231,48 @@ export default function AdminLeads() {
 
   useEffect(() => { fetchPage(); }, [fetchPage]);
 
+  // Fetch filter-aware health counts (lightweight head:true).
+  // Total = current filters; the others = current filters with their own stage/status override.
+  const fetchHealthCounts = useCallback(async () => {
+    const buildCount = (overrideStage?: StageEnum, overrideStatuses?: StatusEnum[]) => {
+      let q: any = supabase.from("student_leads")
+        .select("*", { count: "exact", head: true })
+        .eq("is_archived", false);
+      if (filters.source !== "all") q = q.eq("source_type", filters.source);
+      if (overrideStage) q = q.eq("current_stage", overrideStage);
+      else if (filters.stage !== "all") q = q.eq("current_stage", filters.stage);
+      if (overrideStatuses) q = q.in("current_status", overrideStatuses);
+      else if (filters.status !== "all") q = q.eq("current_status", filters.status);
+      if (filters.country !== "all") q = q.eq("intended_study_country", filters.country);
+      if (filters.partnerId !== "all") q = q.eq("partner_id", filters.partnerId);
+      if (filters.dateFrom) q = q.gte("created_at", filters.dateFrom.toISOString());
+      if (filters.dateTo) {
+        const end = new Date(filters.dateTo);
+        end.setHours(23, 59, 59, 999);
+        q = q.lte("created_at", end.toISOString());
+      }
+      const t = sanitizeSearch(filters.search);
+      if (t) {
+        q = q.or(`student_full_name.ilike.%${t}%,student_first_name.ilike.%${t}%,student_last_name.ilike.%${t}%,student_phone.ilike.%${t}%,lead_id.ilike.%${t}%`);
+      }
+      return q;
+    };
+    const [tot, pend, lender, sanc] = await Promise.all([
+      buildCount(),
+      buildCount(undefined, ["new", "awaiting_verification", "pending_info"] as StatusEnum[]),
+      buildCount("sent_to_lender" as StageEnum),
+      buildCount("sanction_received" as StageEnum),
+    ]);
+    setHealthCounts({
+      total: tot.count ?? 0,
+      pendingReview: pend.count ?? 0,
+      withLender: lender.count ?? 0,
+      sanction: sanc.count ?? 0,
+    });
+  }, [filters]);
+
+  useEffect(() => { fetchHealthCounts(); }, [fetchHealthCounts]);
+
   // Realtime: debounced refresh on student_leads changes
   useEffect(() => {
     let t: ReturnType<typeof setTimeout> | null = null;
