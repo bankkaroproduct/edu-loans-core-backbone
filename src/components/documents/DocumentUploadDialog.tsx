@@ -5,10 +5,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Upload, FileText, AlertTriangle, X, RotateCcw, Loader2 } from "lucide-react";
+import { Upload, FileText, AlertTriangle, X, RotateCcw, Loader2, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { DocRequirement } from "@/pages/LeadDocuments";
+import { getReferenceName, subjectForApplicableFor, type LeadNameFields } from "@/lib/referenceName";
+import { displayDocName, softBlockMessage } from "@/lib/docCopy";
 
 const ACCEPTED_TYPES = ["application/pdf", "image/jpeg", "image/png", "image/jpg"];
 const ACCEPTED_EXTENSIONS = ".pdf,.jpg,.jpeg,.png";
