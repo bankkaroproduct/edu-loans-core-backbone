@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
-  Users, Inbox, ClipboardCheck, FileSearch, Send, BadgeCheck, Banknote, Building2,
+  Inbox, TrendingUp, BadgeCheck, Network,
   AlertCircle, RefreshCw,
 } from "lucide-react";
 import type { AdminMetrics } from "@/hooks/useAdminDashboard";
@@ -12,26 +12,10 @@ interface Props {
   loading: boolean;
   error: string | null;
   onRetry: () => void;
+  activeLendersCount?: number;
 }
 
-const cards = [
-  { key: "totalLeads", label: "Total Leads", icon: Users, tone: "primary" },
-  { key: "pendingAdminActions", label: "Pending Admin Actions", icon: Inbox, tone: "amber" },
-  { key: "requestsPendingApproval", label: "Requests Pending", icon: ClipboardCheck, tone: "amber" },
-  { key: "documentsPendingReview", label: "Docs to Verify", icon: FileSearch, tone: "amber" },
-  { key: "sentToLender", label: "Sent to Lender", icon: Send, tone: "primary" },
-  { key: "sanctionReceived", label: "Sanction Received", icon: BadgeCheck, tone: "emerald" },
-  { key: "disbursed", label: "Disbursed", icon: Banknote, tone: "emerald" },
-  { key: "activePartners", label: "Active Partners", icon: Building2, tone: "primary" },
-] as const;
-
-const toneStyles: Record<string, { bg: string; fg: string }> = {
-  primary: { bg: "bg-primary/10", fg: "text-primary" },
-  amber: { bg: "bg-amber-100", fg: "text-amber-700" },
-  emerald: { bg: "bg-emerald-100", fg: "text-emerald-700" },
-};
-
-export function AdminTopMetrics({ data, loading, error, onRetry }: Props) {
+export function AdminTopMetrics({ data, loading, error, onRetry, activeLendersCount }: Props) {
   if (error) {
     return (
       <Card className="p-6 border-destructive/30 bg-destructive/5">
@@ -51,31 +35,71 @@ export function AdminTopMetrics({ data, loading, error, onRetry }: Props) {
     );
   }
 
+  const fmt = (n: number | null | undefined) =>
+    n === null || n === undefined ? "—" : n.toLocaleString("en-IN");
+
+  const cards = [
+    {
+      label: "Action needed today",
+      value: data?.pendingAdminActions,
+      sub: data
+        ? `Requests: ${fmt(data.requestsPendingApproval)} • Docs: ${fmt(data.documentsPendingReview)}`
+        : "—",
+      icon: Inbox,
+      tone: { bg: "bg-amber-100", fg: "text-amber-700" },
+    },
+    {
+      label: "Active pipeline",
+      value: data?.totalLeads,
+      sub: data
+        ? `Sent to lender: ${fmt(data.sentToLender)} • Sanctioned: ${fmt(data.sanctionReceived)}`
+        : "—",
+      icon: TrendingUp,
+      tone: { bg: "bg-primary/10", fg: "text-primary" },
+    },
+    {
+      label: "Closed",
+      value: data?.disbursed,
+      sub: "Disbursed (lifetime)",
+      icon: BadgeCheck,
+      tone: { bg: "bg-emerald-100", fg: "text-emerald-700" },
+    },
+    {
+      label: "Network",
+      value: data?.activePartners,
+      sub:
+        activeLendersCount !== undefined
+          ? `Active partners • ${fmt(activeLendersCount)} active lenders`
+          : "Active partners",
+      icon: Network,
+      tone: { bg: "bg-primary/10", fg: "text-primary" },
+    },
+  ];
+
   return (
-    <div className="grid gap-3 grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8">
-      {cards.map((c) => {
-        const value = data ? (data as any)[c.key] : null;
-        const tone = toneStyles[c.tone];
-        return (
-          <Card key={c.key} className="p-3.5">
-            <div className="flex items-start justify-between gap-2">
-              <div className="space-y-1 min-w-0">
-                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide leading-tight">
-                  {c.label}
-                </p>
-                {loading || value === null ? (
-                  <Skeleton className="h-7 w-12" />
-                ) : (
-                  <p className="text-xl font-bold tabular-nums">{value.toLocaleString("en-IN")}</p>
-                )}
-              </div>
-              <div className={`rounded-md ${tone.bg} p-1.5 shrink-0`}>
-                <c.icon className={`h-3.5 w-3.5 ${tone.fg}`} />
-              </div>
+    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+      {cards.map((c) => (
+        <Card key={c.label} className="p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="space-y-1.5 min-w-0 flex-1">
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide leading-tight">
+                {c.label}
+              </p>
+              {loading || c.value === null || c.value === undefined ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                <p className="text-2xl font-bold tabular-nums leading-none">{fmt(c.value)}</p>
+              )}
+              <p className="text-[11px] text-muted-foreground leading-tight truncate" title={c.sub}>
+                {c.sub}
+              </p>
             </div>
-          </Card>
-        );
-      })}
+            <div className={`rounded-md ${c.tone.bg} p-2 shrink-0`}>
+              <c.icon className={`h-4 w-4 ${c.tone.fg}`} />
+            </div>
+          </div>
+        </Card>
+      ))}
     </div>
   );
 }

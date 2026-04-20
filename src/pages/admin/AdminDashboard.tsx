@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RefreshCw, Shield } from "lucide-react";
@@ -5,9 +6,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import { AdminTopMetrics } from "@/components/admin/AdminTopMetrics";
 import { AdminLeadQueue } from "@/components/admin/AdminLeadQueue";
-import { AdminQuickActions } from "@/components/admin/AdminQuickActions";
 import { AdminRequestsSnapshot } from "@/components/admin/AdminRequestsSnapshot";
 import { formatDistanceToNow } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function AdminDashboard() {
   const { appUser } = useAuth();
@@ -16,24 +17,32 @@ export default function AdminDashboard() {
     filters, setFilters,
     lastRefreshedAt, refreshAll,
   } = useAdminDashboard();
+  const [activeLendersCount, setActiveLendersCount] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { count } = await supabase
+        .from("lenders")
+        .select("*", { count: "exact", head: true })
+        .eq("active_flag", true);
+      if (!cancelled) setActiveLendersCount(count ?? 0);
+    })();
+    return () => { cancelled = true; };
+  }, [lastRefreshedAt]);
 
   return (
     <div className="space-y-6 max-w-screen-2xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Shield className="h-5 w-5 text-primary" />
-            <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-            <Badge variant="outline" className="text-[10px]">
-              {appUser?.role?.replace(/_/g, " ").toUpperCase()}
-            </Badge>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Cross-partner control layer • Live data from student & partner pipelines
-          </p>
+        <div className="flex items-center gap-2">
+          <Shield className="h-5 w-5 text-primary" />
+          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+          <Badge variant="outline" className="text-[10px]">
+            {appUser?.role?.replace(/_/g, " ").toUpperCase()}
+          </Badge>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-muted-foreground hidden sm:inline">
+          <span className="text-xs text-muted-foreground">
             Updated {formatDistanceToNow(lastRefreshedAt, { addSuffix: true })}
           </span>
           <Button variant="outline" size="sm" onClick={refreshAll}>
@@ -47,6 +56,7 @@ export default function AdminDashboard() {
         loading={metrics.loading}
         error={metrics.error}
         onRetry={refreshAll}
+        activeLendersCount={activeLendersCount}
       />
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -59,11 +69,11 @@ export default function AdminDashboard() {
             filters={filters}
             onFiltersChange={setFilters}
             pipelineStages={pipeline.data}
+            metrics={metrics.data}
           />
         </div>
-        <div className="space-y-6">
+        <div>
           <AdminRequestsSnapshot />
-          <AdminQuickActions />
         </div>
       </div>
     </div>
