@@ -19,6 +19,7 @@ import AdminEditRequests from "./pages/admin/AdminEditRequests";
 import AdminMasterData from "./pages/admin/AdminMasterData";
 import AdminPartners from "./pages/admin/AdminPartners";
 import AdminLenders from "./pages/admin/AdminLenders";
+import AdminReports from "./pages/admin/AdminReports";
 import AdminAddLead from "./pages/admin/AdminAddLead";
 import AdminBulkUpload from "./pages/admin/AdminBulkUpload";
 import Login from "./pages/Login";
@@ -93,6 +94,7 @@ const App = () => (
             <Route path="/admin/master-data" element={<AdminRoute><AdminMasterData /></AdminRoute>} />
             <Route path="/admin/partners" element={<AdminRoute><AdminPartners /></AdminRoute>} />
             <Route path="/admin/lenders" element={<AdminRoute><AdminLenders /></AdminRoute>} />
+            <Route path="/admin/reports" element={<AdminRoute><AdminReports /></AdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </StudentAuthProvider>
