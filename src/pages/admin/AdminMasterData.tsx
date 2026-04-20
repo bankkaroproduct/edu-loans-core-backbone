@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { PageSkeleton } from "@/components/shared/PageSkeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,17 +10,40 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Database, Search, Plus, Pencil, Power, AlertTriangle } from "lucide-react";
+import { Database, Search, Plus, Pencil, Power, AlertTriangle, Upload } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { MASTER_SCHEMAS, MASTER_KEYS, MasterSchema, COUNTRY_OPTIONS } from "@/lib/masterSchemas";
 import { MasterRecordDrawer } from "@/components/admin/MasterRecordDrawer";
+import { MasterBulkUploadDialog, MASTER_UPLOAD_SPECS } from "@/components/admin/MasterBulkUploadDialog";
 
 type StatusFilter = "all" | "active" | "inactive";
 
+/** Safe v1 masters that support bulk upload. Sensitive masters (documents, lifecycle) are excluded. */
+const BULK_UPLOAD_KEYS = new Set(Object.keys(MASTER_UPLOAD_SPECS));
+
 export default function AdminMasterData() {
-  const [activeKey, setActiveKey] = useState<string>(MASTER_KEYS[0]);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab");
+  const [activeKey, setActiveKey] = useState<string>(
+    initialTab && MASTER_KEYS.includes(initialTab) ? initialTab : MASTER_KEYS[0]
+  );
   const schema = MASTER_SCHEMAS[activeKey];
+
+  const handleTabChange = (k: string) => {
+    setActiveKey(k);
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", k);
+    setSearchParams(next, { replace: true });
+  };
+
+  // Sync state when URL changes externally (e.g. sidebar deep-link)
+  useEffect(() => {
+    const urlTab = searchParams.get("tab");
+    if (urlTab && MASTER_KEYS.includes(urlTab) && urlTab !== activeKey) {
+      setActiveKey(urlTab);
+    }
+  }, [searchParams, activeKey]);
 
   return (
     <div className="space-y-6 max-w-screen-2xl mx-auto">
@@ -28,7 +52,7 @@ export default function AdminMasterData() {
         description="Manage system reference data — countries, universities, courses, lifecycle, documents."
       />
 
-      <Tabs value={activeKey} onValueChange={setActiveKey}>
+      <Tabs value={activeKey} onValueChange={handleTabChange}>
         <TabsList className="flex w-full flex-wrap h-auto gap-1 bg-muted p-1">
           {MASTER_KEYS.map((k) => (
             <TabsTrigger key={k} value={k} className="text-xs flex-1 min-w-[110px]">
@@ -38,18 +62,19 @@ export default function AdminMasterData() {
         </TabsList>
       </Tabs>
 
-      <MasterDataTable schema={schema} key={activeKey} />
+      <MasterDataTable schema={schema} key={activeKey} bulkUploadEnabled={BULK_UPLOAD_KEYS.has(activeKey)} />
     </div>
   );
 }
 
-function MasterDataTable({ schema }: { schema: MasterSchema }) {
+function MasterDataTable({ schema, bulkUploadEnabled }: { schema: MasterSchema; bulkUploadEnabled: boolean }) {
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [countryFilter, setCountryFilter] = useState<string>("all");
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -147,9 +172,16 @@ function MasterDataTable({ schema }: { schema: MasterSchema }) {
                 </Select>
               )}
             </div>
-            <Button onClick={openCreate} size="sm">
-              <Plus className="h-4 w-4 mr-1.5" /> {schema.addLabel}
-            </Button>
+            <div className="flex items-center gap-2">
+              {bulkUploadEnabled && (
+                <Button onClick={() => setBulkOpen(true)} size="sm" variant="outline">
+                  <Upload className="h-4 w-4 mr-1.5" /> Bulk Upload
+                </Button>
+              )}
+              <Button onClick={openCreate} size="sm">
+                <Plus className="h-4 w-4 mr-1.5" /> {schema.addLabel}
+              </Button>
+            </div>
           </div>
 
           <div className="text-xs text-muted-foreground">
@@ -225,6 +257,15 @@ function MasterDataTable({ schema }: { schema: MasterSchema }) {
         record={editing}
         onSaved={() => setRefreshKey((k) => k + 1)}
       />
+
+      {bulkUploadEnabled && (
+        <MasterBulkUploadDialog
+          open={bulkOpen}
+          onOpenChange={setBulkOpen}
+          masterKey={schema.key}
+          onComplete={() => setRefreshKey((k) => k + 1)}
+        />
+      )}
     </div>
   );
 }
