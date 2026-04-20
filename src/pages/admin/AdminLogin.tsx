@@ -66,7 +66,7 @@ export default function AdminLogin() {
 
     const { data: profile } = await supabase
       .from("users")
-      .select("role")
+      .select("role, is_active")
       .eq("auth_user_id", authId)
       .maybeSingle();
 
@@ -75,6 +75,12 @@ export default function AdminLogin() {
       // Reject — sign out so we don't leave a partner session lingering on /admin/login.
       await supabase.auth.signOut();
       setErrorMsg("This account is not authorised for the Admin Portal. Please use the Partner Portal sign-in.");
+      setSubmitting(false);
+      return;
+    }
+    if (profile && profile.is_active === false) {
+      await supabase.auth.signOut();
+      setErrorMsg("This admin account is deactivated. Please contact a super admin.");
       setSubmitting(false);
       return;
     }
