@@ -47,7 +47,7 @@ export function LeadEditRequestHistory({ requests }: Props) {
           <Badge variant="outline" className="ml-1 text-xs">{requests.length}</Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent className="pt-0 space-y-2">
+      <CardContent className="pt-0 space-y-2.5">
         {requests.map((r) => {
           const isOpen = expanded.has(r.id);
           const status = STATUS_VARIANT[r.status] ?? STATUS_VARIANT.pending;
@@ -58,29 +58,29 @@ export function LeadEditRequestHistory({ requests }: Props) {
             <div key={r.id} className="border rounded-md">
               <button
                 onClick={() => toggle(r.id)}
-                className="w-full flex items-center gap-2 p-2.5 text-left hover:bg-muted/40 transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-muted/40 transition-colors"
               >
-                {isOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                {isOpen ? <ChevronDown className="h-3.5 w-3.5 shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 shrink-0" />}
                 <span className="text-xs font-medium">{keys.length} field{keys.length !== 1 ? "s" : ""}</span>
                 <Badge variant="outline" className={`text-[10px] ${status.cls}`}>{status.label}</Badge>
                 <span className="text-xs text-muted-foreground ml-auto">{new Date(r.created_at).toLocaleString()}</span>
               </button>
               {isOpen && (
-                <div className="px-3 pb-3 pt-1 space-y-2 text-xs border-t">
+                <div className="px-3 pb-3 pt-2 space-y-2 text-xs border-t">
                   {r.partner_reason && (
                     <div>
                       <span className="text-muted-foreground">Reason: </span>
                       <span>{r.partner_reason}</span>
                     </div>
                   )}
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     {keys.map((k) => {
                       const wasApplied = r.status === "applied" && k in applied;
                       return (
-                        <div key={k} className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center">
+                        <div key={k} className="grid grid-cols-[minmax(140px,1fr)_16px_minmax(140px,1fr)] gap-2 items-start">
                           <span className="text-muted-foreground truncate">{getFieldLabel(k)}</span>
-                          <span className="text-muted-foreground">→</span>
-                          <span className={wasApplied ? "text-emerald-700 font-medium" : r.status === "rejected" ? "line-through text-muted-foreground" : ""}>
+                          <span className="text-muted-foreground text-center">→</span>
+                          <span className={`break-words ${wasApplied ? "text-emerald-700 font-medium" : r.status === "rejected" ? "line-through text-muted-foreground" : ""}`}>
                             {fmtVal(changes[k])}
                             {r.status === "applied" && !wasApplied && <span className="ml-1 text-[10px] text-muted-foreground">(not applied)</span>}
                           </span>
@@ -89,7 +89,7 @@ export function LeadEditRequestHistory({ requests }: Props) {
                     })}
                   </div>
                   {r.admin_decision_note && (
-                    <div className="pt-1 border-t">
+                    <div className="pt-2 border-t">
                       <span className="text-muted-foreground">Admin note: </span>
                       <span>{r.admin_decision_note}</span>
                     </div>

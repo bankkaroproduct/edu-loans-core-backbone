@@ -81,8 +81,12 @@ export function AdminSidebar() {
                       className="hover:bg-sidebar-accent/50"
                       activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
                     >
-                      <item.icon className="mr-2 h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                      <item.icon className="mr-2 h-4 w-4 shrink-0" />
+                      {!collapsed && (
+                        <span className="flex items-center justify-between w-full">
+                          <span className="truncate">{item.title}</span>
+                        </span>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

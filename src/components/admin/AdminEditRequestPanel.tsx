@@ -108,36 +108,36 @@ export function AdminEditRequestPanel({ leadId, onChanged }: Props) {
 
   return (
     <Card className="border-amber-300">
-      <CardHeader className="py-3 bg-amber-50/60">
+      <CardHeader className="py-3 bg-amber-50/60 border-b border-amber-200">
         <CardTitle className="text-sm flex items-center gap-2 text-amber-900">
-          <ClipboardCheck className="h-4 w-4" /> Pending Edit Request
+          <ClipboardCheck className="h-4 w-4 shrink-0" /> Pending Edit Request
           <Badge variant="outline" className="border-amber-400 text-amber-900 bg-amber-100 ml-1">{fields.length} field{fields.length !== 1 ? "s" : ""}</Badge>
           <span className="ml-auto text-xs font-normal text-muted-foreground">{new Date(request.created_at).toLocaleString()}</span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3 pt-3">
+      <CardContent className="space-y-4 pt-4">
         {request.partner_reason && (
           <div className="text-xs">
             <span className="text-muted-foreground">Partner reason: </span>
             <span>{request.partner_reason}</span>
           </div>
         )}
-        <div className="border rounded-md divide-y">
-          <div className="grid grid-cols-[24px_1fr_1fr_1fr] gap-2 px-3 py-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+        <div className="border rounded-md divide-y overflow-x-auto">
+          <div className="grid grid-cols-[24px_minmax(140px,1.2fr)_minmax(140px,1.4fr)_minmax(140px,1.4fr)] gap-2 px-3 py-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wide min-w-[560px]">
             <span></span>
             <span>Field</span>
             <span>Current</span>
             <span>Requested</span>
           </div>
           {fields.map((k) => (
-            <label key={k} className="grid grid-cols-[24px_1fr_1fr_1fr] gap-2 px-3 py-2 text-xs items-center hover:bg-muted/30 cursor-pointer">
+            <label key={k} className="grid grid-cols-[24px_minmax(140px,1.2fr)_minmax(140px,1.4fr)_minmax(140px,1.4fr)] gap-2 px-3 py-2 text-xs items-center hover:bg-muted/30 cursor-pointer min-w-[560px]">
               <Checkbox
                 checked={approved[k] ?? false}
                 onCheckedChange={(v) => setApproved((s) => ({ ...s, [k]: Boolean(v) }))}
               />
-              <span className="font-medium">{getFieldLabel(k)}</span>
-              <span className="text-muted-foreground truncate">{fmtVal(lead?.[k])}</span>
-              <span className="text-emerald-700 truncate">{fmtVal(changes[k])}</span>
+              <span className="font-medium truncate">{getFieldLabel(k)}</span>
+              <span className="text-muted-foreground truncate" title={fmtVal(lead?.[k])}>{fmtVal(lead?.[k])}</span>
+              <span className="text-emerald-700 truncate" title={fmtVal(changes[k])}>{fmtVal(changes[k])}</span>
             </label>
           ))}
         </div>
@@ -152,7 +152,7 @@ export function AdminEditRequestPanel({ leadId, onChanged }: Props) {
           />
         </div>
 
-        <div className="flex items-center justify-between gap-2 pt-1">
+        <div className="flex items-center justify-between gap-3 pt-3 border-t">
           <span className="text-xs text-muted-foreground">{checkedCount} of {fields.length} field(s) selected</span>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handleReject} disabled={busy}>
