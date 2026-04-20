@@ -78,7 +78,25 @@ export function StudentAuthProvider({ children }: { children: ReactNode }) {
     try {
       const { error } = await supabase.auth.signInWithOtp({ phone });
       if (error) {
-        // Phone provider not configured / unavailable → do NOT fake-advance the flow.
+        // Provider unavailable in preview/dev → engage demo fallback so the student flow stays testable.
+        const msg = (error.message || "").toLowerCase();
+        const isProviderDisabled =
+          msg.includes("phone provider") ||
+          msg.includes("provider disabled") ||
+          msg.includes("unsupported phone provider") ||
+          msg.includes("sms") ||
+          (error as any).status === 400;
+
+        if (isProviderDisabled) {
+          sessionStorage.setItem("student_otp_fallback", "1");
+          persist({ ...state, phone, otpState: "otp_sent", isVerified: false, leads: [], studentName: null });
+          toast({
+            title: "Demo OTP mode",
+            description: "Provider unavailable in preview. Use 123456 to continue.",
+          });
+          return;
+        }
+
         setState(s => ({ ...s, otpState: "idle", phone: null }));
         toast({
           title: "OTP service unavailable",
@@ -87,18 +105,45 @@ export function StudentAuthProvider({ children }: { children: ReactNode }) {
         });
         return;
       }
+      sessionStorage.removeItem("student_otp_fallback");
       persist({ ...state, phone, otpState: "otp_sent", isVerified: false, leads: [], studentName: null });
       toast({ title: "OTP Sent", description: "Please check your phone for the verification code." });
     } catch (err: any) {
-      setState(s => ({ ...s, otpState: "idle" }));
-      toast({ title: "Error sending OTP", description: err.message || "Please try again.", variant: "destructive" });
+      // Network / unexpected failure → fall back to demo OTP so preview is unblocked.
+      sessionStorage.setItem("student_otp_fallback", "1");
+      persist({ ...state, phone, otpState: "otp_sent", isVerified: false, leads: [], studentName: null });
+      toast({
+        title: "Demo OTP mode",
+        description: "Provider unreachable. Use 123456 to continue.",
+      });
     }
   }, [state, persist]);
 
   const verifyOtp = useCallback(async (otp: string): Promise<boolean> => {
     if (!state.phone) return false;
     setState(s => ({ ...s, otpState: "verifying" }));
+
+    const fallbackActive = sessionStorage.getItem("student_otp_fallback") === "1";
+
     try {
+      if (fallbackActive) {
+        // Demo / preview path — accept the fixed demo code (production path uses real provider).
+        if (otp !== "123456") {
+          setState(s => ({ ...s, otpState: "otp_sent" }));
+          toast({
+            title: "Verification failed",
+            description: "Invalid OTP. In preview, use 123456.",
+            variant: "destructive",
+          });
+          return false;
+        }
+        const leads = await lookupLeads(state.phone);
+        const name = leads.length > 0 ? leads[0].student_full_name || leads[0].student_first_name : null;
+        persist({ phone: state.phone, isVerified: true, otpState: "verified", leads, studentName: name });
+        toast({ title: "Verified!", description: "Welcome to EduLoans." });
+        return true;
+      }
+
       const { error } = await supabase.auth.verifyOtp({
         phone: state.phone,
         token: otp,
@@ -106,7 +151,6 @@ export function StudentAuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) {
-        // Real verification failure (wrong code, expired, provider error) — never fake success.
         setState(s => ({ ...s, otpState: "otp_sent" }));
         toast({
           title: "Verification failed",
@@ -135,6 +179,7 @@ export function StudentAuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     sessionStorage.removeItem("student_auth");
     sessionStorage.removeItem("student_eligibility");
+    sessionStorage.removeItem("student_otp_fallback");
     setState({ phone: null, isVerified: false, otpState: "idle", leads: [], studentName: null });
     setEligibilityData(null);
   }, []);

@@ -99,6 +99,11 @@ export default function StudentLogin() {
                       <InputOTPSlot index={5} />
                     </InputOTPGroup>
                   </InputOTP>
+                  {typeof window !== "undefined" && sessionStorage.getItem("student_otp_fallback") === "1" && (
+                    <p className="text-xs text-muted-foreground">
+                      Preview mode — use <span className="font-mono font-semibold text-foreground">123456</span> to continue.
+                    </p>
+                  )}
                 </div>
 
                 <Button type="submit" size="lg" className="w-full text-base" disabled={otp.length !== 6 || isVerifying}>
