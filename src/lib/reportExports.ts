@@ -204,7 +204,7 @@ export async function fetchLeadsReport(f: ReportFilterState): Promise<ReportResu
   if (error) return { rows: [], count: 0, capped: false, error: error.message };
 
   // Partner enrichment
-  const partnerIds = Array.from(new Set((data ?? []).map((r: any) => r.partner_id as string).filter(Boolean)));
+  const partnerIds = Array.from(new Set((data ?? []).map((r: any) => r.partner_id as string).filter(Boolean))) as string[];
   const partnerMap = new Map<string, string>();
   if (partnerIds.length) {
     const { data: pData } = await supabase
@@ -264,7 +264,7 @@ export async function fetchStageMovementReport(f: ReportFilterState): Promise<Re
   if (error) return { rows: [], count: 0, capped: false, error: error.message };
 
   // Enrich with student name + partner
-  const leadIds = Array.from(new Set((data ?? []).map((r: any) => r.lead_id as string)));
+  const leadIds = Array.from(new Set((data ?? []).map((r: any) => r.lead_id as string))) as string[];
   const leadMap = new Map<string, { name: string; partnerId: string | null; lead_id: string | null }>();
   if (leadIds.length) {
     const { data: lData } = await supabase
@@ -331,7 +331,7 @@ export async function fetchDocumentsPendingReport(f: ReportFilterState): Promise
   const { data, error } = await q;
   if (error) return { rows: [], count: 0, capped: false, error: error.message };
 
-  const leadIds = Array.from(new Set((data ?? []).map((r: any) => r.lead_id as string)));
+  const leadIds = Array.from(new Set((data ?? []).map((r: any) => r.lead_id as string))) as string[];
   const leadMap = new Map<string, { name: string; partnerId: string | null; lead_id: string | null; archived: boolean }>();
   if (leadIds.length) {
     const { data: lData } = await supabase
@@ -360,7 +360,7 @@ export async function fetchDocumentsPendingReport(f: ReportFilterState): Promise
     (pData ?? []).forEach((p) => partnerMap.set(p.id, p.display_name ?? ""));
   }
 
-  const docTypeIds = Array.from(new Set((data ?? []).map((r: any) => r.document_type_id as string).filter(Boolean)));
+  const docTypeIds = Array.from(new Set((data ?? []).map((r: any) => r.document_type_id as string).filter(Boolean))) as string[];
   const docNameMap = new Map<string, string>();
   if (docTypeIds.length) {
     const { data: dData } = await supabase
@@ -414,7 +414,7 @@ export async function fetchEditRequestsReport(f: ReportFilterState): Promise<Rep
   const { data, error } = await q;
   if (error) return { rows: [], count: 0, capped: false, error: error.message };
 
-  const leadIds = Array.from(new Set((data ?? []).map((r: any) => r.lead_id as string)));
+  const leadIds = Array.from(new Set((data ?? []).map((r: any) => r.lead_id as string))) as string[];
   const leadMap = new Map<string, string>();
   if (leadIds.length) {
     const { data: lData } = await supabase
@@ -423,7 +423,7 @@ export async function fetchEditRequestsReport(f: ReportFilterState): Promise<Rep
       .in("id", leadIds);
     (lData ?? []).forEach((l: any) => leadMap.set(l.id, l.lead_id ?? ""));
   }
-  const partnerIds = Array.from(new Set((data ?? []).map((r: any) => r.partner_id as string).filter(Boolean)));
+  const partnerIds = Array.from(new Set((data ?? []).map((r: any) => r.partner_id as string).filter(Boolean))) as string[];
   const partnerMap = new Map<string, string>();
   if (partnerIds.length) {
     const { data: pData } = await supabase
@@ -432,7 +432,7 @@ export async function fetchEditRequestsReport(f: ReportFilterState): Promise<Rep
       .in("id", partnerIds);
     (pData ?? []).forEach((p) => partnerMap.set(p.id, p.display_name ?? ""));
   }
-  const userIds = Array.from(new Set((data ?? []).map((r: any) => r.requested_by_user_id as string).filter(Boolean)));
+  const userIds = Array.from(new Set((data ?? []).map((r: any) => r.requested_by_user_id as string).filter(Boolean))) as string[];
   const userMap = new Map<string, string>();
   if (userIds.length) {
     const { data: uData } = await supabase.from("users").select("id, full_name").in("id", userIds);
