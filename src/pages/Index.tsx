@@ -12,7 +12,6 @@ import { YourLeads } from "@/components/dashboard/YourLeads";
 import { DocumentSnapshot, type DocSummary } from "@/components/dashboard/DocumentSnapshot";
 import { BulkUploadSnapshot } from "@/components/dashboard/BulkUploadSnapshot";
 import { PayoutSnapshot, type PayoutSummary } from "@/components/dashboard/PayoutSnapshot";
-import { ActivityFeed, type ActivityItem } from "@/components/dashboard/ActivityFeed";
 import { SystemHelp } from "@/components/dashboard/SystemHelp";
 import { OnboardingEmptyState } from "@/components/dashboard/OnboardingEmptyState";
 
@@ -176,47 +175,6 @@ export default function Dashboard() {
     };
   }, [payoutRecords]);
 
-  const activityItems = useMemo<ActivityItem[]>(() => {
-    const items: ActivityItem[] = [];
-    stageHistory.slice(0, 20).forEach((h) => {
-      const lead = leads.find((l) => l.id === h.lead_id);
-      const stageLabel = h.new_stage.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-      items.push({
-        id: `stage-${h.id}`, label: "Stage Changed", leadId: lead?.lead_id ?? null,
-        description: `${h.previous_stage ? h.previous_stage.replace(/_/g, " ") : "—"} → ${stageLabel}`,
-        timestamp: h.created_at, actor: h.changed_by_role ? h.changed_by_role.replace(/_/g, " ") : "System",
-        category: "stage", entityId: lead?.id ?? null,
-      });
-    });
-    notes.filter((n) => n.note_type !== "internal").slice(0, 10).forEach((n) => {
-      const lead = leads.find((l) => l.id === n.lead_id);
-      items.push({
-        id: `note-${n.id}`, label: "Note Added", leadId: lead?.lead_id ?? null,
-        description: n.note_text.length > 80 ? n.note_text.slice(0, 80) + "…" : n.note_text,
-        timestamp: n.created_at, actor: n.note_type === "system" ? "System" : "Partner",
-        category: "note", entityId: lead?.id ?? null,
-      });
-    });
-    batches.slice(0, 5).forEach((b) => {
-      items.push({
-        id: `bulk-${b.id}`, label: "Bulk Upload", leadId: b.batch_id,
-        description: `${b.file_name} — ${b.success_rows} success, ${b.failed_rows} failed`,
-        timestamp: b.uploaded_at, actor: "Partner",
-        category: "bulk", entityId: null,
-      });
-    });
-    payoutRecords.filter((p) => p.payout_status !== "pending").slice(0, 5).forEach((p) => {
-      items.push({
-        id: `payout-${p.id}`, label: "Payout Updated", leadId: p.lead_id.slice(0, 8) + "…",
-        description: `Status: ${p.payout_status.replace(/_/g, " ")} — ₹${(p.payout_amount ?? 0).toLocaleString("en-IN")}`,
-        timestamp: p.updated_at, actor: "System",
-        category: "payout", entityId: null,
-      });
-    });
-
-    return items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 20);
-  }, [stageHistory, leads, notes, batches, payoutRecords]);
-
   const isFirstRun = !loading && leads.length === 0;
 
   return (
@@ -241,8 +199,6 @@ export default function Dashboard() {
         </div>
 
         <PayoutSnapshot data={payoutSummary} loading={loading} />
-
-        <ActivityFeed items={activityItems} loading={loading} />
 
         <SystemHelp />
       </div>
