@@ -155,6 +155,7 @@ export default function AdminLenders() {
                     <TableHead className="text-xs font-medium">Loan Types</TableHead>
                     <TableHead className="text-xs font-medium">Countries</TableHead>
                     <TableHead className="text-xs font-medium w-[90px]">Days</TableHead>
+                    <TableHead className="text-xs font-medium w-[100px] text-right">Mapped</TableHead>
                     <TableHead className="text-xs font-medium w-[100px]">Status</TableHead>
                     <TableHead className="text-xs font-medium w-[120px] text-right">Actions</TableHead>
                   </TableRow>
@@ -162,7 +163,7 @@ export default function AdminLenders() {
                 <TableBody>
                   {filtered.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center text-sm text-muted-foreground py-8">
+                      <TableCell colSpan={10} className="text-center text-sm text-muted-foreground py-8">
                         No lenders match your filters.
                       </TableCell>
                     </TableRow>
@@ -208,6 +209,10 @@ export default function AdminLenders() {
                       </TableCell>
                       <TableCell className="text-xs py-2.5 tabular-nums text-muted-foreground">
                         {l.processing_time_days ?? "—"}
+                      </TableCell>
+                      <TableCell className="text-xs py-2.5 tabular-nums text-right">
+                        <span className="font-medium">{mappingCounts[l.id] ?? 0}</span>
+                        <span className="text-muted-foreground ml-1">univ.</span>
                       </TableCell>
                       <TableCell className="py-2.5">
                         {l.active_flag ? (
