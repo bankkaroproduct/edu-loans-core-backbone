@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { EDITABLE_FIELDS, computeDiff, diffToChanges, getFieldLabel } from "@/lib/editRequestFields";
+import { EDITABLE_FIELDS, computeDiff, diffToChanges } from "@/lib/editRequestFields";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Lead = Tables<"student_leads">;
@@ -99,7 +99,45 @@ export function LeadEditRequestDialog({ open, onOpenChange, lead, onSubmitted }:
                             <span className="truncate">{f.label}</span>
                             {isChanged && <Badge variant="secondary" className="h-4 px-1 text-[10px] shrink-0">edited</Badge>}
                           </Label>
-...
+                          {f.type === "textarea" ? (
+                            <Textarea
+                              value={(v as string) ?? ""}
+                              onChange={(e) => setField(f.key, e.target.value)}
+                              className="min-h-[60px] text-sm"
+                            />
+                          ) : f.type === "boolean" ? (
+                            <div className="flex items-center gap-2 h-9">
+                              <Switch
+                                checked={Boolean(v)}
+                                onCheckedChange={(checked) => setField(f.key, checked)}
+                              />
+                              <span className="text-xs text-muted-foreground">{v ? "Yes" : "No"}</span>
+                            </div>
+                          ) : f.type === "select" && f.options ? (
+                            <Select value={(v as string) ?? ""} onValueChange={(val) => setField(f.key, val)}>
+                              <SelectTrigger className="h-9 text-sm">
+                                <SelectValue placeholder="Select" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {f.options.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Input
+                              type={f.type === "number" ? "number" : f.type === "date" ? "date" : "text"}
+                              value={(v as string | number) ?? ""}
+                              onChange={(e) => setField(f.key, f.type === "number" ? (e.target.value === "" ? "" : Number(e.target.value)) : e.target.value)}
+                              className="h-9 text-sm"
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </ScrollArea>
 
         <div className="space-y-2 rounded-md border bg-muted/30 p-3">
