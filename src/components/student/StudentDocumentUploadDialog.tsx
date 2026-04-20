@@ -114,11 +114,11 @@ export function StudentDocumentUploadDialog({ requirement, leadId, phone, expect
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-amber-700">
-                <AlertTriangle className="h-5 w-5" /> This may not be a {requirement.document_name}
+                <AlertTriangle className="h-5 w-5" /> This may not be a valid {friendlyDocName}
               </DialogTitle>
             </DialogHeader>
             <p className="text-sm text-muted-foreground py-2">
-              The file you uploaded doesn't appear to match a {requirement.document_name}. If this is the correct document, you can keep it — our team will review it.
+              {softBlockMessage(docCode, friendlyDocName)}
             </p>
             <DialogFooter className="gap-2">
               <Button variant="outline" onClick={handleReplace}>Upload a different file</Button>
@@ -140,6 +140,21 @@ export function StudentDocumentUploadDialog({ requirement, leadId, phone, expect
                     <p className="text-xs text-red-700">{requirement.remark}</p>
                   </div>
                 )}
+              </div>
+
+              {/* Expected name on document */}
+              <div className="flex items-start gap-2 rounded-md border bg-muted/40 p-2.5 text-xs">
+                <User className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-muted-foreground">
+                    Expected name on document{expectedSubject === "coapplicant" ? " (co-applicant)" : ""}:
+                  </p>
+                  {expectedName ? (
+                    <p className="font-medium text-foreground truncate">{expectedName}</p>
+                  ) : (
+                    <p className="italic text-muted-foreground">Not set — please complete the {expectedSubject === "coapplicant" ? "co-applicant" : "student"} profile first.</p>
+                  )}
+                </div>
               </div>
 
               {success && (
