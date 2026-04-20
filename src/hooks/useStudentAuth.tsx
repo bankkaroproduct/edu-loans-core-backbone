@@ -179,6 +179,7 @@ export function StudentAuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     sessionStorage.removeItem("student_auth");
     sessionStorage.removeItem("student_eligibility");
+    sessionStorage.removeItem("student_otp_fallback");
     setState({ phone: null, isVerified: false, otpState: "idle", leads: [], studentName: null });
     setEligibilityData(null);
   }, []);
