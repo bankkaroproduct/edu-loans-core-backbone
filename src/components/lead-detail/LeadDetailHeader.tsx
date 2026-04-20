@@ -2,11 +2,14 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { StageBadge, StatusBadge, formatStageLabel } from "@/components/dashboard/StageBadge";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Copy, Edit, FileText, Play } from "lucide-react";
+import { ArrowLeft, Copy, Edit, FileText, Play, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { useRoleAccess } from "@/hooks/useRoleAccess";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Lead = Tables<"student_leads">;
+const TERMINAL_STAGES = ["disbursed", "rejected", "dropped"];
 
 const ATTENTION_STAGES = ["documents_pending", "on_hold", "credit_query"];
 const ATTENTION_STATUSES = ["pending_info", "reupload_needed", "query_raised"];
