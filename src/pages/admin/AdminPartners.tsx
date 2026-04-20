@@ -28,6 +28,7 @@ const statusStyles: Record<Partner["status"], string> = {
 export default function AdminPartners() {
   const [partners, setPartners] = useState<Partner[]>([]);
   const [leadCounts, setLeadCounts] = useState<Record<string, number>>({});
+  const [leadsThisMonth, setLeadsThisMonth] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -39,7 +40,10 @@ export default function AdminPartners() {
     let cancelled = false;
     const load = async () => {
       setLoading(true);
-      const [partnersRes, leadsRes] = await Promise.all([
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      const [partnersRes, leadsRes, monthRes] = await Promise.all([
         supabase
           .from("partner_organizations")
           .select("*")
@@ -49,6 +53,11 @@ export default function AdminPartners() {
           .from("student_leads")
           .select("partner_id")
           .eq("is_archived", false),
+        supabase
+          .from("student_leads")
+          .select("*", { count: "exact", head: true })
+          .eq("is_archived", false)
+          .gte("created_at", startOfMonth.toISOString()),
       ]);
       if (cancelled) return;
       if (partnersRes.error) {
@@ -59,6 +68,7 @@ export default function AdminPartners() {
         if (l.partner_id) counts[l.partner_id] = (counts[l.partner_id] ?? 0) + 1;
       });
       setLeadCounts(counts);
+      setLeadsThisMonth(monthRes.count ?? 0);
       setPartners(partnersRes.data ?? []);
       setLoading(false);
     };
@@ -82,8 +92,19 @@ export default function AdminPartners() {
     });
   }, [partners, search, statusFilter]);
 
+  const totalCount = partners.length;
+  const activeCount = partners.filter((p) => p.status === "active").length;
+  const onboardingCount = partners.filter((p) => p.status === "onboarding").length;
+
   const openCreate = () => { setEditing(null); setDrawerOpen(true); };
   const openEdit = (row: Partner) => { setEditing(row); setDrawerOpen(true); };
+
+  const kpis = [
+    { label: "Total partners", value: totalCount, color: "text-primary" },
+    { label: "Active", value: activeCount, color: "text-emerald-700" },
+    { label: "Onboarding", value: onboardingCount, color: "text-blue-700" },
+    { label: "Leads this month", value: leadsThisMonth, color: "text-primary" },
+  ];
 
   return (
     <div className="space-y-6 max-w-screen-2xl mx-auto">
@@ -95,6 +116,23 @@ export default function AdminPartners() {
           <Plus className="h-4 w-4 mr-1.5" /> Add Partner
         </Button>
       </PageHeader>
+
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+        {kpis.map((k) => (
+          <Card key={k.label} className="p-4">
+            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+              {k.label}
+            </p>
+            {loading ? (
+              <div className="h-7 w-12 mt-1.5 bg-muted animate-pulse rounded" />
+            ) : (
+              <p className={`text-2xl font-bold tabular-nums mt-1 ${k.color}`}>
+                {k.value.toLocaleString("en-IN")}
+              </p>
+            )}
+          </Card>
+        ))}
+      </div>
 
       <Card>
         <CardContent className="p-4 space-y-4">
