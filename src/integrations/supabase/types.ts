@@ -1445,6 +1445,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _qa_decide_edit_request: {
+        Args: {
+          _action: string
+          _actor_auth_id: string
+          _approved_fields?: string[]
+          _decision_note?: string
+          _request_id: string
+        }
+        Returns: Json
+      }
+      _qa_submit_edit_request: {
+        Args: {
+          _actor_auth_id: string
+          _changes: Json
+          _lead_id: string
+          _reason: string
+        }
+        Returns: Json
+      }
       admin_add_lead_note: {
         Args: {
           _lead_id: string
