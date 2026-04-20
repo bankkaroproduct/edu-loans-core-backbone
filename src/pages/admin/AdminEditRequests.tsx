@@ -61,7 +61,7 @@ export default function AdminEditRequests() {
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [filter]);
 
   return (
-    <div className="max-w-6xl mx-auto space-y-4">
+    <div className="max-w-7xl mx-auto space-y-4 px-1">
       <div className="flex items-center gap-2">
         <ClipboardList className="h-5 w-5 text-primary" />
         <h1 className="text-xl font-semibold">Edit Requests</h1>
@@ -86,10 +86,14 @@ export default function AdminEditRequests() {
               {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
             </div>
           ) : requests.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">No requests in this view.</p>
+            <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+              <ClipboardList className="h-8 w-8 text-muted-foreground/40" />
+              <p className="text-sm font-medium">No requests in this view.</p>
+              <p className="text-xs text-muted-foreground">Edit requests submitted by partners will appear here.</p>
+            </div>
           ) : (
-            <div className="border rounded-md divide-y">
-              <div className="grid grid-cols-[1fr_1fr_80px_1fr_140px_60px] gap-3 px-3 py-2 text-[11px] font-medium uppercase text-muted-foreground tracking-wide">
+            <div className="border rounded-md divide-y overflow-x-auto">
+              <div className="grid grid-cols-[minmax(220px,1.4fr)_minmax(160px,1fr)_90px_minmax(180px,1.2fr)_150px_56px] gap-3 px-3 py-2.5 text-[11px] font-medium uppercase text-muted-foreground tracking-wide min-h-11 items-center min-w-[900px]">
                 <span>Lead</span>
                 <span>Partner</span>
                 <span>Fields</span>
@@ -103,15 +107,15 @@ export default function AdminEditRequests() {
                 const changes = (r.requested_changes ?? {}) as Record<string, unknown>;
                 const studentName = lead?.student_full_name ?? `${lead?.student_first_name ?? ""} ${lead?.student_last_name ?? ""}`.trim();
                 return (
-                  <div key={r.id} className="grid grid-cols-[1fr_1fr_80px_1fr_140px_60px] gap-3 px-3 py-2.5 text-xs items-center hover:bg-muted/30">
+                  <div key={r.id} className="grid grid-cols-[minmax(220px,1.4fr)_minmax(160px,1fr)_90px_minmax(180px,1.2fr)_150px_56px] gap-3 px-3 py-2.5 text-xs items-center hover:bg-muted/30 min-h-11 min-w-[900px]">
                     <div className="min-w-0">
                       <p className="font-medium truncate">{studentName || "—"}</p>
                       <p className="text-[10px] text-muted-foreground font-mono">{lead?.lead_id ?? "—"}</p>
                     </div>
                     <span className="truncate">{partner?.display_name ?? "—"}</span>
-                    <Badge variant="outline" className={STATUS_CLS[r.status]}>{Object.keys(changes).length} · {r.status}</Badge>
+                    <Badge variant="outline" className={`${STATUS_CLS[r.status]} justify-self-start`}>{Object.keys(changes).length} · {r.status}</Badge>
                     <span className="truncate text-muted-foreground" title={r.partner_reason ?? ""}>{r.partner_reason ?? "—"}</span>
-                    <span className="text-muted-foreground">{new Date(r.created_at).toLocaleString()}</span>
+                    <span className="text-muted-foreground truncate">{new Date(r.created_at).toLocaleString()}</span>
                     <Button variant="ghost" size="icon" onClick={() => navigate(`/admin/leads/${r.lead_id}`)} title="Open lead">
                       <ExternalLink className="h-3.5 w-3.5" />
                     </Button>
