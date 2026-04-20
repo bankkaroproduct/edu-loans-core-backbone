@@ -20,7 +20,7 @@ export const EDITABLE_FIELDS: EditFieldDef[] = [
   // Profile
   { key: "student_first_name", label: "First name", group: "Profile", type: "text" },
   { key: "student_last_name", label: "Last name", group: "Profile", type: "text" },
-  { key: "student_full_name", label: "Full name (auto if first/last edited)", group: "Profile", type: "text" },
+  // Note: student_full_name is auto-derived from first+last by the database (generated column).
   { key: "student_dob", label: "Date of birth", group: "Profile", type: "date" },
   { key: "student_gender", label: "Gender", group: "Profile", type: "select", options: ["Male", "Female", "Other"] },
 

@@ -19,6 +19,7 @@ import { LeadSuccessDialog } from "@/components/leads/LeadSuccessDialog";
 import { toast } from "sonner";
 import { ArrowLeft, FileText, User, GraduationCap, Wallet, MessageSquare, Eye } from "lucide-react";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phone";
+import { useRoleAccess } from "@/hooks/useRoleAccess";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Country = Tables<"countries_master">;
@@ -60,10 +61,20 @@ export default function AddLead() {
   const isEditMode = Boolean(editId);
 
   const { user, appUser } = useAuth();
+  const { isAdmin } = useRoleAccess();
   const { effectivePartnerId, effectiveUserId, isSimulating } = usePartnerContext();
   const { duplicates, checking, checkDuplicates } = useDuplicateCheck();
   const [submitting, setSubmitting] = useState(false);
   const [hydrating, setHydrating] = useState(Boolean(hydrateId));
+
+  // Partner guard: block direct lead-edit URL for non-admins; route them to Request Edit.
+  useEffect(() => {
+    if (!editId) return;
+    if (appUser && !isAdmin) {
+      toast.info("Partners can't edit leads directly. Use 'Request Edit' from the lead detail page.");
+      navigate(`/leads/${editId}`, { replace: true });
+    }
+  }, [editId, appUser, isAdmin, navigate]);
   const [activeStep, setActiveStep] = useState<StepId>("student");
   const [showDupDialog, setShowDupDialog] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
