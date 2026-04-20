@@ -57,9 +57,36 @@ export function AdminEditRequestPanel({ leadId, onChanged }: Props) {
 
   const changes = (request.requested_changes ?? {}) as Record<string, unknown>;
   const fields = Object.keys(changes);
+  const isReviewOnly = fields.length === 0;
   const checkedCount = Object.values(approved).filter(Boolean).length;
 
   const handleApprove = async () => {
+    // Review-only path: acknowledge & close
+    if (isReviewOnly) {
+      setBusy(true);
+      const { error } = await supabase.rpc("decide_edit_request", {
+        _request_id: request.id,
+        _action: "approve",
+        _approved_fields: null as never,
+        _decision_note: note.trim() || null,
+      } as never);
+      setBusy(false);
+      if (error) {
+        const msg = error.message ?? "Failed to acknowledge edit request";
+        if (msg.includes("edit_limit_reached")) {
+          toast.error("This lead has reached the maximum approved edit limit (10/10). Please contact admin for further changes.");
+        } else {
+          toast.error(msg);
+        }
+        return;
+      }
+      toast.success("Request acknowledged.");
+      setNote("");
+      onChanged();
+      load();
+      return;
+    }
+
     const approvedFields = fields.filter((k) => approved[k]);
     if (approvedFields.length === 0) {
       toast.error("Select at least one field to approve, or use Reject.");
@@ -74,7 +101,12 @@ export function AdminEditRequestPanel({ leadId, onChanged }: Props) {
     } as never);
     setBusy(false);
     if (error) {
-      toast.error(error.message ?? "Failed to apply edit request");
+      const msg = error.message ?? "Failed to apply edit request";
+      if (msg.includes("edit_limit_reached")) {
+        toast.error("This lead has reached the maximum approved edit limit (10/10). Please contact admin for further changes.");
+      } else {
+        toast.error(msg);
+      }
       return;
     }
     toast.success(`Applied ${approvedFields.length} field(s) to lead.`);
