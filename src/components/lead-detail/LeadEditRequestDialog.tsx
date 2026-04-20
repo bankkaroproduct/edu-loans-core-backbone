@@ -45,10 +45,6 @@ export function LeadEditRequestDialog({ open, onOpenChange, lead, onSubmitted }:
   const setField = (key: string, val: unknown) => setValues((v) => ({ ...v, [key]: val }));
 
   const handleSubmit = async () => {
-    if (diffCount === 0) {
-      toast.error("No changes detected. Edit at least one field to submit a request.");
-      return;
-    }
     if (!reasonValid) {
       toast.error("Please provide a reason of at least 10 characters.");
       return;
@@ -61,7 +57,12 @@ export function LeadEditRequestDialog({ open, onOpenChange, lead, onSubmitted }:
     } as never);
     setSubmitting(false);
     if (error) {
-      toast.error(error.message ?? "Failed to submit edit request");
+      const msg = error.message ?? "Failed to submit edit request";
+      if (msg.includes("edit_limit_reached")) {
+        toast.error("This lead has reached the maximum approved edit limit (10/10). Please contact admin for further changes.");
+      } else {
+        toast.error(msg);
+      }
       return;
     }
     toast.success("Your Lead Edit Request has been sent to admin. This will get updated once Admin approves your request.");
@@ -142,21 +143,30 @@ export function LeadEditRequestDialog({ open, onOpenChange, lead, onSubmitted }:
 
         <div className="space-y-2 rounded-md border bg-muted/30 p-3">
           <Label className="text-xs">Reason for edit (min 10 characters) <span className="text-destructive">*</span></Label>
+          {diffCount === 0 && (
+            <p className="text-xs text-muted-foreground">
+              You can still submit this request without changing fields if you need admin to review the lead.
+            </p>
+          )}
           <Textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="Why is this edit needed? e.g. student updated their phone number"
+            placeholder="Why is this edit needed? e.g. student updated their phone number, or please review co-applicant details"
             className="min-h-[60px] text-sm bg-background"
           />
           <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{diffCount === 0 ? "No changes detected." : `${diffCount} field${diffCount > 1 ? "s" : ""} will be requested.`}</span>
+            <span>
+              {diffCount === 0
+                ? "No field changes — this will be sent as a review request to admin."
+                : `${diffCount} field${diffCount > 1 ? "s" : ""} will be requested.`}
+            </span>
             <span>{reason.trim().length}/10</span>
           </div>
         </div>
 
         <DialogFooter className="gap-2 sm:gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={submitting || diffCount === 0 || !reasonValid}>
+          <Button onClick={handleSubmit} disabled={submitting || !reasonValid}>
             {submitting ? "Submitting..." : "Submit request"}
           </Button>
         </DialogFooter>

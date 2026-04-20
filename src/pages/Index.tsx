@@ -178,7 +178,7 @@ export default function Dashboard() {
   const isFirstRun = !loading && leads.length === 0;
 
   return (
-    <div className="space-y-5 max-w-7xl mx-auto">
+    <div className="space-y-5 max-w-screen-2xl mx-auto">
       <HeroPerformanceStrip
         appUser={appUser}
         partnerName={partnerName}

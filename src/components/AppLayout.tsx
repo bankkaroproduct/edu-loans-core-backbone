@@ -48,7 +48,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <SidebarTrigger />
             <NotificationBell />
           </header>
-          <main className="flex-1 p-6">{children}</main>
+          <main className="flex-1 px-4 lg:px-6 py-5">{children}</main>
         </div>
       </div>
     </SidebarProvider>
