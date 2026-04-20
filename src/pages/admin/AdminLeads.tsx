@@ -299,6 +299,30 @@ export default function AdminLeads() {
     return sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
   };
 
+  // Quick-filter chip presets (admin workspace shortcuts)
+  const quickChips = [
+    {
+      label: "Pending review",
+      active: filters.status !== "all" && ["new", "awaiting_verification", "pending_info"].includes(filters.status),
+      apply: () => { setFilters({ ...filters, status: "awaiting_verification" as StatusEnum, stage: "all" }); setPage(1); },
+    },
+    {
+      label: "Docs to verify",
+      active: filters.stage === "documents_under_review",
+      apply: () => { setFilters({ ...filters, stage: "documents_under_review" as StageEnum, status: "all" }); setPage(1); },
+    },
+    {
+      label: "With lender",
+      active: filters.stage === "sent_to_lender",
+      apply: () => { setFilters({ ...filters, stage: "sent_to_lender" as StageEnum, status: "all" }); setPage(1); },
+    },
+    {
+      label: "Sanctioned",
+      active: filters.stage === "sanction_received",
+      apply: () => { setFilters({ ...filters, stage: "sanction_received" as StageEnum, status: "all" }); setPage(1); },
+    },
+  ];
+
   return (
     <div className="space-y-5">
       <PageHeader
@@ -309,6 +333,21 @@ export default function AdminLeads() {
           <RefreshCw className={`mr-1 h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Refresh
         </Button>
       </PageHeader>
+
+      {/* Queue Health Strip — filter-aware counts */}
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+        {[
+          { label: "Total in queue", value: healthCounts.total, color: "text-primary" },
+          { label: "Pending review", value: healthCounts.pendingReview, color: "text-amber-700" },
+          { label: "With lender", value: healthCounts.withLender, color: "text-primary" },
+          { label: "Sanction received", value: healthCounts.sanction, color: "text-emerald-700" },
+        ].map((m) => (
+          <Card key={m.label} className="p-3">
+            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">{m.label}</p>
+            <p className={`text-xl font-bold tabular-nums mt-0.5 ${m.color}`}>{m.value.toLocaleString("en-IN")}</p>
+          </Card>
+        ))}
+      </div>
 
       <Card>
         <CardContent className="p-4 space-y-4">
