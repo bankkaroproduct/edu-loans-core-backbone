@@ -72,7 +72,11 @@ const OPTIONAL_COLS = [
   { name: "partner_remark", example: "Urgent case" },
 ];
 
-export default function BulkUpload() {
+interface BulkUploadProps {
+  hideOwnHeader?: boolean;
+}
+
+export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = {}) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { appUser } = useAuth();
@@ -394,17 +398,29 @@ export default function BulkUpload() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(backTarget)}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <PageHeader
-            title="Bulk Upload Leads"
-            description="Upload multiple student leads using the standard CSV template"
-          />
+      {!hideOwnHeader && (
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate(backTarget)}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <PageHeader
+              title="Bulk Upload Leads"
+              description="Upload multiple student leads using the standard CSV template"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={downloadTemplate}>
+              <Download className="mr-1 h-4 w-4" /> Download Template
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => navigate(leadsTarget)}>
+              <FileText className="mr-1 h-4 w-4" /> View Submitted Leads
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+      )}
+      {hideOwnHeader && (
+        <div className="flex items-center gap-2 justify-end">
           <Button variant="outline" size="sm" onClick={downloadTemplate}>
             <Download className="mr-1 h-4 w-4" /> Download Template
           </Button>
@@ -412,7 +428,7 @@ export default function BulkUpload() {
             <FileText className="mr-1 h-4 w-4" /> View Submitted Leads
           </Button>
         </div>
-      </div>
+      )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
