@@ -430,10 +430,12 @@ export default function AddLead() {
               <div className="space-y-2">
                 <Label>First Name *</Label>
                 <Input value={form.student_first_name} onChange={(e) => set("student_first_name", e.target.value)} placeholder="Student first name" />
+                <p className="text-xs text-muted-foreground">Name as per Aadhaar Card / Passport</p>
               </div>
               <div className="space-y-2">
                 <Label>Last Name</Label>
                 <Input value={form.student_last_name} onChange={(e) => set("student_last_name", e.target.value)} placeholder="Student last name" />
+                <p className="text-xs text-muted-foreground">Name as per Aadhaar Card / Passport</p>
               </div>
               {fullName && (
                 <div className="space-y-2 md:col-span-2">
@@ -555,6 +557,7 @@ export default function AddLead() {
               <div className="space-y-2">
                 <Label>Co-Applicant Name</Label>
                 <Input value={form.coapplicant_name} onChange={(e) => set("coapplicant_name", e.target.value)} />
+                <p className="text-xs text-muted-foreground">Name as per Aadhaar Card / Passport</p>
               </div>
               <div className="space-y-2">
                 <Label>Co-Applicant Relation</Label>
