@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { StageBadge, StatusBadge } from "@/components/dashboard/StageBadge";
 import { ArrowDown, ArrowUp, ArrowUpDown, Inbox, AlertCircle, RefreshCw } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import type { AdminLeadRow, LeadQueueFilters, PipelineStage } from "@/hooks/useAdminDashboard";
+import type { AdminLeadRow, AdminMetrics, LeadQueueFilters, PipelineStage } from "@/hooks/useAdminDashboard";
 
 interface Props {
   data: AdminLeadRow[];
@@ -17,15 +17,15 @@ interface Props {
   filters: LeadQueueFilters;
   onFiltersChange: (f: LeadQueueFilters) => void;
   pipelineStages: PipelineStage[];
+  metrics?: AdminMetrics | null;
 }
 
 function sourceLabel(row: AdminLeadRow): string {
   if (row.source_type === "student_direct") return "Student Portal";
-  // Fallback when partner display_name is null
   return row.partner_display_name ? `Partner: ${row.partner_display_name}` : "Partner Lead";
 }
 
-export function AdminLeadQueue({ data, loading, error, onRetry, filters, onFiltersChange, pipelineStages }: Props) {
+export function AdminLeadQueue({ data, loading, error, onRetry, filters, onFiltersChange, pipelineStages, metrics }: Props) {
   const navigate = useNavigate();
 
   const toggleSort = (col: "updated_at" | "created_at") => {
@@ -40,6 +40,35 @@ export function AdminLeadQueue({ data, loading, error, onRetry, filters, onFilte
     if (filters.sortBy !== col) return <ArrowUpDown className="h-3 w-3 opacity-40" />;
     return filters.sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
   };
+
+  // Quick chips: navigate to /admin/leads with appropriate URL filters pre-applied.
+  const chips = metrics
+    ? [
+        {
+          label: "Pending review",
+          count: metrics.requestsPendingApproval,
+          to: "/admin/leads?status=awaiting_verification",
+          tone: "amber",
+        },
+        {
+          label: "Docs to verify",
+          count: metrics.documentsPendingReview,
+          to: "/admin/leads?stage=documents_under_review",
+          tone: "amber",
+        },
+        {
+          label: "In lender",
+          count: metrics.sentToLender,
+          to: "/admin/leads?stage=sent_to_lender",
+          tone: "primary",
+        },
+      ]
+    : [];
+
+  const chipToneClass = (tone: string) =>
+    tone === "amber"
+      ? "border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-900"
+      : "border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary";
 
   return (
     <Card className="p-6">
@@ -72,6 +101,25 @@ export function AdminLeadQueue({ data, loading, error, onRetry, filters, onFilte
           </Select>
         </div>
       </div>
+
+      {/* Quick chips */}
+      {chips.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {chips.map((c) => (
+            <button
+              key={c.label}
+              type="button"
+              onClick={() => navigate(c.to)}
+              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${chipToneClass(c.tone)}`}
+            >
+              <span>{c.label}</span>
+              <span className="rounded-full bg-background/60 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums">
+                {c.count.toLocaleString("en-IN")}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {loading && (
         <div className="space-y-2">
@@ -123,7 +171,7 @@ export function AdminLeadQueue({ data, loading, error, onRetry, filters, onFilte
               {data.map((row) => (
                 <tr
                   key={row.id}
-                  onClick={() => navigate(`/leads/${row.id}`)}
+                  onClick={() => navigate(`/admin/leads/${row.id}`)}
                   className="border-b last:border-b-0 hover:bg-muted/50 cursor-pointer transition-colors"
                 >
                   <td className="py-2.5 pr-4 font-mono text-xs">{row.lead_id ?? "—"}</td>

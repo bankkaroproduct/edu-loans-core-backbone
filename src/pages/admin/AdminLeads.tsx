@@ -99,6 +99,11 @@ export default function AdminLeads() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Health strip counts (filter-aware: same WHERE except status/stage overrides)
+  const [healthCounts, setHealthCounts] = useState<{
+    total: number; pendingReview: number; withLender: number; sanction: number;
+  }>({ total: 0, pendingReview: 0, withLender: 0, sanction: 0 });
+
   // Debounce search
   const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
@@ -226,6 +231,48 @@ export default function AdminLeads() {
 
   useEffect(() => { fetchPage(); }, [fetchPage]);
 
+  // Fetch filter-aware health counts (lightweight head:true).
+  // Total = current filters; the others = current filters with their own stage/status override.
+  const fetchHealthCounts = useCallback(async () => {
+    const buildCount = (overrideStage?: StageEnum, overrideStatuses?: StatusEnum[]) => {
+      let q: any = supabase.from("student_leads")
+        .select("*", { count: "exact", head: true })
+        .eq("is_archived", false);
+      if (filters.source !== "all") q = q.eq("source_type", filters.source);
+      if (overrideStage) q = q.eq("current_stage", overrideStage);
+      else if (filters.stage !== "all") q = q.eq("current_stage", filters.stage);
+      if (overrideStatuses) q = q.in("current_status", overrideStatuses);
+      else if (filters.status !== "all") q = q.eq("current_status", filters.status);
+      if (filters.country !== "all") q = q.eq("intended_study_country", filters.country);
+      if (filters.partnerId !== "all") q = q.eq("partner_id", filters.partnerId);
+      if (filters.dateFrom) q = q.gte("created_at", filters.dateFrom.toISOString());
+      if (filters.dateTo) {
+        const end = new Date(filters.dateTo);
+        end.setHours(23, 59, 59, 999);
+        q = q.lte("created_at", end.toISOString());
+      }
+      const t = sanitizeSearch(filters.search);
+      if (t) {
+        q = q.or(`student_full_name.ilike.%${t}%,student_first_name.ilike.%${t}%,student_last_name.ilike.%${t}%,student_phone.ilike.%${t}%,lead_id.ilike.%${t}%`);
+      }
+      return q;
+    };
+    const [tot, pend, lender, sanc] = await Promise.all([
+      buildCount(),
+      buildCount(undefined, ["new", "awaiting_verification", "pending_info"] as StatusEnum[]),
+      buildCount("sent_to_lender" as StageEnum),
+      buildCount("sanction_received" as StageEnum),
+    ]);
+    setHealthCounts({
+      total: tot.count ?? 0,
+      pendingReview: pend.count ?? 0,
+      withLender: lender.count ?? 0,
+      sanction: sanc.count ?? 0,
+    });
+  }, [filters]);
+
+  useEffect(() => { fetchHealthCounts(); }, [fetchHealthCounts]);
+
   // Realtime: debounced refresh on student_leads changes
   useEffect(() => {
     let t: ReturnType<typeof setTimeout> | null = null;
@@ -252,6 +299,30 @@ export default function AdminLeads() {
     return sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
   };
 
+  // Quick-filter chip presets (admin workspace shortcuts)
+  const quickChips = [
+    {
+      label: "Pending review",
+      active: filters.status !== "all" && ["new", "awaiting_verification", "pending_info"].includes(filters.status),
+      apply: () => { setFilters({ ...filters, status: "awaiting_verification" as StatusEnum, stage: "all" }); setPage(1); },
+    },
+    {
+      label: "Docs to verify",
+      active: filters.stage === "documents_under_review",
+      apply: () => { setFilters({ ...filters, stage: "documents_under_review" as StageEnum, status: "all" }); setPage(1); },
+    },
+    {
+      label: "With lender",
+      active: filters.stage === "sent_to_lender",
+      apply: () => { setFilters({ ...filters, stage: "sent_to_lender" as StageEnum, status: "all" }); setPage(1); },
+    },
+    {
+      label: "Sanctioned",
+      active: filters.stage === "sanction_received",
+      apply: () => { setFilters({ ...filters, stage: "sanction_received" as StageEnum, status: "all" }); setPage(1); },
+    },
+  ];
+
   return (
     <div className="space-y-5">
       <PageHeader
@@ -262,6 +333,21 @@ export default function AdminLeads() {
           <RefreshCw className={`mr-1 h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Refresh
         </Button>
       </PageHeader>
+
+      {/* Queue Health Strip — filter-aware counts */}
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+        {[
+          { label: "Total in queue", value: healthCounts.total, color: "text-primary" },
+          { label: "Pending review", value: healthCounts.pendingReview, color: "text-amber-700" },
+          { label: "With lender", value: healthCounts.withLender, color: "text-primary" },
+          { label: "Sanction received", value: healthCounts.sanction, color: "text-emerald-700" },
+        ].map((m) => (
+          <Card key={m.label} className="p-3">
+            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">{m.label}</p>
+            <p className={`text-xl font-bold tabular-nums mt-0.5 ${m.color}`}>{m.value.toLocaleString("en-IN")}</p>
+          </Card>
+        ))}
+      </div>
 
       <Card>
         <CardContent className="p-4 space-y-4">
@@ -282,6 +368,24 @@ export default function AdminLeads() {
               partners={partners}
             />
           )}
+
+          {/* Quick filter chips */}
+          <div className="flex flex-wrap gap-2">
+            {quickChips.map((c) => (
+              <button
+                key={c.label}
+                type="button"
+                onClick={c.apply}
+                className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                  c.active
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-background hover:bg-muted text-foreground"
+                }`}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
 
           {/* Result summary */}
           <div className="flex items-center justify-between text-xs text-muted-foreground">

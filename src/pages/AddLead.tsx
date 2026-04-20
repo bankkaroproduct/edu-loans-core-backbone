@@ -392,10 +392,13 @@ export default function AddLead() {
       ? "Update lead details. Changes are tracked in the lead timeline."
       : "Create a complete lead record for smoother downstream review and lender matching.";
 
+  const isAdminContext = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
+  const backTarget = isAdminContext ? "/admin/leads" : "/leads";
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+        <Button variant="ghost" size="icon" onClick={() => navigate(backTarget)}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>

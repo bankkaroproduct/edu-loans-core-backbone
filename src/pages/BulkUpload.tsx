@@ -387,12 +387,16 @@ export default function BulkUpload() {
     );
   };
 
+  const isAdminContext = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
+  const backTarget = isAdminContext ? "/admin/leads" : "/";
+  const leadsTarget = isAdminContext ? "/admin/leads" : "/leads";
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(backTarget)}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <PageHeader
@@ -404,7 +408,7 @@ export default function BulkUpload() {
           <Button variant="outline" size="sm" onClick={downloadTemplate}>
             <Download className="mr-1 h-4 w-4" /> Download Template
           </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate("/leads")}>
+          <Button variant="outline" size="sm" onClick={() => navigate(leadsTarget)}>
             <FileText className="mr-1 h-4 w-4" /> View Submitted Leads
           </Button>
         </div>

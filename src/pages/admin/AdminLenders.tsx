@@ -18,6 +18,7 @@ type StatusFilter = "all" | "active" | "inactive";
 
 export default function AdminLenders() {
   const [lenders, setLenders] = useState<Lender[]>([]);
+  const [mappingCounts, setMappingCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -29,13 +30,21 @@ export default function AdminLenders() {
     let cancelled = false;
     const load = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("lenders")
-        .select("*")
-        .order("lender_name");
+      const [lendersRes, mappingsRes] = await Promise.all([
+        supabase.from("lenders").select("*").order("lender_name"),
+        supabase
+          .from("lender_university_mappings")
+          .select("lender_id")
+          .eq("active_flag", true),
+      ]);
       if (cancelled) return;
-      if (error) toast({ title: "Failed to load", description: error.message, variant: "destructive" });
-      setLenders(data ?? []);
+      if (lendersRes.error) toast({ title: "Failed to load", description: lendersRes.error.message, variant: "destructive" });
+      const counts: Record<string, number> = {};
+      (mappingsRes.data ?? []).forEach((m) => {
+        if (m.lender_id) counts[m.lender_id] = (counts[m.lender_id] ?? 0) + 1;
+      });
+      setMappingCounts(counts);
+      setLenders(lendersRes.data ?? []);
       setLoading(false);
     };
     load();
@@ -71,6 +80,18 @@ export default function AdminLenders() {
   const openCreate = () => { setEditing(null); setDrawerOpen(true); };
   const openEdit = (row: Lender) => { setEditing(row); setDrawerOpen(true); };
 
+  const totalCount = lenders.length;
+  const activeCount = lenders.filter((l) => l.active_flag).length;
+  const collateralCount = lenders.filter((l) => l.supports_collateral).length;
+  const unsecuredCount = lenders.filter((l) => l.supports_unsecured).length;
+
+  const kpis = [
+    { label: "Total lenders", value: totalCount, color: "text-primary" },
+    { label: "Active", value: activeCount, color: "text-emerald-700" },
+    { label: "Supports collateral", value: collateralCount, color: "text-primary" },
+    { label: "Supports unsecured", value: unsecuredCount, color: "text-primary" },
+  ];
+
   return (
     <div className="space-y-6 max-w-screen-2xl mx-auto">
       <PageHeader
@@ -81,6 +102,23 @@ export default function AdminLenders() {
           <Plus className="h-4 w-4 mr-1.5" /> Add Lender
         </Button>
       </PageHeader>
+
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+        {kpis.map((k) => (
+          <Card key={k.label} className="p-4">
+            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+              {k.label}
+            </p>
+            {loading ? (
+              <div className="h-7 w-12 mt-1.5 bg-muted animate-pulse rounded" />
+            ) : (
+              <p className={`text-2xl font-bold tabular-nums mt-1 ${k.color}`}>
+                {k.value.toLocaleString("en-IN")}
+              </p>
+            )}
+          </Card>
+        ))}
+      </div>
 
       <Card>
         <CardContent className="p-4 space-y-4">
@@ -117,6 +155,7 @@ export default function AdminLenders() {
                     <TableHead className="text-xs font-medium">Loan Types</TableHead>
                     <TableHead className="text-xs font-medium">Countries</TableHead>
                     <TableHead className="text-xs font-medium w-[90px]">Days</TableHead>
+                    <TableHead className="text-xs font-medium w-[100px] text-right">Mapped</TableHead>
                     <TableHead className="text-xs font-medium w-[100px]">Status</TableHead>
                     <TableHead className="text-xs font-medium w-[120px] text-right">Actions</TableHead>
                   </TableRow>
@@ -124,7 +163,7 @@ export default function AdminLenders() {
                 <TableBody>
                   {filtered.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center text-sm text-muted-foreground py-8">
+                      <TableCell colSpan={10} className="text-center text-sm text-muted-foreground py-8">
                         No lenders match your filters.
                       </TableCell>
                     </TableRow>
@@ -170,6 +209,10 @@ export default function AdminLenders() {
                       </TableCell>
                       <TableCell className="text-xs py-2.5 tabular-nums text-muted-foreground">
                         {l.processing_time_days ?? "—"}
+                      </TableCell>
+                      <TableCell className="text-xs py-2.5 tabular-nums text-right">
+                        <span className="font-medium">{mappingCounts[l.id] ?? 0}</span>
+                        <span className="text-muted-foreground ml-1">univ.</span>
                       </TableCell>
                       <TableCell className="py-2.5">
                         {l.active_flag ? (
