@@ -1,13 +1,16 @@
 import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Upload, CheckCircle2, Loader2, FileText, X, AlertTriangle } from "lucide-react";
+import { AlertCircle, Upload, CheckCircle2, Loader2, FileText, X, AlertTriangle, User } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { displayDocName, softBlockMessage } from "@/lib/docCopy";
 
 interface Requirement {
   id: string;
   document_type_id: string;
   document_name: string;
+  document_code?: string | null;
+  applicable_for?: string | null;
   student_status_label: string;
   remark: string | null;
 }
@@ -16,6 +19,8 @@ interface Props {
   requirement: Requirement;
   leadId: string;
   phone: string;
+  expectedName?: string | null;
+  expectedSubject?: "student" | "coapplicant";
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -23,13 +28,15 @@ interface Props {
 const ALLOWED_TYPES = ["application/pdf", "image/jpeg", "image/png", "image/jpg"];
 const MAX_SIZE = 10 * 1024 * 1024;
 
-export function StudentDocumentUploadDialog({ requirement, leadId, phone, onClose, onSuccess }: Props) {
+export function StudentDocumentUploadDialog({ requirement, leadId, phone, expectedName, expectedSubject = "student", onClose, onSuccess }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [softBlock, setSoftBlock] = useState<{ uploadedDocId: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const isReupload = requirement.student_status_label === "Action Needed";
+  const docCode = requirement.document_code ?? null;
+  const friendlyDocName = displayDocName(docCode, requirement.document_name);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -107,11 +114,11 @@ export function StudentDocumentUploadDialog({ requirement, leadId, phone, onClos
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-amber-700">
-                <AlertTriangle className="h-5 w-5" /> This may not be a {requirement.document_name}
+                <AlertTriangle className="h-5 w-5" /> This may not be a valid {friendlyDocName}
               </DialogTitle>
             </DialogHeader>
             <p className="text-sm text-muted-foreground py-2">
-              The file you uploaded doesn't appear to match a {requirement.document_name}. If this is the correct document, you can keep it — our team will review it.
+              {softBlockMessage(docCode, friendlyDocName)}
             </p>
             <DialogFooter className="gap-2">
               <Button variant="outline" onClick={handleReplace}>Upload a different file</Button>
@@ -133,6 +140,21 @@ export function StudentDocumentUploadDialog({ requirement, leadId, phone, onClos
                     <p className="text-xs text-red-700">{requirement.remark}</p>
                   </div>
                 )}
+              </div>
+
+              {/* Expected name on document */}
+              <div className="flex items-start gap-2 rounded-md border bg-muted/40 p-2.5 text-xs">
+                <User className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-muted-foreground">
+                    Expected name on document{expectedSubject === "coapplicant" ? " (co-applicant)" : ""}:
+                  </p>
+                  {expectedName ? (
+                    <p className="font-medium text-foreground truncate">{expectedName}</p>
+                  ) : (
+                    <p className="italic text-muted-foreground">Not set — please complete the {expectedSubject === "coapplicant" ? "co-applicant" : "student"} profile first.</p>
+                  )}
+                </div>
               </div>
 
               {success && (

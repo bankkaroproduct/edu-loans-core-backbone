@@ -103,6 +103,7 @@ export default function StudentCoapplicantDetails() {
             <div className="space-y-1.5">
               <Label>Full Name</Label>
               <Input value={formData.coapplicant_name} onChange={e => updateField("coapplicant_name", e.target.value)} placeholder="Co-applicant's full name" />
+              <p className="text-xs text-muted-foreground">Name as per Aadhaar Card / Passport</p>
             </div>
             <div className="space-y-1.5">
               <Label>Mobile Number</Label>

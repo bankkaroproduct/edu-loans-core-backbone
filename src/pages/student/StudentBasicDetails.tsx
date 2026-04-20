@@ -89,6 +89,7 @@ export default function StudentBasicDetails() {
             <div className="space-y-1.5 sm:col-span-2">
               <Label>Full Name <span className="text-destructive">*</span></Label>
               <Input value={formData.student_full_name} onChange={e => updateField("student_full_name", e.target.value)} placeholder="Enter your full name" />
+              <p className="text-xs text-muted-foreground">Name as per Aadhaar Card / Passport</p>
             </div>
             <div className="space-y-1.5">
               <Label>Mobile Number</Label>
