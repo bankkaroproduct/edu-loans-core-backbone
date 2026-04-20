@@ -156,11 +156,81 @@ export default function AdminLeads() {
     if (filters.partnerId !== "all") p.set("partner", filters.partnerId);
     if (filters.dateFrom) p.set("from", filters.dateFrom.toISOString().slice(0, 10));
     if (filters.dateTo) p.set("to", filters.dateTo.toISOString().slice(0, 10));
+    if (filters.type !== "all") p.set("type", filters.type);
+    if (filters.entryMode !== "all") p.set("entry", filters.entryMode);
+    if (filters.region !== "all") p.set("region", filters.region);
+    if (filters.loanRange !== "all") p.set("loan", filters.loanRange);
+    if (filters.intake !== "all") p.set("intake", filters.intake);
+    if (filters.loanType !== "all") p.set("loantype", filters.loanType);
     if (sortKey !== "updated_at") p.set("sort", sortKey);
     if (sortDir !== "desc") p.set("dir", sortDir);
     if (page > 1) p.set("page", String(page));
     setSearchParams(p, { replace: true });
   }, [filters, sortKey, sortDir, page, setSearchParams]);
+
+  /**
+   * Apply business-bifurcation filters to a PostgREST query builder.
+   * Maps clean UI labels → real source_type/source_sub_type/region/loan/etc rules.
+   */
+  const applyBusinessFilters = useCallback((q: any) => {
+    // Source (clean UI → real source_type + source_sub_type)
+    switch (filters.source) {
+      case "partner_direct":
+        q = q.eq("source_type", "partner").not("source_sub_type", "ilike", "%refer%");
+        break;
+      case "partner_referral":
+        q = q.eq("source_type", "partner").ilike("source_sub_type", "%refer%");
+        break;
+      case "student_portal":
+        q = q.eq("source_type", "student_direct");
+        break;
+      case "university_referral":
+        q = q.eq("source_sub_type", "university_referral");
+        break;
+    }
+    // Type — Quick Lead vs Full Lead
+    if (filters.type === "quick_lead") {
+      q = q.eq("source_sub_type", "quick_lead");
+    } else if (filters.type === "full_lead") {
+      q = q.or("source_sub_type.is.null,source_sub_type.neq.quick_lead");
+    }
+    // Entry Mode
+    switch (filters.entryMode) {
+      case "add_lead":
+        // Anything not Quick Lead, not Bulk Upload, and not Student Portal — i.e., manually-added or uncategorized partner leads
+        q = q.eq("source_type", "partner").not("source_sub_type", "in", "(quick_lead,bulk_upload)");
+        break;
+      case "bulk_upload":
+        q = q.eq("source_sub_type", "bulk_upload");
+        break;
+      case "quick_lead":
+        q = q.eq("source_sub_type", "quick_lead");
+        break;
+      case "student_portal":
+        q = q.eq("source_type", "student_direct");
+        break;
+    }
+    // Region — based on intended_study_country
+    if (filters.region === "domestic") {
+      q = q.eq("intended_study_country", "India");
+    } else if (filters.region === "international") {
+      q = q.neq("intended_study_country", "India");
+    }
+    // Loan Range (₹) — 1L = 100000
+    switch (filters.loanRange) {
+      case "lt10": q = q.lt("loan_amount_required", 1000000); break;
+      case "10to25": q = q.gte("loan_amount_required", 1000000).lt("loan_amount_required", 2500000); break;
+      case "25to50": q = q.gte("loan_amount_required", 2500000).lt("loan_amount_required", 5000000); break;
+      case "gt50": q = q.gte("loan_amount_required", 5000000); break;
+    }
+    // Intake term
+    if (filters.intake !== "all") q = q.eq("intake_term", filters.intake);
+    // Loan Type
+    if (filters.loanType === "secured") q = q.eq("collateral_available", true);
+    else if (filters.loanType === "unsecured") q = q.or("collateral_available.is.null,collateral_available.eq.false");
+
+    return q;
+  }, [filters]);
 
   const fetchPage = useCallback(async () => {
     setLoading(true);
