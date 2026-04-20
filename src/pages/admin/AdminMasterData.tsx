@@ -263,7 +263,7 @@ function MasterDataTable({ schema, bulkUploadEnabled }: { schema: MasterSchema; 
           open={bulkOpen}
           onOpenChange={setBulkOpen}
           masterKey={schema.key}
-          onComplete={() => setRefreshKey((k) => k + 1)}
+          onCompleted={() => setRefreshKey((k) => k + 1)}
         />
       )}
     </div>
