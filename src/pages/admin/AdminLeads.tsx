@@ -244,8 +244,7 @@ export default function AdminLeads() {
           )
           .eq("is_archived", false);
 
-        // Filters first (AND)
-        if (filters.source !== "all") q = q.eq("source_type", filters.source);
+        // Filters first (AND) — note: source mapping handled by applyBusinessFilters
         if (filters.stage !== "all") q = q.eq("current_stage", filters.stage);
         if (filters.status !== "all") q = q.eq("current_status", filters.status);
         if (filters.country !== "all") q = q.eq("intended_study_country", filters.country);
@@ -256,6 +255,8 @@ export default function AdminLeads() {
           end.setHours(23, 59, 59, 999);
           q = q.lte("created_at", end.toISOString());
         }
+        // Apply business bifurcation filters (Source / Type / Entry Mode / Region / Loan / Intake / Loan Type)
+        q = applyBusinessFilters(q);
 
         // Search applied AFTER filters as a single OR group (AND with the filters)
         const t = sanitizeSearch(filters.search);
@@ -303,7 +304,7 @@ export default function AdminLeads() {
     } finally {
       setLoading(false);
     }
-  }, [filters, sortKey, sortDir, page]);
+  }, [filters, sortKey, sortDir, page, applyBusinessFilters]);
 
   useEffect(() => { fetchPage(); }, [fetchPage]);
 
@@ -327,6 +328,8 @@ export default function AdminLeads() {
         end.setHours(23, 59, 59, 999);
         q = q.lte("created_at", end.toISOString());
       }
+      // Apply business bifurcation filters (Source/Type/Entry/Region/Loan/Intake/LoanType)
+      q = applyBusinessFilters(q);
       const t = sanitizeSearch(filters.search);
       if (t) {
         q = q.or(`student_full_name.ilike.%${t}%,student_first_name.ilike.%${t}%,student_last_name.ilike.%${t}%,student_phone.ilike.%${t}%,lead_id.ilike.%${t}%`);
@@ -345,7 +348,7 @@ export default function AdminLeads() {
       withLender: lender.count ?? 0,
       sanction: sanc.count ?? 0,
     });
-  }, [filters]);
+  }, [filters, applyBusinessFilters]);
 
   useEffect(() => { fetchHealthCounts(); }, [fetchHealthCounts]);
 
