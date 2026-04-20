@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,15 +12,35 @@ import type { Database } from "@/integrations/supabase/types";
 type StageEnum = Database["public"]["Enums"]["lead_stage_enum"];
 type StatusEnum = Database["public"]["Enums"]["lead_status_enum"];
 
+export type SourceFilter =
+  | "all"
+  | "partner_direct"
+  | "partner_referral"
+  | "student_portal"
+  | "university_referral";
+export type TypeFilter = "all" | "quick_lead" | "full_lead";
+export type EntryModeFilter = "all" | "add_lead" | "bulk_upload" | "quick_lead" | "student_portal";
+export type RegionFilter = "all" | "domestic" | "international";
+export type LoanRangeFilter = "all" | "lt10" | "10to25" | "25to50" | "gt50";
+export type IntakeFilter = "all" | "Spring" | "Fall" | "Summer";
+export type LoanTypeFilter = "all" | "secured" | "unsecured";
+
 export interface AdminLeadFilterState {
   search: string;
-  source: "all" | "partner" | "student_direct";
+  source: SourceFilter;
   stage: "all" | StageEnum;
   status: "all" | StatusEnum;
   country: "all" | string;
   partnerId: "all" | string;
   dateFrom: Date | undefined;
   dateTo: Date | undefined;
+  // New bifurcation dimensions
+  type: TypeFilter;
+  entryMode: EntryModeFilter;
+  region: RegionFilter;
+  loanRange: LoanRangeFilter;
+  intake: IntakeFilter;
+  loanType: LoanTypeFilter;
 }
 
 export const defaultAdminLeadFilters: AdminLeadFilterState = {
@@ -33,7 +52,59 @@ export const defaultAdminLeadFilters: AdminLeadFilterState = {
   partnerId: "all",
   dateFrom: undefined,
   dateTo: undefined,
+  type: "all",
+  entryMode: "all",
+  region: "all",
+  loanRange: "all",
+  intake: "all",
+  loanType: "all",
 };
+
+const SOURCE_OPTIONS: { value: SourceFilter; label: string }[] = [
+  { value: "all", label: "All Sources" },
+  { value: "partner_direct", label: "Partner — Direct" },
+  { value: "partner_referral", label: "Partner — Referral" },
+  { value: "student_portal", label: "Student Portal" },
+  { value: "university_referral", label: "University Referral" },
+];
+const TYPE_OPTIONS: { value: TypeFilter; label: string }[] = [
+  { value: "all", label: "All Types" },
+  { value: "quick_lead", label: "Quick Lead" },
+  { value: "full_lead", label: "Full Lead" },
+];
+const ENTRY_MODE_OPTIONS: { value: EntryModeFilter; label: string }[] = [
+  { value: "all", label: "All Entry Modes" },
+  { value: "add_lead", label: "Add Lead" },
+  { value: "bulk_upload", label: "Bulk Upload" },
+  { value: "quick_lead", label: "Quick Lead" },
+  { value: "student_portal", label: "Student Portal" },
+];
+const REGION_OPTIONS: { value: RegionFilter; label: string }[] = [
+  { value: "all", label: "All Regions" },
+  { value: "domestic", label: "Domestic (India)" },
+  { value: "international", label: "International" },
+];
+const LOAN_RANGE_OPTIONS: { value: LoanRangeFilter; label: string }[] = [
+  { value: "all", label: "Any Loan Amount" },
+  { value: "lt10", label: "< ₹10L" },
+  { value: "10to25", label: "₹10L – ₹25L" },
+  { value: "25to50", label: "₹25L – ₹50L" },
+  { value: "gt50", label: "₹50L+" },
+];
+const INTAKE_OPTIONS: { value: IntakeFilter; label: string }[] = [
+  { value: "all", label: "All Intakes" },
+  { value: "Spring", label: "Spring" },
+  { value: "Fall", label: "Fall" },
+  { value: "Summer", label: "Summer" },
+];
+const LOAN_TYPE_OPTIONS: { value: LoanTypeFilter; label: string }[] = [
+  { value: "all", label: "Any Loan Type" },
+  { value: "secured", label: "Secured" },
+  { value: "unsecured", label: "Unsecured" },
+];
+
+const labelOf = <T extends { value: string; label: string }>(opts: T[], v: string) =>
+  opts.find((o) => o.value === v)?.label ?? v;
 
 interface Props {
   filters: AdminLeadFilterState;
@@ -54,11 +125,17 @@ export function AdminLeadFilters({
     onChange({ ...filters, [key]: val });
 
   const activeChips: { label: string; clear: () => void }[] = [];
-  if (filters.source !== "all") activeChips.push({ label: `Source: ${filters.source === "partner" ? "Partner" : "Student Portal"}`, clear: () => set("source", "all") });
+  if (filters.source !== "all") activeChips.push({ label: `Source: ${labelOf(SOURCE_OPTIONS, filters.source)}`, clear: () => set("source", "all") });
   if (filters.stage !== "all") activeChips.push({ label: `Stage: ${stages.find(s => s.stage_key === filters.stage)?.stage_label ?? filters.stage}`, clear: () => set("stage", "all") });
   if (filters.status !== "all") activeChips.push({ label: `Status: ${statuses.find(s => s.status_key === filters.status)?.status_label ?? filters.status}`, clear: () => set("status", "all") });
   if (filters.country !== "all") activeChips.push({ label: `Country: ${filters.country}`, clear: () => set("country", "all") });
   if (filters.partnerId !== "all") activeChips.push({ label: `Partner: ${partners.find(p => p.id === filters.partnerId)?.display_name ?? "—"}`, clear: () => set("partnerId", "all") });
+  if (filters.type !== "all") activeChips.push({ label: `Type: ${labelOf(TYPE_OPTIONS, filters.type)}`, clear: () => set("type", "all") });
+  if (filters.entryMode !== "all") activeChips.push({ label: `Entry: ${labelOf(ENTRY_MODE_OPTIONS, filters.entryMode)}`, clear: () => set("entryMode", "all") });
+  if (filters.region !== "all") activeChips.push({ label: `Region: ${labelOf(REGION_OPTIONS, filters.region)}`, clear: () => set("region", "all") });
+  if (filters.loanRange !== "all") activeChips.push({ label: `Loan: ${labelOf(LOAN_RANGE_OPTIONS, filters.loanRange)}`, clear: () => set("loanRange", "all") });
+  if (filters.intake !== "all") activeChips.push({ label: `Intake: ${labelOf(INTAKE_OPTIONS, filters.intake)}`, clear: () => set("intake", "all") });
+  if (filters.loanType !== "all") activeChips.push({ label: `Loan Type: ${labelOf(LOAN_TYPE_OPTIONS, filters.loanType)}`, clear: () => set("loanType", "all") });
   if (filters.dateFrom) activeChips.push({ label: `From: ${format(filters.dateFrom, "dd MMM yyyy")}`, clear: () => set("dateFrom", undefined) });
   if (filters.dateTo) activeChips.push({ label: `To: ${format(filters.dateTo, "dd MMM yyyy")}`, clear: () => set("dateTo", undefined) });
   if (filters.search) activeChips.push({ label: `Search: "${filters.search}"`, clear: () => { onSearchInputChange(""); onChange({ ...filters, search: "" }); } });
@@ -81,14 +158,14 @@ export function AdminLeadFilters({
             className="pl-9 h-9"
           />
         </div>
-        <Select value={filters.source} onValueChange={(v) => set("source", v as any)}>
-          <SelectTrigger className="w-full lg:w-[160px] h-9 text-xs">
+        <Select value={filters.source} onValueChange={(v) => set("source", v as SourceFilter)}>
+          <SelectTrigger className="w-full lg:w-[200px] h-9 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Sources</SelectItem>
-            <SelectItem value="partner">Partner</SelectItem>
-            <SelectItem value="student_direct">Student Portal</SelectItem>
+            {SOURCE_OPTIONS.map((o) => (
+              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -96,7 +173,7 @@ export function AdminLeadFilters({
       {/* Row 2: stage / status / country / partner / date */}
       <div className="flex flex-wrap gap-2">
         <Select value={filters.stage} onValueChange={(v) => set("stage", v as any)}>
-          <SelectTrigger className="w-[180px] h-9 text-xs">
+          <SelectTrigger className="w-[170px] h-9 text-xs">
             <SelectValue placeholder="Stage" />
           </SelectTrigger>
           <SelectContent className="max-h-[300px]">
@@ -108,7 +185,7 @@ export function AdminLeadFilters({
         </Select>
 
         <Select value={filters.status} onValueChange={(v) => set("status", v as any)}>
-          <SelectTrigger className="w-[180px] h-9 text-xs">
+          <SelectTrigger className="w-[170px] h-9 text-xs">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent className="max-h-[300px]">
@@ -120,7 +197,7 @@ export function AdminLeadFilters({
         </Select>
 
         <Select value={filters.country} onValueChange={(v) => set("country", v)}>
-          <SelectTrigger className="w-[180px] h-9 text-xs">
+          <SelectTrigger className="w-[170px] h-9 text-xs">
             <SelectValue placeholder="Country" />
           </SelectTrigger>
           <SelectContent className="max-h-[300px]">
@@ -132,7 +209,7 @@ export function AdminLeadFilters({
         </Select>
 
         <Select value={filters.partnerId} onValueChange={(v) => set("partnerId", v)}>
-          <SelectTrigger className="w-[200px] h-9 text-xs">
+          <SelectTrigger className="w-[190px] h-9 text-xs">
             <SelectValue placeholder="Partner" />
           </SelectTrigger>
           <SelectContent className="max-h-[300px]">
@@ -166,6 +243,63 @@ export function AdminLeadFilters({
             <Calendar mode="single" selected={filters.dateTo} onSelect={(d) => set("dateTo", d)} initialFocus />
           </PopoverContent>
         </Popover>
+      </div>
+
+      {/* Row 3: business bifurcation — Type / Entry Mode / Region / Loan Range / Intake / Loan Type */}
+      <div className="flex flex-wrap gap-2">
+        <Select value={filters.type} onValueChange={(v) => set("type", v as TypeFilter)}>
+          <SelectTrigger className="w-[150px] h-9 text-xs">
+            <SelectValue placeholder="Type" />
+          </SelectTrigger>
+          <SelectContent>
+            {TYPE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+
+        <Select value={filters.entryMode} onValueChange={(v) => set("entryMode", v as EntryModeFilter)}>
+          <SelectTrigger className="w-[170px] h-9 text-xs">
+            <SelectValue placeholder="Entry Mode" />
+          </SelectTrigger>
+          <SelectContent>
+            {ENTRY_MODE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+
+        <Select value={filters.region} onValueChange={(v) => set("region", v as RegionFilter)}>
+          <SelectTrigger className="w-[170px] h-9 text-xs">
+            <SelectValue placeholder="Region" />
+          </SelectTrigger>
+          <SelectContent>
+            {REGION_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+
+        <Select value={filters.loanRange} onValueChange={(v) => set("loanRange", v as LoanRangeFilter)}>
+          <SelectTrigger className="w-[160px] h-9 text-xs">
+            <SelectValue placeholder="Loan Range" />
+          </SelectTrigger>
+          <SelectContent>
+            {LOAN_RANGE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+
+        <Select value={filters.intake} onValueChange={(v) => set("intake", v as IntakeFilter)}>
+          <SelectTrigger className="w-[140px] h-9 text-xs">
+            <SelectValue placeholder="Intake" />
+          </SelectTrigger>
+          <SelectContent>
+            {INTAKE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+
+        <Select value={filters.loanType} onValueChange={(v) => set("loanType", v as LoanTypeFilter)}>
+          <SelectTrigger className="w-[160px] h-9 text-xs">
+            <SelectValue placeholder="Loan Type" />
+          </SelectTrigger>
+          <SelectContent>
+            {LOAN_TYPE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Active chips */}
