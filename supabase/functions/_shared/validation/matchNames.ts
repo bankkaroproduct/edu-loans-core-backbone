@@ -42,9 +42,7 @@ export interface NameMatchResult {
   extracted_name_candidate: string | null;
 }
 
-// Try to find the best contiguous window of expected-name-like tokens inside the extracted text.
-// We don't try to be a full named-entity recogniser — we just check whether the expected
-// name (or a fuzzy variant) appears anywhere in the document's text.
+// Find whether the expected name (or a fuzzy variant) appears anywhere in the document text.
 export function matchNames(
   expectedName: string | null | undefined,
   extractedText: string | null | undefined,
@@ -106,11 +104,23 @@ export function matchNames(
     ? candidateTokens.map((t) => t.charAt(0).toUpperCase() + t.slice(1)).join(" ")
     : null;
 
-  const score = matched.length / expected.length;
+  // Effective score: ignore lone unmatched single-letter expected tokens (middle initials)
+  // when the rest of the name matched well — common when application has "R K Choudhary"
+  // but document only shows "Raghav Choudhary".
+  const unmatchedNonInitial = unmatched.filter((t) => t.length > 1).length;
+  const effectiveExpected = Math.max(1, expected.length - unmatched.filter((t) => t.length === 1).length);
+  const effectiveMatched = expected.length - unmatchedNonInitial - unmatched.filter((t) => t.length === 1).length;
+  const rawScore = matched.length / expected.length;
+  const adjustedScore = Math.max(rawScore, effectiveMatched / effectiveExpected);
+  const score = Math.max(0, Math.min(1, adjustedScore));
 
+  // Refined thresholds (build batch — separates type strictness from name strength):
+  //   ≥ 0.7  → match
+  //   ≥ 0.5  → partial_match (acceptable, no warning)
+  //   < 0.5  → mismatch (chip-only for medium nameStrength docs; soft-block for strong)
   let verdict: NameMatchVerdict;
   if (score >= 0.7) verdict = "match";
-  else if (score >= 0.4) verdict = "partial_match";
+  else if (score >= 0.5) verdict = "partial_match";
   else verdict = "mismatch";
 
   return {

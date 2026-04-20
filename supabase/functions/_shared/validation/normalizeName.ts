@@ -4,6 +4,9 @@
 const HONORIFICS = new Set([
   "mr", "mrs", "ms", "miss", "mx", "dr", "shri", "smt", "master",
   "sir", "madam", "prof", "professor",
+  // Relational prefixes commonly OCR'd from Aadhaar / legal docs
+  "so", "wo", "do", "co",
+  "s", "w", "d", "c", // single-letter remnants when "s/o" splits to "s" + "o"
 ]);
 
 export function normalizeName(input: string | null | undefined): string[] {
@@ -11,7 +14,7 @@ export function normalizeName(input: string | null | undefined): string[] {
   // Lowercase, strip punctuation (keep spaces), collapse whitespace
   const cleaned = String(input)
     .toLowerCase()
-    .replace(/[.,/\\-_'"`()\[\]{}!?:;]/g, " ")
+    .replace(/[.,/\\\-_'"`()\[\]{}!?:;]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
   if (!cleaned) return [];
