@@ -245,8 +245,9 @@ export function MasterBulkUploadDialog({ open, onOpenChange, masterKey, onComple
 
     const items: PreviewRow[] = rows.map((raw, i) => {
       const built = spec.buildRow(raw);
-      if (!built.ok) {
-        return { num: i + 2, status: "invalid", data: null, error: built.error };
+      if (built.ok === false) {
+        const errMsg: string = built.error;
+        return { num: i + 2, status: "invalid" as const, data: null, error: errMsg };
       }
       const k = spec.matchKey(built.row);
       return {
