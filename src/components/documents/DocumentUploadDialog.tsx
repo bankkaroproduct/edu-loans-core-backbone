@@ -141,7 +141,7 @@ export function DocumentUploadDialog({ open, onOpenChange, requirement, leadId, 
       setProgress(100);
 
       if (!valErr && valData?.soft_block) {
-        setSoftBlockInfo({ docName, uploadedDocId: inserted.id });
+        setSoftBlockInfo({ docName, uploadedDocId: inserted.id, docCode });
         setPhase("soft_block");
         return;
       }
@@ -203,10 +203,10 @@ export function DocumentUploadDialog({ open, onOpenChange, requirement, leadId, 
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
-                <AlertTriangle className="h-5 w-5" /> This may not be a {softBlockInfo.docName}
+                <AlertTriangle className="h-5 w-5" /> This may not be a valid {softBlockInfo.docName}
               </DialogTitle>
               <DialogDescription>
-                The file you uploaded doesn't appear to contain the markers we expect for a {softBlockInfo.docName}. If this is the right document, you can upload it anyway — it will be flagged for review.
+                {softBlockMessage(softBlockInfo.docCode, softBlockInfo.docName)}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="gap-2">
@@ -236,6 +236,22 @@ export function DocumentUploadDialog({ open, onOpenChange, requirement, leadId, 
                 )}
                 <Badge variant="secondary" className="text-xs">Will create v{nextVersion}</Badge>
                 {requirement.required_flag && <Badge variant="secondary" className="text-xs">Required</Badge>}
+              </div>
+
+              {/* Expected name on document — drives the validator's name-consistency check */}
+              <div className="flex items-start gap-2 rounded-md border bg-muted/40 p-2.5 text-xs">
+                <User className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-muted-foreground">
+                    Expected name on document
+                    {subject === "coapplicant" ? " (co-applicant)" : ""}:
+                  </p>
+                  {expectedName ? (
+                    <p className="font-medium text-foreground truncate">{expectedName}</p>
+                  ) : (
+                    <p className="italic text-muted-foreground">Not set — please complete the {subject === "coapplicant" ? "co-applicant" : "student"} profile first.</p>
+                  )}
+                </div>
               </div>
 
               {isReupload && (
