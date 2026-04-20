@@ -128,7 +128,7 @@ export async function countStageMovement(f: ReportFilterState): Promise<number> 
       .eq("partner_id", f.partnerId)
       .eq("is_archived", false)
       .limit(REPORT_ROW_CAP);
-    q = q.in("lead_id", (leadIds ?? []).map((l) => l.id));
+    q = q.in("lead_id", ((leadIds ?? []) as Array<{id: string}>).map((l) => l.id));
   }
   const { count } = await q;
   return count ?? 0;
@@ -148,7 +148,7 @@ export async function countDocumentsPending(f: ReportFilterState): Promise<numbe
       .eq("partner_id", f.partnerId)
       .eq("is_archived", false)
       .limit(REPORT_ROW_CAP);
-    q = q.in("lead_id", (leadIds ?? []).map((l) => l.id));
+    q = q.in("lead_id", ((leadIds ?? []) as Array<{id: string}>).map((l) => l.id));
   }
   const { count } = await q;
   return count ?? 0;
@@ -256,7 +256,7 @@ export async function fetchStageMovementReport(f: ReportFilterState): Promise<Re
       .eq("partner_id", f.partnerId)
       .eq("is_archived", false)
       .limit(REPORT_ROW_CAP);
-    q = q.in("lead_id", (leadIds ?? []).map((l) => l.id));
+    q = q.in("lead_id", ((leadIds ?? []) as Array<{id: string}>).map((l) => l.id));
   }
   q = q.order("created_at", { ascending: false }).limit(REPORT_ROW_CAP);
 
@@ -324,7 +324,7 @@ export async function fetchDocumentsPendingReport(f: ReportFilterState): Promise
       .eq("partner_id", f.partnerId)
       .eq("is_archived", false)
       .limit(REPORT_ROW_CAP);
-    q = q.in("lead_id", (leadIds ?? []).map((l) => l.id));
+    q = q.in("lead_id", ((leadIds ?? []) as Array<{id: string}>).map((l) => l.id));
   }
   q = q.order("uploaded_at", { ascending: true }).limit(REPORT_ROW_CAP);
 
