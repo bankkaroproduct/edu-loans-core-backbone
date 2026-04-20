@@ -143,7 +143,9 @@ export function AdminEditRequestPanel({ leadId, onChanged }: Props) {
       <CardHeader className="py-3 bg-amber-50/60 border-b border-amber-200">
         <CardTitle className="text-sm flex items-center gap-2 text-amber-900">
           <ClipboardCheck className="h-4 w-4 shrink-0" /> Pending Edit Request
-          <Badge variant="outline" className="border-amber-400 text-amber-900 bg-amber-100 ml-1">{fields.length} field{fields.length !== 1 ? "s" : ""}</Badge>
+          <Badge variant="outline" className="border-amber-400 text-amber-900 bg-amber-100 ml-1">
+            {isReviewOnly ? "Review only" : `${fields.length} field${fields.length !== 1 ? "s" : ""}`}
+          </Badge>
           <span className="ml-auto text-xs font-normal text-muted-foreground">{new Date(request.created_at).toLocaleString()}</span>
         </CardTitle>
       </CardHeader>
@@ -154,28 +156,35 @@ export function AdminEditRequestPanel({ leadId, onChanged }: Props) {
             <span>{request.partner_reason}</span>
           </div>
         )}
-        <div className="border rounded-md divide-y overflow-x-auto">
-          <div className="grid grid-cols-[24px_minmax(140px,1.2fr)_minmax(140px,1.4fr)_minmax(140px,1.4fr)] gap-2 px-3 py-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wide min-w-[560px]">
-            <span></span>
-            <span>Field</span>
-            <span>Current</span>
-            <span>Requested</span>
+
+        {isReviewOnly ? (
+          <div className="rounded-md border border-dashed bg-muted/30 p-4 text-xs text-muted-foreground">
+            Review-only request — no field changes were proposed. You can acknowledge to close this request, or reject with a note.
           </div>
-          {fields.map((k) => (
-            <label key={k} className="grid grid-cols-[24px_minmax(140px,1.2fr)_minmax(140px,1.4fr)_minmax(140px,1.4fr)] gap-2 px-3 py-2 text-xs items-center hover:bg-muted/30 cursor-pointer min-w-[560px]">
-              <Checkbox
-                checked={approved[k] ?? false}
-                onCheckedChange={(v) => setApproved((s) => ({ ...s, [k]: Boolean(v) }))}
-              />
-              <span className="font-medium truncate">{getFieldLabel(k)}</span>
-              <span className="text-muted-foreground truncate" title={fmtVal(lead?.[k])}>{fmtVal(lead?.[k])}</span>
-              <span className="text-emerald-700 truncate" title={fmtVal(changes[k])}>{fmtVal(changes[k])}</span>
-            </label>
-          ))}
-        </div>
+        ) : (
+          <div className="border rounded-md divide-y overflow-x-auto">
+            <div className="grid grid-cols-[24px_minmax(140px,1.2fr)_minmax(140px,1.4fr)_minmax(140px,1.4fr)] gap-2 px-3 py-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wide min-w-[560px]">
+              <span></span>
+              <span>Field</span>
+              <span>Current</span>
+              <span>Requested</span>
+            </div>
+            {fields.map((k) => (
+              <label key={k} className="grid grid-cols-[24px_minmax(140px,1.2fr)_minmax(140px,1.4fr)_minmax(140px,1.4fr)] gap-2 px-3 py-2 text-xs items-center hover:bg-muted/30 cursor-pointer min-w-[560px]">
+                <Checkbox
+                  checked={approved[k] ?? false}
+                  onCheckedChange={(v) => setApproved((s) => ({ ...s, [k]: Boolean(v) }))}
+                />
+                <span className="font-medium truncate">{getFieldLabel(k)}</span>
+                <span className="text-muted-foreground truncate" title={fmtVal(lead?.[k])}>{fmtVal(lead?.[k])}</span>
+                <span className="text-emerald-700 truncate" title={fmtVal(changes[k])}>{fmtVal(changes[k])}</span>
+              </label>
+            ))}
+          </div>
+        )}
 
         <div className="space-y-1.5">
-          <Label className="text-xs">Decision note (required for reject, optional for approve)</Label>
+          <Label className="text-xs">Decision note (required for reject, optional for {isReviewOnly ? "acknowledge" : "approve"})</Label>
           <Textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
@@ -185,13 +194,15 @@ export function AdminEditRequestPanel({ leadId, onChanged }: Props) {
         </div>
 
         <div className="flex items-center justify-between gap-3 pt-3 border-t">
-          <span className="text-xs text-muted-foreground">{checkedCount} of {fields.length} field(s) selected</span>
+          <span className="text-xs text-muted-foreground">
+            {isReviewOnly ? "No fields will be modified." : `${checkedCount} of ${fields.length} field(s) selected`}
+          </span>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handleReject} disabled={busy}>
               Reject
             </Button>
-            <Button size="sm" onClick={handleApprove} disabled={busy || checkedCount === 0}>
-              Approve {checkedCount > 0 ? `(${checkedCount})` : ""}
+            <Button size="sm" onClick={handleApprove} disabled={busy || (!isReviewOnly && checkedCount === 0)}>
+              {isReviewOnly ? "Acknowledge & close" : `Approve ${checkedCount > 0 ? `(${checkedCount})` : ""}`}
             </Button>
           </div>
         </div>
