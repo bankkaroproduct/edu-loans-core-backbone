@@ -8,6 +8,7 @@ import { AdminPipelineSnapshot } from "@/components/admin/AdminPipelineSnapshot"
 import { AdminLeadQueue } from "@/components/admin/AdminLeadQueue";
 import { AdminSystemAlerts } from "@/components/admin/AdminSystemAlerts";
 import { AdminQuickActions } from "@/components/admin/AdminQuickActions";
+import { AdminRequestsSnapshot } from "@/components/admin/AdminRequestsSnapshot";
 import { formatDistanceToNow } from "date-fns";
 
 export default function AdminDashboard() {
@@ -59,7 +60,10 @@ export default function AdminDashboard() {
             onRetry={refreshAll}
           />
         </div>
-        <AdminQuickActions />
+        <div className="space-y-6">
+          <AdminRequestsSnapshot />
+          <AdminQuickActions />
+        </div>
       </div>
 
       <AdminLeadQueue
