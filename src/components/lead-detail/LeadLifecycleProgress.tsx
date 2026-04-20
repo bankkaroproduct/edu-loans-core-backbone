@@ -55,36 +55,52 @@ export function LeadLifecycleProgress({ lead }: Props) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Progress steps */}
+        {/* Progress steps — uniform-width columns + flex connectors keep dots and labels symmetrical */}
         <div className="overflow-x-auto pb-2">
-          <div className="flex items-center gap-0.5 min-w-max">
+          <div className="flex items-start min-w-max">
             {STAGE_ORDER.map((stage, idx) => {
               const isPast = currentIdx >= 0 && idx < currentIdx;
               const isCurrent = idx === currentIdx;
+              const isLast = idx === STAGE_ORDER.length - 1;
               return (
-                <div key={stage} className="flex items-center">
-                  <div className={cn(
-                    "flex flex-col items-center",
-                    isCurrent && "relative"
-                  )}>
-                    <div className={cn(
-                      "w-3 h-3 rounded-full border-2 transition-colors",
-                      isPast && "bg-primary border-primary",
-                      isCurrent && "bg-primary border-primary ring-2 ring-primary/30",
-                      !isPast && !isCurrent && "bg-muted border-border"
-                    )} />
-                    <span className={cn(
-                      "text-[10px] mt-1 max-w-[60px] text-center leading-tight",
-                      isCurrent ? "font-semibold text-foreground" : "text-muted-foreground"
-                    )}>
+                <div key={stage} className="flex items-start">
+                  {/* Step column: fixed width keeps every dot at the exact same horizontal cell */}
+                  <div className="flex flex-col items-center w-20 shrink-0">
+                    {/* Dot row — fixed height so connectors line up to the dot center */}
+                    <div className="h-4 flex items-center justify-center">
+                      <div
+                        className={cn(
+                          "rounded-full border-2 transition-colors",
+                          isCurrent
+                            ? "w-4 h-4 bg-primary border-primary ring-2 ring-primary/30"
+                            : "w-3 h-3",
+                          isPast && "bg-primary border-primary",
+                          !isPast && !isCurrent && "bg-muted border-border",
+                        )}
+                      />
+                    </div>
+                    {/* Label box — uniform footprint regardless of label length */}
+                    <span
+                      className={cn(
+                        "text-[10px] mt-2 text-center leading-tight px-1 line-clamp-2 h-7",
+                        isCurrent
+                          ? "font-semibold text-foreground"
+                          : "text-muted-foreground",
+                      )}
+                    >
                       {formatStageLabel(stage)}
                     </span>
                   </div>
-                  {idx < STAGE_ORDER.length - 1 && (
-                    <div className={cn(
-                      "w-6 h-0.5 mt-[-12px]",
-                      isPast ? "bg-primary" : "bg-border"
-                    )} />
+                  {/* Connector — vertically aligned to dot center via matching h-4 row */}
+                  {!isLast && (
+                    <div className="h-4 flex items-center w-6 shrink-0">
+                      <div
+                        className={cn(
+                          "h-0.5 w-full",
+                          isPast ? "bg-primary" : "bg-border",
+                        )}
+                      />
+                    </div>
                   )}
                 </div>
               );
@@ -109,13 +125,13 @@ export function LeadLifecycleProgress({ lead }: Props) {
             ) : (
               <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
             )}
-            <div className="space-y-1">
+            <div className="space-y-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <StageBadge stage={lead.current_stage} />
                 <StatusBadge status={lead.current_status} />
               </div>
               {lead.status_reason && (
-                <p className="text-sm text-foreground">{lead.status_reason}</p>
+                <p className="text-sm text-foreground break-words">{lead.status_reason}</p>
               )}
               {partnerAction && (
                 <p className="text-sm text-amber-800 font-medium">{partnerAction}</p>

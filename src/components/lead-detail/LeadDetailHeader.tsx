@@ -34,7 +34,7 @@ export function LeadDetailHeader({ lead, submittedByName, isDraft, backTo = "/le
   const copyLeadId = () => {
     if (lead.lead_id) {
       navigator.clipboard.writeText(lead.lead_id);
-      toast.success("Lead ID copied");
+      toast.success(`Lead ID ${lead.lead_id} copied`);
     }
   };
 
@@ -50,12 +50,18 @@ export function LeadDetailHeader({ lead, submittedByName, isDraft, backTo = "/le
       <div className="flex flex-col lg:flex-row lg:items-start gap-4">
         <div className="flex-1 space-y-2">
           <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold text-foreground">
+            <h1 className="text-2xl font-bold text-foreground break-words">
               {lead.student_full_name ?? `${lead.student_first_name} ${lead.student_last_name ?? ""}`.trim()}
             </h1>
             {lead.lead_id && (
-              <Badge variant="outline" className="font-mono text-xs cursor-pointer" onClick={copyLeadId} title="Click to copy">
-                {lead.lead_id} <Copy className="h-3 w-3 ml-1" />
+              <Badge
+                variant="outline"
+                className="group font-mono text-xs cursor-pointer hover:bg-muted transition-colors gap-1"
+                onClick={copyLeadId}
+                title="Copy Lead ID for support / escalations"
+              >
+                {lead.lead_id}
+                <Copy className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />
               </Badge>
             )}
             {!lead.lead_id && <Badge variant="outline" className="text-xs">Draft</Badge>}
@@ -75,8 +81,8 @@ export function LeadDetailHeader({ lead, submittedByName, isDraft, backTo = "/le
 
           <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
             {submittedByName && <span>Submitted by: {submittedByName}</span>}
+            <span>Submitted on: {new Date(lead.created_at).toLocaleString()}</span>
             <span>Updated: {new Date(lead.updated_at).toLocaleString()}</span>
-            <span>Created: {new Date(lead.created_at).toLocaleString()}</span>
           </div>
         </div>
 
