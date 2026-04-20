@@ -6,11 +6,8 @@ import { useRoleAccess } from "@/hooks/useRoleAccess";
 import type { Tables } from "@/integrations/supabase/types";
 import { usePartnerContext } from "@/hooks/usePartnerContext";
 
-import { HeroPerformanceStrip } from "@/components/dashboard/HeroPerformanceStrip";
-import { DashboardFilters, defaultFilters, type DashboardFilterValues } from "@/components/dashboard/DashboardFilters";
-import { InsightCard } from "@/components/dashboard/InsightCard";
+import { HeroPerformanceStrip, type LoanMetric } from "@/components/dashboard/HeroPerformanceStrip";
 import { KPICards, type KPIData } from "@/components/dashboard/KPICards";
-import { PipelineSnapshot } from "@/components/dashboard/PipelineSnapshot";
 import { PriorityAlerts, type AlertItem } from "@/components/dashboard/PriorityAlerts";
 import { RecentLeads } from "@/components/dashboard/RecentLeads";
 import { DocumentSnapshot, type DocSummary } from "@/components/dashboard/DocumentSnapshot";
@@ -40,7 +37,6 @@ export default function Dashboard() {
   const [stageHistory, setStageHistory] = useState<StageHistory[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [partnerName, setPartnerName] = useState<string | null>(null);
-  const [filters, setFilters] = useState<DashboardFilterValues>(defaultFilters);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -96,24 +92,6 @@ export default function Dashboard() {
     fetchData();
   }, [effectivePartnerId, agentUserId]);
 
-  const destinations = useMemo(() => [...new Set(leads.map((l) => l.intended_study_country))].sort(), [leads]);
-  const intakes = useMemo(() => {
-    const set = new Set(leads.map((l) => `${l.intake_term} ${l.intake_year}`));
-    return [...set].sort();
-  }, [leads]);
-
-  const filteredLeads = useMemo(() => {
-    return leads.filter((l) => {
-      if (filters.dateFrom && l.created_at < filters.dateFrom) return false;
-      if (filters.dateTo && l.created_at > filters.dateTo + "T23:59:59") return false;
-      if (filters.stage && filters.stage !== "all" && l.current_stage !== filters.stage) return false;
-      if (filters.status && filters.status !== "all" && l.current_status !== filters.status) return false;
-      if (filters.destination && filters.destination !== "all" && l.intended_study_country !== filters.destination) return false;
-      if (filters.intake && filters.intake !== "all" && `${l.intake_term} ${l.intake_year}` !== filters.intake) return false;
-      return true;
-    });
-  }, [leads, filters]);
-
   const kpiData = useMemo<KPIData>(() => {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
@@ -121,32 +99,43 @@ export default function Dashboard() {
     const pendingPayout = payoutRecords.filter((p) => p.payout_status === "pending" || p.payout_status === "triggered");
     const paidPayout = payoutRecords.filter((p) => p.payout_status === "paid");
     const docsNeedingAction = docReqs.filter((d) => ["not_uploaded", "reupload_needed"].includes(d.status));
-    const needsAttention = filteredLeads.filter((l) =>
+    const needsAttention = leads.filter((l) =>
       l.current_stage === "on_hold" || l.current_stage === "documents_pending" ||
       l.current_status === "reupload_needed" || l.current_status === "pending_info"
     );
 
     return {
-      totalLeads: filteredLeads.length,
-      leadsThisMonth: filteredLeads.filter((l) => l.created_at >= monthStart).length,
-      underReview: filteredLeads.filter((l) => reviewStages.includes(l.current_stage)).length,
+      totalLeads: leads.length,
+      leadsThisMonth: leads.filter((l) => l.created_at >= monthStart).length,
+      underReview: leads.filter((l) => reviewStages.includes(l.current_stage)).length,
       documentsPending: docsNeedingAction.length,
-      sentToLender: filteredLeads.filter((l) => ["sent_to_lender", "login_submitted"].includes(l.current_stage)).length,
-      sanctionReceived: filteredLeads.filter((l) => l.current_stage === "sanction_received").length,
-      disbursed: filteredLeads.filter((l) => l.current_stage === "disbursed").length,
-      rejectedDropped: filteredLeads.filter((l) => ["rejected", "dropped"].includes(l.current_stage)).length,
+      sentToLender: leads.filter((l) => ["sent_to_lender", "login_submitted"].includes(l.current_stage)).length,
+      sanctionReceived: leads.filter((l) => l.current_stage === "sanction_received").length,
+      disbursed: leads.filter((l) => l.current_stage === "disbursed").length,
+      rejectedDropped: leads.filter((l) => ["rejected", "dropped"].includes(l.current_stage)).length,
       bulkBatchesThisMonth: batches.filter((b) => b.uploaded_at >= monthStart).length,
       pendingPayout: pendingPayout.reduce((s, p) => s + (p.payout_amount ?? 0), 0),
       paidPayout: paidPayout.reduce((s, p) => s + (p.payout_amount ?? 0), 0),
       needsAttention: needsAttention.length,
     };
-  }, [filteredLeads, batches, payoutRecords, docReqs]);
+  }, [leads, batches, payoutRecords, docReqs]);
 
-  const stageCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    filteredLeads.forEach((l) => { counts[l.current_stage] = (counts[l.current_stage] ?? 0) + 1; });
-    return counts;
-  }, [filteredLeads]);
+  // Loan metrics for hero — independent of any UI filter, partner-scoped via RLS.
+  // Active = exclude draft, disbursed, rejected, dropped.
+  const loanMetrics = useMemo<LoanMetric[]>(() => {
+    const excludedActive = new Set(["draft", "disbursed", "rejected", "dropped"]);
+    const sumAmount = (rows: Lead[]) => rows.reduce((s, l) => s + (l.loan_amount_required ?? 0), 0);
+
+    const active = leads.filter((l) => !excludedActive.has(l.current_stage));
+    const sanctioned = leads.filter((l) => l.current_stage === "sanction_received");
+    const disbursed = leads.filter((l) => l.current_stage === "disbursed");
+
+    return [
+      { key: "active", label: "Total Loan Active", count: active.length, amount: sumAmount(active) },
+      { key: "sanctioned", label: "Total Loan Sanctioned", count: sanctioned.length, amount: sumAmount(sanctioned) },
+      { key: "disbursed", label: "Total Disbursed", count: disbursed.length, amount: sumAmount(disbursed) },
+    ];
+  }, [leads]);
 
   const alerts = useMemo<AlertItem[]>(() => {
     const items: AlertItem[] = [];
@@ -273,31 +262,23 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      <HeroPerformanceStrip appUser={appUser} partnerName={partnerName} kpiData={kpiData} loading={loading} />
+      <HeroPerformanceStrip
+        appUser={appUser}
+        partnerName={partnerName}
+        kpiData={kpiData}
+        loanMetrics={loanMetrics}
+        loading={loading}
+      />
 
       <div className="mt-6 space-y-6">
         {isFirstRun && <OnboardingEmptyState partnerName={partnerName} />}
 
-        <DashboardFilters
-          filters={filters}
-          onChange={setFilters}
-          destinations={destinations}
-          intakes={intakes}
-        />
-
-        {/* Action Center — full width */}
+        {/* Action Center — full width, with internal filters/sort */}
         <PriorityAlerts alerts={alerts} loading={loading} />
 
         <KPICards data={kpiData} loading={loading} onCardClick={handleKPIClick} />
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <PipelineSnapshot stageCounts={stageCounts} loading={loading} />
-          </div>
-          <InsightCard kpiData={kpiData} loading={loading} />
-        </div>
-
-        <RecentLeads leads={filteredLeads.slice(0, 10)} loading={loading} />
+        <RecentLeads leads={leads.slice(0, 10)} loading={loading} />
 
         <div className="rounded-xl bg-muted/30 p-6 space-y-6">
           <div className="grid gap-6 md:grid-cols-2">

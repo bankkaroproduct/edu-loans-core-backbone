@@ -1,11 +1,18 @@
 import { Button } from "@/components/ui/button";
-import { Plus, Upload, DollarSign, Clock, AlertTriangle, Zap } from "lucide-react";
+import { Plus, Upload, DollarSign, Clock, AlertTriangle, Zap, Activity, CheckCircle2, Banknote } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Tables } from "@/integrations/supabase/types";
 import type { KPIData } from "./KPICards";
 
 type AppUser = Tables<"users">;
+
+export interface LoanMetric {
+  key: "active" | "sanctioned" | "disbursed";
+  label: string;
+  count: number;
+  amount: number;
+}
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -22,10 +29,17 @@ interface Props {
   appUser: AppUser | null;
   partnerName: string | null;
   kpiData: KPIData;
+  loanMetrics: LoanMetric[];
   loading: boolean;
 }
 
-export function HeroPerformanceStrip({ appUser, partnerName, kpiData, loading }: Props) {
+const loanIconMap: Record<LoanMetric["key"], React.ElementType> = {
+  active: Activity,
+  sanctioned: CheckCircle2,
+  disbursed: Banknote,
+};
+
+export function HeroPerformanceStrip({ appUser, partnerName, kpiData, loanMetrics, loading }: Props) {
   const navigate = useNavigate();
   const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long",
@@ -99,7 +113,7 @@ export function HeroPerformanceStrip({ appUser, partnerName, kpiData, loading }:
           </div>
         </div>
 
-        {/* Hero Metrics */}
+        {/* Hero Metrics — earnings/attention */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 mt-10">
           {heroMetrics.map((m) => {
             const Icon = m.icon;
@@ -119,6 +133,40 @@ export function HeroPerformanceStrip({ appUser, partnerName, kpiData, loading }:
                     <p className="text-2xl sm:text-3xl font-extrabold tracking-tight truncate">{m.value}</p>
                   )}
                   <p className="text-xs sm:text-sm opacity-60 mt-0.5">{m.label}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Loan Business Metrics — count + INR */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 mt-6">
+          {loanMetrics.map((m) => {
+            const Icon = loanIconMap[m.key];
+            return (
+              <div
+                key={m.key}
+                className="flex items-center gap-4 p-5 rounded-xl bg-primary-foreground/5 border border-primary-foreground/10"
+              >
+                <div className="bg-primary-foreground/10 p-3 rounded-full shrink-0">
+                  <Icon className="h-6 w-6" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  {loading ? (
+                    <>
+                      <Skeleton className="h-7 w-20 bg-primary-foreground/20 mb-1" />
+                      <Skeleton className="h-4 w-28 bg-primary-foreground/15" />
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-baseline gap-2">
+                        <p className="text-2xl sm:text-3xl font-extrabold tracking-tight">{m.count}</p>
+                        <span className="text-xs opacity-60">{m.count === 1 ? "lead" : "leads"}</span>
+                      </div>
+                      <p className="text-sm font-semibold opacity-90 truncate">{formatINR(m.amount)}</p>
+                    </>
+                  )}
+                  <p className="text-xs opacity-60 mt-0.5">{m.label}</p>
                 </div>
               </div>
             );
