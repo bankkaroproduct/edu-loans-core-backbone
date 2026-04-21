@@ -50,8 +50,6 @@ export function AdminReportFilters({ filters, onChange, stages, statuses, countr
     onChange({ ...filters, [key]: val });
 
   const activeCount = [
-    filters.dateFrom,
-    filters.dateTo,
     filters.partnerId !== "all" ? 1 : null,
     filters.source !== "all" ? 1 : null,
     filters.type !== "all" ? 1 : null,
