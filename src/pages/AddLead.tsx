@@ -182,6 +182,21 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     });
   }, []);
 
+  // Admin-edit only: load full active partner list for the Assign-to-Partner picker.
+  useEffect(() => {
+    if (!isAdminForm || !isEditMode) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("partner_organizations")
+        .select("id, display_name, partner_code")
+        .eq("is_archived", false)
+        .order("display_name");
+      if (!cancelled) setPartnersList((data ?? []).filter((p) => !!p.display_name?.trim()));
+    })();
+    return () => { cancelled = true; };
+  }, [isAdminForm, isEditMode]);
+
   // Hydrate form when resuming a draft or editing an existing lead
   useEffect(() => {
     if (!hydrateId) return;
