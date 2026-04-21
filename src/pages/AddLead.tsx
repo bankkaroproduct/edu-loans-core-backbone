@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -19,7 +19,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { DuplicateWarningDialog } from "@/components/leads/DuplicateWarningDialog";
 import { LeadSuccessDialog } from "@/components/leads/LeadSuccessDialog";
 import { toast } from "sonner";
-import { ArrowLeft, FileText, User, GraduationCap, MessageSquare, Eye, AlertTriangle, ChevronDown } from "lucide-react";
+import { ArrowLeft, FileText, User, GraduationCap, MessageSquare, Eye, AlertTriangle, ChevronDown, Wallet } from "lucide-react";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phone";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { computeAdminDiff, getAdminFieldLabel } from "@/lib/adminEditableFields";
@@ -30,14 +30,18 @@ type University = Tables<"universities_master">;
 type Course = Tables<"courses_master">;
 type Intake = Tables<"intake_master">;
 
-const STEPS = [
-  { id: "student", label: "Student Details", icon: User },
-  { id: "study", label: "Study Intent", icon: GraduationCap },
-  { id: "notes", label: "Notes", icon: MessageSquare },
-  { id: "review", label: "Review & Submit", icon: Eye },
-] as const;
+const STEP_DEFS = {
+  student: { id: "student", label: "Student Details", icon: User },
+  study: { id: "study", label: "Study Intent", icon: GraduationCap },
+  financial: { id: "financial", label: "Financial Info", icon: Wallet },
+  notes: { id: "notes", label: "Notes", icon: MessageSquare },
+  review: { id: "review", label: "Review & Submit", icon: Eye },
+} as const;
 
-type StepId = typeof STEPS[number]["id"];
+type StepId = keyof typeof STEP_DEFS;
+
+const PARTNER_STEPS: StepId[] = ["student", "study", "notes", "review"];
+const ADMIN_STEPS: StepId[] = ["student", "study", "financial", "notes", "review"];
 
 const CO_APPLICANT_RELATIONS = [
   "Father", "Mother", "Spouse", "Guardian", "Brother", "Sister", "Uncle", "Other",
@@ -48,9 +52,11 @@ const TERMINAL_STAGES = ["disbursed", "rejected", "dropped"];
 interface AddLeadProps {
   hideOwnHeader?: boolean;
   containerClassName?: string;
+  /** When true, render the admin 5-step structure with a dedicated Financial Info step. */
+  adminMode?: boolean;
 }
 
-export default function AddLead({ hideOwnHeader = false, containerClassName }: AddLeadProps = {}) {
+export default function AddLead({ hideOwnHeader = false, containerClassName, adminMode = false }: AddLeadProps = {}) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const draftId = searchParams.get("draft");
@@ -65,6 +71,14 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
   const [submitting, setSubmitting] = useState(false);
   const [hydrating, setHydrating] = useState(Boolean(hydrateId));
 
+  // Admin form mode: explicit prop OR signed-in admin user. Path-based fallback for safety.
+  const isAdminContext = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
+  const isAdminForm = adminMode || isAdmin || isAdminContext;
+
+  // Mode-aware step list. Partner = 4 steps, Admin = 5 steps with Financial Info.
+  const steps = useMemo(() => (isAdminForm ? ADMIN_STEPS : PARTNER_STEPS).map((id) => STEP_DEFS[id]), [isAdminForm]);
+  const stepIds = useMemo(() => steps.map((s) => s.id) as StepId[], [steps]);
+
   // Partner guard: block direct lead-edit URL for non-admins; route them to Request Edit.
   useEffect(() => {
     if (!editId) return;
@@ -73,6 +87,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
       navigate(`/leads/${editId}`, { replace: true });
     }
   }, [editId, appUser, isAdmin, navigate]);
+
   const [activeStep, setActiveStep] = useState<StepId>("student");
   const [showDupDialog, setShowDupDialog] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -83,7 +98,31 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
   const [coAppOpen, setCoAppOpen] = useState(false);
   const [originalLead, setOriginalLead] = useState<Record<string, unknown> | null>(null);
   const [editLeadStage, setEditLeadStage] = useState<string | null>(null);
-  
+
+  // Guardrail: never allow activeStep to settle on a step that's not in the
+  // current mode's list. If partner mode lands on `financial` (e.g. via stale
+  // draft state), normalize it.
+  useEffect(() => {
+    if (!stepIds.includes(activeStep)) {
+      setActiveStep(isAdminForm ? "financial" : "notes");
+    }
+  }, [stepIds, activeStep, isAdminForm]);
+
+  const goToStep = useCallback(
+    (target: StepId) => {
+      if (stepIds.includes(target)) {
+        setActiveStep(target);
+        return;
+      }
+      // Mode mismatch — normalize. Admin-only step requested in partner mode → notes.
+      if (target === "financial" && !isAdminForm) {
+        setActiveStep("notes");
+      } else {
+        setActiveStep(stepIds[0]);
+      }
+    },
+    [stepIds, isAdminForm],
+  );
 
   const [countries, setCountries] = useState<Country[]>([]);
   const [universities, setUniversities] = useState<University[]>([]);
@@ -173,12 +212,13 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
       });
       setOriginalLead(data as unknown as Record<string, unknown>);
       setEditLeadStage(data.current_stage ?? null);
-      
+      // Always start hydrated forms on the first step of the active mode.
+      setActiveStep(stepIds[0]);
       setIsDirty(false);
       setHydrating(false);
     })();
     return () => { cancelled = true; };
-  }, [hydrateId, navigate, isEditMode]);
+  }, [hydrateId, navigate, isEditMode, stepIds]);
 
   // Unsaved changes protection
   useEffect(() => {
@@ -251,7 +291,6 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
 
   const writeAdminAuditTrail = async (leadId: string) => {
     if (!isEditMode || !isAdmin || !appUser || !originalLead) return;
-    // Build the "edited" snapshot using the same keys the form writes.
     const edited: Record<string, unknown> = {
       student_first_name: form.student_first_name.trim() || null,
       student_last_name: form.student_last_name.trim() || null,
@@ -323,7 +362,6 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
       student_whatsapp: form.student_whatsapp.trim() ? (normalizePhone(form.student_whatsapp) ?? form.student_whatsapp.trim()) : null,
       city: form.city.trim() || null,
       state: form.state.trim() || null,
-      // No auto-default for country_of_residence — leave NULL when not entered.
       country_of_residence: form.country_of_residence || null,
       intended_study_country: form.intended_study_country || "Not specified",
       intake_term: form.intake_term || "Not specified",
@@ -337,7 +375,6 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
       coapplicant_income: form.coapplicant_income ? Number(form.coapplicant_income) : null,
       collateral_available: form.collateral_available,
       collateral_notes: form.collateral_notes.trim() || null,
-      // Source subtype is server-set for the partner add-lead path.
       source_sub_type: "add_lead",
       partner_id: effectivePartnerId!,
       partner_user_id: effectiveUserId!,
@@ -353,12 +390,10 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
 
     if (updateTargetId) {
       const updatePayload: any = { ...payload };
-      // Don't overwrite ownership fields on edit.
       delete updatePayload.partner_id;
       delete updatePayload.partner_user_id;
       delete updatePayload.source_type;
       delete updatePayload.source_sub_type;
-      // For admin edits we don't want to flip stage/status from form defaults.
       if (isEditMode) {
         delete updatePayload.current_stage;
         delete updatePayload.current_status;
@@ -407,7 +442,6 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
         });
       }
 
-      // Admin direct-edit audit trail (full admin-scope diff)
       await writeAdminAuditTrail(resultLeadId);
 
       const displayIdResult = await fetchLeadDisplayId(resultLeadId);
@@ -429,7 +463,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
   const intakeTerms = [...new Set(intakes.map((i) => i.intake_term))];
   const intakeYears = [...new Set(intakes.map((i) => i.intake_year))].sort();
 
-  const stepIndex = STEPS.findIndex((s) => s.id === activeStep);
+  const stepIndex = stepIds.findIndex((s) => s === activeStep);
 
   const ReviewRow = ({ label, value }: { label: string; value: string | number | boolean | null | undefined }) => (
     <div className="flex justify-between py-1.5 border-b border-border/50 last:border-0">
@@ -455,9 +489,11 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
       ? "Update lead details. Changes are tracked in the lead timeline."
       : "Create a complete lead record for smoother downstream review and lender matching.";
 
-  const isAdminContext = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
   const backTarget = isAdminContext ? "/admin/leads" : "/leads";
 
+  // Mode-aware navigation targets
+  const studyNextTarget: StepId = isAdminForm ? "financial" : "notes";
+  const notesBackTarget: StepId = isAdminForm ? "financial" : "study";
 
   return (
     <div className={containerClassName ?? "max-w-4xl mx-auto space-y-5"}>
@@ -480,7 +516,6 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
         </div>
       )}
 
-      {/* Terminal-stage warning for admin edits */}
       {isTerminalEdit && (
         <Alert className="bg-amber-50 border-amber-200 text-amber-900 [&>svg]:text-amber-600">
           <AlertTriangle className="h-4 w-4" />
@@ -490,16 +525,16 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
         </Alert>
       )}
 
-      {/* Step progress */}
+      {/* Step progress — mode-aware */}
       <div className="flex items-center gap-1 overflow-x-auto pb-1">
-        {STEPS.map((step, i) => {
+        {steps.map((step, i) => {
           const Icon = step.icon;
           const isActive = step.id === activeStep;
           const isPast = i < stepIndex;
           return (
             <button
               key={step.id}
-              onClick={() => setActiveStep(step.id)}
+              onClick={() => goToStep(step.id as StepId)}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
                 isActive ? "bg-primary text-primary-foreground" : isPast ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground hover:bg-muted/80"
               }`}
@@ -511,7 +546,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
         })}
       </div>
 
-      <Tabs value={activeStep} onValueChange={(v) => setActiveStep(v as StepId)} className="space-y-5">
+      <Tabs value={activeStep} onValueChange={(v) => goToStep(v as StepId)} className="space-y-5">
         {/* Student Details */}
         <TabsContent value="student" className="mt-0">
           <Card>
@@ -552,7 +587,6 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
                 <Label>State</Label>
                 <Input value={form.state} onChange={(e) => set("state", e.target.value)} />
               </div>
-              {/* Country of Residence — admin-only on edit. Hidden from partner intake. */}
               {isEditMode && isAdmin && (
                 <div className="space-y-2 md:col-span-2">
                   <Label>Country of Residence</Label>
@@ -566,7 +600,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
             </CardContent>
           </Card>
           <div className="flex justify-end mt-4">
-            <Button onClick={() => setActiveStep("study")}>Next: Study Intent →</Button>
+            <Button onClick={() => goToStep("study")}>Next: Study Intent →</Button>
           </div>
         </TabsContent>
 
@@ -630,18 +664,76 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
                   <SelectContent>{intakeYears.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label>Approx Loan Amount Required (₹) *</Label>
-                <Input type="number" min="0" value={form.loan_amount_required} onChange={(e) => set("loan_amount_required", e.target.value)} placeholder="e.g. 2500000" />
-                <p className="text-xs text-muted-foreground">Rough expectation — exact figure can be refined later by ops.</p>
-              </div>
+              {/* Loan Amount — partner mode only here. Admin shows it in Financial Info. */}
+              {!isAdminForm && (
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Approx Loan Amount Required (₹) *</Label>
+                  <Input type="number" min="0" value={form.loan_amount_required} onChange={(e) => set("loan_amount_required", e.target.value)} placeholder="e.g. 2500000" />
+                  <p className="text-xs text-muted-foreground">Rough expectation — exact figure can be refined later by ops.</p>
+                </div>
+              )}
             </CardContent>
           </Card>
           <div className="flex justify-between mt-4">
-            <Button variant="outline" onClick={() => setActiveStep("student")}>← Student Details</Button>
-            <Button onClick={() => setActiveStep("notes")}>Next: Notes →</Button>
+            <Button variant="outline" onClick={() => goToStep("student")}>← Student Details</Button>
+            <Button onClick={() => goToStep(studyNextTarget)}>
+              Next: {studyNextTarget === "financial" ? "Financial Info" : "Notes"} →
+            </Button>
           </div>
         </TabsContent>
+
+        {/* Financial Info — admin mode only */}
+        {isAdminForm && (
+          <TabsContent value="financial" className="mt-0">
+            <Card>
+              <CardHeader><CardTitle className="text-lg">Financial Information</CardTitle></CardHeader>
+              <CardContent className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Approx Loan Amount Required (₹) *</Label>
+                  <Input type="number" min="0" value={form.loan_amount_required} onChange={(e) => set("loan_amount_required", e.target.value)} placeholder="e.g. 2500000" />
+                  <p className="text-xs text-muted-foreground">Rough expectation — exact figure can be refined later by ops.</p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Co-Applicant Name</Label>
+                  <Input value={form.coapplicant_name} onChange={(e) => set("coapplicant_name", e.target.value)} placeholder="Full name" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Co-Applicant Relation</Label>
+                  <Select value={form.coapplicant_relation} onValueChange={(v) => set("coapplicant_relation", v)}>
+                    <SelectTrigger><SelectValue placeholder="Select relation" /></SelectTrigger>
+                    <SelectContent>
+                      {CO_APPLICANT_RELATIONS.map((r) => (
+                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Co-Applicant Income (₹)</Label>
+                  <Input type="number" min="0" value={form.coapplicant_income} onChange={(e) => set("coapplicant_income", e.target.value)} placeholder="Annual income (optional)" />
+                  <p className="text-xs text-muted-foreground">Optional — can be refined later from documents.</p>
+                </div>
+                <div className="md:col-span-2 flex items-center gap-3 rounded-md border p-2.5">
+                  <Switch checked={form.collateral_available} onCheckedChange={(v) => set("collateral_available", v)} />
+                  <div>
+                    <Label className="text-sm">Secured (collateral likely available)</Label>
+                    <p className="text-[11px] text-muted-foreground">Off = unsecured preference. Detailed collateral info is collected later.</p>
+                  </div>
+                </div>
+                {form.collateral_available && (
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>Collateral Notes</Label>
+                    <Textarea value={form.collateral_notes} onChange={(e) => set("collateral_notes", e.target.value)} placeholder="Type, est. value, location…" rows={2} />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            <div className="flex justify-between mt-4">
+              <Button variant="outline" onClick={() => goToStep("study")}>← Study Intent</Button>
+              <Button onClick={() => goToStep("notes")}>Next: Notes →</Button>
+            </div>
+          </TabsContent>
+        )}
 
         {/* Notes */}
         <TabsContent value="notes" className="mt-0">
@@ -649,68 +741,57 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
             <CardHeader><CardTitle className="text-lg">Partner Notes</CardTitle></CardHeader>
             <CardContent className="grid gap-4">
               <div className="space-y-2">
-                <Label>Partner Remark</Label>
+                <Label>{isAdminForm ? "Admin / Partner Remark" : "Partner Remark"}</Label>
                 <Textarea value={form.partner_remark} onChange={(e) => set("partner_remark", e.target.value)} placeholder="Any additional context for the operations team..." rows={3} />
               </div>
 
-              {/* Optional co-applicant context — collapsed by default */}
-              <Collapsible open={coAppOpen} onOpenChange={setCoAppOpen}>
-                <CollapsibleTrigger asChild>
-                  <button
-                    type="button"
-                    className="flex w-full items-center justify-between rounded-md border bg-muted/40 px-3 py-2 text-left text-xs font-medium hover:bg-muted/60 transition-colors"
-                  >
-                    <span>Co-applicant context (optional)</span>
-                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${coAppOpen ? "rotate-180" : ""}`} />
-                  </button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="pt-3">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label>Co-Applicant Name</Label>
-                      <Input value={form.coapplicant_name} onChange={(e) => set("coapplicant_name", e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Co-Applicant Relation</Label>
-                      <Select value={form.coapplicant_relation} onValueChange={(v) => set("coapplicant_relation", v)}>
-                        <SelectTrigger><SelectValue placeholder="Select relation" /></SelectTrigger>
-                        <SelectContent>
-                          {CO_APPLICANT_RELATIONS.map((r) => (
-                            <SelectItem key={r} value={r}>{r}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="md:col-span-2 flex items-center gap-3 rounded-md border p-2.5">
-                      <Switch checked={form.collateral_available} onCheckedChange={(v) => set("collateral_available", v)} />
-                      <div>
-                        <Label className="text-sm">Secured (collateral likely available)</Label>
-                        <p className="text-[11px] text-muted-foreground">Off = unsecured preference. Detailed collateral info is collected later.</p>
+              {/* Partner mode only: optional co-applicant context — collapsed by default */}
+              {!isAdminForm && (
+                <Collapsible open={coAppOpen} onOpenChange={setCoAppOpen}>
+                  <CollapsibleTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between rounded-md border bg-muted/40 px-3 py-2 text-left text-xs font-medium hover:bg-muted/60 transition-colors"
+                    >
+                      <span>Co-applicant context (optional)</span>
+                      <ChevronDown className={`h-3.5 w-3.5 transition-transform ${coAppOpen ? "rotate-180" : ""}`} />
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-3">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Co-Applicant Name</Label>
+                        <Input value={form.coapplicant_name} onChange={(e) => set("coapplicant_name", e.target.value)} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Co-Applicant Relation</Label>
+                        <Select value={form.coapplicant_relation} onValueChange={(v) => set("coapplicant_relation", v)}>
+                          <SelectTrigger><SelectValue placeholder="Select relation" /></SelectTrigger>
+                          <SelectContent>
+                            {CO_APPLICANT_RELATIONS.map((r) => (
+                              <SelectItem key={r} value={r}>{r}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="md:col-span-2 flex items-center gap-3 rounded-md border p-2.5">
+                        <Switch checked={form.collateral_available} onCheckedChange={(v) => set("collateral_available", v)} />
+                        <div>
+                          <Label className="text-sm">Secured (collateral likely available)</Label>
+                          <p className="text-[11px] text-muted-foreground">Off = unsecured preference. Detailed collateral info is collected later.</p>
+                        </div>
                       </div>
                     </div>
-                    {/* On admin edit, expose the deeper fields too */}
-                    {isEditMode && isAdmin && (
-                      <>
-                        <div className="space-y-2">
-                          <Label>Co-Applicant Income (₹)</Label>
-                          <Input type="number" min="0" value={form.coapplicant_income} onChange={(e) => set("coapplicant_income", e.target.value)} />
-                        </div>
-                        {form.collateral_available && (
-                          <div className="space-y-2 md:col-span-2">
-                            <Label>Collateral Notes</Label>
-                            <Textarea value={form.collateral_notes} onChange={(e) => set("collateral_notes", e.target.value)} placeholder="Type, est. value, location…" rows={2} />
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
             </CardContent>
           </Card>
           <div className="flex justify-between mt-4">
-            <Button variant="outline" onClick={() => setActiveStep("study")}>← Study Intent</Button>
-            <Button onClick={() => setActiveStep("review")}>Next: Review & Submit →</Button>
+            <Button variant="outline" onClick={() => goToStep(notesBackTarget)}>
+              ← {notesBackTarget === "financial" ? "Financial Info" : "Study Intent"}
+            </Button>
+            <Button onClick={() => goToStep("review")}>Next: Review & Submit →</Button>
           </div>
         </TabsContent>
 
@@ -738,9 +819,24 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
                 <ReviewRow label="University" value={resolvedUniversityName} />
                 <ReviewRow label="Course" value={resolvedCourseName} />
                 <ReviewRow label="Intake" value={`${form.intake_term} ${form.intake_year || ""}`} />
-                <ReviewRow label="Approx Loan Amount (₹)" value={form.loan_amount_required ? `₹${Number(form.loan_amount_required).toLocaleString("en-IN")}` : undefined} />
+                {!isAdminForm && (
+                  <ReviewRow label="Approx Loan Amount (₹)" value={form.loan_amount_required ? `₹${Number(form.loan_amount_required).toLocaleString("en-IN")}` : undefined} />
+                )}
               </div>
-              {(form.coapplicant_name || form.coapplicant_relation || form.collateral_available) && (
+              {/* Admin: dedicated Financial Info group, always rendered */}
+              {isAdminForm && (
+                <div>
+                  <Badge variant="outline" className="mb-2">Financial Info</Badge>
+                  <ReviewRow label="Approx Loan Amount (₹)" value={form.loan_amount_required ? `₹${Number(form.loan_amount_required).toLocaleString("en-IN")}` : undefined} />
+                  <ReviewRow label="Co-Applicant" value={form.coapplicant_name} />
+                  <ReviewRow label="Relation" value={form.coapplicant_relation} />
+                  <ReviewRow label="Co-Applicant Income (₹)" value={form.coapplicant_income ? `₹${Number(form.coapplicant_income).toLocaleString("en-IN")}` : undefined} />
+                  <ReviewRow label="Collateral" value={form.collateral_available} />
+                  {form.collateral_available && <ReviewRow label="Collateral Notes" value={form.collateral_notes} />}
+                </div>
+              )}
+              {/* Partner: keep conditional co-applicant context block */}
+              {!isAdminForm && (form.coapplicant_name || form.coapplicant_relation || form.collateral_available) && (
                 <div>
                   <Badge variant="outline" className="mb-2">Co-applicant context</Badge>
                   <ReviewRow label="Co-Applicant" value={form.coapplicant_name} />
@@ -751,14 +847,14 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
               {form.partner_remark && (
                 <div>
                   <Badge variant="outline" className="mb-2">Notes</Badge>
-                  <ReviewRow label="Partner Remark" value={form.partner_remark} />
+                  <ReviewRow label={isAdminForm ? "Admin / Partner Remark" : "Partner Remark"} value={form.partner_remark} />
                 </div>
               )}
             </CardContent>
           </Card>
 
           <div className="flex gap-3 justify-between sticky bottom-4 bg-background/80 backdrop-blur p-3 rounded-lg border">
-            <Button variant="outline" onClick={() => setActiveStep("notes")}>← Back to Edit</Button>
+            <Button variant="outline" onClick={() => goToStep("notes")}>← Back to Edit</Button>
             <div className="flex gap-3">
               {!isEditMode && (
                 <Button type="button" variant="secondary" disabled={submitting || checking} onClick={() => handleSubmit(true)}>

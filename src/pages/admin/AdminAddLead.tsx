@@ -153,7 +153,7 @@ export default function AdminAddLead() {
         </div>
       </div>
 
-      <AddLead hideOwnHeader containerClassName="space-y-6" />
+      <AddLead hideOwnHeader adminMode containerClassName="space-y-6" />
     </div>
   );
 }
