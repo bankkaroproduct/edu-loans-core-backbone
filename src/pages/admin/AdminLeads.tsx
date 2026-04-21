@@ -407,7 +407,7 @@ export default function AdminLeads() {
   ];
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6 max-w-screen-2xl mx-auto">
       <PageHeader
         title="Lead Queue"
         description="Cross-partner lead inbox — student & partner leads in one place."
