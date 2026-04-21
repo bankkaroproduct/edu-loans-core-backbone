@@ -65,12 +65,12 @@ export function AdminTopMetrics({ data, loading, error, onRetry, activeLendersCo
       tone: { bg: "bg-emerald-100", fg: "text-emerald-700" },
     },
     {
-      label: "Network",
+      label: "Partners",
       value: data?.activePartners,
       sub:
         activeLendersCount !== undefined
-          ? `Active partners • ${fmt(activeLendersCount)} active lenders`
-          : "Active partners",
+          ? `Active partners on platform · ${fmt(activeLendersCount)} lenders configured`
+          : "Active partners on platform",
       icon: Network,
       tone: { bg: "bg-primary/10", fg: "text-primary" },
     },
