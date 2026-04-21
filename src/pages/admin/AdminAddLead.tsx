@@ -61,10 +61,7 @@ export default function AdminAddLead() {
             <div className="space-y-0.5 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-sm font-semibold leading-tight">Partner Attribution</h2>
-                <Badge
-                  variant="outline"
-                  className="text-[10px] bg-amber-500/10 text-amber-700 border-amber-500/30"
-                >
+                <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
                   Required
                 </Badge>
               </div>
