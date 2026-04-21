@@ -38,6 +38,7 @@ const STEP_DEFS = {
   study: { id: "study", label: "Study Intent", icon: GraduationCap },
   financial: { id: "financial", label: "Financial Info", icon: Wallet },
   notes: { id: "notes", label: "Notes", icon: MessageSquare },
+  assign: { id: "assign", label: "Assign to Partner", icon: Building2 },
   review: { id: "review", label: "Review & Submit", icon: Eye },
 } as const;
 
@@ -45,6 +46,7 @@ type StepId = keyof typeof STEP_DEFS;
 
 const PARTNER_STEPS: StepId[] = ["student", "study", "notes", "review"];
 const ADMIN_STEPS: StepId[] = ["student", "study", "financial", "notes", "review"];
+const ADMIN_EDIT_STEPS: StepId[] = ["student", "study", "financial", "notes", "assign", "review"];
 
 const CO_APPLICANT_RELATIONS = [
   "Father", "Mother", "Spouse", "Guardian", "Brother", "Sister", "Uncle", "Other",
