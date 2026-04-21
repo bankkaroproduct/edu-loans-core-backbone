@@ -1,165 +1,101 @@
-# PROMPT 6 — Admin Portal Gap Closure (Refined Plan, Pre-Build)
+# Admin Reports — UX Refinement (Non-Destructive)
 
-## Refinement responses (verified against live DB)
+Promote Date Range to a first-class hero control. **No logic, query, or export changes.**
 
-### R1. Lifecycle keys — verified
-Real stage keys in `lifecycle_stage_master`:
-`draft, submitted, under_initial_review, documents_pending, documents_under_review, bre_evaluated, sent_to_lender, login_submitted, credit_query, sanction_received, disbursed, rejected, dropped, on_hold`
+## Files to modify (3)
 
-KPIs will use **only these exact keys**. No invented labels.
+### 1. `src/components/admin/reports/AdminReportFilters.tsx`
+- Rename collapsible header label `Filters` → `Advanced Filters`.
+- Remove the From/To date pickers from row 1.
+- Keep the Partner select in this section (binds to `filters.partnerId` — stays in sync with the new scope bar automatically).
+- Reflow row 1 to fill the gap left by the removed date pickers.
+- Leave all other filters and the active-count badge logic untouched.
 
-### R2. "Pending Admin Actions" — precise definition
-`pendingAdminActions = pendingEditRequests + docsAwaitingVerification`
-- `pendingEditRequests` = `lead_edit_requests WHERE status='pending'`
-- `docsAwaitingVerification` = `lead_documents WHERE is_latest=true AND verification_status='uploaded'`
+### 2. `src/components/admin/reports/ReportCard.tsx`
+- Add optional prop: `dateFieldHint?: string`.
+- Render under the existing description as `text-[10px] text-muted-foreground` (e.g. "Uses created date").
+- No behavior change — the `useEffect` that fetches the count still keys on `filterVersion` only.
 
-Both are individually shown as their own KPI cards too — the combined card is the "inbox" header number for an admin.
+### 3. `src/pages/admin/AdminReports.tsx`
+- Add an inline `ReportingScopeBar` component (no new file).
+- Add an applied-state summary line beneath it.
+- Pass `dateFieldHint` to each `ReportCard`.
 
-### R3. Master Data bulk upload — constraint reality
-DB check results:
-| Table | Unique constraint? | Bulk upload approach |
-|---|---|---|
-| `countries_master` | UNIQUE(country_name), UNIQUE(iso_code) | Safe upsert by `iso_code` |
-| `intake_master` | UNIQUE(intake_term, intake_year) | Safe upsert by composite |
-| `universities_master` | **None** | Preview + read-existing match on (lower(name), country) → INSERT only new, SKIP existing (no update) |
-| `courses_master` | **None** | Preview + read-existing match on lower(course_name) → INSERT only new, SKIP existing |
-| `lenders` | UNIQUE(lender_code) | Defer (complex array fields) |
+## New page section order
 
-So: **Countries + Intakes use upsert. Universities + Courses use controlled "insert-only-new" with preview showing which rows are new vs already-exist.** No blind upsert anywhere.
+```text
+PageHeader
+Reporting Scope Bar           ← NEW, always visible
+Applied-state summary line    ← NEW
+Summary Strip                 ← unchanged
+Advanced Filters              ← relabeled, dates removed
+Report Cards                  ← + dateFieldHint
+```
 
-### R4. AddLead / BulkUpload reuse for admin — context check
-Verified by reading existing files:
-- `AddLead.tsx` line 64-77: admin guard exists; admins are NOT redirected to Request Edit even with `?edit=` (admins edit directly).
-- `usePartnerContext`: admins use `simulatedPartnerId` from `AdminPartnerSwitcher`. If admin has no partner selected, the lead form will gate (existing behavior).
-- `BulkUpload.tsx` writes via `effectivePartnerId` from same context — already admin-safe.
+## Reporting Scope Bar — behavior
 
-Plan additions to remove confusion:
-- New `AdminAddLead.tsx` and `AdminBulkUpload.tsx` thin wrappers that:
-  - Render under `<AdminLayout>` (not partner sidebar)
-  - Show admin-context page header ("Add Lead — Admin", "Bulk Upload — Admin")
-  - Force admins to pick a partner via `AdminPartnerSwitcher` if none selected
-  - Re-export the same form/processor logic — no logic duplication
-- This keeps copy clean while reusing logic.
+- Inline component inside `AdminReports.tsx`.
+- Local pending state: `pendingFrom`, `pendingTo`, `pendingPartner`.
+- **Sync rule (NEW):** `pendingFrom`, `pendingTo`, `pendingPartner` are initialized from current `filters` and kept in sync via a `useEffect` on `[filters.dateFrom, filters.dateTo, filters.partnerId]`. This guarantees the bar reflects external mutations — Reset button, edits made inside Advanced Filters' Partner select, or any future programmatic change — without diverging.
+- Commits to page-level `filters` only on **Apply** or preset click — prevents card refetch thrash while picking dates.
+- **Presets** (auto-apply on click):
+  - Today → `[today, today]`
+  - Last 7 Days → `[today-6, today]`
+  - Last 30 Days → `[today-29, today]`
+  - This Month → `[startOfMonth, today]`
+  - Last Month → `[startOfLastMonth, endOfLastMonth]`
+  - Custom → opens From/To popovers, no auto-apply
+- **Reset** → clears `dateFrom`, `dateTo`, `partnerId` and commits immediately (sync effect then refreshes the pending state from the cleared filters).
+- **Apply** → commits pending values into `filters`; existing `filterVersion` → `cardKey` flow refetches all card counts.
+- Layout: single row at ≥1024px, wraps cleanly below. Matches Lead Queue toolbar rhythm (`h-9` controls, `gap-2`, `text-xs`). Uses existing shadcn `Popover` + `Calendar` (with `pointer-events-auto`).
 
-### R5. Partners page — must show seeded orgs
-Verified seeded rows in `partner_organizations`:
-- PTR-001 — Global Study Advisors — active
-- PTR-002 — EduBridge — active
-- PTR-DIRECT — Student Direct — active (system row, marked as such in UI)
+## No new fetch pathway (NEW constraint)
 
-`AdminPartners.tsx` will list all 3 with a system-badge for `PTR-DIRECT` and full row detail for the two real partners.
+- The scope bar **must not** introduce any new fetch trigger, query, or refresh function.
+- Its only side effect is calling `onChange(nextFilters)` (i.e. `setFilters`) on the page-level state.
+- All count refreshes continue to flow through the existing `filterVersion = JSON.stringify(filters)` → `cardKey` → `ReportCard` `useEffect` chain.
+- The summary strip (`loadSummary`) keeps its current independent refresh trigger (already filter-independent) — no new wiring.
 
----
+## Applied-state line
 
-## Build scope (locked)
+Muted `text-xs` line below the bar:
 
-### Files to create (7)
-1. `src/pages/admin/AdminPartners.tsx`
-2. `src/pages/admin/AdminLenders.tsx`
-3. `src/pages/admin/AdminAddLead.tsx`
-4. `src/pages/admin/AdminBulkUpload.tsx`
-5. `src/components/admin/PartnerDrawer.tsx`
-6. `src/components/admin/LenderDrawer.tsx`
-7. `src/components/admin/MasterBulkUploadDialog.tsx`
+```
+Showing data for {range} • {partner}
+```
 
-### Files to modify (6)
-1. `src/App.tsx` — add `/admin/partners`, `/admin/lenders`, `/admin/leads/new`, `/admin/leads/bulk`; remove `/admin/universities` (sidebar redirects to master-data); keep `/admin/settings` unrouted.
-2. `src/pages/admin/AdminDashboard.tsx` — remove `<AdminPipelineSnapshot>` + `<AdminSystemAlerts>` blocks; keep header + metrics + queue + side rail.
-3. `src/components/admin/AdminTopMetrics.tsx` — refactor to 8 ops cards (4×2).
-4. `src/hooks/useAdminDashboard.ts` — extend metrics fetch with the new counts; keep pipeline/alerts hooks for rollback safety but stop calling from dashboard.
-5. `src/components/admin/AdminSidebar.tsx` — remove Settings; redirect Universities to `/admin/master-data?tab=universities`; add "Lead Operations" group with Add Lead + Bulk Upload.
-6. `src/pages/admin/AdminMasterData.tsx` — read `?tab=` from URL; add Bulk Upload button visible only on Countries/Intakes/Universities/Courses tabs.
+- `{range}` → `01 Apr 2026 – 30 Apr 2026` or `All time` when both dates empty.
+- `{partner}` → resolved name from loaded `partners` list, or `All Partners`.
 
----
+Read-only.
 
-## Dashboard KPI definitions (verified real keys only)
+## ReportCard date-field hints (mapped in `AdminReports.tsx`)
 
-| # | Card | Source query |
-|---|---|---|
-| 1 | Total Leads | `student_leads WHERE is_archived=false` |
-| 2 | Pending Admin Actions | sum of #3 + #4 |
-| 3 | Requests Pending Approval | `lead_edit_requests WHERE status='pending'` |
-| 4 | Documents Pending Review | `lead_documents WHERE is_latest=true AND verification_status='uploaded'` |
-| 5 | Sent to Lender | `student_leads WHERE current_stage='sent_to_lender' AND is_archived=false` |
-| 6 | Sanction Received | `student_leads WHERE current_stage='sanction_received' AND is_archived=false` |
-| 7 | Disbursed | `student_leads WHERE current_stage='disbursed' AND is_archived=false` |
-| 8 | Active Partners | `partner_organizations WHERE status='active' AND is_archived=false` |
+| Report | Hint |
+|---|---|
+| Leads Report | Uses created date |
+| Stage Movement Report | Uses transition date |
+| Documents Pending Review | Uses uploaded date |
+| Edit Requests Report | Uses created date |
+| Partner Performance | Uses created date |
 
----
+Labels only — match the date columns already used by existing fetchers.
 
-## Capability summary
+## What stays exactly the same
 
-### Partners (`/admin/partners`)
-- Table: code, display_name, partner_type, status, contact, lead-count, created
-- Search (name/code), status filter
-- Add/Edit drawer: display_name, legal_name, partner_code, partner_type, contact_person_name/email/phone, status, payout_entity_name
-- Status toggle (no hard delete). PTR-DIRECT row is read-only (system).
+- `src/lib/reportExports.ts` — every fetcher, column set, business mapping, 5,000-row cap, CSV/XLSX helpers.
+- `ReportFilterState` shape — no new fields (reuses `dateFrom`, `dateTo`, `partnerId`).
+- `filterVersion` / `cardKey` refetch mechanism (single source of truth for card refreshes).
+- Summary strip query and layout.
+- Sidebar nav, route guard, page max width, design language.
 
-### Lenders (`/admin/lenders`)
-- Table: lender_code, lender_name, lender_type, processing_time_days, supports_collateral/unsecured chips, supported_countries chips, active_flag
-- Search, active filter
-- Add/Edit drawer: code, name, type, min/max loan, processing days, country multi-select, collateral/unsecured switches, active
+## Acceptance
 
-### Admin Lead Ops
-- `/admin/leads/new` → `AdminAddLead` wrapper around existing form
-- `/admin/leads/bulk` → `AdminBulkUpload` wrapper around existing processor
-- Both gated on AdminPartnerSwitcher selection (clear inline notice if none)
-
-### Master Data Bulk Upload
-- Button on Countries/Intakes/Universities/Courses tabs only
-- CSV → parse → preview table with status per row (NEW / EXISTS / INVALID)
-- Countries/Intakes: upsert by unique constraint
-- Universities/Courses: insert-new only, skip existing (no update)
-- Result summary: inserted / skipped / failed with error reasons
-
----
-
-## Safe execution order
-1. Sidebar refactor (cosmetic, low risk)
-2. Dashboard cleanup + metrics refactor
-3. App routing
-4. AdminPartners + drawer
-5. AdminLenders + drawer
-6. AdminAddLead + AdminBulkUpload wrappers
-7. Master Data bulk upload dialog + button
-
----
-
-## QA checklist
-
-| # | Scenario | Expected |
-|---|---|---|
-| 1 | /admin loads | 8 KPI cards 4×2; no pipeline; no alerts |
-| 2 | KPI #1 Total Leads | Matches `count(*) from student_leads where is_archived=false` (currently 30) |
-| 3 | KPI #5 Sent to Lender | Uses real `sent_to_lender` key (currently 0) |
-| 4 | KPI #7 Disbursed | Currently shows 2 |
-| 5 | /admin/partners | Shows 3 rows including EduBridge + Global Study Advisors + Student Direct (system) |
-| 6 | Add new partner | Drawer saves, row appears |
-| 7 | Edit partner status → inactive | Badge changes; lead lists still functional |
-| 8 | /admin/lenders | Shows 10 lenders |
-| 9 | Add lender | Saves with required code+name+type |
-| 10 | Sidebar Universities | Navigates to `/admin/master-data?tab=universities` |
-| 11 | Sidebar Settings | Not visible |
-| 12 | /admin/leads/new (no partner picked) | Shows "Select a partner from top bar" notice |
-| 13 | /admin/leads/new (partner picked) | Form renders, lead created assigns to chosen partner |
-| 14 | /admin/leads/bulk | Renders BulkUpload under AdminLayout |
-| 15 | Master Data → Universities → Bulk Upload | Dialog opens, CSV preview shows NEW vs EXISTS, only NEW inserted |
-| 16 | Master Data → Countries → Bulk Upload CSV with existing iso_code | Upsert updates that row |
-| 17 | Master Data → Documents tab | No Bulk Upload button (sensitive master) |
-| 18 | Partner login → /admin/partners | Blocked by AdminRoute |
-
----
-
-## Visual sanity
-- 8 KPI cards in 4×2 grid at viewport ≥1024 px (lg:grid-cols-4); 2×4 at md; 2-col at sm.
-- Page max-width unified at `max-w-screen-2xl mx-auto` for /admin, /admin/partners, /admin/lenders, /admin/leads/new, /admin/leads/bulk.
-- Drawers: `w-full sm:max-w-xl` consistent with existing `MasterRecordDrawer`.
-
----
-
-## Remaining limitations (not in this batch)
-- Partner users CRUD (defer — no presentation gap)
-- Lender bulk upload (complex array fields)
-- Settings page content (hidden, not built)
-- Pipeline/Underwriting/Disbursements/Reports placeholder routes still exist (not in scope this batch)
-- BulkUpload row-level audit table is partner-only schema; admin uses same table but rows tagged with selected partner via AdminPartnerSwitcher — acceptable for v1.
+1. ✅ Global Date Range visible above summary strip
+2. ✅ Admin can pick "Last 30 Days" + Apply → export without opening Advanced
+3. ✅ All existing advanced filters still work
+4. ✅ Each card shows its date-field hint
+5. ✅ Card counts refresh on Apply via existing flow (no new fetch path)
+6. ✅ CSV/XLSX exports unchanged
+7. ✅ Pending state stays in sync with external filter changes (Reset, Advanced Partner edits)
+8. ✅ Page feels reporting-first without redesigning anything else
