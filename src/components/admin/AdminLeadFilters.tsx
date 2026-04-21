@@ -352,7 +352,7 @@ interface Props {
   searchInput: string;
   onSearchInputChange: (v: string) => void;
   stages: { stage_key: StageEnum; stage_label: string }[];
-  statuses: { status_key: StatusEnum; status_label: string }[];
+  statuses: { stage_key: StageEnum; status_key: StatusEnum; status_label: string }[];
   countries: { country_name: string }[];
   partners: { id: string; display_name: string }[];
 }
@@ -363,6 +363,39 @@ export function AdminLeadFilters({
 }: Props) {
   const set = <K extends keyof AdminLeadFilterState>(key: K, val: AdminLeadFilterState[K]) =>
     onChange({ ...filters, [key]: val });
+
+  // Stage → Status narrowing. When Stage is "all" → unique statuses across all stages.
+  // When a specific stage is selected → only statuses configured for that stage.
+  const visibleStatuses = useMemo(() => {
+    if (filters.stage === "all") {
+      const seen = new Set<string>();
+      return statuses.filter((s) => {
+        if (seen.has(s.status_key)) return false;
+        seen.add(s.status_key);
+        return true;
+      });
+    }
+    return statuses.filter((s) => s.stage_key === filters.stage);
+  }, [statuses, filters.stage]);
+
+  // Stage change handler: auto-clear Status if it becomes invalid for the new Stage.
+  const handleStageChange = (nextStage: "all" | StageEnum) => {
+    let nextStatus = filters.status;
+    let didReset = false;
+    if (nextStage !== "all" && filters.status !== "all") {
+      const stillValid = statuses.some(
+        (s) => s.stage_key === nextStage && s.status_key === filters.status,
+      );
+      if (!stillValid) {
+        nextStatus = "all";
+        didReset = true;
+      }
+    }
+    onChange({ ...filters, stage: nextStage, status: nextStatus });
+    if (didReset) {
+      toast.info("Status reset because it does not apply to the selected stage.");
+    }
+  };
 
   // Determine the visible primary source value (collapse legacy granular into primary buckets)
   const primarySourceValue: SourceFilter = useMemo(() => {
@@ -389,15 +422,6 @@ export function AdminLeadFilters({
     if (filters.loanRange !== "all") n++;
     if (filters.intake !== "all") n++;
     if (filters.loanType !== "all") n++;
-    // Source detail (legacy granular value selected) counts as advanced
-    if (
-      filters.source === "partner_direct" ||
-      filters.source === "partner_referral" ||
-      filters.source === "student_portal" ||
-      filters.source === "university_referral"
-    ) {
-      n++;
-    }
     return n;
   }, [filters]);
 
@@ -419,10 +443,9 @@ export function AdminLeadFilters({
   const activeChips: { label: string; clear: () => void }[] = [];
   if (filters.search) activeChips.push({ label: `Search: "${filters.search}"`, clear: () => { onSearchInputChange(""); onChange({ ...filters, search: "" }); } });
   if (filters.source !== "all") {
-    const isPrimary = primarySourceValue === filters.source;
-    const lbl = isPrimary
-      ? labelOf(SOURCE_OPTIONS, filters.source)
-      : labelOf(SOURCE_DETAIL_OPTIONS, filters.source);
+    // Always display the simplified primary label; legacy granular values
+    // collapse to their primary bucket (e.g. partner_referral → "Referral").
+    const lbl = labelOf(SOURCE_OPTIONS, primarySourceValue);
     activeChips.push({ label: `Source: ${lbl}`, clear: () => set("source", "all") });
   }
   if (filters.stage !== "all") activeChips.push({ label: `Stage: ${stages.find(s => s.stage_key === filters.stage)?.stage_label ?? filters.stage}`, clear: () => set("stage", "all") });
