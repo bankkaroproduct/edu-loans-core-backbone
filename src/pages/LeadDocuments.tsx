@@ -25,6 +25,11 @@ export default function LeadDocuments() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { userId, role } = useRoleAccess();
+  const isAdminContext =
+    role === "admin" ||
+    role === "super_admin" ||
+    (typeof window !== "undefined" && window.location.pathname.startsWith("/admin"));
+  const leadDetailPath = `${isAdminContext ? "/admin/leads" : "/leads"}/${id}`;
 
   const [lead, setLead] = useState<Lead | null>(null);
   const [requirements, setRequirements] = useState<DocRequirement[]>([]);
