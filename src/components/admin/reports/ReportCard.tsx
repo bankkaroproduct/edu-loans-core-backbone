@@ -94,6 +94,9 @@ export function ReportCard({ title, description, slug, fetchCount, fetchData, fi
             <div className="min-w-0">
               <h3 className="text-sm font-semibold text-foreground truncate">{title}</h3>
               <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{description}</p>
+              {dateFieldHint && (
+                <p className="text-[10px] text-muted-foreground/80 mt-1 italic">{dateFieldHint}</p>
+              )}
             </div>
           </div>
           <Badge
