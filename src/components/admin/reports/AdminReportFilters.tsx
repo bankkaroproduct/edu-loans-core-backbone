@@ -77,7 +77,7 @@ export function AdminReportFilters({ filters, onChange, stages, statuses, countr
           >
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Filters</span>
+              <span className="text-sm font-medium">Advanced Filters</span>
               {activeCount > 0 && (
                 <span className="text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
                   {activeCount} active
