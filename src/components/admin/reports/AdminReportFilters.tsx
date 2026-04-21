@@ -105,35 +105,9 @@ export function AdminReportFilters({ filters, onChange, stages, statuses, countr
         </CollapsibleTrigger>
         <CollapsibleContent>
           <CardContent className="pt-0 pb-4 space-y-3">
-            {/* Row 1: Date From / Date To / Partner / Source */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-12 gap-2">
-              <div className="col-span-1 md:col-span-1 lg:col-span-3">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className={cn("w-full h-9 text-xs justify-start font-normal", !filters.dateFrom && "text-muted-foreground")}>
-                      <CalendarIcon className="mr-1 h-3.5 w-3.5 shrink-0" />
-                      {filters.dateFrom ? format(filters.dateFrom, "dd MMM yyyy") : "From"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={filters.dateFrom} onSelect={(d) => set("dateFrom", d)} initialFocus />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="col-span-1 md:col-span-1 lg:col-span-3">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className={cn("w-full h-9 text-xs justify-start font-normal", !filters.dateTo && "text-muted-foreground")}>
-                      <CalendarIcon className="mr-1 h-3.5 w-3.5 shrink-0" />
-                      {filters.dateTo ? format(filters.dateTo, "dd MMM yyyy") : "To"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={filters.dateTo} onSelect={(d) => set("dateTo", d)} initialFocus />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="col-span-1 md:col-span-1 lg:col-span-3">
+            {/* Row 1: Partner / Source */}
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-12 gap-2">
+              <div className="col-span-1 md:col-span-1 lg:col-span-6">
                 <Select value={filters.partnerId} onValueChange={(v) => set("partnerId", v)}>
                   <SelectTrigger className="w-full h-9 text-xs"><SelectValue placeholder="Partner" /></SelectTrigger>
                   <SelectContent className="max-h-[300px]">
@@ -142,7 +116,7 @@ export function AdminReportFilters({ filters, onChange, stages, statuses, countr
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-1 md:col-span-1 lg:col-span-3">
+              <div className="col-span-1 md:col-span-1 lg:col-span-6">
                 <Select value={filters.source} onValueChange={(v) => set("source", v as SourceFilter)}>
                   <SelectTrigger className="w-full h-9 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
