@@ -9,6 +9,7 @@ import { ArrowLeft, FileText, RefreshCw } from "lucide-react";
 import { DocumentSummaryStrip } from "@/components/documents/DocumentSummaryStrip";
 import { DocumentChecklist } from "@/components/documents/DocumentChecklist";
 import { DocumentUploadDialog } from "@/components/documents/DocumentUploadDialog";
+import { AdminAddDocumentButton } from "@/components/documents/AdminAddDocumentButton";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Lead = Tables<"student_leads">;
