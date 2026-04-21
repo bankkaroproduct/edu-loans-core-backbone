@@ -141,14 +141,14 @@ export default function AdminAddLead() {
         </Popover>
 
         {selected ? (
-          <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-2.5 py-1.5">
+          <div className="flex items-center gap-2 text-xs text-primary bg-primary/5 border border-primary/20 rounded-md px-2.5 py-1.5">
             <Check className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate">
               Lead will be attributed to <span className="font-medium">{effectivePartnerName ?? selected.display_name}</span>.
             </span>
           </div>
         ) : (
-          <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2.5 py-1.5">
+          <div className="flex items-center gap-2 text-xs bg-muted/50 border border-border rounded-md px-2.5 py-1.5 text-muted-foreground">
             <ShieldAlert className="h-3.5 w-3.5 shrink-0" />
             <span>Choose a partner above to enable lead submission.</span>
           </div>
