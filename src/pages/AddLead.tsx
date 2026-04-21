@@ -241,6 +241,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       });
       setOriginalLead(data as unknown as Record<string, unknown>);
       setEditLeadStage(data.current_stage ?? null);
+      setOriginalPartnerId(data.partner_id ?? null);
+      setPartnerIdAssignment(data.partner_id ?? "");
       // Always start hydrated forms on the first step of the active mode.
       setActiveStep(stepIds[0]);
       setIsDirty(false);
