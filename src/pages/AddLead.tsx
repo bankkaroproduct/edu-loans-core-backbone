@@ -54,9 +54,11 @@ const SOURCE_SUBTYPES = [
 
 interface AddLeadProps {
   hideOwnHeader?: boolean;
+  /** Override the form's outer container classes. Use from admin wrapper to disable centered max-w-4xl. */
+  containerClassName?: string;
 }
 
-export default function AddLead({ hideOwnHeader = false }: AddLeadProps = {}) {
+export default function AddLead({ hideOwnHeader = false, containerClassName }: AddLeadProps = {}) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const draftId = searchParams.get("draft");
@@ -400,7 +402,7 @@ export default function AddLead({ hideOwnHeader = false }: AddLeadProps = {}) {
   const backTarget = isAdminContext ? "/admin/leads" : "/leads";
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className={containerClassName ?? "max-w-4xl mx-auto space-y-6"}>
       {!hideOwnHeader && (
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate(backTarget)}>

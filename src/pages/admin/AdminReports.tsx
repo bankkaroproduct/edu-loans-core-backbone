@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AdminLayout } from "@/components/admin/AdminLayout";
+
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -119,8 +119,8 @@ export default function AdminReports() {
   const cardKey = `${filterVersion}|${refreshKey}`;
 
   return (
-    <AdminLayout>
-      <div className="max-w-screen-2xl mx-auto px-4 py-6 space-y-5">
+    <>
+      <div className="space-y-5 max-w-screen-2xl mx-auto">
         <PageHeader
           title="Reports & Exports"
           description="Filtered exports across leads, lifecycle, documents, requests, and partners. Hard cap of 5,000 rows per export."
@@ -213,7 +213,7 @@ export default function AdminReports() {
           Exports are capped at 5,000 rows. Use filters to narrow large reports.
         </p>
       </div>
-    </AdminLayout>
+    </>
   );
 }
 
