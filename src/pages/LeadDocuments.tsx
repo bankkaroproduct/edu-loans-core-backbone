@@ -122,6 +122,13 @@ export default function LeadDocuments() {
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="text-xs capitalize">{lead.current_stage.replace(/_/g, " ")}</Badge>
+          {isAdminContext && (
+            <AdminAddDocumentButton
+              leadId={lead.id}
+              existingRequirements={requirements}
+              onRequirementReady={(req) => setUploadTarget(req)}
+            />
+          )}
           <Button variant="outline" size="sm" onClick={() => loadData()}>
             <RefreshCw className="h-3.5 w-3.5 mr-1" /> Refresh
           </Button>
