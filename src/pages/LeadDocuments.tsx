@@ -25,6 +25,11 @@ export default function LeadDocuments() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { userId, role } = useRoleAccess();
+  const isAdminContext =
+    role === "admin" ||
+    role === "super_admin" ||
+    (typeof window !== "undefined" && window.location.pathname.startsWith("/admin"));
+  const leadDetailPath = `${isAdminContext ? "/admin/leads" : "/leads"}/${id}`;
 
   const [lead, setLead] = useState<Lead | null>(null);
   const [requirements, setRequirements] = useState<DocRequirement[]>([]);
@@ -103,7 +108,7 @@ export default function LeadDocuments() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <Button variant="ghost" size="icon" onClick={() => navigate(`/leads/${id}`)}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(leadDetailPath)}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="min-w-0">
@@ -133,7 +138,7 @@ export default function LeadDocuments() {
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
             No document requirements have been configured for this lead yet. Requirements will appear here once they are set by the operations team.
           </p>
-          <Button variant="outline" size="sm" onClick={() => navigate(`/leads/${id}`)}>
+          <Button variant="outline" size="sm" onClick={() => navigate(leadDetailPath)}>
             Back to Lead Detail
           </Button>
         </div>

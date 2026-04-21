@@ -19,7 +19,10 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { DuplicateWarningDialog } from "@/components/leads/DuplicateWarningDialog";
 import { LeadSuccessDialog } from "@/components/leads/LeadSuccessDialog";
 import { toast } from "sonner";
-import { ArrowLeft, FileText, User, GraduationCap, MessageSquare, Eye, AlertTriangle, ChevronDown, Wallet } from "lucide-react";
+import { ArrowLeft, FileText, User, GraduationCap, MessageSquare, Eye, AlertTriangle, ChevronDown, Wallet, Building2, Check, ChevronsUpDown } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phone";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { computeAdminDiff, getAdminFieldLabel } from "@/lib/adminEditableFields";
@@ -35,6 +38,7 @@ const STEP_DEFS = {
   study: { id: "study", label: "Study Intent", icon: GraduationCap },
   financial: { id: "financial", label: "Financial Info", icon: Wallet },
   notes: { id: "notes", label: "Notes", icon: MessageSquare },
+  assign: { id: "assign", label: "Assign to Partner", icon: Building2 },
   review: { id: "review", label: "Review & Submit", icon: Eye },
 } as const;
 
@@ -42,6 +46,7 @@ type StepId = keyof typeof STEP_DEFS;
 
 const PARTNER_STEPS: StepId[] = ["student", "study", "notes", "review"];
 const ADMIN_STEPS: StepId[] = ["student", "study", "financial", "notes", "review"];
+const ADMIN_EDIT_STEPS: StepId[] = ["student", "study", "financial", "notes", "assign", "review"];
 
 const CO_APPLICANT_RELATIONS = [
   "Father", "Mother", "Spouse", "Guardian", "Brother", "Sister", "Uncle", "Other",
@@ -75,8 +80,11 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   const isAdminContext = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
   const isAdminForm = adminMode || isAdmin || isAdminContext;
 
-  // Mode-aware step list. Partner = 4 steps, Admin = 5 steps with Financial Info.
-  const steps = useMemo(() => (isAdminForm ? ADMIN_STEPS : PARTNER_STEPS).map((id) => STEP_DEFS[id]), [isAdminForm]);
+  // Mode-aware step list. Partner = 4 steps. Admin add = 5 steps. Admin edit = 6 steps (+ Assign).
+  const steps = useMemo(() => {
+    const list = isAdminForm ? (isEditMode ? ADMIN_EDIT_STEPS : ADMIN_STEPS) : PARTNER_STEPS;
+    return list.map((id) => STEP_DEFS[id]);
+  }, [isAdminForm, isEditMode]);
   const stepIds = useMemo(() => steps.map((s) => s.id) as StepId[], [steps]);
 
   // Partner guard: block direct lead-edit URL for non-admins; route them to Request Edit.
@@ -129,6 +137,12 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   const [courses, setCourses] = useState<Course[]>([]);
   const [intakes, setIntakes] = useState<Intake[]>([]);
 
+  // Admin Assign-to-Partner state (admin-edit mode only)
+  const [partnersList, setPartnersList] = useState<{ id: string; display_name: string; partner_code: string }[]>([]);
+  const [partnerPickerOpen, setPartnerPickerOpen] = useState(false);
+  const [originalPartnerId, setOriginalPartnerId] = useState<string | null>(null);
+  const [partnerIdAssignment, setPartnerIdAssignment] = useState<string>("");
+
   const [form, setForm] = useState({
     student_first_name: "",
     student_last_name: "",
@@ -167,6 +181,21 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       setIntakes(i.data ?? []);
     });
   }, []);
+
+  // Admin-edit only: load full active partner list for the Assign-to-Partner picker.
+  useEffect(() => {
+    if (!isAdminForm || !isEditMode) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("partner_organizations")
+        .select("id, display_name, partner_code")
+        .eq("is_archived", false)
+        .order("display_name");
+      if (!cancelled) setPartnersList((data ?? []).filter((p) => !!p.display_name?.trim()));
+    })();
+    return () => { cancelled = true; };
+  }, [isAdminForm, isEditMode]);
 
   // Hydrate form when resuming a draft or editing an existing lead
   useEffect(() => {
@@ -212,6 +241,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       });
       setOriginalLead(data as unknown as Record<string, unknown>);
       setEditLeadStage(data.current_stage ?? null);
+      setOriginalPartnerId(data.partner_id ?? null);
+      setPartnerIdAssignment(data.partner_id ?? "");
       // Always start hydrated forms on the first step of the active mode.
       setActiveStep(stepIds[0]);
       setIsDirty(false);
@@ -312,6 +343,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       coapplicant_income: form.coapplicant_income ? Number(form.coapplicant_income) : null,
       collateral_available: form.collateral_available,
       collateral_notes: form.collateral_notes.trim() || null,
+      partner_id: partnerIdAssignment || null,
     };
     const diff = computeAdminDiff(originalLead, edited);
     const changedKeys = Object.keys(diff);
@@ -399,6 +431,14 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         delete updatePayload.current_status;
       }
       if (!hasDuplicateWarning) delete updatePayload.duplicate_flag;
+
+      // Admin-edit only: persist partner reassignment if changed.
+      // When the partner org changes, also clear partner_user_id so we don't
+      // leak the old org's user attribution onto the new org.
+      if (isAdminForm && isEditMode && partnerIdAssignment && partnerIdAssignment !== originalPartnerId) {
+        updatePayload.partner_id = partnerIdAssignment;
+        updatePayload.partner_user_id = null;
+      }
       const { data, error } = await supabase
         .from("student_leads")
         .update(updatePayload)
@@ -494,6 +534,13 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   // Mode-aware navigation targets
   const studyNextTarget: StepId = isAdminForm ? "financial" : "notes";
   const notesBackTarget: StepId = isAdminForm ? "financial" : "study";
+  const showAssignStep = isAdminForm && isEditMode;
+  const notesNextTarget: StepId = showAssignStep ? "assign" : "review";
+  const reviewBackTarget: StepId = showAssignStep ? "assign" : "notes";
+
+  const selectedAssignedPartner = partnersList.find((p) => p.id === partnerIdAssignment);
+  const partnerChanged = !!partnerIdAssignment && partnerIdAssignment !== originalPartnerId;
+  const originalPartner = partnersList.find((p) => p.id === originalPartnerId);
 
   return (
     <div className={containerClassName ?? "max-w-4xl mx-auto space-y-5"}>
@@ -791,9 +838,98 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
             <Button variant="outline" onClick={() => goToStep(notesBackTarget)}>
               ← {notesBackTarget === "financial" ? "Financial Info" : "Study Intent"}
             </Button>
-            <Button onClick={() => goToStep("review")}>Next: Review & Submit →</Button>
+            <Button onClick={() => goToStep(notesNextTarget)}>
+              Next: {notesNextTarget === "assign" ? "Assign to Partner" : "Review & Submit"} →
+            </Button>
           </div>
         </TabsContent>
+
+        {/* Assign to Partner — admin edit only */}
+        {showAssignStep && (
+          <TabsContent value="assign" className="mt-0">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-primary" /> Assign to Partner
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="rounded-md border bg-muted/30 px-3 py-2.5 text-sm flex items-center gap-2 flex-wrap">
+                  <span className="text-muted-foreground">Currently attributed to:</span>
+                  <Badge variant="outline" className="font-medium">
+                    {originalPartner ? `${originalPartner.display_name} (${originalPartner.partner_code})` : (originalPartnerId ?? "—")}
+                  </Badge>
+                </div>
+                <div className="space-y-2">
+                  <Label>Reassign to partner organization</Label>
+                  <Popover open={partnerPickerOpen} onOpenChange={setPartnerPickerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={partnerPickerOpen}
+                        className={cn(
+                          "w-full justify-between font-normal h-9",
+                          !selectedAssignedPartner && "text-muted-foreground"
+                        )}
+                      >
+                        <span className="truncate">
+                          {selectedAssignedPartner
+                            ? `${selectedAssignedPartner.display_name} (${selectedAssignedPartner.partner_code})`
+                            : "Search & select a partner organization…"}
+                        </span>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search partner by name or code…" />
+                        <CommandList>
+                          <CommandEmpty>No partners match that search.</CommandEmpty>
+                          <CommandGroup>
+                            {partnersList.map((p) => (
+                              <CommandItem
+                                key={p.id}
+                                value={`${p.display_name} ${p.partner_code}`}
+                                onSelect={() => {
+                                  setPartnerIdAssignment(p.id);
+                                  setIsDirty(true);
+                                  setPartnerPickerOpen(false);
+                                }}
+                              >
+                                <Check className={cn("mr-2 h-4 w-4", partnerIdAssignment === p.id ? "opacity-100" : "opacity-0")} />
+                                <span className="truncate">{p.display_name}</span>
+                                <span className="ml-2 text-xs text-muted-foreground">{p.partner_code}</span>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  <p className="text-xs text-muted-foreground">
+                    Reassigning moves this lead to a different partner organization. The change is logged in the audit trail.
+                    This is a direct admin action and does not trigger the partner edit-request workflow.
+                  </p>
+                </div>
+                {partnerChanged && (
+                  <Alert className="bg-amber-50 border-amber-200 text-amber-900 [&>svg]:text-amber-600">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      Saving will reassign this lead to <strong>{selectedAssignedPartner?.display_name}</strong> and clear the original
+                      partner-user attribution to prevent cross-org leakage.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
+            <div className="flex justify-between mt-4">
+              <Button variant="outline" onClick={() => goToStep("notes")}>← Notes</Button>
+              <Button onClick={() => goToStep("review")}>Next: Review & Submit →</Button>
+            </div>
+          </TabsContent>
+        )}
+
 
         {/* Review */}
         <TabsContent value="review" className="mt-0 space-y-4">
@@ -850,11 +986,28 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   <ReviewRow label={isAdminForm ? "Admin / Partner Remark" : "Partner Remark"} value={form.partner_remark} />
                 </div>
               )}
+              {showAssignStep && (
+                <div>
+                  <Badge variant="outline" className="mb-2">Partner Assignment</Badge>
+                  <ReviewRow
+                    label="Assigned Partner"
+                    value={selectedAssignedPartner ? `${selectedAssignedPartner.display_name} (${selectedAssignedPartner.partner_code})` : (partnerIdAssignment || "—")}
+                  />
+                  {partnerChanged && (
+                    <ReviewRow
+                      label="Previous Partner"
+                      value={originalPartner ? `${originalPartner.display_name} (${originalPartner.partner_code})` : (originalPartnerId ?? "—")}
+                    />
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
           <div className="flex gap-3 justify-between sticky bottom-4 bg-background/80 backdrop-blur p-3 rounded-lg border">
-            <Button variant="outline" onClick={() => goToStep("notes")}>← Back to Edit</Button>
+            <Button variant="outline" onClick={() => goToStep(reviewBackTarget)}>
+              ← Back to {reviewBackTarget === "assign" ? "Assign" : "Edit"}
+            </Button>
             <div className="flex gap-3">
               {!isEditMode && (
                 <Button type="button" variant="secondary" disabled={submitting || checking} onClick={() => handleSubmit(true)}>
