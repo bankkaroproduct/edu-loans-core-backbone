@@ -343,6 +343,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       coapplicant_income: form.coapplicant_income ? Number(form.coapplicant_income) : null,
       collateral_available: form.collateral_available,
       collateral_notes: form.collateral_notes.trim() || null,
+      partner_id: partnerIdAssignment || null,
     };
     const diff = computeAdminDiff(originalLead, edited);
     const changedKeys = Object.keys(diff);
