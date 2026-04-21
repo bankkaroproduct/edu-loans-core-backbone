@@ -991,12 +991,12 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   <Badge variant="outline" className="mb-2">Partner Assignment</Badge>
                   <ReviewRow
                     label="Assigned Partner"
-                    value={selectedAssignedPartner ? `${selectedAssignedPartner.display_name} (${selectedAssignedPartner.partner_code})` : (partnerIdAssignment || "—")}
+                    value={selectedAssignedPartner ? `${selectedAssignedPartner.display_name} (${selectedAssignedPartner.partner_code})` : "—"}
                   />
-                  {partnerChanged && (
+                  {partnerChanged && originalPartner && (
                     <ReviewRow
                       label="Previous Partner"
-                      value={originalPartner ? `${originalPartner.display_name} (${originalPartner.partner_code})` : (originalPartnerId ?? "—")}
+                      value={`${originalPartner.display_name} (${originalPartner.partner_code})`}
                     />
                   )}
                 </div>
