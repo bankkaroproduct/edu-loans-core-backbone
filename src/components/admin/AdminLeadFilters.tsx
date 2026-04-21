@@ -503,7 +503,7 @@ export function AdminLeadFilters({
         </div>
 
         <div className="col-span-1 md:col-span-2 lg:col-span-2">
-          <Select value={filters.stage} onValueChange={(v) => set("stage", v as any)}>
+          <Select value={filters.stage} onValueChange={(v) => handleStageChange(v as "all" | StageEnum)}>
             <SelectTrigger className="w-full h-9 text-xs">
               <SelectValue placeholder="Stage" />
             </SelectTrigger>
@@ -523,11 +523,16 @@ export function AdminLeadFilters({
             </SelectTrigger>
             <SelectContent className="max-h-[300px]">
               <SelectItem value="all">All Statuses</SelectItem>
-              {statuses.map((s) => (
+              {visibleStatuses.map((s) => (
                 <SelectItem key={s.status_key} value={s.status_key}>{s.status_label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
+          {filters.stage !== "all" && (
+            <p className="text-[10px] text-muted-foreground mt-1 px-0.5">
+              Showing statuses for selected stage
+            </p>
+          )}
         </div>
 
         <div className="col-span-1 md:col-span-3 lg:col-span-2">
@@ -585,28 +590,8 @@ export function AdminLeadFilters({
               />
             </div>
 
-            <div className="col-span-1 md:col-span-2 lg:col-span-3">
-              <Select
-                value={
-                  filters.source === "partner_direct" ||
-                  filters.source === "partner_referral" ||
-                  filters.source === "student_portal" ||
-                  filters.source === "university_referral"
-                    ? filters.source
-                    : "all"
-                }
-                onValueChange={(v) => set("source", v as SourceFilter)}
-              >
-                <SelectTrigger className="w-full h-9 text-xs">
-                  <SelectValue placeholder="Source detail" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SOURCE_DETAIL_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Source Detail removed — primary Source filter is the single source control.
+                Legacy granular values still hydrate from URL and collapse to primary labels. */}
 
             <div className="col-span-1 md:col-span-2 lg:col-span-3">
               <Select value={filters.type} onValueChange={(v) => set("type", v as TypeFilter)}>
