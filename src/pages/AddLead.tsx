@@ -80,8 +80,11 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   const isAdminContext = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
   const isAdminForm = adminMode || isAdmin || isAdminContext;
 
-  // Mode-aware step list. Partner = 4 steps, Admin = 5 steps with Financial Info.
-  const steps = useMemo(() => (isAdminForm ? ADMIN_STEPS : PARTNER_STEPS).map((id) => STEP_DEFS[id]), [isAdminForm]);
+  // Mode-aware step list. Partner = 4 steps. Admin add = 5 steps. Admin edit = 6 steps (+ Assign).
+  const steps = useMemo(() => {
+    const list = isAdminForm ? (isEditMode ? ADMIN_EDIT_STEPS : ADMIN_STEPS) : PARTNER_STEPS;
+    return list.map((id) => STEP_DEFS[id]);
+  }, [isAdminForm, isEditMode]);
   const stepIds = useMemo(() => steps.map((s) => s.id) as StepId[], [steps]);
 
   // Partner guard: block direct lead-edit URL for non-admins; route them to Request Edit.
