@@ -1,62 +1,164 @@
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShieldAlert, Shield, ArrowLeft } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { ArrowLeft, Building2, Check, ChevronsUpDown, X, ShieldAlert } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { usePartnerContext } from "@/hooks/usePartnerContext";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { cn } from "@/lib/utils";
 import AddLead from "@/pages/AddLead";
 
 /**
  * Admin-native wrapper for the lead creation form.
  * - Renders under AdminLayout with admin-styled PageHeader.
- * - Forces admin to select a partner via the AdminPartnerSwitcher before the form is rendered.
+ * - Inline searchable "Partner Attribution" picker drives effectivePartnerId via simulatePartner().
  * - Reuses the existing AddLead form/business logic — zero duplication.
  */
 export default function AdminAddLead() {
-  const { effectivePartnerId, effectivePartnerName } = usePartnerContext();
+  const { effectivePartnerId, effectivePartnerName, partnerOptions, simulatePartner } = usePartnerContext();
   const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
 
-  if (!effectivePartnerId) {
-    return (
-      <div className="space-y-6 max-w-screen-2xl mx-auto">
-        <PageHeader
-          title="Add Lead — Admin Console"
-          description="Create a lead on behalf of a partner organization."
-        />
-        <Card className="p-8">
-          <Alert className="bg-amber-50 border-amber-200 text-amber-900 [&>svg]:text-amber-600">
-            <ShieldAlert className="h-4 w-4" />
-            <AlertDescription className="text-sm leading-relaxed">
-              <strong>Select a partner first.</strong> Use the <em>"Test as Partner"</em> picker in the admin sidebar
-              to choose which partner organization this new lead will be attributed to. Admins cannot create unattributed leads.
-            </AlertDescription>
-          </Alert>
-        </Card>
-      </div>
-    );
-  }
+  const selected = partnerOptions.find((p) => p.id === effectivePartnerId);
 
   return (
     <div className="space-y-4 max-w-screen-2xl mx-auto">
       <div className="flex items-start gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/admin/leads")} className="mt-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate("/admin/leads")}
+          className="mt-1"
+          aria-label="Back to leads"
+        >
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1">
           <PageHeader
             title="Add Lead — Admin Console"
-            description={`Creating on behalf of ${effectivePartnerName ?? "selected partner"} · This lead will appear in the partner's pipeline.`}
+            description="Create a lead on behalf of a partner organization."
           />
         </div>
       </div>
-      <Alert className="bg-primary/5 border-primary/20 [&>svg]:text-primary">
-        <Shield className="h-4 w-4" />
-        <AlertDescription className="text-xs">
-          <strong>Admin context:</strong> Lead will be attributed to{" "}
-          <span className="font-medium text-primary">{effectivePartnerName ?? "selected partner"}</span>.
-        </AlertDescription>
-      </Alert>
+
+      {/* Partner Attribution card */}
+      <Card className="p-4 sm:p-5 space-y-3">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div className="flex items-start gap-2.5 min-w-0">
+            <div className="rounded-md bg-primary/10 p-2 shrink-0">
+              <Building2 className="h-4 w-4 text-primary" />
+            </div>
+            <div className="space-y-0.5 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-sm font-semibold leading-tight">Partner Attribution</h2>
+                <Badge
+                  variant="outline"
+                  className="text-[10px] bg-amber-500/10 text-amber-700 border-amber-500/30"
+                >
+                  Required
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Every lead must be attributed to a partner organization. Select which partner this new lead will appear under.
+              </p>
+            </div>
+          </div>
+          {selected && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => simulatePartner(null)}
+              className="h-7 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-3 w-3 mr-1" /> Clear
+            </Button>
+          )}
+        </div>
+
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className={cn(
+                "w-full justify-between font-normal h-10",
+                !selected && "text-muted-foreground"
+              )}
+            >
+              <span className="truncate">
+                {selected
+                  ? `${selected.display_name} (${selected.partner_code})`
+                  : "Search & select a partner organization…"}
+              </span>
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            className="w-[--radix-popover-trigger-width] p-0"
+            align="start"
+          >
+            <Command>
+              <CommandInput placeholder="Search partner by name or code…" />
+              <CommandList>
+                <CommandEmpty>No partners match that search.</CommandEmpty>
+                <CommandGroup>
+                  {partnerOptions.map((p) => (
+                    <CommandItem
+                      key={p.id}
+                      value={`${p.display_name} ${p.partner_code}`}
+                      onSelect={() => {
+                        simulatePartner(p.id);
+                        setOpen(false);
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          effectivePartnerId === p.id ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      <span className="truncate">{p.display_name}</span>
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {p.partner_code}
+                      </span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+
+        {selected ? (
+          <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-2.5 py-1.5">
+            <Check className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">
+              Lead will be attributed to <span className="font-medium">{effectivePartnerName ?? selected.display_name}</span>.
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2.5 py-1.5">
+            <ShieldAlert className="h-3.5 w-3.5 shrink-0" />
+            <span>Choose a partner above to enable lead submission.</span>
+          </div>
+        )}
+
+        <p className="text-[11px] text-muted-foreground/80 leading-relaxed pt-0.5 border-t pt-2">
+          Note: True admin-owned (unassigned) leads require a future schema change and are not supported yet.
+        </p>
+      </Card>
+
       <AddLead hideOwnHeader />
     </div>
   );
