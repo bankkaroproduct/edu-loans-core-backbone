@@ -10,6 +10,7 @@ import { StageBadge, StatusBadge } from "@/components/dashboard/StageBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { AdminLeadFilters, defaultAdminLeadFilters, type AdminLeadFilterState } from "@/components/admin/AdminLeadFilters";
+import { applyBusinessFilters as applySharedBusinessFilters } from "@/lib/leadBusinessFilters";
 import {
   AlertCircle, ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Inbox, RefreshCw, Pencil,
 } from "lucide-react";
