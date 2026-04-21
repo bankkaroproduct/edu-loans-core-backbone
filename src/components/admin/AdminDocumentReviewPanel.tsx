@@ -10,14 +10,23 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { reviewDocument } from "@/lib/adminActions";
+import { DocumentUploadDialog } from "@/components/documents/DocumentUploadDialog";
+import { useRoleAccess } from "@/hooks/useRoleAccess";
+import type { DocRequirement } from "@/pages/LeadDocuments";
+import type { LeadNameFields } from "@/lib/referenceName";
 
-interface DocRequirement {
+interface DocRequirementInput {
   id: string;
   document_type_id: string;
   status: string;
   required_flag: boolean;
   remarks: string | null;
-  document_master?: { document_name: string; document_category: string | null } | null;
+  document_master?: {
+    document_name: string;
+    document_category: string | null;
+    document_code?: string | null;
+    applicable_for?: string | null;
+  } | null;
 }
 
 interface LeadDocument {
@@ -36,7 +45,8 @@ interface LeadDocument {
 
 interface Props {
   leadId: string;
-  requirements: DocRequirement[];
+  lead?: LeadNameFields | null;
+  requirements: DocRequirementInput[];
   onChanged: () => void;
 }
 
@@ -51,9 +61,30 @@ const STATUS_BADGE: Record<string, { variant: "default" | "secondary" | "outline
   not_applicable: { variant: "outline", label: "N/A" },
 };
 
-export function AdminDocumentReviewPanel({ leadId, requirements, onChanged }: Props) {
+export function AdminDocumentReviewPanel({ leadId, lead, requirements, onChanged }: Props) {
   const [docsByType, setDocsByType] = useState<Record<string, LeadDocument | null>>({});
+  const [versionCountByType, setVersionCountByType] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+
+  const reload = () => {
+    setLoading(true);
+    supabase
+      .from("lead_documents")
+      .select("*")
+      .eq("lead_id", leadId)
+      .then(({ data }) => {
+        const latestMap: Record<string, LeadDocument | null> = {};
+        const countMap: Record<string, number> = {};
+        for (const d of data ?? []) {
+          if (!d.document_type_id) continue;
+          countMap[d.document_type_id] = (countMap[d.document_type_id] ?? 0) + 1;
+          if (d.is_latest) latestMap[d.document_type_id] = d as LeadDocument;
+        }
+        setDocsByType(latestMap);
+        setVersionCountByType(countMap);
+        setLoading(false);
+      });
+  };
 
   useEffect(() => {
     let alive = true;
@@ -62,18 +93,26 @@ export function AdminDocumentReviewPanel({ leadId, requirements, onChanged }: Pr
       .from("lead_documents")
       .select("*")
       .eq("lead_id", leadId)
-      .eq("is_latest", true)
       .then(({ data }) => {
         if (!alive) return;
-        const map: Record<string, LeadDocument | null> = {};
+        const latestMap: Record<string, LeadDocument | null> = {};
+        const countMap: Record<string, number> = {};
         for (const d of data ?? []) {
-          if (d.document_type_id) map[d.document_type_id] = d as LeadDocument;
+          if (!d.document_type_id) continue;
+          countMap[d.document_type_id] = (countMap[d.document_type_id] ?? 0) + 1;
+          if (d.is_latest) latestMap[d.document_type_id] = d as LeadDocument;
         }
-        setDocsByType(map);
+        setDocsByType(latestMap);
+        setVersionCountByType(countMap);
         setLoading(false);
       });
     return () => { alive = false; };
   }, [leadId]);
+
+  const handleAfterUpload = () => {
+    reload();
+    onChanged();
+  };
 
   return (
     <Card>
@@ -92,8 +131,11 @@ export function AdminDocumentReviewPanel({ leadId, requirements, onChanged }: Pr
             <DocReviewRow
               key={req.id}
               req={req}
+              leadId={leadId}
+              lead={lead ?? null}
               doc={docsByType[req.document_type_id] ?? null}
-              onChanged={onChanged}
+              versionCount={versionCountByType[req.document_type_id] ?? 0}
+              onChanged={handleAfterUpload}
             />
           ))
         )}
@@ -105,16 +147,21 @@ export function AdminDocumentReviewPanel({ leadId, requirements, onChanged }: Pr
 // -----------------------------------------------------------------------------
 
 function DocReviewRow({
-  req, doc, onChanged,
+  req, leadId, lead, doc, versionCount, onChanged,
 }: {
-  req: DocRequirement;
+  req: DocRequirementInput;
+  leadId: string;
+  lead: LeadNameFields | null;
   doc: LeadDocument | null;
+  versionCount: number;
   onChanged: () => void;
 }) {
+  const { userId, role } = useRoleAccess();
   const [expanded, setExpanded] = useState(false);
   const [action, setAction] = useState<"verify" | "reject" | "reupload" | null>(null);
   const [remark, setRemark] = useState("");
   const [busy, setBusy] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
 
   const status = doc?.verification_status ?? req.status;
   const badge = STATUS_BADGE[status] ?? STATUS_BADGE.not_uploaded;
@@ -155,6 +202,17 @@ function DocReviewRow({
     window.open(data.signedUrl, "_blank");
   };
 
+  // Build the DocRequirement shape expected by DocumentUploadDialog
+  const dialogRequirement = {
+    ...(req as any),
+    document_master: {
+      document_name: req.document_master?.document_name ?? "Document",
+      document_category: req.document_master?.document_category ?? null,
+      document_code: req.document_master?.document_code ?? null,
+      applicable_for: req.document_master?.applicable_for ?? null,
+    },
+  } as DocRequirement;
+
   return (
     <div className="border rounded-md">
       <button
@@ -175,7 +233,15 @@ function DocReviewRow({
       {expanded && (
         <div className="border-t p-3 space-y-3 bg-muted/20">
           {noUpload ? (
-            <p className="text-xs text-muted-foreground">No file uploaded yet — admin actions disabled.</p>
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">No file uploaded yet</p>
+              <p className="text-xs text-muted-foreground">
+                Upload on behalf to add the first document. The same validation, OCR and versioning pipeline will run, and the action will be attributed to you in the audit log.
+              </p>
+              <Button size="sm" variant="default" onClick={() => setUploadOpen(true)}>
+                <Upload className="h-3.5 w-3.5 mr-1" /> Upload on Behalf
+              </Button>
+            </div>
           ) : (
             <>
               <div className="text-xs space-y-1">
@@ -212,6 +278,9 @@ function DocReviewRow({
                   <Button size="sm" variant="outline" onClick={() => setAction("reupload")}>
                     <Upload className="h-3.5 w-3.5 mr-1" /> Request Reupload
                   </Button>
+                  <Button size="sm" variant="outline" onClick={() => setUploadOpen(true)}>
+                    <Upload className="h-3.5 w-3.5 mr-1" /> Upload New Version
+                  </Button>
                 </div>
               )}
 
@@ -247,6 +316,24 @@ function DocReviewRow({
             </>
           )}
         </div>
+      )}
+
+      {uploadOpen && (
+        <DocumentUploadDialog
+          open={uploadOpen}
+          onOpenChange={(o) => !o && setUploadOpen(false)}
+          requirement={dialogRequirement}
+          leadId={leadId}
+          lead={lead}
+          applicableFor={req.document_master?.applicable_for ?? null}
+          userId={userId}
+          userRole={role}
+          currentVersionCount={versionCount}
+          onUploadComplete={() => {
+            setUploadOpen(false);
+            onChanged();
+          }}
+        />
       )}
     </div>
   );
