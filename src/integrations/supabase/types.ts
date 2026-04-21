@@ -718,6 +718,7 @@ export type Database = {
           created_at: string
           id: string
           income_expectations_min: number | null
+          internal_notes: string | null
           lender_code: string
           lender_name: string
           lender_type: string | null
@@ -734,6 +735,7 @@ export type Database = {
           created_at?: string
           id?: string
           income_expectations_min?: number | null
+          internal_notes?: string | null
           lender_code: string
           lender_name: string
           lender_type?: string | null
@@ -750,6 +752,7 @@ export type Database = {
           created_at?: string
           id?: string
           income_expectations_min?: number | null
+          internal_notes?: string | null
           lender_code?: string
           lender_name?: string
           lender_type?: string | null
