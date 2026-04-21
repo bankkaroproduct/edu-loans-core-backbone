@@ -461,10 +461,15 @@ Deno.serve(async (req) => {
       // Derive a clean full_name (no duplication) from first+last
       const derivedFullName = [firstName, lastName].filter(Boolean).join(" ").trim() || incomingFullName.trim() || null;
 
+      // NOTE: student_full_name is a STORED GENERATED column in Postgres
+      // (concatenated from first/last). Writing to it raises
+      // "cannot insert a non-DEFAULT value into column student_full_name".
+      // We intentionally OMIT it from the payload — the DB derives it.
+      // `derivedFullName` is computed only for client-side response convenience.
+      void derivedFullName;
       const basicFields: Record<string, unknown> = {
         student_first_name: firstName,
         student_last_name: lastName,
-        student_full_name: derivedFullName,
         student_email: data?.student_email as string || null,
         student_phone: canonicalPhone,
         student_dob: data?.student_dob as string || null,
