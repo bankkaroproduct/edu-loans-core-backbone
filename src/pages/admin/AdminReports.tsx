@@ -213,7 +213,7 @@ export default function AdminReports() {
           Exports are capped at 5,000 rows. Use filters to narrow large reports.
         </p>
       </div>
-    </AdminLayout>
+    </>
   );
 }
 
