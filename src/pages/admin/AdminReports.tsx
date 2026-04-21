@@ -42,7 +42,7 @@ interface SummaryStrip {
 export default function AdminReports() {
   // Master data
   const [stages, setStages] = useState<{ stage_key: StageEnum; stage_label: string }[]>([]);
-  const [statuses, setStatuses] = useState<{ status_key: StatusEnum; status_label: string }[]>([]);
+  const [statuses, setStatuses] = useState<{ stage_key: StageEnum; status_key: StatusEnum; status_label: string }[]>([]);
   const [countries, setCountries] = useState<{ country_name: string }[]>([]);
   const [partners, setPartners] = useState<{ id: string; display_name: string }[]>([]);
 
@@ -58,16 +58,12 @@ export default function AdminReports() {
     (async () => {
       const [sRes, stRes, cRes, pRes] = await Promise.all([
         supabase.from("lifecycle_stage_master").select("stage_key, stage_label, sort_order").eq("active_flag", true).order("sort_order"),
-        supabase.from("lifecycle_status_master").select("status_key, status_label, sort_order").eq("active_flag", true).order("sort_order"),
+        supabase.from("lifecycle_status_master").select("stage_key, status_key, status_label, sort_order").eq("active_flag", true).order("sort_order"),
         supabase.from("countries_master").select("country_name").eq("active_flag", true).order("country_name"),
         supabase.from("partner_organizations").select("id, display_name, partner_code").eq("is_archived", false).neq("partner_code", "PTR-DIRECT").order("display_name"),
       ]);
-      const statusMap = new Map<string, { status_key: StatusEnum; status_label: string }>();
-      (stRes.data ?? []).forEach((r) => {
-        if (!statusMap.has(r.status_key)) statusMap.set(r.status_key, { status_key: r.status_key, status_label: r.status_label });
-      });
       setStages(sRes.data ?? []);
-      setStatuses(Array.from(statusMap.values()));
+      setStatuses((stRes.data ?? []).map((r) => ({ stage_key: r.stage_key, status_key: r.status_key, status_label: r.status_label })));
       setCountries(cRes.data ?? []);
       setPartners((pRes.data ?? []).filter((p) => !!p.display_name?.trim()));
     })();
