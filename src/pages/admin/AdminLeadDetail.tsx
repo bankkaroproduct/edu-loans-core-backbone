@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, RefreshCw, ArrowLeft } from "lucide-react";
+import { AlertCircle, RefreshCw, ArrowLeft, Edit, FileText } from "lucide-react";
 import { LeadDetailHeader } from "@/components/lead-detail/LeadDetailHeader";
 import { LeadSummaryStrip } from "@/components/lead-detail/LeadSummaryStrip";
 import { LeadProfileSection } from "@/components/lead-detail/LeadProfileSection";
@@ -188,6 +188,16 @@ export default function AdminLeadDetail() {
         backLabel="Back to Lead Queue"
         hideActions
       />
+
+      {/* Admin direct-action row — Edit is always enabled, including terminal stages */}
+      <div className="flex items-center justify-end gap-2">
+        <Button variant="outline" size="sm" onClick={() => navigate(`/leads/${lead.id}/documents`)}>
+          <FileText className="h-4 w-4 mr-1" /> Documents
+        </Button>
+        <Button size="sm" onClick={() => navigate(`/admin/leads/new?edit=${lead.id}`)}>
+          <Edit className="h-4 w-4 mr-1" /> Edit Lead
+        </Button>
+      </div>
 
       <LeadSummaryStrip lead={lead} />
       <LeadLifecycleProgress lead={lead} />
