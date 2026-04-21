@@ -12,6 +12,11 @@ export type StatusEnum = Database["public"]["Enums"]["lead_status_enum"];
 
 export type SourceFilter =
   | "all"
+  // Primary (admin-facing) buckets
+  | "partner"
+  | "student_direct"
+  | "referral"
+  // Legacy granular values — still supported for URL hydration & advanced detail
   | "partner_direct"
   | "partner_referral"
   | "student_portal"
@@ -60,6 +65,17 @@ export function applyBusinessFilters<T>(q: T, f: BusinessFilterState): T {
 
   // Source
   switch (f.source) {
+    // Primary buckets
+    case "partner":
+      qb = qb.eq("source_type", "partner");
+      break;
+    case "student_direct":
+      qb = qb.eq("source_type", "student_direct");
+      break;
+    case "referral":
+      qb = qb.ilike("source_sub_type", "%refer%");
+      break;
+    // Legacy granular
     case "partner_direct":
       qb = qb.eq("source_type", "partner").not("source_sub_type", "ilike", "%refer%");
       break;
@@ -136,6 +152,9 @@ export function applyBusinessFilters<T>(q: T, f: BusinessFilterState): T {
 /** Human-readable labels (for chips, exports, etc.). */
 export const SOURCE_LABELS: Record<SourceFilter, string> = {
   all: "All Sources",
+  partner: "Partner",
+  student_direct: "Student Direct",
+  referral: "Referral",
   partner_direct: "Partner — Direct",
   partner_referral: "Partner — Referral",
   student_portal: "Student Portal",
