@@ -901,10 +901,16 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                       </Command>
                     </PopoverContent>
                   </Popover>
-                  <p className="text-xs text-muted-foreground">
-                    Reassigning moves this lead to a different partner organization. The change is logged in the audit trail.
-                    This is a direct admin action and does not trigger the partner edit-request workflow.
-                  </p>
+                  {originalPartner && !partnerChanged && (
+                    <p className="text-xs text-muted-foreground">
+                      Currently assigned to <strong className="text-foreground">{originalPartner.display_name}</strong>. Pick a different partner above to reassign.
+                    </p>
+                  )}
+                  {!originalPartner && (
+                    <p className="text-xs text-muted-foreground">
+                      Select the partner organization this lead should belong to.
+                    </p>
+                  )}
                 </div>
                 {partnerChanged && (
                   <Alert className="bg-amber-50 border-amber-200 text-amber-900 [&>svg]:text-amber-600">
