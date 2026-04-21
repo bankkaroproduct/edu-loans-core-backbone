@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/command";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Search, CalendarIcon, X, Check, ChevronsUpDown, ChevronDown, SlidersHorizontal } from "lucide-react";
+import { toast } from "sonner";
 import {
   format,
   startOfDay,
@@ -88,14 +89,9 @@ const SOURCE_OPTIONS: { value: SourceFilter; label: string }[] = [
   { value: "student_direct", label: "Student Direct" },
   { value: "referral", label: "Referral" },
 ];
-// Granular legacy values exposed inside Advanced for power users / URL hydration
-const SOURCE_DETAIL_OPTIONS: { value: SourceFilter; label: string }[] = [
-  { value: "all", label: "Any Source Detail" },
-  { value: "partner_direct", label: "Partner — Direct" },
-  { value: "partner_referral", label: "Partner — Referral" },
-  { value: "student_portal", label: "Student Portal" },
-  { value: "university_referral", label: "University Referral" },
-];
+// NOTE: legacy granular source values (partner_direct, partner_referral, university_referral,
+// student_portal) are NOT exposed in the UI. They remain in the SourceFilter union purely for
+// URL hydration of old shared links — collapsed to the simplified primary buckets when displayed.
 const TYPE_OPTIONS: { value: TypeFilter; label: string }[] = [
   { value: "all", label: "All Types" },
   { value: "quick_lead", label: "Quick Lead" },
@@ -103,7 +99,7 @@ const TYPE_OPTIONS: { value: TypeFilter; label: string }[] = [
 ];
 const ENTRY_MODE_OPTIONS: { value: EntryModeFilter; label: string }[] = [
   { value: "all", label: "All Entry Modes" },
-  { value: "add_lead", label: "Add Lead" },
+  { value: "add_lead", label: "Manual Add" },
   { value: "bulk_upload", label: "Bulk Upload" },
   { value: "quick_lead", label: "Quick Lead" },
   { value: "student_portal", label: "Student Portal" },
