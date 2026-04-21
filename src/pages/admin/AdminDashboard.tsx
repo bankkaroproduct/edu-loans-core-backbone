@@ -33,15 +33,20 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6 max-w-screen-2xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Shield className="h-5 w-5 text-primary" />
-          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-          <Badge variant="outline" className="text-[10px]">
-            {appUser?.role?.replace(/_/g, " ").toUpperCase()}
-          </Badge>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-primary" />
+            <h1 className="text-2xl font-bold leading-none">Admin Dashboard</h1>
+            <Badge variant="outline" className="text-[10px]">
+              {appUser?.role?.replace(/_/g, " ").toUpperCase()}
+            </Badge>
+          </div>
+          <p className="text-xs text-muted-foreground pl-7">
+            Operations overview · partner pipeline at a glance
+          </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 sm:pt-1">
           <span className="text-xs text-muted-foreground">
             Updated {formatDistanceToNow(lastRefreshedAt, { addSuffix: true })}
           </span>
