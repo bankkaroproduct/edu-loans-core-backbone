@@ -138,7 +138,7 @@ export default function LeadDocuments() {
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
             No document requirements have been configured for this lead yet. Requirements will appear here once they are set by the operations team.
           </p>
-          <Button variant="outline" size="sm" onClick={() => navigate(`/leads/${id}`)}>
+          <Button variant="outline" size="sm" onClick={() => navigate(leadDetailPath)}>
             Back to Lead Detail
           </Button>
         </div>
