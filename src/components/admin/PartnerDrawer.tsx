@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Lock, AlertTriangle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -161,7 +160,10 @@ export function PartnerDrawer({ open, onOpenChange, record, onSaved }: Props) {
           </div>
 
           <div className="pt-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Contact</p>
+            <div className="flex items-baseline justify-between mb-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Contact</p>
+              <p className="text-[10px] text-muted-foreground">Recommended for go-live</p>
+            </div>
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Contact Person Name</Label>
@@ -180,6 +182,7 @@ export function PartnerDrawer({ open, onOpenChange, record, onSaved }: Props) {
               <div className="space-y-1.5">
                 <Label className="text-xs">Payout Entity Name</Label>
                 <Input value={form.payout_entity_name} onChange={(e) => setField("payout_entity_name", e.target.value)} placeholder="Bank account beneficiary name" />
+                <p className="text-[10px] text-muted-foreground">Defaults to legal name if blank.</p>
               </div>
             </div>
           </div>
