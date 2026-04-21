@@ -430,6 +430,14 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         delete updatePayload.current_status;
       }
       if (!hasDuplicateWarning) delete updatePayload.duplicate_flag;
+
+      // Admin-edit only: persist partner reassignment if changed.
+      // When the partner org changes, also clear partner_user_id so we don't
+      // leak the old org's user attribution onto the new org.
+      if (isAdminForm && isEditMode && partnerIdAssignment && partnerIdAssignment !== originalPartnerId) {
+        updatePayload.partner_id = partnerIdAssignment;
+        updatePayload.partner_user_id = null;
+      }
       const { data, error } = await supabase
         .from("student_leads")
         .update(updatePayload)
