@@ -25,9 +25,11 @@ interface Props {
   /** Changes when filters change so we re-fetch the count. */
   filterVersion: string;
   icon: React.ReactNode;
+  /** Optional muted helper text indicating which date field the global range applies to. */
+  dateFieldHint?: string;
 }
 
-export function ReportCard({ title, description, slug, fetchCount, fetchData, filterVersion, icon }: Props) {
+export function ReportCard({ title, description, slug, fetchCount, fetchData, filterVersion, icon, dateFieldHint }: Props) {
   const [count, setCount] = useState<number | null>(null);
   const [loadingCount, setLoadingCount] = useState(true);
   const [busy, setBusy] = useState<"csv" | "xlsx" | null>(null);
