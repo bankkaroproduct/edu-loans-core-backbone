@@ -83,7 +83,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
   const [coAppOpen, setCoAppOpen] = useState(false);
   const [originalLead, setOriginalLead] = useState<Record<string, unknown> | null>(null);
   const [editLeadStage, setEditLeadStage] = useState<string | null>(null);
-  const [editPartnerName, setEditPartnerName] = useState<string | null>(null);
+  
 
   const [countries, setCountries] = useState<Country[]>([]);
   const [universities, setUniversities] = useState<University[]>([]);
@@ -173,15 +173,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
       });
       setOriginalLead(data as unknown as Record<string, unknown>);
       setEditLeadStage(data.current_stage ?? null);
-      // Lookup partner name on edit (admin context)
-      if (isEditMode && data.partner_id) {
-        const { data: porg } = await supabase
-          .from("partner_organizations")
-          .select("display_name")
-          .eq("id", data.partner_id)
-          .maybeSingle();
-        setEditPartnerName(porg?.display_name ?? null);
-      }
+      
       setIsDirty(false);
       setHydrating(false);
     })();
