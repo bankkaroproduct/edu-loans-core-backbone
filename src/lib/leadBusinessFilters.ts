@@ -63,11 +63,17 @@ export const defaultBusinessFilters: BusinessFilterState = {
 export function applyBusinessFilters<T>(q: T, f: BusinessFilterState): T {
   let qb: any = q;
 
-  // Source
+  // Source — three primary buckets are mutually exclusive in the visible Lead Queue.
+  //   Partner        = source_type='partner' AND source_sub_type NOT ILIKE '%refer%'
+  //   Student Direct = source_type='student_direct'
+  //   Referral       = source_sub_type ILIKE '%refer%' (regardless of source_type)
+  // A row that is partner-attributed but tagged as a referral counts ONLY as Referral.
   switch (f.source) {
-    // Primary buckets
+    // Primary buckets (mutually exclusive)
     case "partner":
-      qb = qb.eq("source_type", "partner");
+      qb = qb
+        .eq("source_type", "partner")
+        .or("source_sub_type.is.null,source_sub_type.not.ilike.%refer%");
       break;
     case "student_direct":
       qb = qb.eq("source_type", "student_direct");
@@ -75,9 +81,11 @@ export function applyBusinessFilters<T>(q: T, f: BusinessFilterState): T {
     case "referral":
       qb = qb.ilike("source_sub_type", "%refer%");
       break;
-    // Legacy granular
+    // Legacy granular (URL hydration only — collapsed to primary buckets in UI)
     case "partner_direct":
-      qb = qb.eq("source_type", "partner").not("source_sub_type", "ilike", "%refer%");
+      qb = qb
+        .eq("source_type", "partner")
+        .or("source_sub_type.is.null,source_sub_type.not.ilike.%refer%");
       break;
     case "partner_referral":
       qb = qb.eq("source_type", "partner").ilike("source_sub_type", "%refer%");
