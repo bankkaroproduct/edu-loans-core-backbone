@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/command";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Search, CalendarIcon, X, Check, ChevronsUpDown, ChevronDown, SlidersHorizontal } from "lucide-react";
+import { toast } from "sonner";
 import {
   format,
   startOfDay,
@@ -88,14 +89,9 @@ const SOURCE_OPTIONS: { value: SourceFilter; label: string }[] = [
   { value: "student_direct", label: "Student Direct" },
   { value: "referral", label: "Referral" },
 ];
-// Granular legacy values exposed inside Advanced for power users / URL hydration
-const SOURCE_DETAIL_OPTIONS: { value: SourceFilter; label: string }[] = [
-  { value: "all", label: "Any Source Detail" },
-  { value: "partner_direct", label: "Partner — Direct" },
-  { value: "partner_referral", label: "Partner — Referral" },
-  { value: "student_portal", label: "Student Portal" },
-  { value: "university_referral", label: "University Referral" },
-];
+// NOTE: legacy granular source values (partner_direct, partner_referral, university_referral,
+// student_portal) are NOT exposed in the UI. They remain in the SourceFilter union purely for
+// URL hydration of old shared links — collapsed to the simplified primary buckets when displayed.
 const TYPE_OPTIONS: { value: TypeFilter; label: string }[] = [
   { value: "all", label: "All Types" },
   { value: "quick_lead", label: "Quick Lead" },
@@ -103,7 +99,7 @@ const TYPE_OPTIONS: { value: TypeFilter; label: string }[] = [
 ];
 const ENTRY_MODE_OPTIONS: { value: EntryModeFilter; label: string }[] = [
   { value: "all", label: "All Entry Modes" },
-  { value: "add_lead", label: "Add Lead" },
+  { value: "add_lead", label: "Manual Add" },
   { value: "bulk_upload", label: "Bulk Upload" },
   { value: "quick_lead", label: "Quick Lead" },
   { value: "student_portal", label: "Student Portal" },
@@ -356,7 +352,7 @@ interface Props {
   searchInput: string;
   onSearchInputChange: (v: string) => void;
   stages: { stage_key: StageEnum; stage_label: string }[];
-  statuses: { status_key: StatusEnum; status_label: string }[];
+  statuses: { stage_key: StageEnum; status_key: StatusEnum; status_label: string }[];
   countries: { country_name: string }[];
   partners: { id: string; display_name: string }[];
 }
@@ -367,6 +363,39 @@ export function AdminLeadFilters({
 }: Props) {
   const set = <K extends keyof AdminLeadFilterState>(key: K, val: AdminLeadFilterState[K]) =>
     onChange({ ...filters, [key]: val });
+
+  // Stage → Status narrowing. When Stage is "all" → unique statuses across all stages.
+  // When a specific stage is selected → only statuses configured for that stage.
+  const visibleStatuses = useMemo(() => {
+    if (filters.stage === "all") {
+      const seen = new Set<string>();
+      return statuses.filter((s) => {
+        if (seen.has(s.status_key)) return false;
+        seen.add(s.status_key);
+        return true;
+      });
+    }
+    return statuses.filter((s) => s.stage_key === filters.stage);
+  }, [statuses, filters.stage]);
+
+  // Stage change handler: auto-clear Status if it becomes invalid for the new Stage.
+  const handleStageChange = (nextStage: "all" | StageEnum) => {
+    let nextStatus = filters.status;
+    let didReset = false;
+    if (nextStage !== "all" && filters.status !== "all") {
+      const stillValid = statuses.some(
+        (s) => s.stage_key === nextStage && s.status_key === filters.status,
+      );
+      if (!stillValid) {
+        nextStatus = "all";
+        didReset = true;
+      }
+    }
+    onChange({ ...filters, stage: nextStage, status: nextStatus });
+    if (didReset) {
+      toast.info("Status reset because it does not apply to the selected stage.");
+    }
+  };
 
   // Determine the visible primary source value (collapse legacy granular into primary buckets)
   const primarySourceValue: SourceFilter = useMemo(() => {
@@ -393,15 +422,6 @@ export function AdminLeadFilters({
     if (filters.loanRange !== "all") n++;
     if (filters.intake !== "all") n++;
     if (filters.loanType !== "all") n++;
-    // Source detail (legacy granular value selected) counts as advanced
-    if (
-      filters.source === "partner_direct" ||
-      filters.source === "partner_referral" ||
-      filters.source === "student_portal" ||
-      filters.source === "university_referral"
-    ) {
-      n++;
-    }
     return n;
   }, [filters]);
 
@@ -423,10 +443,9 @@ export function AdminLeadFilters({
   const activeChips: { label: string; clear: () => void }[] = [];
   if (filters.search) activeChips.push({ label: `Search: "${filters.search}"`, clear: () => { onSearchInputChange(""); onChange({ ...filters, search: "" }); } });
   if (filters.source !== "all") {
-    const isPrimary = primarySourceValue === filters.source;
-    const lbl = isPrimary
-      ? labelOf(SOURCE_OPTIONS, filters.source)
-      : labelOf(SOURCE_DETAIL_OPTIONS, filters.source);
+    // Always display the simplified primary label; legacy granular values
+    // collapse to their primary bucket (e.g. partner_referral → "Referral").
+    const lbl = labelOf(SOURCE_OPTIONS, primarySourceValue);
     activeChips.push({ label: `Source: ${lbl}`, clear: () => set("source", "all") });
   }
   if (filters.stage !== "all") activeChips.push({ label: `Stage: ${stages.find(s => s.stage_key === filters.stage)?.stage_label ?? filters.stage}`, clear: () => set("stage", "all") });
@@ -484,7 +503,7 @@ export function AdminLeadFilters({
         </div>
 
         <div className="col-span-1 md:col-span-2 lg:col-span-2">
-          <Select value={filters.stage} onValueChange={(v) => set("stage", v as any)}>
+          <Select value={filters.stage} onValueChange={(v) => handleStageChange(v as "all" | StageEnum)}>
             <SelectTrigger className="w-full h-9 text-xs">
               <SelectValue placeholder="Stage" />
             </SelectTrigger>
@@ -504,11 +523,16 @@ export function AdminLeadFilters({
             </SelectTrigger>
             <SelectContent className="max-h-[300px]">
               <SelectItem value="all">All Statuses</SelectItem>
-              {statuses.map((s) => (
+              {visibleStatuses.map((s) => (
                 <SelectItem key={s.status_key} value={s.status_key}>{s.status_label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
+          {filters.stage !== "all" && (
+            <p className="text-[10px] text-muted-foreground mt-1 px-0.5">
+              Showing statuses for selected stage
+            </p>
+          )}
         </div>
 
         <div className="col-span-1 md:col-span-3 lg:col-span-2">
@@ -566,28 +590,8 @@ export function AdminLeadFilters({
               />
             </div>
 
-            <div className="col-span-1 md:col-span-2 lg:col-span-3">
-              <Select
-                value={
-                  filters.source === "partner_direct" ||
-                  filters.source === "partner_referral" ||
-                  filters.source === "student_portal" ||
-                  filters.source === "university_referral"
-                    ? filters.source
-                    : "all"
-                }
-                onValueChange={(v) => set("source", v as SourceFilter)}
-              >
-                <SelectTrigger className="w-full h-9 text-xs">
-                  <SelectValue placeholder="Source detail" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SOURCE_DETAIL_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Source Detail removed — primary Source filter is the single source control.
+                Legacy granular values still hydrate from URL and collapse to primary labels. */}
 
             <div className="col-span-1 md:col-span-2 lg:col-span-3">
               <Select value={filters.type} onValueChange={(v) => set("type", v as TypeFilter)}>

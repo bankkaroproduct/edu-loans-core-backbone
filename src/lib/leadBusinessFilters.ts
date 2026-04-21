@@ -167,7 +167,7 @@ export const TYPE_LABELS: Record<TypeFilter, string> = {
 };
 export const ENTRY_MODE_LABELS: Record<EntryModeFilter, string> = {
   all: "All Entry Modes",
-  add_lead: "Add Lead",
+  add_lead: "Manual Add",
   bulk_upload: "Bulk Upload",
   quick_lead: "Quick Lead",
   student_portal: "Student Portal",
