@@ -6,12 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { Lock, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 
-type Lender = Tables<"lenders">;
+type Lender = Tables<"lenders"> & { internal_notes?: string | null };
 
 interface Props {
   open: boolean;
@@ -35,6 +36,7 @@ const blank = {
   supports_unsecured: false,
   supported_countries: [] as string[],
   active_flag: true,
+  internal_notes: "",
 };
 
 export function LenderDrawer({ open, onOpenChange, record, onSaved }: Props) {
@@ -58,6 +60,7 @@ export function LenderDrawer({ open, onOpenChange, record, onSaved }: Props) {
         supports_unsecured: record.supports_unsecured,
         supported_countries: record.supported_countries ?? [],
         active_flag: record.active_flag,
+        internal_notes: record.internal_notes ?? "",
       });
     } else {
       setForm(blank);
@@ -80,20 +83,29 @@ export function LenderDrawer({ open, onOpenChange, record, onSaved }: Props) {
       toast({ title: "Validation error", description: "Lender code and name are required.", variant: "destructive" });
       return;
     }
+    if (form.supported_countries.length === 0) {
+      toast({ title: "Validation error", description: "Select at least one supported country.", variant: "destructive" });
+      return;
+    }
+    if (form.supports_unsecured && form.income_expectations_min.trim() === "") {
+      toast({ title: "Validation error", description: "Min income is required when unsecured loans are supported.", variant: "destructive" });
+      return;
+    }
     setSaving(true);
     try {
       const num = (s: string) => (s.trim() === "" ? null : Number(s));
-      const payload = {
+      const payload: any = {
         lender_name: form.lender_name,
         lender_type: form.lender_type,
         loan_amount_min: num(form.loan_amount_min),
         loan_amount_max: num(form.loan_amount_max),
         processing_time_days: num(form.processing_time_days),
-        income_expectations_min: num(form.income_expectations_min),
+        income_expectations_min: form.supports_unsecured ? num(form.income_expectations_min) : null,
         supports_collateral: form.supports_collateral,
         supports_unsecured: form.supports_unsecured,
         supported_countries: form.supported_countries.length ? form.supported_countries : null,
         active_flag: form.active_flag,
+        internal_notes: form.internal_notes.trim() || null,
       };
 
       if (isEdit && record) {
@@ -114,6 +126,13 @@ export function LenderDrawer({ open, onOpenChange, record, onSaved }: Props) {
     }
   };
 
+  const SectionHeader = ({ title, hint }: { title: string; hint?: string }) => (
+    <div className="flex items-baseline justify-between border-b pb-1.5">
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</h4>
+      {hint && <span className="text-[10px] text-muted-foreground">{hint}</span>}
+    </div>
+  );
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
@@ -124,91 +143,123 @@ export function LenderDrawer({ open, onOpenChange, record, onSaved }: Props) {
           </SheetDescription>
         </SheetHeader>
 
-        <div className="space-y-4 py-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs flex items-center gap-1">
-                Lender Code * {isEdit && <Lock className="h-3 w-3 text-muted-foreground" />}
-              </Label>
-              <Input value={form.lender_code} onChange={(e) => setField("lender_code", e.target.value.toUpperCase())} disabled={isEdit} className="font-mono" />
+        <div className="space-y-6 py-4">
+          {/* Identity */}
+          <section className="space-y-3">
+            <SectionHeader title="Identity" />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs flex items-center gap-1">
+                  Lender Code * {isEdit && <Lock className="h-3 w-3 text-muted-foreground" />}
+                </Label>
+                <Input value={form.lender_code} onChange={(e) => setField("lender_code", e.target.value.toUpperCase())} disabled={isEdit} className="font-mono" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Lender Type *</Label>
+                <Select value={form.lender_type} onValueChange={(v) => setField("lender_type", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {LENDER_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Lender Type</Label>
-              <Select value={form.lender_type} onValueChange={(v) => setField("lender_type", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {LENDER_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label className="text-xs">Lender Name *</Label>
+              <Input value={form.lender_name} onChange={(e) => setField("lender_name", e.target.value)} />
             </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Lender Name *</Label>
-            <Input value={form.lender_name} onChange={(e) => setField("lender_name", e.target.value)} />
-          </div>
+            <div className="flex items-center justify-between rounded-md border p-2.5">
+              <div>
+                <Label className="text-sm">Active</Label>
+                <p className="text-[10px] text-muted-foreground">Inactive lenders are excluded from matching.</p>
+              </div>
+              <Switch checked={form.active_flag} onCheckedChange={(v) => setField("active_flag", v)} />
+            </div>
+          </section>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Min Loan (₹)</Label>
-              <Input type="number" value={form.loan_amount_min} onChange={(e) => setField("loan_amount_min", e.target.value)} />
+          {/* Loan Coverage */}
+          <section className="space-y-3">
+            <SectionHeader title="Loan Coverage" hint="Drives BRE matching" />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Min Loan (₹)</Label>
+                <Input type="number" value={form.loan_amount_min} onChange={(e) => setField("loan_amount_min", e.target.value)} placeholder="No minimum" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Max Loan (₹)</Label>
+                <Input type="number" value={form.loan_amount_max} onChange={(e) => setField("loan_amount_max", e.target.value)} placeholder="No maximum" />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Max Loan (₹)</Label>
-              <Input type="number" value={form.loan_amount_max} onChange={(e) => setField("loan_amount_max", e.target.value)} />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Processing Days</Label>
               <Input type="number" value={form.processing_time_days} onChange={(e) => setField("processing_time_days", e.target.value)} />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Min Income (₹)</Label>
-              <Input type="number" value={form.income_expectations_min} onChange={(e) => setField("income_expectations_min", e.target.value)} />
-            </div>
-          </div>
 
-          <div className="pt-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Loan Type Support</p>
-            <div className="flex items-center justify-between rounded-md border p-2.5">
-              <Label className="text-sm">Collateral-backed</Label>
-              <Switch checked={form.supports_collateral} onCheckedChange={(v) => setField("supports_collateral", v)} />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-center justify-between rounded-md border p-2.5">
+                <Label className="text-sm">Collateral-backed</Label>
+                <Switch checked={form.supports_collateral} onCheckedChange={(v) => setField("supports_collateral", v)} />
+              </div>
+              <div className="flex items-center justify-between rounded-md border p-2.5">
+                <Label className="text-sm">Unsecured</Label>
+                <Switch checked={form.supports_unsecured} onCheckedChange={(v) => setField("supports_unsecured", v)} />
+              </div>
             </div>
-            <div className="flex items-center justify-between rounded-md border p-2.5 mt-2">
-              <Label className="text-sm">Unsecured</Label>
-              <Switch checked={form.supports_unsecured} onCheckedChange={(v) => setField("supports_unsecured", v)} />
-            </div>
-          </div>
 
-          <div className="pt-2">
-            <Label className="text-xs">Supported Countries (ISO)</Label>
-            <div className="flex gap-2 mt-1.5">
-              <Select value={countryToAdd} onValueChange={setCountryToAdd}>
-                <SelectTrigger className="flex-1"><SelectValue placeholder="Select country…" /></SelectTrigger>
-                <SelectContent>
-                  {ISO_OPTIONS.filter((c) => !form.supported_countries.includes(c)).map((c) =>
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
-              <Button type="button" variant="outline" onClick={addCountry} disabled={!countryToAdd}>Add</Button>
-            </div>
-            <div className="flex flex-wrap gap-1.5 mt-2 min-h-[28px]">
-              {form.supported_countries.map((c) => (
-                <Badge key={c} variant="secondary" className="font-mono text-xs gap-1 pr-1">
-                  {c}
-                  <button onClick={() => removeCountry(c)} className="hover:bg-destructive/20 rounded p-0.5">
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          </div>
+            {form.supports_unsecured && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">Min Co-applicant Income (₹) *</Label>
+                <Input
+                  type="number"
+                  value={form.income_expectations_min}
+                  onChange={(e) => setField("income_expectations_min", e.target.value)}
+                  placeholder="Required when unsecured loans are supported"
+                />
+                <p className="text-[10px] text-muted-foreground">Only relevant for unsecured underwriting.</p>
+              </div>
+            )}
+          </section>
 
-          <div className="flex items-center justify-between rounded-md border p-2.5">
-            <Label className="text-sm">Active</Label>
-            <Switch checked={form.active_flag} onCheckedChange={(v) => setField("active_flag", v)} />
-          </div>
+          {/* Eligibility */}
+          <section className="space-y-3">
+            <SectionHeader title="Eligibility" />
+            <div>
+              <Label className="text-xs">Supported Countries (ISO) *</Label>
+              <div className="flex gap-2 mt-1.5">
+                <Select value={countryToAdd} onValueChange={setCountryToAdd}>
+                  <SelectTrigger className="flex-1"><SelectValue placeholder="Select country…" /></SelectTrigger>
+                  <SelectContent>
+                    {ISO_OPTIONS.filter((c) => !form.supported_countries.includes(c)).map((c) =>
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+                <Button type="button" variant="outline" onClick={addCountry} disabled={!countryToAdd}>Add</Button>
+              </div>
+              <div className="flex flex-wrap gap-1.5 mt-2 min-h-[28px]">
+                {form.supported_countries.map((c) => (
+                  <Badge key={c} variant="secondary" className="font-mono text-xs gap-1 pr-1">
+                    {c}
+                    <button onClick={() => removeCountry(c)} className="hover:bg-destructive/20 rounded p-0.5">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1">At least one country required.</p>
+            </div>
+          </section>
+
+          {/* Internal Notes */}
+          <section className="space-y-2">
+            <SectionHeader title="Internal Notes" hint="Ops only — not shown to partners" />
+            <Textarea
+              value={form.internal_notes}
+              onChange={(e) => setField("internal_notes", e.target.value)}
+              placeholder="Escalation contacts, special conditions, ops context…"
+              rows={3}
+            />
+          </section>
         </div>
 
         <SheetFooter className="gap-2">
