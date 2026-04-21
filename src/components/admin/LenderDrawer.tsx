@@ -267,7 +267,23 @@ export function LenderDrawer({ open, onOpenChange, record, onSaved }: Props) {
 
         <SheetFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? "Saving…" : isEdit ? "Save Changes" : "Create Lender"}</Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span tabIndex={0}>
+                  <Button
+                    onClick={handleSave}
+                    disabled={saving || form.supported_countries.length === 0 || !form.lender_code.trim() || !form.lender_name.trim()}
+                  >
+                    {saving ? "Saving…" : isEdit ? "Save Changes" : "Create Lender"}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {form.supported_countries.length === 0 && (
+                <TooltipContent>Select at least one supported country to save.</TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
         </SheetFooter>
       </SheetContent>
     </Sheet>
