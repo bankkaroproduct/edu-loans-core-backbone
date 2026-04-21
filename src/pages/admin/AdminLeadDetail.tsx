@@ -191,7 +191,7 @@ export default function AdminLeadDetail() {
 
       {/* Admin direct-action row — Edit is always enabled, including terminal stages */}
       <div className="flex items-center justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={() => navigate(`/leads/${lead.id}/documents`)}>
+        <Button variant="outline" size="sm" onClick={() => navigate(`/admin/leads/${lead.id}/documents`)}>
           <FileText className="h-4 w-4 mr-1" /> Documents
         </Button>
         <Button size="sm" onClick={() => navigate(`/admin/leads/new?edit=${lead.id}`)}>

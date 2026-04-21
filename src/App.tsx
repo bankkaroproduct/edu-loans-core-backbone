@@ -89,6 +89,7 @@ const App = () => (
             <Route path="/admin/leads/new" element={<AdminRoute><AdminAddLead /></AdminRoute>} />
             <Route path="/admin/leads/bulk" element={<AdminRoute><AdminBulkUpload /></AdminRoute>} />
             <Route path="/admin/leads/:id" element={<AdminRoute><AdminLeadDetail /></AdminRoute>} />
+            <Route path="/admin/leads/:id/documents" element={<AdminRoute><LeadDocuments /></AdminRoute>} />
             <Route path="/admin/edit-requests" element={<AdminRoute><AdminEditRequests /></AdminRoute>} />
             <Route path="/admin/requests" element={<AdminRoute><AdminEditRequests /></AdminRoute>} />
             <Route path="/admin/master-data" element={<AdminRoute><AdminMasterData /></AdminRoute>} />
