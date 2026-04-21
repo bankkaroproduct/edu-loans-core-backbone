@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ExternalLink, ClipboardCheck, Eye, Search } from "lucide-react";
 import { ViewRequestDialog } from "@/components/admin/ViewRequestDialog";
+import { PageHeader } from "@/components/shared/PageHeader";
 import type { Tables } from "@/integrations/supabase/types";
 
 type EditRequest = Tables<"lead_edit_requests">;
@@ -184,12 +185,12 @@ export default function AdminEditRequests() {
     : "";
 
   return (
-    <div className="max-w-screen-2xl mx-auto space-y-4 px-1">
-      <div className="flex items-center gap-2">
-        <ClipboardCheck className="h-5 w-5 text-primary" />
-        <h1 className="text-xl font-semibold">Requests & Approvals</h1>
-        <span className="text-xs text-muted-foreground ml-1">(All-time)</span>
-      </div>
+    <div className="max-w-screen-2xl mx-auto space-y-6">
+      <PageHeader
+        title="Requests & Approvals"
+        description="Partner-raised edit requests across all leads · all-time view."
+      />
+
 
       {/* Summary cards (all-time) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

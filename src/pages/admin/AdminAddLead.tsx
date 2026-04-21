@@ -151,7 +151,7 @@ export default function AdminAddLead() {
           </div>
         )}
 
-        <p className="text-[11px] text-muted-foreground/80 leading-relaxed pt-0.5 border-t pt-2">
+        <p className="text-[11px] text-muted-foreground/80 leading-relaxed border-t pt-2 mt-1">
           Note: True admin-owned (unassigned) leads require a future schema change and are not supported yet.
         </p>
       </Card>
