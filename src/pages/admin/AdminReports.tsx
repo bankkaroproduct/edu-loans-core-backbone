@@ -119,8 +119,8 @@ export default function AdminReports() {
   const cardKey = `${filterVersion}|${refreshKey}`;
 
   return (
-    <AdminLayout>
-      <div className="max-w-screen-2xl mx-auto px-4 py-6 space-y-5">
+    <>
+      <div className="space-y-5 max-w-screen-2xl mx-auto">
         <PageHeader
           title="Reports & Exports"
           description="Filtered exports across leads, lifecycle, documents, requests, and partners. Hard cap of 5,000 rows per export."
