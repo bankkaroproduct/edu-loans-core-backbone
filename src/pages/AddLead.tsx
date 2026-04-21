@@ -295,14 +295,14 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
         action_type: "admin_direct_edit",
         actor_user_id: appUser.id,
         actor_role: appUser.role,
-        old_value: Object.fromEntries(changedKeys.map((k) => [k, diff[k].from])),
-        new_value: Object.fromEntries(changedKeys.map((k) => [k, diff[k].to])),
+        old_value: Object.fromEntries(changedKeys.map((k) => [k, diff[k].from])) as any,
+        new_value: Object.fromEntries(changedKeys.map((k) => [k, diff[k].to])) as any,
         meta: {
           field_count: changedKeys.length,
           source: "admin_direct_edit",
           terminal_stage_at_edit: isTerminalAtEdit,
-        },
-      });
+        } as any,
+      } as any);
       const labels = changedKeys.map((k) => getAdminFieldLabel(k)).join(", ");
       const note = `Admin directly edited ${changedKeys.length} field${changedKeys.length === 1 ? "" : "s"}: ${labels}${isTerminalAtEdit ? " [on terminal-stage lead]" : ""}`;
       await supabase.from("lead_notes").insert({
