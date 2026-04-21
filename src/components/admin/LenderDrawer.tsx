@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Lock, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -190,9 +191,11 @@ export function LenderDrawer({ open, onOpenChange, record, onSaved }: Props) {
                 <Input type="number" value={form.loan_amount_max} onChange={(e) => setField("loan_amount_max", e.target.value)} placeholder="No maximum" />
               </div>
             </div>
+            <p className="text-[10px] text-muted-foreground -mt-1">Leave either field blank to apply no limit on that side.</p>
             <div className="space-y-1.5">
               <Label className="text-xs">Processing Days</Label>
-              <Input type="number" value={form.processing_time_days} onChange={(e) => setField("processing_time_days", e.target.value)} />
+              <Input type="number" value={form.processing_time_days} onChange={(e) => setField("processing_time_days", e.target.value)} placeholder="e.g. 7" />
+              <p className="text-[10px] text-muted-foreground">Used to rank lenders. Lower = higher rank.</p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
