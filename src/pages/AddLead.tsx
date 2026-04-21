@@ -838,9 +838,98 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
             <Button variant="outline" onClick={() => goToStep(notesBackTarget)}>
               ← {notesBackTarget === "financial" ? "Financial Info" : "Study Intent"}
             </Button>
-            <Button onClick={() => goToStep("review")}>Next: Review & Submit →</Button>
+            <Button onClick={() => goToStep(notesNextTarget)}>
+              Next: {notesNextTarget === "assign" ? "Assign to Partner" : "Review & Submit"} →
+            </Button>
           </div>
         </TabsContent>
+
+        {/* Assign to Partner — admin edit only */}
+        {showAssignStep && (
+          <TabsContent value="assign" className="mt-0">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-primary" /> Assign to Partner
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="rounded-md border bg-muted/30 px-3 py-2.5 text-sm flex items-center gap-2 flex-wrap">
+                  <span className="text-muted-foreground">Currently attributed to:</span>
+                  <Badge variant="outline" className="font-medium">
+                    {originalPartner ? `${originalPartner.display_name} (${originalPartner.partner_code})` : (originalPartnerId ?? "—")}
+                  </Badge>
+                </div>
+                <div className="space-y-2">
+                  <Label>Reassign to partner organization</Label>
+                  <Popover open={partnerPickerOpen} onOpenChange={setPartnerPickerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={partnerPickerOpen}
+                        className={cn(
+                          "w-full justify-between font-normal h-9",
+                          !selectedAssignedPartner && "text-muted-foreground"
+                        )}
+                      >
+                        <span className="truncate">
+                          {selectedAssignedPartner
+                            ? `${selectedAssignedPartner.display_name} (${selectedAssignedPartner.partner_code})`
+                            : "Search & select a partner organization…"}
+                        </span>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search partner by name or code…" />
+                        <CommandList>
+                          <CommandEmpty>No partners match that search.</CommandEmpty>
+                          <CommandGroup>
+                            {partnersList.map((p) => (
+                              <CommandItem
+                                key={p.id}
+                                value={`${p.display_name} ${p.partner_code}`}
+                                onSelect={() => {
+                                  setPartnerIdAssignment(p.id);
+                                  setIsDirty(true);
+                                  setPartnerPickerOpen(false);
+                                }}
+                              >
+                                <Check className={cn("mr-2 h-4 w-4", partnerIdAssignment === p.id ? "opacity-100" : "opacity-0")} />
+                                <span className="truncate">{p.display_name}</span>
+                                <span className="ml-2 text-xs text-muted-foreground">{p.partner_code}</span>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  <p className="text-xs text-muted-foreground">
+                    Reassigning moves this lead to a different partner organization. The change is logged in the audit trail.
+                    This is a direct admin action and does not trigger the partner edit-request workflow.
+                  </p>
+                </div>
+                {partnerChanged && (
+                  <Alert className="bg-amber-50 border-amber-200 text-amber-900 [&>svg]:text-amber-600">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      Saving will reassign this lead to <strong>{selectedAssignedPartner?.display_name}</strong> and clear the original
+                      partner-user attribution to prevent cross-org leakage.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
+            <div className="flex justify-between mt-4">
+              <Button variant="outline" onClick={() => goToStep("notes")}>← Notes</Button>
+              <Button onClick={() => goToStep("review")}>Next: Review & Submit →</Button>
+            </div>
+          </TabsContent>
+        )}
+
 
         {/* Review */}
         <TabsContent value="review" className="mt-0 space-y-4">
