@@ -986,11 +986,28 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   <ReviewRow label={isAdminForm ? "Admin / Partner Remark" : "Partner Remark"} value={form.partner_remark} />
                 </div>
               )}
+              {showAssignStep && (
+                <div>
+                  <Badge variant="outline" className="mb-2">Partner Assignment</Badge>
+                  <ReviewRow
+                    label="Assigned Partner"
+                    value={selectedAssignedPartner ? `${selectedAssignedPartner.display_name} (${selectedAssignedPartner.partner_code})` : (partnerIdAssignment || "—")}
+                  />
+                  {partnerChanged && (
+                    <ReviewRow
+                      label="Previous Partner"
+                      value={originalPartner ? `${originalPartner.display_name} (${originalPartner.partner_code})` : (originalPartnerId ?? "—")}
+                    />
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
           <div className="flex gap-3 justify-between sticky bottom-4 bg-background/80 backdrop-blur p-3 rounded-lg border">
-            <Button variant="outline" onClick={() => goToStep("notes")}>← Back to Edit</Button>
+            <Button variant="outline" onClick={() => goToStep(reviewBackTarget)}>
+              ← Back to {reviewBackTarget === "assign" ? "Assign" : "Edit"}
+            </Button>
             <div className="flex gap-3">
               {!isEditMode && (
                 <Button type="button" variant="secondary" disabled={submitting || checking} onClick={() => handleSubmit(true)}>
