@@ -854,14 +854,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="rounded-md border bg-muted/30 px-3 py-2.5 text-sm flex items-center gap-2 flex-wrap">
-                  <span className="text-muted-foreground">Currently attributed to:</span>
-                  <Badge variant="outline" className="font-medium">
-                    {originalPartner ? `${originalPartner.display_name} (${originalPartner.partner_code})` : (originalPartnerId ?? "—")}
-                  </Badge>
-                </div>
                 <div className="space-y-2">
-                  <Label>Reassign to partner organization</Label>
+                  <Label>Partner organization</Label>
                   <Popover open={partnerPickerOpen} onOpenChange={setPartnerPickerOpen}>
                     <PopoverTrigger asChild>
                       <Button
