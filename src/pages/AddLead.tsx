@@ -13,13 +13,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { DuplicateWarningDialog } from "@/components/leads/DuplicateWarningDialog";
 import { LeadSuccessDialog } from "@/components/leads/LeadSuccessDialog";
 import { toast } from "sonner";
-import { ArrowLeft, FileText, User, GraduationCap, Wallet, MessageSquare, Eye } from "lucide-react";
+import { ArrowLeft, FileText, User, GraduationCap, MessageSquare, Eye, AlertTriangle, ChevronDown, Building2 } from "lucide-react";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phone";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
+import { computeAdminDiff, getAdminFieldLabel } from "@/lib/adminEditableFields";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Country = Tables<"countries_master">;
@@ -30,8 +33,7 @@ type Intake = Tables<"intake_master">;
 const STEPS = [
   { id: "student", label: "Student Details", icon: User },
   { id: "study", label: "Study Intent", icon: GraduationCap },
-  { id: "financial", label: "Financial Info", icon: Wallet },
-  { id: "notes", label: "Source & Notes", icon: MessageSquare },
+  { id: "notes", label: "Notes", icon: MessageSquare },
   { id: "review", label: "Review & Submit", icon: Eye },
 ] as const;
 
@@ -41,20 +43,10 @@ const CO_APPLICANT_RELATIONS = [
   "Father", "Mother", "Spouse", "Guardian", "Brother", "Sister", "Uncle", "Other",
 ];
 
-const SOURCE_SUBTYPES = [
-  { value: "walk_in", label: "Walk-in" },
-  { value: "phone_inquiry", label: "Phone Inquiry" },
-  { value: "email_inquiry", label: "Email Inquiry" },
-  { value: "referral", label: "Referral" },
-  { value: "social_media", label: "Social Media" },
-  { value: "event", label: "Event / Seminar" },
-  { value: "university_referral", label: "University Referral" },
-  { value: "other", label: "Other" },
-];
+const TERMINAL_STAGES = ["disbursed", "rejected", "dropped"];
 
 interface AddLeadProps {
   hideOwnHeader?: boolean;
-  /** Override the form's outer container classes. Use from admin wrapper to disable centered max-w-4xl. */
   containerClassName?: string;
 }
 
@@ -68,7 +60,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
 
   const { user, appUser } = useAuth();
   const { isAdmin } = useRoleAccess();
-  const { effectivePartnerId, effectiveUserId, isSimulating } = usePartnerContext();
+  const { effectivePartnerId, effectivePartnerName, effectiveUserId, isSimulating, partnerOptions } = usePartnerContext();
   const { duplicates, checking, checkDuplicates } = useDuplicateCheck();
   const [submitting, setSubmitting] = useState(false);
   const [hydrating, setHydrating] = useState(Boolean(hydrateId));
@@ -88,7 +80,10 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
   const [createdLeadDisplayId, setCreatedLeadDisplayId] = useState<string | null>(null);
   const [isDraftSuccess, setIsDraftSuccess] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
-  
+  const [coAppOpen, setCoAppOpen] = useState(false);
+  const [originalLead, setOriginalLead] = useState<Record<string, unknown> | null>(null);
+  const [editLeadStage, setEditLeadStage] = useState<string | null>(null);
+  const [editPartnerName, setEditPartnerName] = useState<string | null>(null);
 
   const [countries, setCountries] = useState<Country[]>([]);
   const [universities, setUniversities] = useState<University[]>([]);
@@ -117,7 +112,6 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
     coapplicant_income: "",
     collateral_available: false,
     collateral_notes: "",
-    source_sub_type: "",
     partner_remark: "",
   });
 
@@ -152,7 +146,6 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
         navigate("/leads", { replace: true });
         return;
       }
-      // Strip +91 prefix for display so user can edit naturally
       const stripPrefix = (p: string | null) => (p ? p.replace(/^\+91/, "") : "");
       setForm({
         student_first_name: data.student_first_name ?? "",
@@ -176,14 +169,24 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
         coapplicant_income: data.coapplicant_income != null ? String(data.coapplicant_income) : "",
         collateral_available: data.collateral_available ?? false,
         collateral_notes: data.collateral_notes ?? "",
-        source_sub_type: data.source_sub_type ?? "",
         partner_remark: "",
       });
+      setOriginalLead(data as unknown as Record<string, unknown>);
+      setEditLeadStage(data.current_stage ?? null);
+      // Lookup partner name on edit (admin context)
+      if (isEditMode && data.partner_id) {
+        const { data: porg } = await supabase
+          .from("partner_organizations")
+          .select("display_name")
+          .eq("id", data.partner_id)
+          .maybeSingle();
+        setEditPartnerName(porg?.display_name ?? null);
+      }
       setIsDirty(false);
       setHydrating(false);
     })();
     return () => { cancelled = true; };
-  }, [hydrateId, navigate]);
+  }, [hydrateId, navigate, isEditMode]);
 
   // Unsaved changes protection
   useEffect(() => {
@@ -202,9 +205,10 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
   };
 
   const fullName = `${form.student_first_name.trim()} ${form.student_last_name.trim()}`.trim();
-
-  // Resolve final course name: master selection takes priority, raw fallback
   const resolvedCourseName = form.course_name || form.course_name_raw.trim();
+  const resolvedUniversityName = form.university_name_raw.trim() || (form.university_id ? universities.find((u) => u.id === form.university_id)?.university_name : "") || "";
+
+  const isTerminalEdit = isEditMode && editLeadStage && TERMINAL_STAGES.includes(editLeadStage);
 
   const validate = (isDraft: boolean): string | null => {
     if (!form.student_first_name.trim()) return "Student first name is required";
@@ -214,15 +218,15 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
 
     if (!isDraft) {
       if (!form.intended_study_country) return "Study country is required";
+      if (!resolvedUniversityName.trim()) return "University is required (pick from list or type manually)";
+      if (!resolvedCourseName) return "Course is required (pick from list or type manually)";
       if (!form.intake_term) return "Intake term is required";
       if (!form.intake_year) return "Intake year is required";
-      if (!resolvedCourseName) return "Course name is required";
-      if (form.loan_amount_required && (isNaN(Number(form.loan_amount_required)) || Number(form.loan_amount_required) <= 0))
+      if (!form.loan_amount_required) return "Approx loan amount is required";
+      if (isNaN(Number(form.loan_amount_required)) || Number(form.loan_amount_required) <= 0)
         return "Loan amount must be a positive number";
       if (form.coapplicant_income && (isNaN(Number(form.coapplicant_income)) || Number(form.coapplicant_income) < 0))
         return "Co-applicant income must be a valid number";
-      if (form.collateral_available && !form.collateral_notes.trim())
-        return "Please describe the collateral available";
     }
 
     if (!effectivePartnerId) return "No partner organization found for your account. Admins can use 'Test as Partner' in the sidebar.";
@@ -253,6 +257,65 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
     await createLead(asDraft, false);
   };
 
+  const writeAdminAuditTrail = async (leadId: string) => {
+    if (!isEditMode || !isAdmin || !appUser || !originalLead) return;
+    // Build the "edited" snapshot using the same keys the form writes.
+    const edited: Record<string, unknown> = {
+      student_first_name: form.student_first_name.trim() || null,
+      student_last_name: form.student_last_name.trim() || null,
+      student_email: form.student_email.trim() || null,
+      student_phone: normalizePhone(form.student_phone) ?? form.student_phone.trim() ?? null,
+      student_whatsapp: form.student_whatsapp.trim() ? (normalizePhone(form.student_whatsapp) ?? form.student_whatsapp.trim()) : null,
+      city: form.city.trim() || null,
+      state: form.state.trim() || null,
+      country_of_residence: form.country_of_residence || null,
+      intended_study_country: form.intended_study_country || null,
+      intake_term: form.intake_term || null,
+      intake_year: form.intake_year || null,
+      course_name: resolvedCourseName || null,
+      university_id: form.university_id || null,
+      university_name_raw: form.university_name_raw.trim() || null,
+      loan_amount_required: form.loan_amount_required ? Number(form.loan_amount_required) : null,
+      coapplicant_name: form.coapplicant_name.trim() || null,
+      coapplicant_relation: form.coapplicant_relation || null,
+      coapplicant_income: form.coapplicant_income ? Number(form.coapplicant_income) : null,
+      collateral_available: form.collateral_available,
+      collateral_notes: form.collateral_notes.trim() || null,
+    };
+    const diff = computeAdminDiff(originalLead, edited);
+    const changedKeys = Object.keys(diff);
+    if (changedKeys.length === 0) return;
+
+    const isTerminalAtEdit = !!(editLeadStage && TERMINAL_STAGES.includes(editLeadStage));
+
+    try {
+      await supabase.from("audit_logs").insert({
+        entity_type: "student_lead",
+        entity_id: leadId,
+        action_type: "admin_direct_edit",
+        actor_user_id: appUser.id,
+        actor_role: appUser.role,
+        old_value: Object.fromEntries(changedKeys.map((k) => [k, diff[k].from])),
+        new_value: Object.fromEntries(changedKeys.map((k) => [k, diff[k].to])),
+        meta: {
+          field_count: changedKeys.length,
+          source: "admin_direct_edit",
+          terminal_stage_at_edit: isTerminalAtEdit,
+        },
+      });
+      const labels = changedKeys.map((k) => getAdminFieldLabel(k)).join(", ");
+      const note = `Admin directly edited ${changedKeys.length} field${changedKeys.length === 1 ? "" : "s"}: ${labels}${isTerminalAtEdit ? " [on terminal-stage lead]" : ""}`;
+      await supabase.from("lead_notes").insert({
+        lead_id: leadId,
+        note_type: "internal",
+        note_text: note,
+        created_by: appUser.id,
+      });
+    } catch (e) {
+      console.error("[AddLead] Audit trail insert failed:", e);
+    }
+  };
+
   const createLead = async (asDraft: boolean, hasDuplicateWarning: boolean) => {
     setSubmitting(true);
     setShowDupDialog(false);
@@ -263,12 +326,12 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
     const payload = {
       student_first_name: form.student_first_name.trim(),
       student_last_name: form.student_last_name.trim() || null,
-      
       student_email: form.student_email.trim() || null,
       student_phone: normalizePhone(form.student_phone) ?? form.student_phone.trim(),
       student_whatsapp: form.student_whatsapp.trim() ? (normalizePhone(form.student_whatsapp) ?? form.student_whatsapp.trim()) : null,
       city: form.city.trim() || null,
       state: form.state.trim() || null,
+      // No auto-default for country_of_residence — leave NULL when not entered.
       country_of_residence: form.country_of_residence || null,
       intended_study_country: form.intended_study_country || "Not specified",
       intake_term: form.intake_term || "Not specified",
@@ -282,7 +345,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
       coapplicant_income: form.coapplicant_income ? Number(form.coapplicant_income) : null,
       collateral_available: form.collateral_available,
       collateral_notes: form.collateral_notes.trim() || null,
-      source_sub_type: form.source_sub_type || null,
+      // Source subtype is server-set for the partner add-lead path.
+      source_sub_type: "add_lead",
       partner_id: effectivePartnerId!,
       partner_user_id: effectiveUserId!,
       current_stage: stage,
@@ -291,21 +355,22 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
       duplicate_flag: hasDuplicateWarning,
     };
 
-    // Decide insert vs update
-    // - editId: always update (preserve created_at, lead_id, partner_id ownership)
-    // - draftId + asDraft: update existing draft in place
-    // - draftId + submit: update draft → submitted (stage transition)
     const updateTargetId = editId ?? draftId ?? null;
     let resultLeadId: string | null = null;
     let opError: any = null;
 
     if (updateTargetId) {
-      // Update existing record. Don't overwrite partner_id/partner_user_id on edit.
       const updatePayload: any = { ...payload };
+      // Don't overwrite ownership fields on edit.
       delete updatePayload.partner_id;
       delete updatePayload.partner_user_id;
       delete updatePayload.source_type;
-      // Preserve duplicate_flag from existing unless we're explicitly setting it now
+      delete updatePayload.source_sub_type;
+      // For admin edits we don't want to flip stage/status from form defaults.
+      if (isEditMode) {
+        delete updatePayload.current_stage;
+        delete updatePayload.current_status;
+      }
       if (!hasDuplicateWarning) delete updatePayload.duplicate_flag;
       const { data, error } = await supabase
         .from("student_leads")
@@ -325,8 +390,6 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
       console.error("[AddLead] Save failed:", opError.message, opError.details, opError.hint);
       toast.error(`Lead save failed: ${opError.message}`);
     } else if (resultLeadId) {
-      // Skip downstream history/audit creation on update — the DB stage trigger handles it.
-      // Only create downstream artifacts on first insert.
       if (!updateTargetId) {
         const downstream = await createDownstreamRecords({
           leadId: resultLeadId,
@@ -344,7 +407,6 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
           return;
         }
       } else if (form.partner_remark.trim()) {
-        // Add partner remark as a note on edit/draft-resume
         await supabase.from("lead_notes").insert({
           lead_id: resultLeadId,
           note_type: "partner_visible",
@@ -352,6 +414,9 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
           created_by: appUser!.id,
         });
       }
+
+      // Admin direct-edit audit trail (full admin-scope diff)
+      await writeAdminAuditTrail(resultLeadId);
 
       const displayIdResult = await fetchLeadDisplayId(resultLeadId);
 
@@ -401,8 +466,14 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
   const isAdminContext = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
   const backTarget = isAdminContext ? "/admin/leads" : "/leads";
 
+  // Submitting-as label: prefer simulated partner (admin), else partner admin name from edit lookup, else nothing
+  const submittingAs =
+    effectivePartnerName ||
+    editPartnerName ||
+    (partnerOptions.find((p) => p.id === effectivePartnerId)?.display_name ?? null);
+
   return (
-    <div className={containerClassName ?? "max-w-4xl mx-auto space-y-6"}>
+    <div className={containerClassName ?? "max-w-4xl mx-auto space-y-5"}>
       {!hideOwnHeader && (
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate(backTarget)}>
@@ -420,6 +491,26 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
             <p className="text-sm text-muted-foreground mt-1">{headingDesc}</p>
           </div>
         </div>
+      )}
+
+      {/* Submitting-as chip */}
+      {submittingAs && (
+        <div className="inline-flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-1.5 text-xs">
+          <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-muted-foreground">Submitting as:</span>
+          <span className="font-medium text-foreground">{submittingAs}</span>
+          {isSimulating && <Badge variant="outline" className="text-[10px]">Simulating</Badge>}
+        </div>
+      )}
+
+      {/* Terminal-stage warning for admin edits */}
+      {isTerminalEdit && (
+        <Alert className="bg-amber-50 border-amber-200 text-amber-900 [&>svg]:text-amber-600">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription className="text-xs">
+            <strong>Terminal stage ({editLeadStage}):</strong> This lead has reached a terminal stage. Edits here will not re-open the lifecycle and may affect downstream reporting. Proceed only if you have a documented business reason.
+          </AlertDescription>
+        </Alert>
       )}
 
       {/* Step progress */}
@@ -457,7 +548,6 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
               <div className="space-y-2">
                 <Label>Last Name</Label>
                 <Input value={form.student_last_name} onChange={(e) => set("student_last_name", e.target.value)} placeholder="Student last name" />
-                <p className="text-xs text-muted-foreground">Name as per Aadhaar Card / Passport</p>
               </div>
               {fullName && (
                 <div className="space-y-2 md:col-span-2">
@@ -485,13 +575,17 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
                 <Label>State</Label>
                 <Input value={form.state} onChange={(e) => set("state", e.target.value)} />
               </div>
-              <div className="space-y-2">
-                <Label>Country of Residence</Label>
-                <Select value={form.country_of_residence} onValueChange={(v) => set("country_of_residence", v)}>
-                  <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
-                  <SelectContent>{countries.map((c) => <SelectItem key={c.id} value={c.country_name}>{c.country_name}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
+              {/* Country of Residence — admin-only on edit. Hidden from partner intake. */}
+              {isEditMode && isAdmin && (
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Country of Residence</Label>
+                  <Select value={form.country_of_residence} onValueChange={(v) => set("country_of_residence", v)}>
+                    <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
+                    <SelectContent>{countries.map((c) => <SelectItem key={c.id} value={c.country_name}>{c.country_name}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Captured later by the student portal if not set here.</p>
+                </div>
+              )}
             </CardContent>
           </Card>
           <div className="flex justify-end mt-4">
@@ -512,7 +606,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>University (from list)</Label>
+                <Label>University (from list) *</Label>
                 <Select value={form.university_id} onValueChange={(v) => {
                   const uni = universities.find((u) => u.id === v);
                   set("university_id", v);
@@ -523,27 +617,27 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Or enter university name</Label>
+                <Label>Or enter university name *</Label>
                 <Input value={form.university_name_raw} onChange={(e) => {
                   set("university_name_raw", e.target.value);
                   if (form.university_id) set("university_id", "");
                 }} placeholder="If not in the list above" />
-                <p className="text-xs text-muted-foreground">Type university name manually if not found in the list</p>
+                <p className="text-xs text-muted-foreground">Required — pick from list or type manually.</p>
               </div>
               <div className="space-y-2">
-                <Label>Course (from list)</Label>
+                <Label>Course (from list) *</Label>
                 <Select value={form.course_name} onValueChange={(v) => set("course_name", v)}>
                   <SelectTrigger><SelectValue placeholder="Select course" /></SelectTrigger>
                   <SelectContent>{courses.map((c) => <SelectItem key={c.id} value={c.course_name}>{c.course_name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Or enter course name</Label>
+                <Label>Or enter course name *</Label>
                 <Input value={form.course_name_raw} onChange={(e) => {
                   set("course_name_raw", e.target.value);
                   if (form.course_name) set("course_name", "");
                 }} placeholder="If not in the list above" />
-                <p className="text-xs text-muted-foreground">Type course name if not found in master list</p>
+                <p className="text-xs text-muted-foreground">Required — pick from list or type manually.</p>
               </div>
               <div className="space-y-2">
                 <Label>Intake Term *</Label>
@@ -559,87 +653,86 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
                   <SelectContent>{intakeYears.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>Loan Amount Required (₹)</Label>
+              <div className="space-y-2 md:col-span-2">
+                <Label>Approx Loan Amount Required (₹) *</Label>
                 <Input type="number" min="0" value={form.loan_amount_required} onChange={(e) => set("loan_amount_required", e.target.value)} placeholder="e.g. 2500000" />
+                <p className="text-xs text-muted-foreground">Rough expectation — exact figure can be refined later by ops.</p>
               </div>
             </CardContent>
           </Card>
           <div className="flex justify-between mt-4">
             <Button variant="outline" onClick={() => setActiveStep("student")}>← Student Details</Button>
-            <Button onClick={() => setActiveStep("financial")}>Next: Financial Info →</Button>
-          </div>
-        </TabsContent>
-
-        {/* Financial */}
-        <TabsContent value="financial" className="mt-0">
-          <Card>
-            <CardHeader><CardTitle className="text-lg">Co-Applicant & Financial Snapshot</CardTitle></CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Co-Applicant Name</Label>
-                <Input value={form.coapplicant_name} onChange={(e) => set("coapplicant_name", e.target.value)} />
-                <p className="text-xs text-muted-foreground">Name as per Aadhaar Card / Passport</p>
-              </div>
-              <div className="space-y-2">
-                <Label>Co-Applicant Relation</Label>
-                <Select value={form.coapplicant_relation} onValueChange={(v) => set("coapplicant_relation", v)}>
-                  <SelectTrigger><SelectValue placeholder="Select relation" /></SelectTrigger>
-                  <SelectContent>
-                    {CO_APPLICANT_RELATIONS.map((r) => (
-                      <SelectItem key={r} value={r}>{r}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Co-Applicant Income (₹)</Label>
-                <Input type="number" min="0" value={form.coapplicant_income} onChange={(e) => set("coapplicant_income", e.target.value)} />
-              </div>
-              <div className="md:col-span-2 space-y-4">
-                <div className="flex items-center gap-3">
-                  <Switch checked={form.collateral_available} onCheckedChange={(v) => set("collateral_available", v)} />
-                  <Label>Collateral Available</Label>
-                </div>
-                {form.collateral_available && (
-                  <div className="space-y-2">
-                    <Label>Collateral Details *</Label>
-                    <Textarea value={form.collateral_notes} onChange={(e) => set("collateral_notes", e.target.value)} placeholder="Describe the collateral type, estimated value, location..." />
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-          <div className="flex justify-between mt-4">
-            <Button variant="outline" onClick={() => setActiveStep("study")}>← Study Intent</Button>
-            <Button onClick={() => setActiveStep("notes")}>Next: Source & Notes →</Button>
+            <Button onClick={() => setActiveStep("notes")}>Next: Notes →</Button>
           </div>
         </TabsContent>
 
         {/* Notes */}
         <TabsContent value="notes" className="mt-0">
           <Card>
-            <CardHeader><CardTitle className="text-lg">Lead Source & Partner Notes</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-lg">Partner Notes</CardTitle></CardHeader>
             <CardContent className="grid gap-4">
-              <div className="space-y-2">
-                <Label>Source Subtype</Label>
-                <Select value={form.source_sub_type} onValueChange={(v) => set("source_sub_type", v)}>
-                  <SelectTrigger><SelectValue placeholder="How did this lead come to you?" /></SelectTrigger>
-                  <SelectContent>
-                    {SOURCE_SUBTYPES.map((s) => (
-                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
               <div className="space-y-2">
                 <Label>Partner Remark</Label>
                 <Textarea value={form.partner_remark} onChange={(e) => set("partner_remark", e.target.value)} placeholder="Any additional context for the operations team..." rows={3} />
               </div>
+
+              {/* Optional co-applicant context — collapsed by default */}
+              <Collapsible open={coAppOpen} onOpenChange={setCoAppOpen}>
+                <CollapsibleTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between rounded-md border bg-muted/40 px-3 py-2 text-left text-xs font-medium hover:bg-muted/60 transition-colors"
+                  >
+                    <span>Co-applicant context (optional)</span>
+                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${coAppOpen ? "rotate-180" : ""}`} />
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pt-3">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>Co-Applicant Name</Label>
+                      <Input value={form.coapplicant_name} onChange={(e) => set("coapplicant_name", e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Co-Applicant Relation</Label>
+                      <Select value={form.coapplicant_relation} onValueChange={(v) => set("coapplicant_relation", v)}>
+                        <SelectTrigger><SelectValue placeholder="Select relation" /></SelectTrigger>
+                        <SelectContent>
+                          {CO_APPLICANT_RELATIONS.map((r) => (
+                            <SelectItem key={r} value={r}>{r}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="md:col-span-2 flex items-center gap-3 rounded-md border p-2.5">
+                      <Switch checked={form.collateral_available} onCheckedChange={(v) => set("collateral_available", v)} />
+                      <div>
+                        <Label className="text-sm">Secured (collateral likely available)</Label>
+                        <p className="text-[11px] text-muted-foreground">Off = unsecured preference. Detailed collateral info is collected later.</p>
+                      </div>
+                    </div>
+                    {/* On admin edit, expose the deeper fields too */}
+                    {isEditMode && isAdmin && (
+                      <>
+                        <div className="space-y-2">
+                          <Label>Co-Applicant Income (₹)</Label>
+                          <Input type="number" min="0" value={form.coapplicant_income} onChange={(e) => set("coapplicant_income", e.target.value)} />
+                        </div>
+                        {form.collateral_available && (
+                          <div className="space-y-2 md:col-span-2">
+                            <Label>Collateral Notes</Label>
+                            <Textarea value={form.collateral_notes} onChange={(e) => set("collateral_notes", e.target.value)} placeholder="Type, est. value, location…" rows={2} />
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             </CardContent>
           </Card>
           <div className="flex justify-between mt-4">
-            <Button variant="outline" onClick={() => setActiveStep("financial")}>← Financial Info</Button>
+            <Button variant="outline" onClick={() => setActiveStep("study")}>← Study Intent</Button>
             <Button onClick={() => setActiveStep("review")}>Next: Review & Submit →</Button>
           </div>
         </TabsContent>
@@ -661,28 +754,26 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
                 <ReviewRow label="WhatsApp" value={form.student_whatsapp} />
                 <ReviewRow label="City" value={form.city} />
                 <ReviewRow label="State" value={form.state} />
-                <ReviewRow label="Country of Residence" value={form.country_of_residence} />
               </div>
               <div>
                 <Badge variant="outline" className="mb-2">Study Intent</Badge>
                 <ReviewRow label="Study Country" value={form.intended_study_country} />
-                <ReviewRow label="University" value={form.university_name_raw || (form.university_id ? universities.find(u => u.id === form.university_id)?.university_name : undefined)} />
+                <ReviewRow label="University" value={resolvedUniversityName} />
                 <ReviewRow label="Course" value={resolvedCourseName} />
                 <ReviewRow label="Intake" value={`${form.intake_term} ${form.intake_year || ""}`} />
-                <ReviewRow label="Loan Amount (₹)" value={form.loan_amount_required ? `₹${Number(form.loan_amount_required).toLocaleString("en-IN")}` : undefined} />
+                <ReviewRow label="Approx Loan Amount (₹)" value={form.loan_amount_required ? `₹${Number(form.loan_amount_required).toLocaleString("en-IN")}` : undefined} />
               </div>
-              <div>
-                <Badge variant="outline" className="mb-2">Financial</Badge>
-                <ReviewRow label="Co-Applicant" value={form.coapplicant_name} />
-                <ReviewRow label="Relation" value={form.coapplicant_relation} />
-                <ReviewRow label="Co-Applicant Income" value={form.coapplicant_income ? `₹${Number(form.coapplicant_income).toLocaleString("en-IN")}` : undefined} />
-                <ReviewRow label="Collateral Available" value={form.collateral_available} />
-                {form.collateral_available && <ReviewRow label="Collateral Notes" value={form.collateral_notes} />}
-              </div>
-              {(form.source_sub_type || form.partner_remark) && (
+              {(form.coapplicant_name || form.coapplicant_relation || form.collateral_available) && (
                 <div>
-                  <Badge variant="outline" className="mb-2">Source & Notes</Badge>
-                  <ReviewRow label="Source Subtype" value={SOURCE_SUBTYPES.find(s => s.value === form.source_sub_type)?.label} />
+                  <Badge variant="outline" className="mb-2">Co-applicant context</Badge>
+                  <ReviewRow label="Co-Applicant" value={form.coapplicant_name} />
+                  <ReviewRow label="Relation" value={form.coapplicant_relation} />
+                  <ReviewRow label="Secured preference" value={form.collateral_available} />
+                </div>
+              )}
+              {form.partner_remark && (
+                <div>
+                  <Badge variant="outline" className="mb-2">Notes</Badge>
                   <ReviewRow label="Partner Remark" value={form.partner_remark} />
                 </div>
               )}
@@ -719,7 +810,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
         leadDisplayId={createdLeadDisplayId}
         studentName={fullName}
         isDraft={isDraftSuccess}
-        onClose={() => navigate("/leads")}
+        onClose={() => navigate(isAdminContext ? "/admin/leads" : "/leads")}
       />
     </div>
   );
