@@ -11,7 +11,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { AdminLeadFilters, defaultAdminLeadFilters, type AdminLeadFilterState } from "@/components/admin/AdminLeadFilters";
 import {
-  AlertCircle, ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Inbox, RefreshCw,
+  AlertCircle, ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Inbox, RefreshCw, Pencil,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Database } from "@/integrations/supabase/types";
@@ -527,6 +527,7 @@ export default function AdminLeads() {
                         Updated {sortIcon("updated_at")}
                       </button>
                     </TableHead>
+                    <TableHead className="text-xs text-right w-[60px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -553,6 +554,20 @@ export default function AdminLeads() {
                       <TableCell><StatusBadge status={r.current_status} /></TableCell>
                       <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                         {formatDistanceToNow(new Date(r.updated_at), { addSuffix: true })}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          title="Edit lead"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/admin/leads/new?edit=${r.id}`);
+                          }}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
