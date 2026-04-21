@@ -402,7 +402,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
   const backTarget = isAdminContext ? "/admin/leads" : "/leads";
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className={containerClassName ?? "max-w-4xl mx-auto space-y-6"}>
       {!hideOwnHeader && (
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate(backTarget)}>
