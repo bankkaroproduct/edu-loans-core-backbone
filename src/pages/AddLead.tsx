@@ -854,14 +854,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="rounded-md border bg-muted/30 px-3 py-2.5 text-sm flex items-center gap-2 flex-wrap">
-                  <span className="text-muted-foreground">Currently attributed to:</span>
-                  <Badge variant="outline" className="font-medium">
-                    {originalPartner ? `${originalPartner.display_name} (${originalPartner.partner_code})` : (originalPartnerId ?? "—")}
-                  </Badge>
-                </div>
                 <div className="space-y-2">
-                  <Label>Reassign to partner organization</Label>
+                  <Label>Partner organization</Label>
                   <Popover open={partnerPickerOpen} onOpenChange={setPartnerPickerOpen}>
                     <PopoverTrigger asChild>
                       <Button
@@ -907,10 +901,16 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                       </Command>
                     </PopoverContent>
                   </Popover>
-                  <p className="text-xs text-muted-foreground">
-                    Reassigning moves this lead to a different partner organization. The change is logged in the audit trail.
-                    This is a direct admin action and does not trigger the partner edit-request workflow.
-                  </p>
+                  {originalPartner && !partnerChanged && (
+                    <p className="text-xs text-muted-foreground">
+                      Currently assigned to <strong className="text-foreground">{originalPartner.display_name}</strong>. Pick a different partner above to reassign.
+                    </p>
+                  )}
+                  {!originalPartner && (
+                    <p className="text-xs text-muted-foreground">
+                      Select the partner organization this lead should belong to.
+                    </p>
+                  )}
                 </div>
                 {partnerChanged && (
                   <Alert className="bg-amber-50 border-amber-200 text-amber-900 [&>svg]:text-amber-600">
@@ -991,12 +991,12 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   <Badge variant="outline" className="mb-2">Partner Assignment</Badge>
                   <ReviewRow
                     label="Assigned Partner"
-                    value={selectedAssignedPartner ? `${selectedAssignedPartner.display_name} (${selectedAssignedPartner.partner_code})` : (partnerIdAssignment || "—")}
+                    value={selectedAssignedPartner ? `${selectedAssignedPartner.display_name} (${selectedAssignedPartner.partner_code})` : "—"}
                   />
-                  {partnerChanged && (
+                  {partnerChanged && originalPartner && (
                     <ReviewRow
                       label="Previous Partner"
-                      value={originalPartner ? `${originalPartner.display_name} (${originalPartner.partner_code})` : (originalPartnerId ?? "—")}
+                      value={`${originalPartner.display_name} (${originalPartner.partner_code})`}
                     />
                   )}
                 </div>
