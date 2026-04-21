@@ -534,6 +534,13 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   // Mode-aware navigation targets
   const studyNextTarget: StepId = isAdminForm ? "financial" : "notes";
   const notesBackTarget: StepId = isAdminForm ? "financial" : "study";
+  const showAssignStep = isAdminForm && isEditMode;
+  const notesNextTarget: StepId = showAssignStep ? "assign" : "review";
+  const reviewBackTarget: StepId = showAssignStep ? "assign" : "notes";
+
+  const selectedAssignedPartner = partnersList.find((p) => p.id === partnerIdAssignment);
+  const partnerChanged = !!partnerIdAssignment && partnerIdAssignment !== originalPartnerId;
+  const originalPartner = partnersList.find((p) => p.id === originalPartnerId);
 
   return (
     <div className={containerClassName ?? "max-w-4xl mx-auto space-y-5"}>
