@@ -19,7 +19,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { DuplicateWarningDialog } from "@/components/leads/DuplicateWarningDialog";
 import { LeadSuccessDialog } from "@/components/leads/LeadSuccessDialog";
 import { toast } from "sonner";
-import { ArrowLeft, FileText, User, GraduationCap, MessageSquare, Eye, AlertTriangle, ChevronDown, Building2 } from "lucide-react";
+import { ArrowLeft, FileText, User, GraduationCap, MessageSquare, Eye, AlertTriangle, ChevronDown } from "lucide-react";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phone";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { computeAdminDiff, getAdminFieldLabel } from "@/lib/adminEditableFields";
@@ -60,7 +60,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
 
   const { user, appUser } = useAuth();
   const { isAdmin } = useRoleAccess();
-  const { effectivePartnerId, effectivePartnerName, effectiveUserId, isSimulating, partnerOptions } = usePartnerContext();
+  const { effectivePartnerId, effectiveUserId } = usePartnerContext();
   const { duplicates, checking, checkDuplicates } = useDuplicateCheck();
   const [submitting, setSubmitting] = useState(false);
   const [hydrating, setHydrating] = useState(Boolean(hydrateId));
@@ -83,7 +83,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
   const [coAppOpen, setCoAppOpen] = useState(false);
   const [originalLead, setOriginalLead] = useState<Record<string, unknown> | null>(null);
   const [editLeadStage, setEditLeadStage] = useState<string | null>(null);
-  const [editPartnerName, setEditPartnerName] = useState<string | null>(null);
+  
 
   const [countries, setCountries] = useState<Country[]>([]);
   const [universities, setUniversities] = useState<University[]>([]);
@@ -173,15 +173,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
       });
       setOriginalLead(data as unknown as Record<string, unknown>);
       setEditLeadStage(data.current_stage ?? null);
-      // Lookup partner name on edit (admin context)
-      if (isEditMode && data.partner_id) {
-        const { data: porg } = await supabase
-          .from("partner_organizations")
-          .select("display_name")
-          .eq("id", data.partner_id)
-          .maybeSingle();
-        setEditPartnerName(porg?.display_name ?? null);
-      }
+      
       setIsDirty(false);
       setHydrating(false);
     })();
@@ -466,11 +458,6 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
   const isAdminContext = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
   const backTarget = isAdminContext ? "/admin/leads" : "/leads";
 
-  // Submitting-as label: prefer simulated partner (admin), else partner admin name from edit lookup, else nothing
-  const submittingAs =
-    effectivePartnerName ||
-    editPartnerName ||
-    (partnerOptions.find((p) => p.id === effectivePartnerId)?.display_name ?? null);
 
   return (
     <div className={containerClassName ?? "max-w-4xl mx-auto space-y-5"}>
@@ -490,16 +477,6 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
             </h1>
             <p className="text-sm text-muted-foreground mt-1">{headingDesc}</p>
           </div>
-        </div>
-      )}
-
-      {/* Submitting-as chip */}
-      {submittingAs && (
-        <div className="inline-flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-1.5 text-xs">
-          <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="text-muted-foreground">Submitting as:</span>
-          <span className="font-medium text-foreground">{submittingAs}</span>
-          {isSimulating && <Badge variant="outline" className="text-[10px]">Simulating</Badge>}
         </div>
       )}
 

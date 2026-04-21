@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Lock, AlertTriangle } from "lucide-react";
+import { Lock, AlertTriangle, Info } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -29,8 +29,8 @@ const PARTNER_TYPES: { value: Partner["partner_type"]; label: string }[] = [
 ];
 
 const STATUSES: { value: Partner["status"]; label: string }[] = [
-  { value: "active", label: "Active" },
   { value: "onboarding", label: "Onboarding" },
+  { value: "active", label: "Active" },
   { value: "inactive", label: "Inactive" },
   { value: "suspended", label: "Suspended" },
   { value: "terminated", label: "Terminated" },
@@ -53,9 +53,11 @@ export function PartnerDrawer({ open, onOpenChange, record, onSaved }: Props) {
   const isSystem = record?.partner_code === "PTR-DIRECT";
   const [form, setForm] = useState<typeof blank>(blank);
   const [saving, setSaving] = useState(false);
+  const [activationError, setActivationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
+    setActivationError(null);
     if (record) {
       setForm({
         display_name: record.display_name ?? "",
@@ -73,17 +75,39 @@ export function PartnerDrawer({ open, onOpenChange, record, onSaved }: Props) {
     }
   }, [open, record]);
 
-  const setField = (k: keyof typeof blank, v: any) => setForm((p) => ({ ...p, [k]: v }));
+  const setField = (k: keyof typeof blank, v: any) => {
+    setForm((p) => ({ ...p, [k]: v }));
+    if (k === "status" || k === "contact_person_name" || k === "contact_person_email") {
+      setActivationError(null);
+    }
+  };
+
+  const activationReady = useMemo(
+    () => form.contact_person_name.trim().length > 0 && form.contact_person_email.trim().length > 0,
+    [form.contact_person_name, form.contact_person_email],
+  );
+
+  const SectionHeader = ({ title, hint }: { title: string; hint?: string }) => (
+    <div className="flex items-baseline justify-between border-b pb-1.5">
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</h4>
+      {hint && <span className="text-[10px] text-muted-foreground">{hint}</span>}
+    </div>
+  );
 
   const handleSave = async () => {
     if (!form.display_name.trim() || !form.legal_name.trim() || !form.partner_code.trim()) {
       toast({ title: "Validation error", description: "Display name, legal name, and partner code are required.", variant: "destructive" });
       return;
     }
+    if (form.status === "active" && !activationReady) {
+      const msg = "Contact name and email are required to set status to Active. Save as Onboarding, or fill in Activation Details.";
+      setActivationError(msg);
+      toast({ title: "Cannot activate yet", description: msg, variant: "destructive" });
+      return;
+    }
     setSaving(true);
     try {
       if (isEdit && record) {
-        // partner_code is immutable on edit
         const { partner_code: _drop, ...payload } = form;
         const { error } = await supabase.from("partner_organizations").update(payload).eq("id", record.id);
         if (error) throw error;
@@ -121,57 +145,78 @@ export function PartnerDrawer({ open, onOpenChange, record, onSaved }: Props) {
           </Alert>
         )}
 
-        <div className="space-y-4 py-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Display Name *</Label>
-              <Input value={form.display_name} onChange={(e) => setField("display_name", e.target.value)} disabled={isSystem} />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs flex items-center gap-1">
-                Partner Code * {isEdit && <Lock className="h-3 w-3 text-muted-foreground" />}
-              </Label>
-              <Input value={form.partner_code} onChange={(e) => setField("partner_code", e.target.value.toUpperCase())} disabled={isEdit} className="font-mono" />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Legal Name *</Label>
-            <Input value={form.legal_name} onChange={(e) => setField("legal_name", e.target.value)} disabled={isSystem} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Partner Type</Label>
-              <Select value={form.partner_type} onValueChange={(v) => setField("partner_type", v)} disabled={isSystem}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {PARTNER_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Status</Label>
-              <Select value={form.status} onValueChange={(v) => setField("status", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {STATUSES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+        {/* Lifecycle helper — visible BEFORE submit, not a save-time surprise */}
+        <Alert className="my-4 bg-muted/40 border-muted [&>svg]:text-muted-foreground">
+          <Info className="h-4 w-4" />
+          <AlertDescription className="text-xs leading-relaxed">
+            A partner can be created in <strong>Onboarding</strong> with just identity fields.
+            To set status to <strong>Active</strong> (go-live), Contact Name and Contact Email are required in Activation Details below.
+          </AlertDescription>
+        </Alert>
 
-          <div className="pt-2">
-            <div className="flex items-baseline justify-between mb-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Contact</p>
-              <p className="text-[10px] text-muted-foreground">Recommended for go-live</p>
+        <div className="space-y-6 py-4">
+          {/* Section 1 — Create Partner (identity) */}
+          <section className="space-y-3">
+            <SectionHeader title="Create Partner" hint="Required for record" />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Display Name *</Label>
+                <Input value={form.display_name} onChange={(e) => setField("display_name", e.target.value)} disabled={isSystem} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs flex items-center gap-1">
+                  Partner Code * {isEdit && <Lock className="h-3 w-3 text-muted-foreground" />}
+                </Label>
+                <Input value={form.partner_code} onChange={(e) => setField("partner_code", e.target.value.toUpperCase())} disabled={isEdit} className="font-mono" />
+              </div>
             </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Legal Name *</Label>
+              <Input value={form.legal_name} onChange={(e) => setField("legal_name", e.target.value)} disabled={isSystem} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Partner Type</Label>
+                <Select value={form.partner_type} onValueChange={(v) => setField("partner_type", v)} disabled={isSystem}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {PARTNER_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Status</Label>
+                <Select value={form.status} onValueChange={(v) => setField("status", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {STATUSES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                {form.status === "active" && !activationReady && (
+                  <p className="text-[10px] text-amber-700">Active requires Contact Name + Email below.</p>
+                )}
+              </div>
+            </div>
+          </section>
+
+          {/* Section 2 — Activation Details */}
+          <section className="space-y-3">
+            <SectionHeader title="Activation Details" hint="Required to go live (Active)" />
+            <p className="text-[11px] text-muted-foreground -mt-1">
+              These fields are optional while the partner is in Onboarding, and become required to switch status to Active.
+            </p>
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <Label className="text-xs">Contact Person Name</Label>
+                <Label className="text-xs">
+                  Contact Person Name {form.status === "active" && <span className="text-amber-700">*</span>}
+                </Label>
                 <Input value={form.contact_person_name} onChange={(e) => setField("contact_person_name", e.target.value)} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Email</Label>
+                  <Label className="text-xs">
+                    Email {form.status === "active" && <span className="text-amber-700">*</span>}
+                  </Label>
                   <Input type="email" value={form.contact_person_email} onChange={(e) => setField("contact_person_email", e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
@@ -185,7 +230,13 @@ export function PartnerDrawer({ open, onOpenChange, record, onSaved }: Props) {
                 <p className="text-[10px] text-muted-foreground">Defaults to legal name if blank.</p>
               </div>
             </div>
-          </div>
+            {activationError && (
+              <Alert className="bg-amber-50 border-amber-200 text-amber-900 [&>svg]:text-amber-600">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription className="text-xs">{activationError}</AlertDescription>
+              </Alert>
+            )}
+          </section>
         </div>
 
         <SheetFooter className="gap-2">
