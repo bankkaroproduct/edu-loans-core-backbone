@@ -1,12 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { CalendarIcon, ChevronDown, Filter, X } from "lucide-react";
-import { format } from "date-fns";
+import { ChevronDown, Filter, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   defaultReportFilters,
@@ -50,8 +47,6 @@ export function AdminReportFilters({ filters, onChange, stages, statuses, countr
     onChange({ ...filters, [key]: val });
 
   const activeCount = [
-    filters.dateFrom,
-    filters.dateTo,
     filters.partnerId !== "all" ? 1 : null,
     filters.source !== "all" ? 1 : null,
     filters.type !== "all" ? 1 : null,
@@ -79,7 +74,7 @@ export function AdminReportFilters({ filters, onChange, stages, statuses, countr
           >
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Filters</span>
+              <span className="text-sm font-medium">Advanced Filters</span>
               {activeCount > 0 && (
                 <span className="text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
                   {activeCount} active
@@ -107,35 +102,9 @@ export function AdminReportFilters({ filters, onChange, stages, statuses, countr
         </CollapsibleTrigger>
         <CollapsibleContent>
           <CardContent className="pt-0 pb-4 space-y-3">
-            {/* Row 1: Date From / Date To / Partner / Source */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-12 gap-2">
-              <div className="col-span-1 md:col-span-1 lg:col-span-3">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className={cn("w-full h-9 text-xs justify-start font-normal", !filters.dateFrom && "text-muted-foreground")}>
-                      <CalendarIcon className="mr-1 h-3.5 w-3.5 shrink-0" />
-                      {filters.dateFrom ? format(filters.dateFrom, "dd MMM yyyy") : "From"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={filters.dateFrom} onSelect={(d) => set("dateFrom", d)} initialFocus />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="col-span-1 md:col-span-1 lg:col-span-3">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className={cn("w-full h-9 text-xs justify-start font-normal", !filters.dateTo && "text-muted-foreground")}>
-                      <CalendarIcon className="mr-1 h-3.5 w-3.5 shrink-0" />
-                      {filters.dateTo ? format(filters.dateTo, "dd MMM yyyy") : "To"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={filters.dateTo} onSelect={(d) => set("dateTo", d)} initialFocus />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="col-span-1 md:col-span-1 lg:col-span-3">
+            {/* Row 1: Partner / Source */}
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-12 gap-2">
+              <div className="col-span-1 md:col-span-1 lg:col-span-6">
                 <Select value={filters.partnerId} onValueChange={(v) => set("partnerId", v)}>
                   <SelectTrigger className="w-full h-9 text-xs"><SelectValue placeholder="Partner" /></SelectTrigger>
                   <SelectContent className="max-h-[300px]">
@@ -144,7 +113,7 @@ export function AdminReportFilters({ filters, onChange, stages, statuses, countr
                   </SelectContent>
                 </Select>
               </div>
-              <div className="col-span-1 md:col-span-1 lg:col-span-3">
+              <div className="col-span-1 md:col-span-1 lg:col-span-6">
                 <Select value={filters.source} onValueChange={(v) => set("source", v as SourceFilter)}>
                   <SelectTrigger className="w-full h-9 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
