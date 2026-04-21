@@ -135,6 +135,9 @@ export default function AdminReports() {
           </Button>
         </PageHeader>
 
+        {/* Reporting Scope Bar — global hero filter */}
+        <ReportingScopeBar filters={filters} onChange={setFilters} partners={partners} />
+
         {/* Summary strip */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <SummaryTile label="Active leads" value={summary?.activeLeads} loading={summaryLoading} hint="Non-archived, non-terminal" />
@@ -143,7 +146,7 @@ export default function AdminReports() {
           <SummaryTile label="Pending edit requests" value={summary?.pendingRequests} loading={summaryLoading} hint="Awaiting admin action" />
         </div>
 
-        {/* Filters */}
+        {/* Advanced Filters */}
         <AdminReportFilters
           filters={filters}
           onChange={setFilters}
@@ -163,6 +166,7 @@ export default function AdminReports() {
             filterVersion={cardKey}
             fetchCount={() => countLeadsReport(filters)}
             fetchData={() => fetchLeadsReport(filters)}
+            dateFieldHint="Uses created date"
           />
           <ReportCard
             title="Stage Movement Report"
@@ -172,6 +176,7 @@ export default function AdminReports() {
             filterVersion={cardKey}
             fetchCount={() => countStageMovement(filters)}
             fetchData={() => fetchStageMovementReport(filters)}
+            dateFieldHint="Uses transition date"
           />
           <ReportCard
             title="Documents Pending Review"
@@ -181,6 +186,7 @@ export default function AdminReports() {
             filterVersion={cardKey}
             fetchCount={() => countDocumentsPending(filters)}
             fetchData={() => fetchDocumentsPendingReport(filters)}
+            dateFieldHint="Uses uploaded date"
           />
           <ReportCard
             title="Edit Requests Report"
@@ -190,6 +196,7 @@ export default function AdminReports() {
             filterVersion={cardKey}
             fetchCount={() => countEditRequests(filters)}
             fetchData={() => fetchEditRequestsReport(filters)}
+            dateFieldHint="Uses created date"
           />
           <div className="md:col-span-2">
             <ReportCard
@@ -200,6 +207,7 @@ export default function AdminReports() {
               filterVersion={cardKey}
               fetchCount={() => countPartnerPerformance()}
               fetchData={() => fetchPartnerPerformanceReport(filters)}
+              dateFieldHint="Uses created date"
             />
           </div>
         </div>
