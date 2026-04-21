@@ -19,7 +19,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { DuplicateWarningDialog } from "@/components/leads/DuplicateWarningDialog";
 import { LeadSuccessDialog } from "@/components/leads/LeadSuccessDialog";
 import { toast } from "sonner";
-import { ArrowLeft, FileText, User, GraduationCap, MessageSquare, Eye, AlertTriangle, ChevronDown, Building2 } from "lucide-react";
+import { ArrowLeft, FileText, User, GraduationCap, MessageSquare, Eye, AlertTriangle, ChevronDown } from "lucide-react";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phone";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { computeAdminDiff, getAdminFieldLabel } from "@/lib/adminEditableFields";
@@ -466,11 +466,6 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
   const isAdminContext = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
   const backTarget = isAdminContext ? "/admin/leads" : "/leads";
 
-  // Submitting-as label: prefer simulated partner (admin), else partner admin name from edit lookup, else nothing
-  const submittingAs =
-    effectivePartnerName ||
-    editPartnerName ||
-    (partnerOptions.find((p) => p.id === effectivePartnerId)?.display_name ?? null);
 
   return (
     <div className={containerClassName ?? "max-w-4xl mx-auto space-y-5"}>
