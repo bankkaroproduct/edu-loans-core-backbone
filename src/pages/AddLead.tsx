@@ -493,16 +493,6 @@ export default function AddLead({ hideOwnHeader = false, containerClassName }: A
         </div>
       )}
 
-      {/* Submitting-as chip */}
-      {submittingAs && (
-        <div className="inline-flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-1.5 text-xs">
-          <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="text-muted-foreground">Submitting as:</span>
-          <span className="font-medium text-foreground">{submittingAs}</span>
-          {isSimulating && <Badge variant="outline" className="text-[10px]">Simulating</Badge>}
-        </div>
-      )}
-
       {/* Terminal-stage warning for admin edits */}
       {isTerminalEdit && (
         <Alert className="bg-amber-50 border-amber-200 text-amber-900 [&>svg]:text-amber-600">
