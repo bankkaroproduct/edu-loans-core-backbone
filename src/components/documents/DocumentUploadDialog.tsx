@@ -68,7 +68,24 @@ export function DocumentUploadDialog({ open, onOpenChange, requirement, leadId, 
     setFile(selected);
   };
 
-  const finishSuccessfully = () => {
+  const finishSuccessfully = async (uploadedDocId?: string) => {
+    // If admin uploaded on behalf, record a system note for timeline visibility
+    // and admin attribution. The audit log already captures this via
+    // lead_documents.uploaded_by_role, but a partner-visible system note makes
+    // the action discoverable in the lead timeline.
+    if (userRole === "admin" || userRole === "super_admin") {
+      try {
+        await supabase.from("lead_notes").insert({
+          lead_id: leadId,
+          note_type: "system",
+          note_text: `Admin uploaded ${docName} on behalf of the lead (v${nextVersion}, file: ${file?.name ?? "unknown"})`,
+          created_by: userId,
+        });
+      } catch (e) {
+        // Non-blocking — upload itself succeeded.
+        console.warn("Could not record admin upload note", e);
+      }
+    }
     toast.success(`${docName} uploaded successfully (v${nextVersion})`);
     setFile(null);
     setSoftBlockInfo(null);

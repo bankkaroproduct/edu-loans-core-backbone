@@ -30,7 +30,12 @@ interface DocReq {
   status: string;
   required_flag: boolean;
   remarks: string | null;
-  document_master?: { document_name: string; document_category: string | null } | null;
+  document_master?: {
+    document_name: string;
+    document_category: string | null;
+    document_code?: string | null;
+    applicable_for?: string | null;
+  } | null;
 }
 
 interface State {
@@ -79,7 +84,7 @@ export default function AdminLeadDetail() {
       const [histRes, notesRes, docRes, payoutRes, partnerRes, userRes] = await Promise.all([
         supabase.from("lead_stage_history").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
         supabase.from("lead_notes").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
-        supabase.from("lead_document_requirements").select("*, document_master(document_name, document_category)").eq("lead_id", id).order("created_at"),
+        supabase.from("lead_document_requirements").select("*, document_master(document_name, document_category, document_code, applicable_for)").eq("lead_id", id).order("created_at"),
         supabase.from("partner_payout_records").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
         lead.partner_id
           ? supabase.from("partner_organizations").select("*").eq("id", lead.partner_id).maybeSingle()
@@ -210,6 +215,7 @@ export default function AdminLeadDetail() {
 
           <AdminDocumentReviewPanel
             leadId={lead.id}
+            lead={lead}
             requirements={docRequirements}
             onChanged={loadAll}
           />
