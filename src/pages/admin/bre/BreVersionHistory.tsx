@@ -5,9 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Lock } from "lucide-react";
+import { ArrowDownToLine, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { canEditBre, normalizeBrePermission } from "@/lib/bre/permissions";
+import { RollbackDialog } from "@/components/bre/editor/RollbackDialog";
+import { rollbackScoringConfigToVersion, rollbackLenderRuleToVersion } from "@/lib/bre/versioning";
 
 interface ConfigVersion {
   id: string;
@@ -29,48 +33,83 @@ interface LenderRuleVersion {
 }
 
 export default function BreVersionHistory() {
+  const { appUser } = useAuth();
+  const canEdit = canEditBre(appUser?.role, normalizeBrePermission(appUser?.bre_permission));
+
   const [configs, setConfigs] = useState<ConfigVersion[]>([]);
   const [rules, setRules] = useState<LenderRuleVersion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rollbackTarget, setRollbackTarget] = useState<
+    | { kind: "scoring"; id: string; version: number }
+    | { kind: "lender"; id: string; version: number; lenderName: string }
+    | null
+  >(null);
+  const [rollbackBusy, setRollbackBusy] = useState(false);
+
+  const reload = async () => {
+    setLoading(true);
+    const [c, r] = await Promise.all([
+      supabase
+        .from("bre_scoring_configs")
+        .select("id, version_number, is_active, bucket_threshold, change_summary, created_at")
+        .order("version_number", { ascending: false }),
+      supabase
+        .from("bre_lender_rules")
+        .select("id, lender_id, version_number, is_active, change_summary, created_at, basic_info")
+        .order("created_at", { ascending: false }),
+    ]);
+    if (c.error) toast({ title: "Failed to load config versions", description: c.error.message, variant: "destructive" });
+    if (r.error) toast({ title: "Failed to load lender rule versions", description: r.error.message, variant: "destructive" });
+    setConfigs((c.data ?? []) as ConfigVersion[]);
+    const sortedRules = ((r.data ?? []) as unknown as LenderRuleVersion[]).sort((a, b) => {
+      const an = a.basic_info?.lender_name ?? "";
+      const bn = b.basic_info?.lender_name ?? "";
+      if (an !== bn) return an.localeCompare(bn);
+      return b.version_number - a.version_number;
+    });
+    setRules(sortedRules);
+    setLoading(false);
+  };
 
   useEffect(() => {
     let cancelled = false;
-    const load = async () => {
-      setLoading(true);
-      const [c, r] = await Promise.all([
-        supabase
-          .from("bre_scoring_configs")
-          .select("id, version_number, is_active, bucket_threshold, change_summary, created_at")
-          .order("version_number", { ascending: false }),
-        supabase
-          .from("bre_lender_rules")
-          .select("id, lender_id, version_number, is_active, change_summary, created_at, basic_info")
-          .order("created_at", { ascending: false }),
-      ]);
+    (async () => {
       if (cancelled) return;
-      if (c.error) toast({ title: "Failed to load config versions", description: c.error.message, variant: "destructive" });
-      if (r.error) toast({ title: "Failed to load lender rule versions", description: r.error.message, variant: "destructive" });
-      setConfigs((c.data ?? []) as ConfigVersion[]);
-      const sortedRules = ((r.data ?? []) as unknown as LenderRuleVersion[]).sort((a, b) => {
-        const an = a.basic_info?.lender_name ?? "";
-        const bn = b.basic_info?.lender_name ?? "";
-        if (an !== bn) return an.localeCompare(bn);
-        return b.version_number - a.version_number;
-      });
-      setRules(sortedRules);
-      setLoading(false);
-    };
-    load();
+      await reload();
+    })();
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const doRollback = async (changeSummary: string) => {
+    if (!rollbackTarget) return;
+    setRollbackBusy(true);
+    try {
+      if (rollbackTarget.kind === "scoring") {
+        const created = await rollbackScoringConfigToVersion(rollbackTarget.id, changeSummary);
+        toast({ title: `Cloned to v${created.version_number}`, description: "Created as inactive. Activate to make it live." });
+      } else {
+        const created = await rollbackLenderRuleToVersion(rollbackTarget.id, changeSummary);
+        toast({ title: `Cloned to v${created.version_number}`, description: "Created as inactive. Activate to make it live." });
+      }
+      setRollbackTarget(null);
+      await reload();
+    } catch (err) {
+      toast({ title: "Rollback failed", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
+    } finally {
+      setRollbackBusy(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="BRE Version History"
-        description="All scoring-config versions and per-lender rule versions. Rollback ships in a later phase."
+        description="All scoring-config versions and per-lender rule versions. Rollback clones a chosen version into a new inactive version — activation is a separate step."
       >
-        <Badge variant="outline" className="bg-muted text-muted-foreground">Read-only shell</Badge>
+        <Badge variant="outline" className="bg-muted text-muted-foreground">
+          {canEdit ? "Edit enabled" : "Read-only"}
+        </Badge>
       </PageHeader>
 
       <Card>
@@ -110,9 +149,21 @@ export default function BreVersionHistory() {
                       <TableCell className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleString()}</TableCell>
                       <TableCell className="text-sm">{c.change_summary ?? "—"}</TableCell>
                       <TableCell className="text-right">
-                        <Button size="sm" variant="ghost" disabled title="Rollback ships in a later phase">
-                          <Lock className="h-3.5 w-3.5 mr-1" /> Rollback
-                        </Button>
+                        {canEdit ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setRollbackTarget({ kind: "scoring", id: c.id, version: c.version_number })}
+                            disabled={c.is_active}
+                            title={c.is_active ? "Already active — nothing to roll back to" : "Clone this version into a new inactive version"}
+                          >
+                            <ArrowDownToLine className="h-3.5 w-3.5 mr-1" /> Rollback
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="ghost" disabled title="Read-only — your BRE permission is read">
+                            <Lock className="h-3.5 w-3.5 mr-1" /> Rollback
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -163,9 +214,21 @@ export default function BreVersionHistory() {
                       <TableCell className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString()}</TableCell>
                       <TableCell className="text-sm">{r.change_summary ?? "—"}</TableCell>
                       <TableCell className="text-right">
-                        <Button size="sm" variant="ghost" disabled title="Rollback ships in a later phase">
-                          <Lock className="h-3.5 w-3.5 mr-1" /> Rollback
-                        </Button>
+                        {canEdit ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setRollbackTarget({ kind: "lender", id: r.id, version: r.version_number, lenderName: r.basic_info?.lender_name ?? "—" })}
+                            disabled={r.is_active}
+                            title={r.is_active ? "Already active — nothing to roll back to" : "Clone this version into a new inactive version for this lender"}
+                          >
+                            <ArrowDownToLine className="h-3.5 w-3.5 mr-1" /> Rollback
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="ghost" disabled title="Read-only — your BRE permission is read">
+                            <Lock className="h-3.5 w-3.5 mr-1" /> Rollback
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -175,6 +238,20 @@ export default function BreVersionHistory() {
           )}
         </CardContent>
       </Card>
+
+      <RollbackDialog
+        open={rollbackTarget !== null}
+        onOpenChange={(o) => !o && !rollbackBusy && setRollbackTarget(null)}
+        sourceVersionLabel={
+          rollbackTarget
+            ? rollbackTarget.kind === "scoring"
+              ? `v${rollbackTarget.version}`
+              : `${rollbackTarget.lenderName} v${rollbackTarget.version}`
+            : ""
+        }
+        scope={rollbackTarget?.kind ?? "scoring"}
+        onConfirm={doRollback}
+      />
     </div>
   );
 }

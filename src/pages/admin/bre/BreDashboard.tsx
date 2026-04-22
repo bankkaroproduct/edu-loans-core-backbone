@@ -5,9 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Banknote, History, ScrollText, Settings2 } from "lucide-react";
+import { Banknote, History, ScrollText, Calculator } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { canEditBre, normalizeBrePermission, isReadOnlyBre } from "@/lib/bre/permissions";
 
 interface DashboardData {
   activeConfigVersion: number | null;
@@ -19,6 +21,11 @@ interface DashboardData {
 }
 
 export default function BreDashboard() {
+  const { appUser } = useAuth();
+  const perm = normalizeBrePermission(appUser?.bre_permission);
+  const canEdit = canEditBre(appUser?.role, perm);
+  const readOnly = isReadOnlyBre(appUser?.role, perm);
+
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -73,7 +80,9 @@ export default function BreDashboard() {
         title="BRE Engine"
         description="Internal Business Rule Engine console — configure lender policies, scoring logic, and version history. Admin-only."
       >
-        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">Phase 2 · Read-only shells</Badge>
+        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
+          Phase 3 · Editing {readOnly ? "(read-only)" : "enabled"}
+        </Badge>
       </PageHeader>
 
       {loading || !data ? (
@@ -131,19 +140,15 @@ export default function BreDashboard() {
       )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <NavTile icon={<Banknote className="h-4 w-4" />} title="Lender Rules" desc="View seeded lender rule rows" to="/admin/bre/lenders" />
-        <NavTile icon={<History className="h-4 w-4" />} title="Version History" desc="Active scoring & rule versions" to="/admin/bre/versions" />
+        <NavTile
+          icon={<Calculator className="h-4 w-4" />}
+          title={canEdit ? "Edit Scoring Config" : "Scoring Config"}
+          desc={canEdit ? "Edit weights, bands & overall mapping" : "View active scoring configuration"}
+          to="/admin/bre/scoring"
+        />
+        <NavTile icon={<Banknote className="h-4 w-4" />} title="Lender Rules" desc={canEdit ? "Open a lender to edit its rule" : "View active lender rule rows"} to="/admin/bre/lenders" />
+        <NavTile icon={<History className="h-4 w-4" />} title="Version History" desc={canEdit ? "Browse & roll back to old versions" : "View scoring & rule version history"} to="/admin/bre/versions" />
         <NavTile icon={<ScrollText className="h-4 w-4" />} title="Audit Log" desc="Filtered BRE audit events" to="/admin/bre/audit" />
-        <Card className="border-dashed">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <Settings2 className="h-4 w-4 text-muted-foreground" /> Editor (Phase 3)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">Lender rule editor, scoring editor and simulation runner are out of Phase 2 scope.</p>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
