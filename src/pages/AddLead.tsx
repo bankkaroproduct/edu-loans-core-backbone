@@ -1019,54 +1019,87 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
           </div>
         </TabsContent>
 
-        {/* Financial Info — admin mode only */}
-        {isAdminForm && (
-          <TabsContent value="financial" forceMount className="mt-0 data-[state=inactive]:hidden">
-            <Card>
-              <CardHeader><CardTitle className="text-lg">Financial Information</CardTitle></CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2 md:col-span-2">
-                  <Label>Approx Loan Amount Required (₹) *</Label>
-                  <Input type="number" min="0" value={form.loan_amount_required} onChange={(e) => set("loan_amount_required", e.target.value)} placeholder="e.g. 2500000" />
-                  <p className="text-xs text-muted-foreground">Rough expectation — exact figure can be refined later by ops.</p>
-                </div>
-                <div className="space-y-2">
-                  <Label>Co-Applicant Name</Label>
-                  <Input value={form.coapplicant_name} onChange={(e) => set("coapplicant_name", e.target.value)} placeholder="Full name" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Co-Applicant Relation</Label>
-                  <Select value={form.coapplicant_relation} onValueChange={(v) => set("coapplicant_relation", v)}>
-                    <SelectTrigger><SelectValue placeholder="Select relation" /></SelectTrigger>
-                    <SelectContent>
-                      {CO_APPLICANT_RELATIONS.map((r) => (
-                        <SelectItem key={r} value={r}>{r}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label>Co-Applicant Income (₹)</Label>
-                  <Input type="number" min="0" value={form.coapplicant_income} onChange={(e) => set("coapplicant_income", e.target.value)} placeholder="Annual income (optional)" />
-                  <p className="text-xs text-muted-foreground">Optional — can be refined later from documents.</p>
-                </div>
-                <div className="md:col-span-2">
-                  <CollateralRadio
-                    state={form.collateral_state}
-                    notes={form.collateral_notes}
-                    onChangeState={(s) => set("collateral_state", s)}
-                    onChangeNotes={(n) => set("collateral_notes", n)}
-                    idPrefix="admin-coll"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-            <div className="flex justify-between mt-4">
-              <Button variant="outline" onClick={() => goToStep("study")}>← Study Intent</Button>
-              <Button onClick={() => goToStep("notes")}>Next: Notes →</Button>
-            </div>
-          </TabsContent>
-        )}
+        {/* Financial Info — required step in BOTH partner and admin modes */}
+        <TabsContent value="financial" forceMount className="mt-0 data-[state=inactive]:hidden">
+          <Card>
+            <CardHeader><CardTitle className="text-lg">Financial Information</CardTitle></CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2 md:col-span-2" data-field="loan_amount_required">
+                <Label>Approx Loan Amount Required (₹) *</Label>
+                <MoneyInput value={form.loan_amount_required} onChange={(d) => set("loan_amount_required", d)} placeholder="e.g. 25,00,000" />
+                <p className="text-xs text-muted-foreground">Rough expectation — exact figure can be refined later by ops.</p>
+              </div>
+              <div className="space-y-2" data-field="coapplicant_name">
+                <Label>Co-Applicant Name *</Label>
+                <Input value={form.coapplicant_name} onChange={(e) => set("coapplicant_name", e.target.value)} placeholder="Full name" />
+                <p className="text-xs text-muted-foreground">As per Aadhaar and Passport</p>
+              </div>
+              <div className="space-y-2" data-field="coapplicant_mobile">
+                <Label>Mobile Number *</Label>
+                <Input value={form.coapplicant_mobile} onChange={(e) => set("coapplicant_mobile", e.target.value)} placeholder="+91 9876543210" />
+                <p className="text-xs text-muted-foreground">As per Aadhaar and Passport</p>
+              </div>
+              <div className="space-y-2" data-field="coapplicant_relation">
+                <Label>Co-Applicant Relation</Label>
+                <Select value={form.coapplicant_relation} onValueChange={(v) => set("coapplicant_relation", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select relation" /></SelectTrigger>
+                  <SelectContent>
+                    {CO_APPLICANT_RELATIONS.map((r) => (
+                      <SelectItem key={r} value={r}>{r}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2" data-field="coapplicant_income_source">
+                <Label>Income Source *</Label>
+                <Select value={form.coapplicant_income_source} onValueChange={(v) => set("coapplicant_income_source", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select income source" /></SelectTrigger>
+                  <SelectContent>
+                    {INCOME_SOURCE_OPTIONS.map((o) => (
+                      <SelectItem key={o} value={o}>{o}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2" data-field="coapplicant_employment_type">
+                <Label>Employment Type *</Label>
+                <Select value={form.coapplicant_employment_type} onValueChange={(v) => set("coapplicant_employment_type", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select employment type" /></SelectTrigger>
+                  <SelectContent>
+                    {EMPLOYMENT_TYPE_OPTIONS.map((o) => (
+                      <SelectItem key={o} value={o}>{o}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2" data-field="coapplicant_employer">
+                <Label>Employer / Occupation *</Label>
+                <Input value={form.coapplicant_employer} onChange={(e) => set("coapplicant_employer", e.target.value)} placeholder="Company / occupation" />
+              </div>
+              <div className="space-y-2" data-field="coapplicant_income">
+                <Label>Monthly Income (₹) *</Label>
+                <MoneyInput value={form.coapplicant_income} onChange={(d) => set("coapplicant_income", d)} placeholder="e.g. 1,25,000" />
+              </div>
+              <div className="space-y-2" data-field="coapplicant_existing_emi">
+                <Label>Existing EMI (₹) *</Label>
+                <MoneyInput value={form.coapplicant_existing_emi} onChange={(d) => set("coapplicant_existing_emi", d)} placeholder="Enter 0 if none" />
+              </div>
+              <div className="md:col-span-2">
+                <CollateralRadio
+                  state={form.collateral_state}
+                  notes={form.collateral_notes}
+                  onChangeState={(s) => set("collateral_state", s)}
+                  onChangeNotes={(n) => set("collateral_notes", n)}
+                  idPrefix="financial-coll"
+                />
+              </div>
+            </CardContent>
+          </Card>
+          <div className="flex justify-between mt-4">
+            <Button variant="outline" onClick={() => goToStep("study")}>← Study Intent</Button>
+            <Button onClick={() => goToStep("notes")}>Next: Notes →</Button>
+          </div>
+        </TabsContent>
 
         {/* Notes */}
         <TabsContent value="notes" forceMount className="mt-0 data-[state=inactive]:hidden">
