@@ -48,7 +48,7 @@ const STEP_DEFS = {
 
 type StepId = keyof typeof STEP_DEFS;
 
-const PARTNER_STEPS: StepId[] = ["student", "study", "notes", "review"];
+const PARTNER_STEPS: StepId[] = ["student", "study", "financial", "notes", "review"];
 const ADMIN_STEPS: StepId[] = ["student", "study", "financial", "notes", "review"];
 const ADMIN_EDIT_STEPS: StepId[] = ["student", "study", "financial", "notes", "assign", "review"];
 
@@ -56,7 +56,50 @@ const CO_APPLICANT_RELATIONS = [
   "Father", "Mother", "Spouse", "Guardian", "Brother", "Sister", "Uncle", "Other",
 ];
 
+const EMPLOYMENT_TYPE_OPTIONS = [
+  "Salaried",
+  "Self-employed",
+  "Business owner",
+  "Retired",
+  "Other",
+];
+
 const TERMINAL_STAGES = ["disbursed", "rejected", "dropped"];
+
+/**
+ * Map a country display name (as stored in `countries_master.country_name`) to its ISO 2-letter
+ * code (as stored in `universities_master.country`). Falls back to the trimmed uppercase input
+ * so already-ISO values (or admin-entered codes) still match.
+ *
+ * Keep this list aligned with the DB-side `country_to_iso()` helper.
+ */
+function countryNameToIso(name: string | null | undefined): string {
+  if (!name) return "";
+  const n = name.trim();
+  const map: Record<string, string> = {
+    "United States": "US",
+    "United States of America": "US",
+    USA: "US",
+    "United Kingdom": "GB",
+    UK: "GB",
+    "Great Britain": "GB",
+    Canada: "CA",
+    Australia: "AU",
+    Germany: "DE",
+    France: "FR",
+    Netherlands: "NL",
+    Singapore: "SG",
+    Ireland: "IE",
+    "New Zealand": "NZ",
+    Spain: "ES",
+    Italy: "IT",
+    Switzerland: "CH",
+    Sweden: "SE",
+    Denmark: "DK",
+  };
+  if (map[n]) return map[n];
+  return n.length <= 3 ? n.toUpperCase() : n.toUpperCase().slice(0, 2);
+}
 
 interface AddLeadProps {
   hideOwnHeader?: boolean;
