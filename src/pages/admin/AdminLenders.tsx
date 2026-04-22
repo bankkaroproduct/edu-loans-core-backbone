@@ -7,16 +7,21 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Plus, Pencil, Power, Banknote } from "lucide-react";
+import { Search, Plus, Pencil, Power, Banknote, SlidersHorizontal, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { LenderDrawer } from "@/components/admin/LenderDrawer";
+import { useAuth } from "@/hooks/useAuth";
+import { canAccessBre, normalizeBrePermission } from "@/lib/bre/permissions";
 
 type Lender = Tables<"lenders">;
 type StatusFilter = "all" | "active" | "inactive";
 
 export default function AdminLenders() {
+  const { appUser } = useAuth();
+  const breAccess = canAccessBre(appUser?.role, normalizeBrePermission(appUser?.bre_permission));
   const [lenders, setLenders] = useState<Lender[]>([]);
   const [mappingCounts, setMappingCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
