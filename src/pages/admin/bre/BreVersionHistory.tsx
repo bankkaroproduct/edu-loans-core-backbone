@@ -214,9 +214,21 @@ export default function BreVersionHistory() {
                       <TableCell className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString()}</TableCell>
                       <TableCell className="text-sm">{r.change_summary ?? "—"}</TableCell>
                       <TableCell className="text-right">
-                        <Button size="sm" variant="ghost" disabled title="Rollback ships in a later phase">
-                          <Lock className="h-3.5 w-3.5 mr-1" /> Rollback
-                        </Button>
+                        {canEdit ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setRollbackTarget({ kind: "lender", id: r.id, version: r.version_number, lenderName: r.basic_info?.lender_name ?? "—" })}
+                            disabled={r.is_active}
+                            title={r.is_active ? "Already active — nothing to roll back to" : "Clone this version into a new inactive version for this lender"}
+                          >
+                            <ArrowDownToLine className="h-3.5 w-3.5 mr-1" /> Rollback
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="ghost" disabled title="Read-only — your BRE permission is read">
+                            <Lock className="h-3.5 w-3.5 mr-1" /> Rollback
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -226,6 +238,20 @@ export default function BreVersionHistory() {
           )}
         </CardContent>
       </Card>
+
+      <RollbackDialog
+        open={rollbackTarget !== null}
+        onOpenChange={(o) => !o && !rollbackBusy && setRollbackTarget(null)}
+        sourceVersionLabel={
+          rollbackTarget
+            ? rollbackTarget.kind === "scoring"
+              ? `v${rollbackTarget.version}`
+              : `${rollbackTarget.lenderName} v${rollbackTarget.version}`
+            : ""
+        }
+        scope={rollbackTarget?.kind ?? "scoring"}
+        onConfirm={doRollback}
+      />
     </div>
   );
 }
