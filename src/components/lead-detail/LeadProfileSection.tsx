@@ -119,6 +119,23 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
             <Field label="Submitted By" value={submittedByName} />
             <Field label="Created At" value={new Date(lead.created_at).toLocaleString()} />
             <Field label="Last Updated" value={new Date(lead.updated_at).toLocaleString()} />
+            <div className="min-w-0">
+              <span className="text-muted-foreground text-xs flex items-center gap-1">
+                <ShieldCheck className="h-3 w-3" /> Lead Authenticity
+              </span>
+              {(() => {
+                const key = (lead.lead_authenticity ?? "unverified").toLowerCase();
+                const meta = AUTHENTICITY_LABEL[key] ?? AUTHENTICITY_LABEL.unverified;
+                return (
+                  <div className="mt-1">
+                    <Badge variant={meta.tone}>{meta.label}</Badge>
+                    {lead.fraud_flag ? (
+                      <Badge variant="destructive" className="ml-2">Legacy fraud_flag</Badge>
+                    ) : null}
+                  </div>
+                );
+              })()}
+            </div>
           </div>
         </CardContent>
       </Card>
