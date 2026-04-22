@@ -899,14 +899,58 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
           <Card>
             <CardHeader><CardTitle className="text-lg">Education & Study Intent</CardTitle></CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-span-2" data-field="intended_study_country">
                 <Label>Intended Study Country *</Label>
-                <Select value={form.intended_study_country} onValueChange={(v) => set("intended_study_country", v)}>
-                  <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
-                  <SelectContent>{countries.map((c) => <SelectItem key={c.id} value={c.country_name}>{c.country_name}</SelectItem>)}</SelectContent>
-                </Select>
+                <Popover open={countryPickerOpen} onOpenChange={setCountryPickerOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={countryPickerOpen}
+                      className={cn(
+                        "w-full justify-between font-normal h-9",
+                        !form.intended_study_country && "text-muted-foreground",
+                      )}
+                    >
+                      <span className="truncate text-left">
+                        {form.intended_study_country || "Search & select intended country…"}
+                      </span>
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Type a country name…" />
+                      <CommandList>
+                        <CommandEmpty>No countries match that search.</CommandEmpty>
+                        <CommandGroup>
+                          {countries.map((c) => (
+                            <CommandItem
+                              key={c.id}
+                              value={c.country_name}
+                              onSelect={() => {
+                                // Switching country must clear stale university selection
+                                // (master id + manual fallback) so partners aren't shown a
+                                // university from a different country in review.
+                                setMany({
+                                  intended_study_country: c.country_name,
+                                  university_id: "",
+                                  university_name_raw: "",
+                                });
+                                setCountryPickerOpen(false);
+                              }}
+                            >
+                              <Check className={cn("mr-2 h-4 w-4", form.intended_study_country === c.country_name ? "opacity-100" : "opacity-0")} />
+                              <span className="truncate">{c.country_name}</span>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
-              <div className="space-y-2 md:col-span-2">
+              <div className="space-y-2 md:col-span-2" data-field="university">
                 <Label>University *</Label>
                 <MasterCombobox
                   options={universityOptions}
@@ -920,7 +964,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   manualPlaceholder="Type the university name"
                 />
               </div>
-              <div className="space-y-2 md:col-span-2">
+              <div className="space-y-2 md:col-span-2" data-field="course">
                 <Label>Course *</Label>
                 <MasterCombobox
                   options={courseOptions}
@@ -934,28 +978,21 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   manualPlaceholder="Type the course name"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2" data-field="intake_term">
                 <Label>Intake Term *</Label>
                 <Select value={form.intake_term} onValueChange={(v) => set("intake_term", v)}>
                   <SelectTrigger><SelectValue placeholder="Select term" /></SelectTrigger>
                   <SelectContent>{intakeTerms.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2" data-field="intake_year">
                 <Label>Intake Year *</Label>
                 <Select value={form.intake_year ? String(form.intake_year) : ""} onValueChange={(v) => set("intake_year", Number(v))}>
                   <SelectTrigger><SelectValue placeholder="Select year" /></SelectTrigger>
                   <SelectContent>{intakeYears.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              {/* Loan Amount — partner mode only here. Admin shows it in Financial Info. */}
-              {!isAdminForm && (
-                <div className="space-y-2 md:col-span-2">
-                  <Label>Approx Loan Amount Required (₹) *</Label>
-                  <MoneyInput value={form.loan_amount_required} onChange={(d) => set("loan_amount_required", d)} placeholder="e.g. 25,00,000" />
-                  <p className="text-xs text-muted-foreground">Rough expectation — exact figure can be refined later by ops.</p>
-                </div>
-              )}
+              {/* Loan Amount intentionally moved to the Financial Info step in both modes. */}
 
               {/* Read-only academic context for student-origin leads in admin edit mode */}
               {isAdminForm && isEditMode && originalLead?.source_type === "student_direct" && (
