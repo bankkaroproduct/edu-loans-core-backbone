@@ -16,6 +16,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { MASTER_SCHEMAS, MASTER_KEYS, MasterSchema, COUNTRY_OPTIONS } from "@/lib/masterSchemas";
 import { MasterRecordDrawer } from "@/components/admin/MasterRecordDrawer";
 import { MasterBulkUploadDialog, MASTER_UPLOAD_SPECS } from "@/components/admin/MasterBulkUploadDialog";
+import { PincodeMasterImportDialog } from "@/components/admin/PincodeMasterImportDialog";
+import { MapPin } from "lucide-react";
 
 type StatusFilter = "all" | "active" | "inactive";
 
