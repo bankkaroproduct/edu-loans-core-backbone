@@ -217,6 +217,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     coapplicant_mobile: "",
     coapplicant_income: "",
     coapplicant_income_source: "",
+    coapplicant_employment_type: "",
+    coapplicant_employer: "",
     coapplicant_existing_emi: "",
     collateral_state: "unsure" as CollateralState,
     collateral_notes: "",
