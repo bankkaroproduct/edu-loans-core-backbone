@@ -781,39 +781,33 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   <SelectContent>{countries.map((c) => <SelectItem key={c.id} value={c.country_name}>{c.country_name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>University (from list) *</Label>
-                <Select value={form.university_id} onValueChange={(v) => {
-                  const uni = universities.find((u) => u.id === v);
-                  set("university_id", v);
-                  set("university_name_raw", uni?.university_name ?? "");
-                }}>
-                  <SelectTrigger><SelectValue placeholder="Search university..." /></SelectTrigger>
-                  <SelectContent>{universities.map((u) => <SelectItem key={u.id} value={u.id}>{u.university_name} ({u.country})</SelectItem>)}</SelectContent>
-                </Select>
+              <div className="space-y-2 md:col-span-2">
+                <Label>University *</Label>
+                <MasterCombobox
+                  options={universityOptions}
+                  selectedId={form.university_id}
+                  manualValue={form.university_id ? "" : form.university_name_raw}
+                  onSelectMaster={(opt) => setMany({ university_id: opt.id, university_name_raw: opt.label })}
+                  onSelectManual={() => setMany({ university_id: "", university_name_raw: form.university_name_raw })}
+                  onChangeManual={(t) => setMany({ university_id: "", university_name_raw: t })}
+                  placeholder={form.intended_study_country ? `Search universities in ${form.intended_study_country}…` : "Pick a country first to filter universities"}
+                  helperText="Search the master list, or pick 'Not available in list' to type manually."
+                  manualPlaceholder="Type the university name"
+                />
               </div>
-              <div className="space-y-2">
-                <Label>Or enter university name *</Label>
-                <Input value={form.university_name_raw} onChange={(e) => {
-                  set("university_name_raw", e.target.value);
-                  if (form.university_id) set("university_id", "");
-                }} placeholder="If not in the list above" />
-                <p className="text-xs text-muted-foreground">Required — pick from list or type manually.</p>
-              </div>
-              <div className="space-y-2">
-                <Label>Course (from list) *</Label>
-                <Select value={form.course_name} onValueChange={(v) => set("course_name", v)}>
-                  <SelectTrigger><SelectValue placeholder="Select course" /></SelectTrigger>
-                  <SelectContent>{courses.map((c) => <SelectItem key={c.id} value={c.course_name}>{c.course_name}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Or enter course name *</Label>
-                <Input value={form.course_name_raw} onChange={(e) => {
-                  set("course_name_raw", e.target.value);
-                  if (form.course_name) set("course_name", "");
-                }} placeholder="If not in the list above" />
-                <p className="text-xs text-muted-foreground">Required — pick from list or type manually.</p>
+              <div className="space-y-2 md:col-span-2">
+                <Label>Course *</Label>
+                <MasterCombobox
+                  options={courseOptions}
+                  selectedId={form.course_id}
+                  manualValue={form.course_id ? "" : form.course_name}
+                  onSelectMaster={(opt) => setMany({ course_id: opt.id, course_name: opt.label })}
+                  onSelectManual={() => setMany({ course_id: "", course_name: form.course_name })}
+                  onChangeManual={(t) => setMany({ course_id: "", course_name: t })}
+                  placeholder="Search courses…"
+                  helperText="Search the master list, or pick 'Not available in list' to type manually."
+                  manualPlaceholder="Type the course name"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Intake Term *</Label>
@@ -833,9 +827,25 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               {!isAdminForm && (
                 <div className="space-y-2 md:col-span-2">
                   <Label>Approx Loan Amount Required (₹) *</Label>
-                  <Input type="number" min="0" value={form.loan_amount_required} onChange={(e) => set("loan_amount_required", e.target.value)} placeholder="e.g. 2500000" />
+                  <MoneyInput value={form.loan_amount_required} onChange={(d) => set("loan_amount_required", d)} placeholder="e.g. 25,00,000" />
                   <p className="text-xs text-muted-foreground">Rough expectation — exact figure can be refined later by ops.</p>
                 </div>
+              )}
+
+              {/* Read-only academic context for student-origin leads in admin edit mode */}
+              {isAdminForm && isEditMode && originalLead?.source_type === "student_direct" && (
+                (originalLead?.highest_qualification || originalLead?.marks_gpa || originalLead?.test_scores) && (
+                  <div className="md:col-span-2 rounded-md border bg-muted/30 p-3 space-y-1">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">From student portal (read-only)</p>
+                    <div className="grid gap-1 text-xs sm:grid-cols-2">
+                      {originalLead?.highest_qualification ? <div><span className="text-muted-foreground">Qualification: </span>{String(originalLead.highest_qualification)}</div> : null}
+                      {originalLead?.marks_gpa ? <div><span className="text-muted-foreground">Marks / GPA: </span>{String(originalLead.marks_gpa)}</div> : null}
+                      {originalLead?.test_scores && typeof originalLead.test_scores === "object" && Object.keys(originalLead.test_scores as object).length > 0 ? (
+                        <div className="sm:col-span-2"><span className="text-muted-foreground">Test scores: </span>{Object.entries(originalLead.test_scores as Record<string, unknown>).map(([k, v]) => `${k.toUpperCase()}: ${v}`).join(" · ")}</div>
+                      ) : null}
+                    </div>
+                  </div>
+                )
               )}
             </CardContent>
           </Card>
