@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { StudentStepLayout } from "@/components/student/StudentStepLayout";
 import { useStudentAuth } from "@/hooks/useStudentAuth";
@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Shield, CheckCircle2, FileText, CreditCard, IdCard, BookOpen, ScrollText } from "lucide-react";
+import { Shield, FileText, CreditCard, IdCard, BookOpen, ScrollText, Info } from "lucide-react";
+import { usePincodeLookup } from "@/hooks/usePincodeLookup";
 
 const GENDERS = ["Male", "Female", "Non-binary", "Prefer not to say"];
 
@@ -24,7 +25,7 @@ const INITIAL_DOCS = [
 export default function StudentBasicDetails() {
   const navigate = useNavigate();
   const { isVerified, phone, eligibilityData } = useStudentAuth();
-  const { formData, updateField, saveStep, saving, loading } = useStudentApplication();
+  const { formData, updateField, saveStep, saving } = useStudentApplication();
   const [countries, setCountries] = useState<{ id: string; country_name: string }[]>([]);
 
   useEffect(() => {
@@ -45,6 +46,25 @@ export default function StudentBasicDetails() {
       if (eligibilityData.loanAmount) updateField("loan_amount_required", eligibilityData.loanAmount);
     }
   }, [eligibilityData]);
+
+  // Pincode auto-fill — student-portal side. Only applies if district/state are blank
+  // (do not overwrite anything the student has typed).
+  const pincodeResult = usePincodeLookup(formData.pincode);
+  const lastApplied = useRef<string>("");
+  useEffect(() => {
+    if (
+      pincodeResult.found &&
+      formData.pincode &&
+      formData.pincode !== lastApplied.current
+    ) {
+      lastApplied.current = formData.pincode;
+      if (!formData.state && pincodeResult.state) updateField("state", pincodeResult.state);
+      // city is free-form on the student form; we don't overwrite it from district
+    }
+    if (pincodeResult.found === false && formData.pincode === lastApplied.current) {
+      lastApplied.current = "";
+    }
+  }, [pincodeResult, formData.pincode, formData.state, updateField]);
 
   const handleContinue = async () => {
     if (!formData.student_full_name.trim()) {
@@ -124,17 +144,36 @@ export default function StudentBasicDetails() {
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Current Residence & Destination</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
+              <Label>Pincode</Label>
+              <Input
+                value={formData.pincode}
+                onChange={e => updateField("pincode", e.target.value.replace(/\D/g, "").slice(0, 6))}
+                placeholder="6-digit pincode"
+                inputMode="numeric"
+              />
+              {formData.pincode.length === 6 && pincodeResult.found === false && (
+                <p className="text-[11px] text-muted-foreground">
+                  Pincode not in master — please confirm City / State manually below.
+                </p>
+              )}
+              {pincodeResult.hasConflict && (
+                <p className="text-[11px] text-amber-700 flex items-center gap-1">
+                  <Info className="h-3 w-3" /> Verify district / state — multiple values exist for this pincode.
+                </p>
+              )}
+              {!pincodeResult.hasConflict && pincodeResult.found && (
+                <p className="text-[11px] text-muted-foreground">
+                  Auto-filled from pincode master. You can edit if needed.
+                </p>
+              )}
+            </div>
+            <div className="space-y-1.5">
               <Label>City</Label>
               <Input value={formData.city} onChange={e => updateField("city", e.target.value)} placeholder="e.g. Mumbai" />
             </div>
             <div className="space-y-1.5">
               <Label>State</Label>
               <Input value={formData.state} onChange={e => updateField("state", e.target.value)} placeholder="e.g. Maharashtra" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Pincode</Label>
-              <Input value={formData.pincode} onChange={e => updateField("pincode", e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="6-digit pincode" />
-              <p className="text-[11px] text-muted-foreground">Your pincode helps determine lender serviceability in your area</p>
             </div>
             <div className="space-y-1.5">
               <Label>Destination Country <span className="text-destructive">*</span></Label>

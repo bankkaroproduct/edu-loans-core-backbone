@@ -41,6 +41,7 @@ export interface StudentFormData {
   coapplicant_existing_emi: string;
   collateral_available: boolean | null;
   collateral_notes: string;
+  coapplicant_income_source: string;
 }
 
 const EMPTY_FORM: StudentFormData = {
@@ -54,6 +55,7 @@ const EMPTY_FORM: StudentFormData = {
   coapplicant_email: "", coapplicant_income: "", coapplicant_employment_type: "",
   coapplicant_employer: "", coapplicant_existing_emi: "",
   collateral_available: null, collateral_notes: "",
+  coapplicant_income_source: "",
 };
 
 export type StepKey = "basic" | "education" | "coapplicant" | "review";
