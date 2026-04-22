@@ -1,8 +1,20 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, GraduationCap, Wallet, FolderInput } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { User, GraduationCap, Wallet, FolderInput, ShieldCheck } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
-type Lead = Tables<"student_leads">;
+type Lead = Tables<"student_leads"> & {
+  district?: string | null;
+  tier?: string | null;
+  lead_authenticity?: string | null;
+};
+
+const AUTHENTICITY_LABEL: Record<string, { label: string; tone: "default" | "secondary" | "destructive" | "outline" }> = {
+  unverified: { label: "Unverified", tone: "outline" },
+  verified: { label: "Verified", tone: "default" },
+  suspicious: { label: "Suspicious", tone: "secondary" },
+  fraudulent: { label: "Fraudulent", tone: "destructive" },
+};
 
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
   const hasValue = value !== null && value !== undefined && value !== "";
@@ -45,8 +57,11 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
             <Field label="Mobile" value={lead.student_phone} />
             <Field label="Email" value={lead.student_email} />
             <Field label="WhatsApp" value={lead.student_whatsapp} />
+            <Field label="Pincode" value={lead.pincode} />
             <Field label="City" value={lead.city} />
+            <Field label="District" value={lead.district ?? null} />
             <Field label="State" value={lead.state} />
+            <Field label="Tier" value={lead.tier ?? null} />
             <Field label="Country" value={lead.country_of_residence} />
           </div>
         </CardContent>
@@ -104,6 +119,23 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
             <Field label="Submitted By" value={submittedByName} />
             <Field label="Created At" value={new Date(lead.created_at).toLocaleString()} />
             <Field label="Last Updated" value={new Date(lead.updated_at).toLocaleString()} />
+            <div className="min-w-0">
+              <span className="text-muted-foreground text-xs flex items-center gap-1">
+                <ShieldCheck className="h-3 w-3" /> Lead Authenticity
+              </span>
+              {(() => {
+                const key = (lead.lead_authenticity ?? "unverified").toLowerCase();
+                const meta = AUTHENTICITY_LABEL[key] ?? AUTHENTICITY_LABEL.unverified;
+                return (
+                  <div className="mt-1">
+                    <Badge variant={meta.tone}>{meta.label}</Badge>
+                    {lead.fraud_flag ? (
+                      <Badge variant="destructive" className="ml-2">Legacy fraud_flag</Badge>
+                    ) : null}
+                  </div>
+                );
+              })()}
+            </div>
           </div>
         </CardContent>
       </Card>
