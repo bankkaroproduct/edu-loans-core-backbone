@@ -1093,17 +1093,19 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   <ReviewRow label="Co-Applicant" value={form.coapplicant_name} />
                   <ReviewRow label="Relation" value={form.coapplicant_relation} />
                   <ReviewRow label="Co-Applicant Income (₹)" value={form.coapplicant_income ? `₹${Number(form.coapplicant_income).toLocaleString("en-IN")}` : undefined} />
-                  <ReviewRow label="Collateral" value={form.collateral_available} />
-                  {form.collateral_available && <ReviewRow label="Collateral Notes" value={form.collateral_notes} />}
+                  <ReviewRow label="Collateral" value={form.collateral_state === "likely" ? "Likely" : form.collateral_state === "unlikely" ? "Unlikely" : "Not sure"} />
+                  {form.collateral_state === "likely" && form.collateral_notes && (
+                    <ReviewRow label="Collateral Notes" value={form.collateral_notes} />
+                  )}
                 </div>
               )}
               {/* Partner: keep conditional co-applicant context block */}
-              {!isAdminForm && (form.coapplicant_name || form.coapplicant_relation || form.collateral_available) && (
+              {!isAdminForm && (form.coapplicant_name || form.coapplicant_relation || form.collateral_state !== "unsure") && (
                 <div>
                   <Badge variant="outline" className="mb-2">Co-applicant context</Badge>
                   <ReviewRow label="Co-Applicant" value={form.coapplicant_name} />
                   <ReviewRow label="Relation" value={form.coapplicant_relation} />
-                  <ReviewRow label="Secured preference" value={form.collateral_available} />
+                  <ReviewRow label="Secured preference" value={form.collateral_state === "likely" ? "Likely" : form.collateral_state === "unlikely" ? "Unlikely" : "Not sure"} />
                 </div>
               )}
               {form.partner_remark && (
