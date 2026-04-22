@@ -105,7 +105,9 @@ const App = () => (
             <Route path="/admin/reports" element={<AdminRoute><AdminReports /></AdminRoute>} />
             {/* BRE Engine — Admin only, additionally gated by bre_permission */}
             <Route path="/admin/bre" element={<AdminRoute><BreAccessGate><BreDashboard /></BreAccessGate></AdminRoute>} />
+            <Route path="/admin/bre/scoring" element={<AdminRoute><BreAccessGate><BreScoringConfigEditor /></BreAccessGate></AdminRoute>} />
             <Route path="/admin/bre/lenders" element={<AdminRoute><BreAccessGate><BreLenderRulesList /></BreAccessGate></AdminRoute>} />
+            <Route path="/admin/bre/lenders/:lenderId" element={<AdminRoute><BreAccessGate><BreLenderRuleEditor /></BreAccessGate></AdminRoute>} />
             <Route path="/admin/bre/versions" element={<AdminRoute><BreAccessGate><BreVersionHistory /></BreAccessGate></AdminRoute>} />
             <Route path="/admin/bre/audit" element={<AdminRoute><BreAccessGate><BreAuditLog /></BreAccessGate></AdminRoute>} />
             <Route path="*" element={<NotFound />} />
