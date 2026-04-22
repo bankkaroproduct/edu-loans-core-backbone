@@ -153,17 +153,17 @@ export default function StudentBasicDetails() {
               />
               {formData.pincode.length === 6 && pincodeResult.found === false && (
                 <p className="text-[11px] text-muted-foreground">
-                  Pincode not in master — please confirm City / State manually below.
+                  We couldn't match this pincode. Please confirm your city and state manually.
                 </p>
               )}
               {pincodeResult.hasConflict && (
                 <p className="text-[11px] text-amber-700 flex items-center gap-1">
-                  <Info className="h-3 w-3" /> Verify district / state — multiple values exist for this pincode.
+                  <Info className="h-3 w-3" /> Please verify your city and state — this pincode could match more than one area.
                 </p>
               )}
               {!pincodeResult.hasConflict && pincodeResult.found && (
                 <p className="text-[11px] text-muted-foreground">
-                  Auto-filled from pincode master. You can edit if needed.
+                  Location details auto-filled. You can edit if needed.
                 </p>
               )}
             </div>

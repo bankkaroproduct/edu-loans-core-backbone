@@ -681,7 +681,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
 
       <Tabs value={activeStep} onValueChange={(v) => goToStep(v as StepId)} className="space-y-5">
         {/* Student Details */}
-        <TabsContent value="student" className="mt-0">
+        <TabsContent value="student" forceMount className="mt-0 data-[state=inactive]:hidden">
           <Card>
             <CardHeader><CardTitle className="text-lg">Student Basic Details</CardTitle></CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
@@ -736,12 +736,15 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   inputMode="numeric"
                 />
                 {form.pincode.length === 6 && pincodeResult.found === false && (
-                  <p className="text-[11px] text-muted-foreground">Pincode not in master — please confirm District/State manually.</p>
+                  <p className="text-[11px] text-muted-foreground">We couldn't match this pincode. Please confirm District and State manually.</p>
                 )}
                 {pincodeResult.hasConflict && (
                   <p className="text-[11px] text-amber-700 flex items-center gap-1">
-                    <Info className="h-3 w-3" /> Verify district — multiple values exist for this pincode in source.
+                    <Info className="h-3 w-3" /> Please verify District and State — this pincode maps to more than one location.
                   </p>
+                )}
+                {!pincodeResult.hasConflict && pincodeResult.found && form.pincode.length === 6 && (
+                  <p className="text-[11px] text-muted-foreground">Location details auto-filled. You can edit if needed.</p>
                 )}
               </div>
               <div className="space-y-2">
@@ -770,7 +773,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         </TabsContent>
 
         {/* Study Intent */}
-        <TabsContent value="study" className="mt-0">
+        <TabsContent value="study" forceMount className="mt-0 data-[state=inactive]:hidden">
           <Card>
             <CardHeader><CardTitle className="text-lg">Education & Study Intent</CardTitle></CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
@@ -859,7 +862,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
 
         {/* Financial Info — admin mode only */}
         {isAdminForm && (
-          <TabsContent value="financial" className="mt-0">
+          <TabsContent value="financial" forceMount className="mt-0 data-[state=inactive]:hidden">
             <Card>
               <CardHeader><CardTitle className="text-lg">Financial Information</CardTitle></CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-2">
@@ -907,7 +910,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         )}
 
         {/* Notes */}
-        <TabsContent value="notes" className="mt-0">
+        <TabsContent value="notes" forceMount className="mt-0 data-[state=inactive]:hidden">
           <Card>
             <CardHeader><CardTitle className="text-lg">Partner Notes</CardTitle></CardHeader>
             <CardContent className="grid gap-4">
@@ -972,7 +975,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
 
         {/* Assign to Partner — admin edit only */}
         {showAssignStep && (
-          <TabsContent value="assign" className="mt-0">
+          <TabsContent value="assign" forceMount className="mt-0 data-[state=inactive]:hidden">
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -1058,7 +1061,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
 
 
         {/* Review */}
-        <TabsContent value="review" className="mt-0 space-y-4">
+        <TabsContent value="review" forceMount className="mt-0 space-y-4 data-[state=inactive]:hidden">
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">

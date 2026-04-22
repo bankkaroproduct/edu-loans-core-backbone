@@ -95,26 +95,66 @@ export function deriveCurrentStep(completion: StepCompletion): number {
   return 0; // start at basic
 }
 
+const DRAFT_KEY_PREFIX = "student_form_draft:";
+const draftKeyFor = (phone: string | null | undefined) =>
+  phone ? `${DRAFT_KEY_PREFIX}${phone}` : null;
+
+/** Wipe every phone-scoped draft from sessionStorage. Used on logout / phone mismatch. */
+export function clearAllStudentDrafts() {
+  try {
+    const keys: string[] = [];
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const k = sessionStorage.key(i);
+      if (k && (k.startsWith(DRAFT_KEY_PREFIX) || k === "student_form_draft")) keys.push(k);
+    }
+    keys.forEach((k) => sessionStorage.removeItem(k));
+  } catch { /* ignore */ }
+}
+
 export function useStudentApplication() {
-  const { phone, leads, isVerified } = useStudentAuth();
+  const { phone, leads, isVerified, refreshLeads } = useStudentAuth();
   const [formData, setFormData] = useState<StudentFormData>(() => {
-    const saved = sessionStorage.getItem("student_form_draft");
-    if (saved) try { return { ...EMPTY_FORM, ...JSON.parse(saved) }; } catch { /* ignore */ }
+    // Start empty by default. Hydration is phone-scoped and runs in an effect below.
     return { ...EMPTY_FORM };
   });
   const [leadId, setLeadId] = useState<string | null>(leads?.[0]?.id || null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Persist draft to sessionStorage on change
+  // On phone change: hard-reset state, then hydrate ONLY this phone's draft (if any).
   useEffect(() => {
-    sessionStorage.setItem("student_form_draft", JSON.stringify(formData));
-  }, [formData]);
+    if (!phone) {
+      setFormData({ ...EMPTY_FORM });
+      return;
+    }
+    const key = draftKeyFor(phone);
+    if (!key) return;
+    const saved = sessionStorage.getItem(key);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // Defensive: if persisted draft was for a different phone, ignore.
+        if (parsed && (!parsed.student_phone || parsed.student_phone === phone || parsed.student_phone === phone.slice(-10))) {
+          setFormData({ ...EMPTY_FORM, ...parsed });
+          return;
+        }
+      } catch { /* ignore */ }
+    }
+    setFormData({ ...EMPTY_FORM });
+  }, [phone]);
 
-  // Load lead data on mount
+  // Persist draft to phone-scoped sessionStorage on change
+  useEffect(() => {
+    const key = draftKeyFor(phone);
+    if (!key) return;
+    sessionStorage.setItem(key, JSON.stringify(formData));
+  }, [formData, phone]);
+
+  // Load existing lead from server when phone+verified is ready
   useEffect(() => {
     if (!phone || !isVerified) return;
     loadFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phone, isVerified]);
 
   const loadFromServer = useCallback(async () => {
@@ -243,6 +283,13 @@ export function useStudentApplication() {
         setLeadId(data.lead.id);
       }
 
+      // After successful submit: clear this phone's draft and push fresh leads to context
+      if (action === "submit" && data?.lead) {
+        const key = draftKeyFor(phone);
+        if (key) sessionStorage.removeItem(key);
+        try { await refreshLeads?.(); } catch { /* best-effort */ }
+      }
+
       return data?.lead || null;
     } catch (err: any) {
       toast({ title: "Save failed", description: err.message || "Please try again.", variant: "destructive" });
@@ -250,7 +297,7 @@ export function useStudentApplication() {
     } finally {
       setSaving(false);
     }
-  }, [phone, leadId, formData]);
+  }, [phone, leadId, formData, refreshLeads]);
 
   const updateField = useCallback((field: keyof StudentFormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));

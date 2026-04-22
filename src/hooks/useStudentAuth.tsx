@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { clearAllStudentDrafts } from "@/hooks/useStudentApplication";
 
 type OtpState = "idle" | "sending" | "otp_sent" | "verifying" | "verified";
 
@@ -38,6 +39,8 @@ interface StudentAuthContextType extends StudentAuthState {
   logout: () => void;
   setEligibilityData: (data: EligibilityData) => void;
   eligibilityData: EligibilityData | null;
+  /** Re-fetch leads for the currently verified phone and push into context. */
+  refreshLeads: () => Promise<void>;
 }
 
 export interface EligibilityData {
@@ -74,7 +77,14 @@ export function StudentAuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const sendOtp = useCallback(async (phone: string) => {
-    setState(s => ({ ...s, otpState: "sending", phone }));
+    // If a different phone is being used than what's currently cached, wipe any
+    // prior phone-scoped drafts so the new student does not inherit prior data.
+    setState(s => {
+      if (s.phone && s.phone !== phone) {
+        clearAllStudentDrafts();
+      }
+      return { ...s, otpState: "sending", phone };
+    });
     try {
       const { error } = await supabase.auth.signInWithOtp({ phone });
       if (error) {
@@ -180,6 +190,7 @@ export function StudentAuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem("student_auth");
     sessionStorage.removeItem("student_eligibility");
     sessionStorage.removeItem("student_otp_fallback");
+    clearAllStudentDrafts();
     setState({ phone: null, isVerified: false, otpState: "idle", leads: [], studentName: null });
     setEligibilityData(null);
   }, []);
@@ -188,6 +199,13 @@ export function StudentAuthProvider({ children }: { children: ReactNode }) {
     setEligibilityData(data);
     sessionStorage.setItem("student_eligibility", JSON.stringify(data));
   }, []);
+
+  const refreshLeads = useCallback(async () => {
+    if (!state.phone) return;
+    const fresh = await lookupLeads(state.phone);
+    const name = fresh.length > 0 ? fresh[0].student_full_name || fresh[0].student_first_name : state.studentName;
+    persist({ ...state, leads: fresh, studentName: name });
+  }, [state, persist]);
 
   return (
     <StudentAuthContext.Provider
@@ -199,6 +217,7 @@ export function StudentAuthProvider({ children }: { children: ReactNode }) {
         logout,
         eligibilityData,
         setEligibilityData: handleSetEligibilityData,
+        refreshLeads,
       }}
     >
       {children}
