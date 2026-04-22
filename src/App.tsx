@@ -22,6 +22,8 @@ import AdminLenders from "./pages/admin/AdminLenders";
 import AdminReports from "./pages/admin/AdminReports";
 import BreDashboard from "./pages/admin/bre/BreDashboard";
 import BreLenderRulesList from "./pages/admin/bre/BreLenderRulesList";
+import BreLenderRuleEditor from "./pages/admin/bre/BreLenderRuleEditor";
+import BreScoringConfigEditor from "./pages/admin/bre/BreScoringConfigEditor";
 import BreVersionHistory from "./pages/admin/bre/BreVersionHistory";
 import BreAuditLog from "./pages/admin/bre/BreAuditLog";
 import { BreAccessGate } from "./components/bre/BreAccessGate";
