@@ -80,7 +80,9 @@ export default function BreDashboard() {
         title="BRE Engine"
         description="Internal Business Rule Engine console — configure lender policies, scoring logic, and version history. Admin-only."
       >
-        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">Phase 2 · Read-only shells</Badge>
+        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
+          Phase 3 · Editing {readOnly ? "(read-only)" : "enabled"}
+        </Badge>
       </PageHeader>
 
       {loading || !data ? (
