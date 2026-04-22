@@ -16,6 +16,7 @@ import { AdminStageStatusPanel } from "@/components/admin/AdminStageStatusPanel"
 import { AdminDocumentReviewPanel } from "@/components/admin/AdminDocumentReviewPanel";
 import { AdminInternalNotes } from "@/components/admin/AdminInternalNotes";
 import { AdminEditRequestPanel } from "@/components/admin/AdminEditRequestPanel";
+import { LeadAuthenticityEditor } from "@/components/admin/LeadAuthenticityEditor";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Lead = Tables<"student_leads">;
@@ -195,13 +196,24 @@ export default function AdminLeadDetail() {
       />
 
       {/* Admin direct-action row — Edit is always enabled, including terminal stages */}
-      <div className="flex items-center justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={() => navigate(`/admin/leads/${lead.id}/documents`)}>
-          <FileText className="h-4 w-4 mr-1" /> Documents
-        </Button>
-        <Button size="sm" onClick={() => navigate(`/admin/leads/new?edit=${lead.id}`)}>
-          <Edit className="h-4 w-4 mr-1" /> Edit Lead
-        </Button>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          <span className="text-xs uppercase tracking-wide text-muted-foreground">Authenticity:</span>
+          <LeadAuthenticityEditor
+            leadId={lead.id}
+            current={(lead as unknown as { lead_authenticity?: string }).lead_authenticity}
+            fraudFlag={lead.fraud_flag}
+            onChanged={loadAll}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => navigate(`/admin/leads/${lead.id}/documents`)}>
+            <FileText className="h-4 w-4 mr-1" /> Documents
+          </Button>
+          <Button size="sm" onClick={() => navigate(`/admin/leads/new?edit=${lead.id}`)}>
+            <Edit className="h-4 w-4 mr-1" /> Edit Lead
+          </Button>
+        </div>
       </div>
 
       <LeadSummaryStrip lead={lead} />
