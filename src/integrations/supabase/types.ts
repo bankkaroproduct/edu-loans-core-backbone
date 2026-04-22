@@ -1116,6 +1116,36 @@ export type Database = {
           },
         ]
       }
+      pincode_master: {
+        Row: {
+          district: string | null
+          has_conflict: boolean
+          pincode: string
+          source_row_count: number
+          state: string | null
+          tier: string | null
+          updated_at: string
+        }
+        Insert: {
+          district?: string | null
+          has_conflict?: boolean
+          pincode: string
+          source_row_count?: number
+          state?: string | null
+          tier?: string | null
+          updated_at?: string
+        }
+        Update: {
+          district?: string | null
+          has_conflict?: boolean
+          pincode?: string
+          source_row_count?: number
+          state?: string | null
+          tier?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       qa_results_admin_ops: {
         Row: {
           actual: string | null
@@ -1155,6 +1185,7 @@ export type Database = {
           coapplicant_employment_type: string | null
           coapplicant_existing_emi: number | null
           coapplicant_income: number | null
+          coapplicant_income_source: string | null
           coapplicant_mobile: string | null
           coapplicant_name: string | null
           coapplicant_relation: string | null
@@ -1166,6 +1197,7 @@ export type Database = {
           created_at: string
           current_stage: Database["public"]["Enums"]["lead_stage_enum"]
           current_status: Database["public"]["Enums"]["lead_status_enum"]
+          district: string | null
           duplicate_flag: boolean
           fraud_flag: boolean
           highest_qualification: string | null
@@ -1174,6 +1206,7 @@ export type Database = {
           intake_year: number
           intended_study_country: string
           is_archived: boolean
+          lead_authenticity: string
           lead_id: string | null
           loan_amount_required: number | null
           marks_gpa: string | null
@@ -1194,9 +1227,11 @@ export type Database = {
           student_portal_user_id: string | null
           student_whatsapp: string | null
           test_scores: Json | null
+          tier: string | null
           university_id: string | null
           university_name_raw: string | null
           updated_at: string
+          whatsapp_same_as_phone: boolean
         }
         Insert: {
           assigned_admin_id?: string | null
@@ -1206,6 +1241,7 @@ export type Database = {
           coapplicant_employment_type?: string | null
           coapplicant_existing_emi?: number | null
           coapplicant_income?: number | null
+          coapplicant_income_source?: string | null
           coapplicant_mobile?: string | null
           coapplicant_name?: string | null
           coapplicant_relation?: string | null
@@ -1217,6 +1253,7 @@ export type Database = {
           created_at?: string
           current_stage?: Database["public"]["Enums"]["lead_stage_enum"]
           current_status?: Database["public"]["Enums"]["lead_status_enum"]
+          district?: string | null
           duplicate_flag?: boolean
           fraud_flag?: boolean
           highest_qualification?: string | null
@@ -1225,6 +1262,7 @@ export type Database = {
           intake_year: number
           intended_study_country: string
           is_archived?: boolean
+          lead_authenticity?: string
           lead_id?: string | null
           loan_amount_required?: number | null
           marks_gpa?: string | null
@@ -1245,9 +1283,11 @@ export type Database = {
           student_portal_user_id?: string | null
           student_whatsapp?: string | null
           test_scores?: Json | null
+          tier?: string | null
           university_id?: string | null
           university_name_raw?: string | null
           updated_at?: string
+          whatsapp_same_as_phone?: boolean
         }
         Update: {
           assigned_admin_id?: string | null
@@ -1257,6 +1297,7 @@ export type Database = {
           coapplicant_employment_type?: string | null
           coapplicant_existing_emi?: number | null
           coapplicant_income?: number | null
+          coapplicant_income_source?: string | null
           coapplicant_mobile?: string | null
           coapplicant_name?: string | null
           coapplicant_relation?: string | null
@@ -1268,6 +1309,7 @@ export type Database = {
           created_at?: string
           current_stage?: Database["public"]["Enums"]["lead_stage_enum"]
           current_status?: Database["public"]["Enums"]["lead_status_enum"]
+          district?: string | null
           duplicate_flag?: boolean
           fraud_flag?: boolean
           highest_qualification?: string | null
@@ -1276,6 +1318,7 @@ export type Database = {
           intake_year?: number
           intended_study_country?: string
           is_archived?: boolean
+          lead_authenticity?: string
           lead_id?: string | null
           loan_amount_required?: number | null
           marks_gpa?: string | null
@@ -1296,9 +1339,11 @@ export type Database = {
           student_portal_user_id?: string | null
           student_whatsapp?: string | null
           test_scores?: Json | null
+          tier?: string | null
           university_id?: string | null
           university_name_raw?: string | null
           updated_at?: string
+          whatsapp_same_as_phone?: boolean
         }
         Relationships: [
           {
