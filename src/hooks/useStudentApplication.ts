@@ -150,6 +150,13 @@ export function useStudentApplication() {
     sessionStorage.setItem(key, JSON.stringify(formData));
   }, [formData, phone]);
 
+  // Load existing lead from server when phone+verified is ready
+  useEffect(() => {
+    if (!phone || !isVerified) return;
+    loadFromServer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phone, isVerified]);
+
   const loadFromServer = useCallback(async () => {
     if (!phone) return;
     setLoading(true);
@@ -276,6 +283,13 @@ export function useStudentApplication() {
         setLeadId(data.lead.id);
       }
 
+      // After successful submit: clear this phone's draft and push fresh leads to context
+      if (action === "submit" && data?.lead) {
+        const key = draftKeyFor(phone);
+        if (key) sessionStorage.removeItem(key);
+        try { await refreshLeads?.(); } catch { /* best-effort */ }
+      }
+
       return data?.lead || null;
     } catch (err: any) {
       toast({ title: "Save failed", description: err.message || "Please try again.", variant: "destructive" });
@@ -283,7 +297,7 @@ export function useStudentApplication() {
     } finally {
       setSaving(false);
     }
-  }, [phone, leadId, formData]);
+  }, [phone, leadId, formData, refreshLeads]);
 
   const updateField = useCallback((field: keyof StudentFormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
