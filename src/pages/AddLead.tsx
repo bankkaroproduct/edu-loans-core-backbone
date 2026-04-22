@@ -888,19 +888,15 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   <Input type="number" min="0" value={form.coapplicant_income} onChange={(e) => set("coapplicant_income", e.target.value)} placeholder="Annual income (optional)" />
                   <p className="text-xs text-muted-foreground">Optional — can be refined later from documents.</p>
                 </div>
-                <div className="md:col-span-2 flex items-center gap-3 rounded-md border p-2.5">
-                  <Switch checked={form.collateral_available} onCheckedChange={(v) => set("collateral_available", v)} />
-                  <div>
-                    <Label className="text-sm">Secured (collateral likely available)</Label>
-                    <p className="text-[11px] text-muted-foreground">Off = unsecured preference. Detailed collateral info is collected later.</p>
-                  </div>
+                <div className="md:col-span-2">
+                  <CollateralRadio
+                    state={form.collateral_state}
+                    notes={form.collateral_notes}
+                    onChangeState={(s) => set("collateral_state", s)}
+                    onChangeNotes={(n) => set("collateral_notes", n)}
+                    idPrefix="admin-coll"
+                  />
                 </div>
-                {form.collateral_available && (
-                  <div className="space-y-2 md:col-span-2">
-                    <Label>Collateral Notes</Label>
-                    <Textarea value={form.collateral_notes} onChange={(e) => set("collateral_notes", e.target.value)} placeholder="Type, est. value, location…" rows={2} />
-                  </div>
-                )}
               </CardContent>
             </Card>
             <div className="flex justify-between mt-4">
@@ -949,12 +945,14 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="md:col-span-2 flex items-center gap-3 rounded-md border p-2.5">
-                        <Switch checked={form.collateral_available} onCheckedChange={(v) => set("collateral_available", v)} />
-                        <div>
-                          <Label className="text-sm">Secured (collateral likely available)</Label>
-                          <p className="text-[11px] text-muted-foreground">Off = unsecured preference. Detailed collateral info is collected later.</p>
-                        </div>
+                      <div className="md:col-span-2">
+                        <CollateralRadio
+                          state={form.collateral_state}
+                          notes={form.collateral_notes}
+                          onChangeState={(s) => set("collateral_state", s)}
+                          onChangeNotes={(n) => set("collateral_notes", n)}
+                          idPrefix="partner-coll"
+                        />
                       </div>
                     </div>
                   </CollapsibleContent>
@@ -1095,17 +1093,19 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   <ReviewRow label="Co-Applicant" value={form.coapplicant_name} />
                   <ReviewRow label="Relation" value={form.coapplicant_relation} />
                   <ReviewRow label="Co-Applicant Income (₹)" value={form.coapplicant_income ? `₹${Number(form.coapplicant_income).toLocaleString("en-IN")}` : undefined} />
-                  <ReviewRow label="Collateral" value={form.collateral_available} />
-                  {form.collateral_available && <ReviewRow label="Collateral Notes" value={form.collateral_notes} />}
+                  <ReviewRow label="Collateral" value={form.collateral_state === "likely" ? "Likely" : form.collateral_state === "unlikely" ? "Unlikely" : "Not sure"} />
+                  {form.collateral_state === "likely" && form.collateral_notes && (
+                    <ReviewRow label="Collateral Notes" value={form.collateral_notes} />
+                  )}
                 </div>
               )}
               {/* Partner: keep conditional co-applicant context block */}
-              {!isAdminForm && (form.coapplicant_name || form.coapplicant_relation || form.collateral_available) && (
+              {!isAdminForm && (form.coapplicant_name || form.coapplicant_relation || form.collateral_state !== "unsure") && (
                 <div>
                   <Badge variant="outline" className="mb-2">Co-applicant context</Badge>
                   <ReviewRow label="Co-Applicant" value={form.coapplicant_name} />
                   <ReviewRow label="Relation" value={form.coapplicant_relation} />
-                  <ReviewRow label="Secured preference" value={form.collateral_available} />
+                  <ReviewRow label="Secured preference" value={form.collateral_state === "likely" ? "Likely" : form.collateral_state === "unlikely" ? "Unlikely" : "Not sure"} />
                 </div>
               )}
               {form.partner_remark && (
