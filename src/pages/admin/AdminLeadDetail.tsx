@@ -24,6 +24,7 @@ type History = Tables<"lead_stage_history">;
 type Note = Tables<"lead_notes">;
 type PayoutRecord = Tables<"partner_payout_records">;
 type PartnerOrg = Tables<"partner_organizations">;
+type AuditLog = Tables<"audit_logs">;
 
 interface DocReq {
   id: string;
@@ -50,6 +51,8 @@ interface State {
   payouts: PayoutRecord[];
   partner: PartnerOrg | null;
   submittedByName: string | null;
+  audits: AuditLog[];
+  actorNames: Record<string, string>;
 }
 
 const initialState: State = {
@@ -63,6 +66,8 @@ const initialState: State = {
   payouts: [],
   partner: null,
   submittedByName: null,
+  audits: [],
+  actorNames: {},
 };
 
 export default function AdminLeadDetail() {
