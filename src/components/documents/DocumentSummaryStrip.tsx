@@ -112,8 +112,8 @@ export function DocumentSummaryStrip({ requirements, hideNudge = false }: Props)
           })}
         </div>
 
-        {/* Contextual guidance */}
-        {guidanceMessage && (
+        {/* Contextual guidance — suppress action-nudge "info" variant in admin context */}
+        {guidanceMessage && !(hideNudge && guidanceVariant === "info") && (
           <div className={`flex items-start gap-2 rounded-md p-3 text-sm ${
             guidanceVariant === "blocker"
               ? "bg-destructive/10 text-destructive border border-destructive/20"
