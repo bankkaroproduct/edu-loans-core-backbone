@@ -18,7 +18,23 @@ const AUTHENTICITY_LABEL: Record<string, { label: string; tone: "default" | "sec
   fraudulent: { label: "Fraudulent", tone: "destructive" },
 };
 
-function Field({ label, value }: { label: string; value: string | null | undefined }) {
+function Field({
+  label,
+  value,
+  editable,
+  leadId,
+  field,
+  inputType,
+}: {
+  label: string;
+  value: string | null | undefined;
+  /** When true (admin only), missing values render as a clickable inline edit. */
+  editable?: { leadId: string; field: string; inputType?: string };
+  // back-compat shorthand args (unused)
+  leadId?: never;
+  field?: never;
+  inputType?: never;
+}) {
   const hasValue = value !== null && value !== undefined && value !== "";
   return (
     <div className="min-w-0">
@@ -30,7 +46,19 @@ function Field({ label, value }: { label: string; value: string | null | undefin
             : "text-sm italic text-muted-foreground/70"
         }
       >
-        {hasValue ? value : "Please provide details"}
+        {editable ? (
+          <InlineEditField
+            leadId={editable.leadId}
+            field={editable.field}
+            label={label}
+            value={value ?? null}
+            inputType={editable.inputType}
+          />
+        ) : hasValue ? (
+          value
+        ) : (
+          "Please provide details"
+        )}
       </p>
     </div>
   );
