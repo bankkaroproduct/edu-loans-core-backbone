@@ -713,14 +713,49 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
 
   const stepIndex = stepIds.findIndex((s) => s === activeStep);
 
-  const ReviewRow = ({ label, value }: { label: string; value: string | number | boolean | null | undefined }) => (
-    <div className="flex justify-between py-1.5 border-b border-border/50 last:border-0">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className="text-sm font-medium text-foreground text-right max-w-[60%]">
-        {value === true ? "Yes" : value === false ? "No" : value || "—"}
-      </span>
-    </div>
-  );
+  /**
+   * Review row.
+   * - If `value` is missing AND a `nudgeStep` is provided, render the missing slot as a
+   *   clickable "Please provide details" link that jumps the user back to the relevant
+   *   step (and field) so they can fix it without scrolling/hunting.
+   * - Optional fields (no nudge) just render an em-dash.
+   */
+  const ReviewRow = ({
+    label,
+    value,
+    nudgeStep,
+    nudgeField,
+  }: {
+    label: string;
+    value: string | number | boolean | null | undefined;
+    nudgeStep?: StepId;
+    nudgeField?: string;
+  }) => {
+    const display = value === true ? "Yes" : value === false ? "No" : value;
+    const isMissing = display === undefined || display === null || display === "" || display === 0;
+    return (
+      <div className="flex justify-between py-1.5 border-b border-border/50 last:border-0">
+        <span className="text-sm text-muted-foreground">{label}</span>
+        <span className="text-sm font-medium text-right max-w-[60%]">
+          {isMissing ? (
+            nudgeStep ? (
+              <button
+                type="button"
+                onClick={() => goToFieldAndFocus(nudgeStep, nudgeField)}
+                className="text-primary underline-offset-2 hover:underline"
+              >
+                Please provide details →
+              </button>
+            ) : (
+              <span className="text-muted-foreground">—</span>
+            )
+          ) : (
+            <span className="text-foreground">{display as React.ReactNode}</span>
+          )}
+        </span>
+      </div>
+    );
+  };
 
   if (hydrating) {
     return (
