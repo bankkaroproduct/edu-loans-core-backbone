@@ -150,10 +150,17 @@ export default function BreLenderRulesList() {
                           )}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button size="sm" variant="ghost" disabled title={canEdit ? "Editor ships in Phase 3" : "Read-only — Phase 3 will gate this by permission"}>
-                            {canEdit ? <Pencil className="h-3.5 w-3.5 mr-1" /> : <Lock className="h-3.5 w-3.5 mr-1" />}
-                            Edit
-                          </Button>
+                          {canEdit ? (
+                            <Button asChild size="sm" variant="ghost">
+                              <Link to={`/admin/bre/lenders/${r.lender_id}`}>
+                                <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
+                              </Link>
+                            </Button>
+                          ) : (
+                            <Button size="sm" variant="ghost" disabled title="Read-only — your BRE permission is read">
+                              <Lock className="h-3.5 w-3.5 mr-1" /> View only
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     );
