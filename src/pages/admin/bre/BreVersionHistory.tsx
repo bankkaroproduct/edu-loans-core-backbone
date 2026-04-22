@@ -33,48 +33,83 @@ interface LenderRuleVersion {
 }
 
 export default function BreVersionHistory() {
+  const { appUser } = useAuth();
+  const canEdit = canEditBre(appUser?.role, normalizeBrePermission(appUser?.bre_permission));
+
   const [configs, setConfigs] = useState<ConfigVersion[]>([]);
   const [rules, setRules] = useState<LenderRuleVersion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rollbackTarget, setRollbackTarget] = useState<
+    | { kind: "scoring"; id: string; version: number }
+    | { kind: "lender"; id: string; version: number; lenderName: string }
+    | null
+  >(null);
+  const [rollbackBusy, setRollbackBusy] = useState(false);
+
+  const reload = async () => {
+    setLoading(true);
+    const [c, r] = await Promise.all([
+      supabase
+        .from("bre_scoring_configs")
+        .select("id, version_number, is_active, bucket_threshold, change_summary, created_at")
+        .order("version_number", { ascending: false }),
+      supabase
+        .from("bre_lender_rules")
+        .select("id, lender_id, version_number, is_active, change_summary, created_at, basic_info")
+        .order("created_at", { ascending: false }),
+    ]);
+    if (c.error) toast({ title: "Failed to load config versions", description: c.error.message, variant: "destructive" });
+    if (r.error) toast({ title: "Failed to load lender rule versions", description: r.error.message, variant: "destructive" });
+    setConfigs((c.data ?? []) as ConfigVersion[]);
+    const sortedRules = ((r.data ?? []) as unknown as LenderRuleVersion[]).sort((a, b) => {
+      const an = a.basic_info?.lender_name ?? "";
+      const bn = b.basic_info?.lender_name ?? "";
+      if (an !== bn) return an.localeCompare(bn);
+      return b.version_number - a.version_number;
+    });
+    setRules(sortedRules);
+    setLoading(false);
+  };
 
   useEffect(() => {
     let cancelled = false;
-    const load = async () => {
-      setLoading(true);
-      const [c, r] = await Promise.all([
-        supabase
-          .from("bre_scoring_configs")
-          .select("id, version_number, is_active, bucket_threshold, change_summary, created_at")
-          .order("version_number", { ascending: false }),
-        supabase
-          .from("bre_lender_rules")
-          .select("id, lender_id, version_number, is_active, change_summary, created_at, basic_info")
-          .order("created_at", { ascending: false }),
-      ]);
+    (async () => {
       if (cancelled) return;
-      if (c.error) toast({ title: "Failed to load config versions", description: c.error.message, variant: "destructive" });
-      if (r.error) toast({ title: "Failed to load lender rule versions", description: r.error.message, variant: "destructive" });
-      setConfigs((c.data ?? []) as ConfigVersion[]);
-      const sortedRules = ((r.data ?? []) as unknown as LenderRuleVersion[]).sort((a, b) => {
-        const an = a.basic_info?.lender_name ?? "";
-        const bn = b.basic_info?.lender_name ?? "";
-        if (an !== bn) return an.localeCompare(bn);
-        return b.version_number - a.version_number;
-      });
-      setRules(sortedRules);
-      setLoading(false);
-    };
-    load();
+      await reload();
+    })();
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const doRollback = async (changeSummary: string) => {
+    if (!rollbackTarget) return;
+    setRollbackBusy(true);
+    try {
+      if (rollbackTarget.kind === "scoring") {
+        const created = await rollbackScoringConfigToVersion(rollbackTarget.id, changeSummary);
+        toast({ title: `Cloned to v${created.version_number}`, description: "Created as inactive. Activate to make it live." });
+      } else {
+        const created = await rollbackLenderRuleToVersion(rollbackTarget.id, changeSummary);
+        toast({ title: `Cloned to v${created.version_number}`, description: "Created as inactive. Activate to make it live." });
+      }
+      setRollbackTarget(null);
+      await reload();
+    } catch (err) {
+      toast({ title: "Rollback failed", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
+    } finally {
+      setRollbackBusy(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="BRE Version History"
-        description="All scoring-config versions and per-lender rule versions. Rollback ships in a later phase."
+        description="All scoring-config versions and per-lender rule versions. Rollback clones a chosen version into a new inactive version — activation is a separate step."
       >
-        <Badge variant="outline" className="bg-muted text-muted-foreground">Read-only shell</Badge>
+        <Badge variant="outline" className="bg-muted text-muted-foreground">
+          {canEdit ? "Edit enabled" : "Read-only"}
+        </Badge>
       </PageHeader>
 
       <Card>
