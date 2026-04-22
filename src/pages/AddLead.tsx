@@ -399,9 +399,14 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   }, [pincodeResult, form.pincode]);
 
   // Master combobox options
+  // Universities master stores `country` as ISO 2-letter code (US, AU, …) but the form
+  // stores `intended_study_country` as the human display name from countries_master.
+  // Map name → ISO before filtering, falling back to the raw value so admin-entered
+  // ISO codes still work.
   const universityOptions: MasterOption[] = useMemo(() => {
-    const filtered = form.intended_study_country
-      ? universities.filter((u) => u.country === form.intended_study_country)
+    const iso = countryNameToIso(form.intended_study_country);
+    const filtered = iso
+      ? universities.filter((u) => (u.country ?? "").toUpperCase() === iso)
       : universities;
     return filtered.map((u) => ({ id: u.id, label: u.university_name, hint: u.country }));
   }, [universities, form.intended_study_country]);
@@ -417,34 +422,57 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
 
   const isTerminalEdit = isEditMode && editLeadStage && TERMINAL_STAGES.includes(editLeadStage);
 
-  const validate = (isDraft: boolean): string | null => {
-    if (!form.student_first_name.trim()) return "Student first name is required";
-    if (!form.student_phone.trim()) return "Phone number is required";
-    if (!isValidIndianPhone(form.student_phone)) return "Phone must be a valid 10-digit Indian number (with or without +91)";
-    if (form.student_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.student_email.trim())) return "Email format is invalid";
+  type ValidationFailure = { message: string; step: StepId; field?: string };
+  const validate = (isDraft: boolean): ValidationFailure | null => {
+    if (!form.student_first_name.trim()) return { message: "Student first name is required", step: "student", field: "student_first_name" };
+    if (!form.student_phone.trim()) return { message: "Mobile number is required", step: "student", field: "student_phone" };
+    if (!isValidIndianPhone(form.student_phone)) return { message: "Mobile must be a valid 10-digit Indian number (with or without +91)", step: "student", field: "student_phone" };
+    if (form.student_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.student_email.trim())) return { message: "Email format is invalid", step: "student", field: "student_email" };
 
     if (!isDraft) {
-      if (!form.intended_study_country) return "Study country is required";
-      if (!resolvedUniversityName.trim()) return "University is required (pick from list or type manually)";
-      if (!resolvedCourseName) return "Course is required (pick from list or type manually)";
-      if (!form.intake_term) return "Intake term is required";
-      if (!form.intake_year) return "Intake year is required";
-      if (!form.loan_amount_required) return "Approx loan amount is required";
+      if (!form.intended_study_country) return { message: "Intended study country is required", step: "study", field: "intended_study_country" };
+      if (!resolvedUniversityName.trim()) return { message: "University is required (pick from list or type manually)", step: "study", field: "university" };
+      if (!resolvedCourseName) return { message: "Course is required (pick from list or type manually)", step: "study", field: "course" };
+      if (!form.intake_term) return { message: "Intake term is required", step: "study", field: "intake_term" };
+      if (!form.intake_year) return { message: "Intake year is required", step: "study", field: "intake_year" };
+
+      // Financial Info — required in BOTH partner and admin modes (restored).
+      if (!form.loan_amount_required) return { message: "Approx loan amount is required", step: "financial", field: "loan_amount_required" };
       if (isNaN(Number(form.loan_amount_required)) || Number(form.loan_amount_required) <= 0)
-        return "Loan amount must be a positive number";
-      if (form.coapplicant_income && (isNaN(Number(form.coapplicant_income)) || Number(form.coapplicant_income) < 0))
-        return "Co-applicant income must be a valid number";
-      // Admin-only mandatory financial validation. Partner mode stays light.
-      if (isAdminForm) {
-        if (!form.coapplicant_income || Number(form.coapplicant_income) <= 0) {
-          return "Annual co-applicant income is required";
-        }
-      }
+        return { message: "Loan amount must be a positive number", step: "financial", field: "loan_amount_required" };
+      if (!form.coapplicant_name.trim()) return { message: "Co-applicant name is required", step: "financial", field: "coapplicant_name" };
+      if (!form.coapplicant_mobile.trim()) return { message: "Co-applicant mobile is required", step: "financial", field: "coapplicant_mobile" };
+      if (!isValidIndianPhone(form.coapplicant_mobile)) return { message: "Co-applicant mobile must be a valid 10-digit Indian number", step: "financial", field: "coapplicant_mobile" };
+      if (!form.coapplicant_income_source) return { message: "Income source is required", step: "financial", field: "coapplicant_income_source" };
+      if (!form.coapplicant_employment_type) return { message: "Employment type is required", step: "financial", field: "coapplicant_employment_type" };
+      if (!form.coapplicant_employer.trim()) return { message: "Employer / occupation is required", step: "financial", field: "coapplicant_employer" };
+      if (!form.coapplicant_income || Number(form.coapplicant_income) <= 0)
+        return { message: "Monthly income is required", step: "financial", field: "coapplicant_income" };
+      if (form.coapplicant_existing_emi === "" || isNaN(Number(form.coapplicant_existing_emi)) || Number(form.coapplicant_existing_emi) < 0)
+        return { message: "Existing EMI is required (enter 0 if none)", step: "financial", field: "coapplicant_existing_emi" };
     }
 
-    if (!effectivePartnerId) return "No partner organization found for your account. Admins can use 'Test as Partner' in the sidebar.";
+    if (!effectivePartnerId) return { message: "No partner organization found for your account. Admins can use 'Test as Partner' in the sidebar.", step: stepIds[0] };
     return null;
   };
+
+  // Helper used by review-step nudges: jump to a step and try to focus the missing field.
+  const goToFieldAndFocus = useCallback(
+    (step: StepId, field?: string) => {
+      goToStep(step);
+      if (!field) return;
+      // Defer until after tab content mounts/becomes visible.
+      setTimeout(() => {
+        const el = document.querySelector<HTMLElement>(`[data-field="${field}"]`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          const focusable = el.querySelector<HTMLElement>("input, textarea, select, button");
+          (focusable ?? el).focus?.();
+        }
+      }, 80);
+    },
+    [goToStep],
+  );
 
   const handleSubmit = async (asDraft: boolean) => {
     const err = validate(asDraft);
