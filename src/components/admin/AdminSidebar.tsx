@@ -1,7 +1,7 @@
 import {
   Shield, Inbox, Banknote, GraduationCap, Users, LogOut, ArrowLeftRight,
   ClipboardCheck, Database, FilePlus, Upload, FileSpreadsheet,
-  SlidersHorizontal, History, ScrollText,
+  SlidersHorizontal, History, ScrollText, Calculator,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
