@@ -480,7 +480,12 @@ Deno.serve(async (req) => {
         intended_study_country: data?.intended_study_country as string,
         course_category: data?.course_category as string || null,
         loan_amount_required: data?.loan_amount_required ? Number(data.loan_amount_required) : null,
-        country_of_residence: data?.country_of_residence as string || "India",
+        // Country of residence: only persist what the caller explicitly sent.
+        // Do NOT default to "India" — admins handle that downstream and a blanket
+        // default has caused incorrect attribution in past audits.
+        ...(data?.country_of_residence != null && data?.country_of_residence !== ""
+          ? { country_of_residence: data.country_of_residence as string }
+          : {}),
       };
 
       if (!basicFields.student_first_name) {
@@ -550,6 +555,7 @@ Deno.serve(async (req) => {
         coapplicant_mobile: data?.coapplicant_mobile as string || null,
         coapplicant_email: data?.coapplicant_email as string || null,
         coapplicant_income: data?.coapplicant_income ? Number(data.coapplicant_income) : null,
+        coapplicant_income_source: data?.coapplicant_income_source as string || null,
         coapplicant_employment_type: data?.coapplicant_employment_type as string || null,
         coapplicant_employer: data?.coapplicant_employer as string || null,
         coapplicant_existing_emi: data?.coapplicant_existing_emi ? Number(data.coapplicant_existing_emi) : null,
