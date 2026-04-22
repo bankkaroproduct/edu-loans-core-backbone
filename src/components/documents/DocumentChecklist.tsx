@@ -94,9 +94,11 @@ interface Props {
   documents: DocFile[];
   onUpload: (req: DocRequirement) => void;
   leadId: string;
+  /** When true, suppresses the extra yellow guidance/nudge bar — admin already has direct upload + OCR. */
+  hideNudge?: boolean;
 }
 
-export function DocumentChecklist({ requirements, documents, onUpload, leadId }: Props) {
+export function DocumentChecklist({ requirements, documents, onUpload, leadId, hideNudge = false }: Props) {
   // Group documents by document_type_id
   const docsByType = new Map<string, DocFile[]>();
   documents.forEach(doc => {
