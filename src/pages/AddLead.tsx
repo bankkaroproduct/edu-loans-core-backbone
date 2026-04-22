@@ -212,6 +212,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     course_name_raw: "",
     university_name_raw: "",
     university_id: "",
+    highest_qualification: "",
+    marks_gpa: "",
     loan_amount_required: "",
     coapplicant_name: "",
     coapplicant_relation: "",
