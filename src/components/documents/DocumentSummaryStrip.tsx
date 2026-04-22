@@ -5,9 +5,11 @@ import type { DocRequirement } from "@/pages/LeadDocuments";
 
 interface Props {
   requirements: DocRequirement[];
+  /** Hide action-oriented nudge copy (used in admin context). Status badges + counts still render. */
+  hideNudge?: boolean;
 }
 
-export function DocumentSummaryStrip({ requirements }: Props) {
+export function DocumentSummaryStrip({ requirements, hideNudge = false }: Props) {
   const counts = {
     total: requirements.length,
     pending: requirements.filter(r => r.status === "not_uploaded").length,
