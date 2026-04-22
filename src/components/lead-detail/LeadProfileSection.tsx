@@ -2,6 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { User, GraduationCap, Wallet, FolderInput, ShieldCheck } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import { useRoleAccess } from "@/hooks/useRoleAccess";
+import { InlineEditField } from "@/components/admin/InlineEditField";
 
 type Lead = Tables<"student_leads"> & {
   district?: string | null;
@@ -16,7 +18,23 @@ const AUTHENTICITY_LABEL: Record<string, { label: string; tone: "default" | "sec
   fraudulent: { label: "Fraudulent", tone: "destructive" },
 };
 
-function Field({ label, value }: { label: string; value: string | null | undefined }) {
+function Field({
+  label,
+  value,
+  editable,
+  leadId,
+  field,
+  inputType,
+}: {
+  label: string;
+  value: string | null | undefined;
+  /** When true (admin only), missing values render as a clickable inline edit. */
+  editable?: { leadId: string; field: string; inputType?: string };
+  // back-compat shorthand args (unused)
+  leadId?: never;
+  field?: never;
+  inputType?: never;
+}) {
   const hasValue = value !== null && value !== undefined && value !== "";
   return (
     <div className="min-w-0">
@@ -28,7 +46,19 @@ function Field({ label, value }: { label: string; value: string | null | undefin
             : "text-sm italic text-muted-foreground/70"
         }
       >
-        {hasValue ? value : "Please provide details"}
+        {editable ? (
+          <InlineEditField
+            leadId={editable.leadId}
+            field={editable.field}
+            label={label}
+            value={value ?? null}
+            inputType={editable.inputType}
+          />
+        ) : hasValue ? (
+          value
+        ) : (
+          "Please provide details"
+        )}
       </p>
     </div>
   );
@@ -40,6 +70,9 @@ interface Props {
 }
 
 export function LeadProfileSection({ lead, submittedByName }: Props) {
+  const { isAdmin } = useRoleAccess();
+  const ed = (field: string, inputType?: string) =>
+    isAdmin ? { leadId: lead.id, field, inputType } : undefined;
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {/* Student Details */}
@@ -51,18 +84,18 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="First Name" value={lead.student_first_name} />
-            <Field label="Last Name" value={lead.student_last_name} />
+            <Field label="First Name" value={lead.student_first_name} editable={ed("student_first_name")} />
+            <Field label="Last Name" value={lead.student_last_name} editable={ed("student_last_name")} />
             <Field label="Full Name" value={lead.student_full_name} />
             <Field label="Mobile" value={lead.student_phone} />
-            <Field label="Email" value={lead.student_email} />
-            <Field label="WhatsApp" value={lead.student_whatsapp} />
-            <Field label="Pincode" value={lead.pincode} />
-            <Field label="City" value={lead.city} />
-            <Field label="District" value={lead.district ?? null} />
-            <Field label="State" value={lead.state} />
-            <Field label="Tier" value={lead.tier ?? null} />
-            <Field label="Country" value={lead.country_of_residence} />
+            <Field label="Email" value={lead.student_email} editable={ed("student_email", "email")} />
+            <Field label="WhatsApp" value={lead.student_whatsapp} editable={ed("student_whatsapp")} />
+            <Field label="Pincode" value={lead.pincode} editable={ed("pincode")} />
+            <Field label="City" value={lead.city} editable={ed("city")} />
+            <Field label="District" value={lead.district ?? null} editable={ed("district")} />
+            <Field label="State" value={lead.state} editable={ed("state")} />
+            <Field label="Tier" value={lead.tier ?? null} editable={ed("tier")} />
+            <Field label="Country" value={lead.country_of_residence} editable={ed("country_of_residence")} />
           </div>
         </CardContent>
       </Card>
@@ -96,11 +129,11 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Co-Applicant" value={lead.coapplicant_name} />
-            <Field label="Relation" value={lead.coapplicant_relation} />
+            <Field label="Co-Applicant" value={lead.coapplicant_name} editable={ed("coapplicant_name")} />
+            <Field label="Relation" value={lead.coapplicant_relation} editable={ed("coapplicant_relation")} />
             <Field label="Co-Applicant Income" value={lead.coapplicant_income ? `₹${Number(lead.coapplicant_income).toLocaleString()}` : null} />
             <Field label="Collateral" value={lead.collateral_available === null ? null : lead.collateral_available ? "Yes" : "No"} />
-            <Field label="Collateral Notes" value={lead.collateral_notes} />
+            <Field label="Collateral Notes" value={lead.collateral_notes} editable={ed("collateral_notes")} />
           </div>
         </CardContent>
       </Card>
@@ -115,7 +148,7 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
         <CardContent>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Source Type" value={lead.source_type} />
-            <Field label="Source Subtype" value={lead.source_sub_type} />
+            <Field label="Source Subtype" value={lead.source_sub_type} editable={ed("source_sub_type")} />
             <Field label="Submitted By" value={submittedByName} />
             <Field label="Created At" value={new Date(lead.created_at).toLocaleString()} />
             <Field label="Last Updated" value={new Date(lead.updated_at).toLocaleString()} />

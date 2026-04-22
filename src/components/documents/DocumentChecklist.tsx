@@ -94,9 +94,11 @@ interface Props {
   documents: DocFile[];
   onUpload: (req: DocRequirement) => void;
   leadId: string;
+  /** When true, suppresses the extra yellow guidance/nudge bar — admin already has direct upload + OCR. */
+  hideNudge?: boolean;
 }
 
-export function DocumentChecklist({ requirements, documents, onUpload, leadId }: Props) {
+export function DocumentChecklist({ requirements, documents, onUpload, leadId, hideNudge = false }: Props) {
   // Group documents by document_type_id
   const docsByType = new Map<string, DocFile[]>();
   documents.forEach(doc => {
@@ -242,8 +244,8 @@ export function DocumentChecklist({ requirements, documents, onUpload, leadId }:
                       <p className="text-[10px] text-muted-foreground">Due: {new Date(req.due_date).toLocaleDateString()}</p>
                     )}
 
-                    {/* Action nudge — visible, row-specific, clickable */}
-                    {isActionable && (() => {
+                    {/* Action nudge — visible, row-specific, clickable. Hidden in admin context. */}
+                    {!hideNudge && isActionable && (() => {
                       const docLabel = req.document_master?.document_name ?? "this document";
                       const nudgeText =
                         req.status === "rejected"
