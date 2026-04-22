@@ -1256,8 +1256,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
             <CardContent className="space-y-4">
               <div>
                 <Badge variant="outline" className="mb-2">Student Details</Badge>
-                <ReviewRow label="Name" value={fullName} />
-                <ReviewRow label="Phone" value={form.student_phone} />
+                <ReviewRow label="Name" value={fullName} nudgeStep="student" nudgeField="student_first_name" />
+                <ReviewRow label="Phone" value={form.student_phone} nudgeStep="student" nudgeField="student_phone" />
                 <ReviewRow label="Email" value={form.student_email} />
                 <ReviewRow label="WhatsApp" value={form.student_whatsapp} />
                 <ReviewRow label="City" value={form.city} />
@@ -1265,38 +1265,49 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               </div>
               <div>
                 <Badge variant="outline" className="mb-2">Study Intent</Badge>
-                <ReviewRow label="Study Country" value={form.intended_study_country} />
-                <ReviewRow label="University" value={resolvedUniversityName} />
-                <ReviewRow label="Course" value={resolvedCourseName} />
-                <ReviewRow label="Intake" value={`${form.intake_term} ${form.intake_year || ""}`} />
-                {!isAdminForm && (
-                  <ReviewRow label="Approx Loan Amount (₹)" value={form.loan_amount_required ? `₹${Number(form.loan_amount_required).toLocaleString("en-IN")}` : undefined} />
+                <ReviewRow label="Study Country" value={form.intended_study_country} nudgeStep="study" nudgeField="intended_study_country" />
+                <ReviewRow label="University" value={resolvedUniversityName} nudgeStep="study" nudgeField="university" />
+                <ReviewRow label="Course" value={resolvedCourseName} nudgeStep="study" nudgeField="course" />
+                <ReviewRow
+                  label="Intake"
+                  value={form.intake_term && form.intake_year ? `${form.intake_term} ${form.intake_year}` : ""}
+                  nudgeStep="study"
+                  nudgeField="intake_term"
+                />
+              </div>
+              {/* Financial Info — required group, rendered for both partner and admin modes */}
+              <div>
+                <Badge variant="outline" className="mb-2">Financial Info</Badge>
+                <ReviewRow
+                  label="Approx Loan Amount (₹)"
+                  value={form.loan_amount_required ? `₹${Number(form.loan_amount_required).toLocaleString("en-IN")}` : ""}
+                  nudgeStep="financial"
+                  nudgeField="loan_amount_required"
+                />
+                <ReviewRow label="Co-Applicant Name" value={form.coapplicant_name} nudgeStep="financial" nudgeField="coapplicant_name" />
+                <ReviewRow label="Mobile Number" value={form.coapplicant_mobile} nudgeStep="financial" nudgeField="coapplicant_mobile" />
+                <ReviewRow label="Relation" value={form.coapplicant_relation} />
+                <ReviewRow label="Income Source" value={form.coapplicant_income_source} nudgeStep="financial" nudgeField="coapplicant_income_source" />
+                <ReviewRow label="Employment Type" value={form.coapplicant_employment_type} nudgeStep="financial" nudgeField="coapplicant_employment_type" />
+                <ReviewRow label="Employer / Occupation" value={form.coapplicant_employer} nudgeStep="financial" nudgeField="coapplicant_employer" />
+                <ReviewRow
+                  label="Monthly Income (₹)"
+                  value={form.coapplicant_income ? `₹${Number(form.coapplicant_income).toLocaleString("en-IN")}` : ""}
+                  nudgeStep="financial"
+                  nudgeField="coapplicant_income"
+                />
+                <ReviewRow
+                  label="Existing EMI (₹)"
+                  value={form.coapplicant_existing_emi !== "" ? `₹${Number(form.coapplicant_existing_emi).toLocaleString("en-IN")}` : ""}
+                  nudgeStep="financial"
+                  nudgeField="coapplicant_existing_emi"
+                />
+                <ReviewRow label="Collateral" value={form.collateral_state === "likely" ? "Likely" : form.collateral_state === "unlikely" ? "Unlikely" : "Not sure"} />
+                {form.collateral_state === "likely" && form.collateral_notes && (
+                  <ReviewRow label="Collateral Notes" value={form.collateral_notes} />
                 )}
               </div>
-              {/* Admin: dedicated Financial Info group, always rendered */}
-              {isAdminForm && (
-                <div>
-                  <Badge variant="outline" className="mb-2">Financial Info</Badge>
-                  <ReviewRow label="Approx Loan Amount (₹)" value={form.loan_amount_required ? `₹${Number(form.loan_amount_required).toLocaleString("en-IN")}` : undefined} />
-                  <ReviewRow label="Co-Applicant" value={form.coapplicant_name} />
-                  <ReviewRow label="Relation" value={form.coapplicant_relation} />
-                  <ReviewRow label="Co-Applicant Income (₹)" value={form.coapplicant_income ? `₹${Number(form.coapplicant_income).toLocaleString("en-IN")}` : undefined} />
-                  <ReviewRow label="Collateral" value={form.collateral_state === "likely" ? "Likely" : form.collateral_state === "unlikely" ? "Unlikely" : "Not sure"} />
-                  {form.collateral_state === "likely" && form.collateral_notes && (
-                    <ReviewRow label="Collateral Notes" value={form.collateral_notes} />
-                  )}
-                </div>
-              )}
-              {/* Partner: keep conditional co-applicant context block */}
-              {!isAdminForm && (form.coapplicant_name || form.coapplicant_relation || form.collateral_state !== "unsure") && (
-                <div>
-                  <Badge variant="outline" className="mb-2">Co-applicant context</Badge>
-                  <ReviewRow label="Co-Applicant" value={form.coapplicant_name} />
-                  <ReviewRow label="Relation" value={form.coapplicant_relation} />
-                  <ReviewRow label="Secured preference" value={form.collateral_state === "likely" ? "Likely" : form.collateral_state === "unlikely" ? "Unlikely" : "Not sure"} />
-                </div>
-              )}
-              {form.partner_remark && (
+              {form.partner_remark.trim() && (
                 <div>
                   <Badge variant="outline" className="mb-2">Notes</Badge>
                   <ReviewRow label={isAdminForm ? "Admin / Partner Remark" : "Partner Remark"} value={form.partner_remark} />
