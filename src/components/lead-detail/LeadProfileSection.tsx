@@ -129,11 +129,11 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Co-Applicant" value={lead.coapplicant_name} />
-            <Field label="Relation" value={lead.coapplicant_relation} />
+            <Field label="Co-Applicant" value={lead.coapplicant_name} editable={ed("coapplicant_name")} />
+            <Field label="Relation" value={lead.coapplicant_relation} editable={ed("coapplicant_relation")} />
             <Field label="Co-Applicant Income" value={lead.coapplicant_income ? `₹${Number(lead.coapplicant_income).toLocaleString()}` : null} />
             <Field label="Collateral" value={lead.collateral_available === null ? null : lead.collateral_available ? "Yes" : "No"} />
-            <Field label="Collateral Notes" value={lead.collateral_notes} />
+            <Field label="Collateral Notes" value={lead.collateral_notes} editable={ed("collateral_notes")} />
           </div>
         </CardContent>
       </Card>
@@ -148,7 +148,7 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
         <CardContent>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Source Type" value={lead.source_type} />
-            <Field label="Source Subtype" value={lead.source_sub_type} />
+            <Field label="Source Subtype" value={lead.source_sub_type} editable={ed("source_sub_type")} />
             <Field label="Submitted By" value={submittedByName} />
             <Field label="Created At" value={new Date(lead.created_at).toLocaleString()} />
             <Field label="Last Updated" value={new Date(lead.updated_at).toLocaleString()} />
