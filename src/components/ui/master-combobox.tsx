@@ -118,6 +118,7 @@ export function MasterCombobox({
                 <CommandItem
                   value={NOT_IN_LIST_VALUE}
                   onSelect={() => {
+                    setManualOpened(true);
                     onSelectManual();
                     setOpen(false);
                   }}
