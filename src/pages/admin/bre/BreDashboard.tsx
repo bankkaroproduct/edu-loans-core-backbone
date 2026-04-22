@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Banknote, History, ScrollText, Calculator } from "lucide-react";
+import { Banknote, History, ScrollText, Calculator, FlaskConical } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -139,7 +139,7 @@ export default function BreDashboard() {
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <NavTile
           icon={<Calculator className="h-4 w-4" />}
           title={canEdit ? "Edit Scoring Config" : "Scoring Config"}
@@ -147,6 +147,7 @@ export default function BreDashboard() {
           to="/admin/bre/scoring"
         />
         <NavTile icon={<Banknote className="h-4 w-4" />} title="Lender Rules" desc={canEdit ? "Open a lender to edit its rule" : "View active lender rule rows"} to="/admin/bre/lenders" />
+        <NavTile icon={<FlaskConical className="h-4 w-4" />} title="Simulator" desc="Run a deterministic eligibility simulation" to="/admin/bre/simulate" />
         <NavTile icon={<History className="h-4 w-4" />} title="Version History" desc={canEdit ? "Browse & roll back to old versions" : "View scoring & rule version history"} to="/admin/bre/versions" />
         <NavTile icon={<ScrollText className="h-4 w-4" />} title="Audit Log" desc="Filtered BRE audit events" to="/admin/bre/audit" />
       </div>

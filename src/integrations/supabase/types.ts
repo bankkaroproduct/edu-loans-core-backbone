@@ -157,29 +157,38 @@ export type Database = {
       bre_simulation_runs: {
         Row: {
           id: string
+          lender_rule_versions_used: Json | null
           profile_input: Json
           result: Json
           run_at: string
           run_by: string | null
           saved_name: string | null
+          scoring_config_id: string | null
+          scoring_config_snapshot: Json | null
           scoring_config_version: number
         }
         Insert: {
           id?: string
+          lender_rule_versions_used?: Json | null
           profile_input: Json
           result: Json
           run_at?: string
           run_by?: string | null
           saved_name?: string | null
+          scoring_config_id?: string | null
+          scoring_config_snapshot?: Json | null
           scoring_config_version: number
         }
         Update: {
           id?: string
+          lender_rule_versions_used?: Json | null
           profile_input?: Json
           result?: Json
           run_at?: string
           run_by?: string | null
           saved_name?: string | null
+          scoring_config_id?: string | null
+          scoring_config_snapshot?: Json | null
           scoring_config_version?: number
         }
         Relationships: []
