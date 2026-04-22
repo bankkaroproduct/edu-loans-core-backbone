@@ -309,6 +309,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         coapplicant_existing_emi: data.coapplicant_existing_emi != null ? String(data.coapplicant_existing_emi) : "",
         collateral_state: collateralBoolToState(data.collateral_available),
         collateral_notes: data.collateral_notes ?? "",
+        highest_qualification: (data as any).highest_qualification ?? "",
+        marks_gpa: (data as any).marks_gpa ?? "",
         partner_remark: "",
       });
       setOriginalLead(data as unknown as Record<string, unknown>);
