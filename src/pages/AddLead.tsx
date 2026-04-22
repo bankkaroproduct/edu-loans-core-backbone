@@ -694,12 +694,6 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 <Label>Last Name</Label>
                 <Input value={form.student_last_name} onChange={(e) => set("student_last_name", e.target.value)} placeholder="Student last name" />
               </div>
-              {fullName && (
-                <div className="space-y-2 md:col-span-2">
-                  <Label>Full Name (auto-derived)</Label>
-                  <Input value={fullName} disabled className="bg-muted" />
-                </div>
-              )}
               <div className="space-y-2">
                 <Label>Mobile Number *</Label>
                 <Input value={form.student_phone} onChange={(e) => set("student_phone", e.target.value)} placeholder="+91 9876543210" />
@@ -708,17 +702,55 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 <Label>Email</Label>
                 <Input type="email" value={form.student_email} onChange={(e) => set("student_email", e.target.value)} placeholder="student@email.com" />
               </div>
-              <div className="space-y-2">
-                <Label>WhatsApp</Label>
-                <Input value={form.student_whatsapp} onChange={(e) => set("student_whatsapp", e.target.value)} placeholder="WhatsApp number" />
+              <div className="space-y-2 md:col-span-2">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="whatsapp-same"
+                    checked={form.whatsapp_same_as_phone}
+                    onCheckedChange={(v) => {
+                      const checked = !!v;
+                      setMany({
+                        whatsapp_same_as_phone: checked,
+                        student_whatsapp: checked ? form.student_phone : form.student_whatsapp,
+                      });
+                    }}
+                  />
+                  <Label htmlFor="whatsapp-same" className="text-sm font-normal cursor-pointer">
+                    WhatsApp same as primary mobile
+                  </Label>
+                </div>
+                <Input
+                  value={form.whatsapp_same_as_phone ? form.student_phone : form.student_whatsapp}
+                  onChange={(e) => set("student_whatsapp", e.target.value)}
+                  placeholder="WhatsApp number"
+                  disabled={form.whatsapp_same_as_phone}
+                  className={form.whatsapp_same_as_phone ? "bg-muted" : ""}
+                />
               </div>
               <div className="space-y-2">
-                <Label>City</Label>
-                <Input value={form.city} onChange={(e) => set("city", e.target.value)} />
+                <Label>Pincode</Label>
+                <Input
+                  value={form.pincode}
+                  onChange={(e) => set("pincode", e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder="6-digit pincode"
+                  inputMode="numeric"
+                />
+                {form.pincode.length === 6 && pincodeResult.found === false && (
+                  <p className="text-[11px] text-muted-foreground">Pincode not in master — please confirm District/State manually.</p>
+                )}
+                {pincodeResult.hasConflict && (
+                  <p className="text-[11px] text-amber-700 flex items-center gap-1">
+                    <Info className="h-3 w-3" /> Verify district — multiple values exist for this pincode in source.
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>District</Label>
+                <Input value={form.district} onChange={(e) => set("district", e.target.value)} placeholder="Auto-fills from pincode" />
               </div>
               <div className="space-y-2">
                 <Label>State</Label>
-                <Input value={form.state} onChange={(e) => set("state", e.target.value)} />
+                <Input value={form.state} onChange={(e) => set("state", e.target.value)} placeholder="Auto-fills from pincode" />
               </div>
               {isEditMode && isAdmin && (
                 <div className="space-y-2 md:col-span-2">
