@@ -64,6 +64,16 @@ const EMPLOYMENT_TYPE_OPTIONS = [
   "Other",
 ];
 
+// Mirror of QUALIFICATIONS list used in Student Portal (StudentEducationDetails.tsx)
+const QUALIFICATIONS = [
+  "12th / High School",
+  "Diploma",
+  "Bachelor's Degree",
+  "Master's Degree",
+  "PhD / Doctorate",
+  "Other",
+];
+
 const TERMINAL_STAGES = ["disbursed", "rejected", "dropped"];
 
 /**
@@ -542,6 +552,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       coapplicant_existing_emi: form.coapplicant_existing_emi !== "" ? Number(form.coapplicant_existing_emi) : null,
       collateral_available: collateralStateToBool(form.collateral_state),
       collateral_notes: form.collateral_state === "likely" ? (form.collateral_notes.trim() || null) : null,
+      highest_qualification: form.highest_qualification || null,
+      marks_gpa: form.marks_gpa.trim() || null,
       partner_id: partnerIdAssignment || null,
     };
     const diff = computeAdminDiff(originalLead, edited);
@@ -619,6 +631,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       coapplicant_existing_emi: form.coapplicant_existing_emi !== "" ? Number(form.coapplicant_existing_emi) : null,
       collateral_available: collateralStateToBool(form.collateral_state),
       collateral_notes: form.collateral_state === "likely" ? (form.collateral_notes.trim() || null) : null,
+      highest_qualification: form.highest_qualification || null,
+      marks_gpa: form.marks_gpa.trim() || null,
       source_sub_type: "add_lead",
       partner_id: effectivePartnerId!,
       partner_user_id: effectiveUserId!,
@@ -1033,6 +1047,35 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               </div>
               {/* Loan Amount intentionally moved to the Financial Info step in both modes. */}
 
+              {/* Education & Academic Details — admin/partner editable, both optional */}
+              <div className="space-y-2" data-field="highest_qualification">
+                <Label>Highest Qualification</Label>
+                <Select
+                  value={form.highest_qualification}
+                  onValueChange={(v) => set("highest_qualification", v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select qualification (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {QUALIFICATIONS.map((q) => (
+                      <SelectItem key={q} value={q}>{q}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2" data-field="marks_gpa">
+                <Label>Marks / GPA</Label>
+                <Input
+                  value={form.marks_gpa}
+                  onChange={(e) => set("marks_gpa", e.target.value)}
+                  placeholder="e.g. 8.5 CGPA or 78%"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter as you'd write it (CGPA, %, or GPA). Optional.
+                </p>
+              </div>
+
               {/* Read-only academic context for student-origin leads in admin edit mode */}
               {isAdminForm && isEditMode && originalLead?.source_type === "student_direct" && (
                 (originalLead?.highest_qualification || originalLead?.marks_gpa || originalLead?.test_scores) && (
@@ -1278,6 +1321,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   nudgeStep="study"
                   nudgeField="intake_term"
                 />
+                <ReviewRow label="Highest Qualification" value={form.highest_qualification} />
+                <ReviewRow label="Marks / GPA" value={form.marks_gpa} />
               </div>
               {/* Financial Info — required group, rendered for both partner and admin modes */}
               <div>
