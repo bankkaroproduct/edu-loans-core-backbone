@@ -149,9 +149,21 @@ export default function BreVersionHistory() {
                       <TableCell className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleString()}</TableCell>
                       <TableCell className="text-sm">{c.change_summary ?? "—"}</TableCell>
                       <TableCell className="text-right">
-                        <Button size="sm" variant="ghost" disabled title="Rollback ships in a later phase">
-                          <Lock className="h-3.5 w-3.5 mr-1" /> Rollback
-                        </Button>
+                        {canEdit ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setRollbackTarget({ kind: "scoring", id: c.id, version: c.version_number })}
+                            disabled={c.is_active}
+                            title={c.is_active ? "Already active — nothing to roll back to" : "Clone this version into a new inactive version"}
+                          >
+                            <ArrowDownToLine className="h-3.5 w-3.5 mr-1" /> Rollback
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="ghost" disabled title="Read-only — your BRE permission is read">
+                            <Lock className="h-3.5 w-3.5 mr-1" /> Rollback
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
