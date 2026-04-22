@@ -301,6 +301,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         coapplicant_mobile: stripPrefix((data as any).coapplicant_mobile ?? ""),
         coapplicant_income: data.coapplicant_income != null ? String(data.coapplicant_income) : "",
         coapplicant_income_source: (data as any).coapplicant_income_source ?? "",
+        coapplicant_employment_type: (data as any).coapplicant_employment_type ?? "",
+        coapplicant_employer: (data as any).coapplicant_employer ?? "",
         coapplicant_existing_emi: data.coapplicant_existing_emi != null ? String(data.coapplicant_existing_emi) : "",
         collateral_state: collateralBoolToState(data.collateral_available),
         collateral_notes: data.collateral_notes ?? "",
