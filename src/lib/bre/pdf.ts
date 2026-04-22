@@ -12,7 +12,9 @@ function formatNumber(n: number | null | undefined): string {
 
 function formatCurrency(n: number | null | undefined): string {
   if (n == null) return "—";
-  return "₹" + n.toLocaleString("en-IN");
+  // Use "Rs " prefix instead of ₹ — helvetica core font in jsPDF lacks the rupee glyph
+  // and renders it as a placeholder character.
+  return "Rs " + n.toLocaleString("en-IN");
 }
 
 export function buildSimulationPdf(opts: {
