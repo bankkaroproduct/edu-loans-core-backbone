@@ -49,6 +49,8 @@ export function AdminSidebar() {
   const navigate = useNavigate();
   const { count: pendingRequests } = useAdminPendingRequests();
 
+  const breAccess = canAccessBre(appUser?.role, normalizeBrePermission(appUser?.bre_permission));
+
   const handleSignOut = async () => {
     await signOut();
     navigate("/admin/login", { replace: true });
@@ -146,6 +148,38 @@ export function AdminSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {breAccess && (
+          <SidebarGroup>
+            <SidebarGroupLabel>
+              {!collapsed && (
+                <span className="flex items-center gap-1.5">
+                  <SlidersHorizontal className="h-3.5 w-3.5 text-primary" />
+                  BRE Engine
+                </span>
+              )}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {breItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.url}
+                        end={item.end}
+                        className="hover:bg-sidebar-accent/50"
+                        activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                      >
+                        <item.icon className="mr-2 h-4 w-4" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter>
