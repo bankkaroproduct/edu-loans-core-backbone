@@ -57,8 +57,11 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
             <Field label="Mobile" value={lead.student_phone} />
             <Field label="Email" value={lead.student_email} />
             <Field label="WhatsApp" value={lead.student_whatsapp} />
+            <Field label="Pincode" value={lead.pincode} />
             <Field label="City" value={lead.city} />
+            <Field label="District" value={lead.district ?? null} />
             <Field label="State" value={lead.state} />
+            <Field label="Tier" value={lead.tier ?? null} />
             <Field label="Country" value={lead.country_of_residence} />
           </div>
         </CardContent>
