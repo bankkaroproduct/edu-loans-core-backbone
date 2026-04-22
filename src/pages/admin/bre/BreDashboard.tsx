@@ -21,6 +21,11 @@ interface DashboardData {
 }
 
 export default function BreDashboard() {
+  const { appUser } = useAuth();
+  const perm = normalizeBrePermission(appUser?.bre_permission);
+  const canEdit = canEditBre(appUser?.role, perm);
+  const readOnly = isReadOnlyBre(appUser?.role, perm);
+
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
