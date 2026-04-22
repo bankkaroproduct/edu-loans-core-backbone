@@ -681,7 +681,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
 
       <Tabs value={activeStep} onValueChange={(v) => goToStep(v as StepId)} className="space-y-5">
         {/* Student Details */}
-        <TabsContent value="student" className="mt-0">
+        <TabsContent value="student" forceMount className="mt-0 data-[state=inactive]:hidden">
           <Card>
             <CardHeader><CardTitle className="text-lg">Student Basic Details</CardTitle></CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
@@ -773,7 +773,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         </TabsContent>
 
         {/* Study Intent */}
-        <TabsContent value="study" className="mt-0">
+        <TabsContent value="study" forceMount className="mt-0 data-[state=inactive]:hidden">
           <Card>
             <CardHeader><CardTitle className="text-lg">Education & Study Intent</CardTitle></CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
@@ -862,7 +862,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
 
         {/* Financial Info — admin mode only */}
         {isAdminForm && (
-          <TabsContent value="financial" className="mt-0">
+          <TabsContent value="financial" forceMount className="mt-0 data-[state=inactive]:hidden">
             <Card>
               <CardHeader><CardTitle className="text-lg">Financial Information</CardTitle></CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-2">
@@ -910,7 +910,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         )}
 
         {/* Notes */}
-        <TabsContent value="notes" className="mt-0">
+        <TabsContent value="notes" forceMount className="mt-0 data-[state=inactive]:hidden">
           <Card>
             <CardHeader><CardTitle className="text-lg">Partner Notes</CardTitle></CardHeader>
             <CardContent className="grid gap-4">
@@ -975,7 +975,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
 
         {/* Assign to Partner — admin edit only */}
         {showAssignStep && (
-          <TabsContent value="assign" className="mt-0">
+          <TabsContent value="assign" forceMount className="mt-0 data-[state=inactive]:hidden">
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -1061,7 +1061,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
 
 
         {/* Review */}
-        <TabsContent value="review" className="mt-0 space-y-4">
+        <TabsContent value="review" forceMount className="mt-0 space-y-4 data-[state=inactive]:hidden">
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
