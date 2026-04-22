@@ -156,6 +156,7 @@ export default function LeadDocuments() {
           documents={documents}
           onUpload={(req) => setUploadTarget(req)}
           leadId={lead.id}
+          hideNudge={isAdminContext}
         />
       )}
 
