@@ -312,6 +312,12 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         return "Loan amount must be a positive number";
       if (form.coapplicant_income && (isNaN(Number(form.coapplicant_income)) || Number(form.coapplicant_income) < 0))
         return "Co-applicant income must be a valid number";
+      // Admin-only mandatory financial validation. Partner mode stays light.
+      if (isAdminForm) {
+        if (!form.coapplicant_income || Number(form.coapplicant_income) <= 0) {
+          return "Annual co-applicant income is required";
+        }
+      }
     }
 
     if (!effectivePartnerId) return "No partner organization found for your account. Admins can use 'Test as Partner' in the sidebar.";
