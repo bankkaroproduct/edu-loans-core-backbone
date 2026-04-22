@@ -72,7 +72,7 @@ export default function BreLenderRulesList() {
     <div className="space-y-6">
       <PageHeader
         title="BRE Lender Rules"
-        description="Active rule version per lender. Phase 2 is read-only — full editor ships in Phase 3."
+        description="Active rule version per lender. Click Edit to view and create a new version."
       >
         <Badge variant="outline" className="bg-muted text-muted-foreground">{rows.length} active</Badge>
       </PageHeader>
