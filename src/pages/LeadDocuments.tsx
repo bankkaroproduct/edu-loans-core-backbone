@@ -136,7 +136,7 @@ export default function LeadDocuments() {
       </div>
 
       {/* Summary Strip */}
-      <DocumentSummaryStrip requirements={requirements} />
+      <DocumentSummaryStrip requirements={requirements} hideNudge={isAdminContext} />
 
       {/* Checklist */}
       {requirements.length === 0 ? (
