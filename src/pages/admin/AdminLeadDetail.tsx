@@ -87,7 +87,7 @@ export default function AdminLeadDetail() {
       }
       const lead = leadRes.data;
 
-      const [histRes, notesRes, docRes, payoutRes, partnerRes, userRes] = await Promise.all([
+      const [histRes, notesRes, docRes, payoutRes, partnerRes, userRes, auditRes] = await Promise.all([
         supabase.from("lead_stage_history").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
         supabase.from("lead_notes").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
         supabase.from("lead_document_requirements").select("*, document_master(document_name, document_category, document_code, applicable_for)").eq("lead_id", id).order("created_at"),
@@ -98,10 +98,22 @@ export default function AdminLeadDetail() {
         lead.partner_user_id
           ? supabase.from("users").select("full_name").eq("id", lead.partner_user_id).maybeSingle()
           : Promise.resolve({ data: null, error: null } as never),
+        supabase.from("audit_logs").select("*").eq("entity_type", "student_lead").eq("entity_id", id).order("created_at", { ascending: false }),
       ]);
 
-      const errs = [histRes.error, notesRes.error, docRes.error, payoutRes.error, partnerRes.error, userRes.error].filter(Boolean);
+      const errs = [histRes.error, notesRes.error, docRes.error, payoutRes.error, partnerRes.error, userRes.error, auditRes.error].filter(Boolean);
       if (errs.length) throw errs[0];
+
+      // Resolve actor names for audit logs + history + notes
+      const actorIds = new Set<string>();
+      (auditRes.data ?? []).forEach((a) => { if (a.actor_user_id) actorIds.add(a.actor_user_id); });
+      (histRes.data ?? []).forEach((h) => { if (h.changed_by_user_id) actorIds.add(h.changed_by_user_id); });
+      (notesRes.data ?? []).forEach((n) => { if (n.created_by) actorIds.add(n.created_by); });
+      const actorNames: Record<string, string> = {};
+      if (actorIds.size > 0) {
+        const { data: actorRows } = await supabase.from("users").select("id, full_name").in("id", Array.from(actorIds));
+        (actorRows ?? []).forEach((u: { id: string; full_name: string }) => { actorNames[u.id] = u.full_name; });
+      }
 
       setState({
         loading: false,
@@ -114,6 +126,8 @@ export default function AdminLeadDetail() {
         payouts: payoutRes.data ?? [],
         partner: (partnerRes.data ?? null) as PartnerOrg | null,
         submittedByName: (userRes.data as { full_name?: string } | null)?.full_name ?? null,
+        audits: auditRes.data ?? [],
+        actorNames,
       });
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Failed to load lead";
@@ -180,7 +194,7 @@ export default function AdminLeadDetail() {
     );
   }
 
-  const { lead, history, notes, docRequirements, payouts, partner, submittedByName } = state;
+  const { lead, history, notes, docRequirements, payouts, partner, submittedByName, audits, actorNames } = state;
   const isDraft = lead.current_stage === "draft";
   const isStudentDirect = lead.source_type === "student_direct";
 
@@ -254,7 +268,7 @@ export default function AdminLeadDetail() {
             onChanged={loadAll}
           />
 
-          <LeadTimeline history={history} notes={notes} />
+          <LeadTimeline history={history} notes={notes} audits={audits} actorNames={actorNames} />
 
           <LeadPayoutSnapshot payouts={payouts} leadId={lead.id} />
         </div>
