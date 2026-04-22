@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
-  FileText, CheckCircle, XCircle, AlertTriangle, Upload, Eye, Loader2, ChevronDown, ChevronRight,
+  FileText, CheckCircle, XCircle, AlertTriangle, Upload, Eye, Loader2, ChevronDown, ChevronRight, ArrowRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -229,6 +229,48 @@ function DocReviewRow({
         </div>
         <Badge variant={badge.variant} className="text-[10px] shrink-0">{badge.label}</Badge>
       </button>
+
+      {/* Visible row-level nudge — does NOT depend on expansion */}
+      {(() => {
+        const isActionable = ["not_uploaded", "rejected", "reupload_needed"].includes(status);
+        if (!isActionable) return null;
+        const docLabel = req.document_master?.document_name ?? "this document";
+        const nudgeText =
+          status === "rejected"
+            ? `Please provide corrected ${docLabel}`
+            : status === "reupload_needed"
+              ? `Reupload required for ${docLabel}`
+              : `Please provide details — upload ${docLabel}`;
+        const isReupload = status === "rejected" || status === "reupload_needed";
+        const nudgeCls = isReupload
+          ? "bg-destructive/10 text-destructive border-destructive/30 hover:bg-destructive/15"
+          : "bg-primary/10 text-primary border-primary/30 hover:bg-primary/15";
+        return (
+          <div className="px-2.5 pb-2.5 -mt-1 flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setUploadOpen(true);
+              }}
+              data-nudge={status}
+              data-doc-req-id={req.id}
+              className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${nudgeCls}`}
+            >
+              {nudgeText}
+              <ArrowRight className="h-3 w-3" />
+            </button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-xs"
+              onClick={(e) => { e.stopPropagation(); setUploadOpen(true); }}
+            >
+              <Upload className="h-3 w-3 mr-1" /> {isReupload ? "Reupload" : "Upload on Behalf"}
+            </Button>
+          </div>
+        );
+      })()}
 
       {expanded && (
         <div className="border-t p-3 space-y-3 bg-muted/20">
