@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { StudentStepLayout } from "@/components/student/StudentStepLayout";
 import { useStudentAuth } from "@/hooks/useStudentAuth";
@@ -7,19 +7,25 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MasterCombobox, type MasterOption } from "@/components/ui/master-combobox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Info, Lightbulb } from "lucide-react";
+import { Lightbulb } from "lucide-react";
 
 const QUALIFICATIONS = [
   "12th / High School", "Diploma", "Bachelor's Degree", "Master's Degree", "PhD / Doctorate", "Other",
 ];
+
+interface UniversityRow { id: string; university_name: string; country: string }
+interface CourseRow { id: string; course_name: string; course_category: string | null }
 
 export default function StudentEducationDetails() {
   const navigate = useNavigate();
   const { isVerified } = useStudentAuth();
   const { formData, updateField, updateTestScore, saveStep, saving } = useStudentApplication();
   const [intakes, setIntakes] = useState<{ id: string; intake_term: string; intake_year: number }[]>([]);
+  const [universities, setUniversities] = useState<UniversityRow[]>([]);
+  const [courses, setCourses] = useState<CourseRow[]>([]);
 
   useEffect(() => {
     if (!isVerified) { navigate("/student/login"); return; }
@@ -29,7 +35,28 @@ export default function StudentEducationDetails() {
     supabase.from("intake_master").select("id, intake_term, intake_year").eq("active_flag", true).order("sort_order").then(({ data }) => {
       if (data) setIntakes(data);
     });
+    supabase.from("universities_master").select("id, university_name, country").eq("active_flag", true).order("university_name").then(({ data }) => {
+      if (data) setUniversities(data as UniversityRow[]);
+    });
+    supabase.from("courses_master").select("id, course_name, course_category").eq("active_flag", true).order("course_name").then(({ data }) => {
+      if (data) setCourses(data as CourseRow[]);
+    });
   }, []);
+
+  // Universities filtered by destination country (when present), else show all
+  const universityOptions: MasterOption[] = useMemo(() => {
+    const country = (formData.intended_study_country || "").trim().toLowerCase();
+    const list = country
+      ? universities.filter(u => (u.country || "").trim().toLowerCase() === country)
+      : universities;
+    const source = list.length > 0 ? list : universities;
+    return source.map(u => ({ id: u.id, label: u.university_name, hint: u.country }));
+  }, [universities, formData.intended_study_country]);
+
+  const courseOptions: MasterOption[] = useMemo(
+    () => courses.map(c => ({ id: c.id, label: c.course_name, hint: c.course_category ?? undefined })),
+    [courses],
+  );
 
   const handleContinue = async () => {
     if (!formData.course_name.trim()) {
@@ -93,11 +120,46 @@ export default function StudentEducationDetails() {
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label>Course Name <span className="text-destructive">*</span></Label>
-              <Input value={formData.course_name} onChange={e => updateField("course_name", e.target.value)} placeholder="e.g. MS in Computer Science" />
+              <MasterCombobox
+                options={courseOptions}
+                selectedId=""
+                manualValue={formData.course_name}
+                onSelectMaster={(opt) => {
+                  updateField("course_name", opt.label);
+                  if (opt.hint) updateField("course_category", opt.hint);
+                }}
+                onSelectManual={() => updateField("course_name", "")}
+                onChangeManual={(t) => updateField("course_name", t)}
+                placeholder="Search for your course"
+                emptyMessage="No matching course."
+                manualPlaceholder="e.g. MS in Computer Science"
+                helperText="Pick from the list, or choose 'Not available' to type your own."
+              />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label>University Name</Label>
-              <Input value={formData.university_name_raw} onChange={e => updateField("university_name_raw", e.target.value)} placeholder="e.g. University of California, Berkeley" />
+              <MasterCombobox
+                options={universityOptions}
+                selectedId={formData.university_id}
+                manualValue={formData.university_name_raw}
+                onSelectMaster={(opt) => {
+                  updateField("university_id", opt.id);
+                  updateField("university_name_raw", opt.label);
+                }}
+                onSelectManual={() => {
+                  updateField("university_id", "");
+                  updateField("university_name_raw", "");
+                }}
+                onChangeManual={(t) => updateField("university_name_raw", t)}
+                placeholder={
+                  formData.intended_study_country
+                    ? `Search universities in ${formData.intended_study_country}`
+                    : "Search universities"
+                }
+                emptyMessage="No matching university."
+                manualPlaceholder="e.g. University of California, Berkeley"
+                helperText="Can't find your university? Choose 'Not available' to enter it manually."
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Intake Term</Label>
