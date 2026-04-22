@@ -1067,12 +1067,12 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               <div className="space-y-2" data-field="coapplicant_name">
                 <Label>Co-Applicant Name *</Label>
                 <Input value={form.coapplicant_name} onChange={(e) => set("coapplicant_name", e.target.value)} placeholder="Full name" />
-                <p className="text-xs text-muted-foreground">As per Aadhaar and Passport</p>
+                <p className="text-xs text-muted-foreground">Name as per Aadhaar and Passport</p>
               </div>
               <div className="space-y-2" data-field="coapplicant_mobile">
-                <Label>Mobile Number *</Label>
+                <Label>Co-Applicant Mobile *</Label>
                 <Input value={form.coapplicant_mobile} onChange={(e) => set("coapplicant_mobile", e.target.value)} placeholder="+91 9876543210" />
-                <p className="text-xs text-muted-foreground">As per Aadhaar and Passport</p>
+                <p className="text-xs text-muted-foreground">Number as per Aadhaar and Passport</p>
               </div>
               <div className="space-y-2" data-field="coapplicant_relation">
                 <Label>Co-Applicant Relation</Label>
