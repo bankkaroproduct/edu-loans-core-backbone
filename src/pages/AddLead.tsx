@@ -350,14 +350,21 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
 
   const writeAdminAuditTrail = async (leadId: string) => {
     if (!isEditMode || !isAdmin || !appUser || !originalLead) return;
+    const effectiveWhatsapp = form.whatsapp_same_as_phone
+      ? (normalizePhone(form.student_phone) ?? form.student_phone.trim())
+      : (form.student_whatsapp.trim() ? (normalizePhone(form.student_whatsapp) ?? form.student_whatsapp.trim()) : null);
     const edited: Record<string, unknown> = {
       student_first_name: form.student_first_name.trim() || null,
       student_last_name: form.student_last_name.trim() || null,
       student_email: form.student_email.trim() || null,
       student_phone: normalizePhone(form.student_phone) ?? form.student_phone.trim() ?? null,
-      student_whatsapp: form.student_whatsapp.trim() ? (normalizePhone(form.student_whatsapp) ?? form.student_whatsapp.trim()) : null,
+      student_whatsapp: effectiveWhatsapp,
+      whatsapp_same_as_phone: form.whatsapp_same_as_phone,
       city: form.city.trim() || null,
       state: form.state.trim() || null,
+      district: form.district.trim() || null,
+      tier: form.tier.trim() || null,
+      pincode: form.pincode.trim() || null,
       country_of_residence: form.country_of_residence || null,
       intended_study_country: form.intended_study_country || null,
       intake_term: form.intake_term || null,
@@ -368,9 +375,12 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       loan_amount_required: form.loan_amount_required ? Number(form.loan_amount_required) : null,
       coapplicant_name: form.coapplicant_name.trim() || null,
       coapplicant_relation: form.coapplicant_relation || null,
+      coapplicant_mobile: form.coapplicant_mobile.trim() ? (normalizePhone(form.coapplicant_mobile) ?? form.coapplicant_mobile.trim()) : null,
       coapplicant_income: form.coapplicant_income ? Number(form.coapplicant_income) : null,
-      collateral_available: form.collateral_available,
-      collateral_notes: form.collateral_notes.trim() || null,
+      coapplicant_income_source: form.coapplicant_income_source || null,
+      coapplicant_existing_emi: form.coapplicant_existing_emi ? Number(form.coapplicant_existing_emi) : null,
+      collateral_available: collateralStateToBool(form.collateral_state),
+      collateral_notes: form.collateral_state === "likely" ? (form.collateral_notes.trim() || null) : null,
       partner_id: partnerIdAssignment || null,
     };
     const diff = computeAdminDiff(originalLead, edited);
