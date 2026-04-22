@@ -294,22 +294,60 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     setForm((prev) => ({ ...prev, ...patch }));
   };
 
-  // Pincode auto-fill (only fires when 6 digits entered)
+  // Pincode auto-fill (only fires when 6 digits entered).
+  // CRITICAL: If pincode changes to one that doesn't match (invalid or not-found),
+  // clear district/state/tier we previously auto-filled — never carry forward stale.
   const pincodeResult = usePincodeLookup(form.pincode);
-  const lastAppliedPincode = useRef<string>("");
+  const lastAppliedPincode = useRef<{
+    pincode: string;
+    district: string | null;
+    state: string | null;
+    tier: string | null;
+  } | null>(null);
   useEffect(() => {
-    if (pincodeResult.found && form.pincode && form.pincode !== lastAppliedPincode.current) {
-      lastAppliedPincode.current = form.pincode;
-      setForm((prev) => ({
-        ...prev,
-        district: pincodeResult.district ?? prev.district,
-        state: pincodeResult.state ?? prev.state,
-        tier: pincodeResult.tier ?? prev.tier,
-      }));
+    const current = (form.pincode ?? "").trim();
+
+    // Apply on a fresh successful match
+    if (
+      pincodeResult.found &&
+      pincodeResult.pincode === current &&
+      current.length === 6 &&
+      lastAppliedPincode.current?.pincode !== current
+    ) {
+      setForm((prev) => {
+        const prevApplied = lastAppliedPincode.current;
+        // Only overwrite fields that are blank OR still hold the previously auto-filled value
+        const overwriteIfOurs = (cur: string, was: string | null, next: string | null) =>
+          (!cur || (prevApplied && cur === was)) && next ? next : cur;
+        const nextDistrict = overwriteIfOurs(prev.district, prevApplied?.district ?? null, pincodeResult.district);
+        const nextState = overwriteIfOurs(prev.state, prevApplied?.state ?? null, pincodeResult.state);
+        const nextTier = overwriteIfOurs(prev.tier, prevApplied?.tier ?? null, pincodeResult.tier);
+        lastAppliedPincode.current = {
+          pincode: current,
+          district: nextDistrict,
+          state: nextState,
+          tier: nextTier,
+        };
+        return { ...prev, district: nextDistrict, state: nextState, tier: nextTier };
+      });
+      return;
     }
-    if (pincodeResult.found === false && form.pincode === lastAppliedPincode.current) {
-      // Pincode changed away from a found one — allow re-application later
-      lastAppliedPincode.current = "";
+
+    // Pincode changed away from the last applied one → clear stale autofill if invalid/not-found
+    const prev = lastAppliedPincode.current;
+    if (prev && prev.pincode !== current) {
+      const newIsInvalid =
+        current.length !== 6 ||
+        (pincodeResult.found === false && pincodeResult.pincode === current);
+      if (newIsInvalid) {
+        setForm((p) => ({
+          ...p,
+          district: prev.district && p.district === prev.district ? "" : p.district,
+          state: prev.state && p.state === prev.state ? "" : p.state,
+          tier: prev.tier && p.tier === prev.tier ? "" : p.tier,
+        }));
+        if (current.length !== 6) lastAppliedPincode.current = null;
+      }
     }
   }, [pincodeResult, form.pincode]);
 

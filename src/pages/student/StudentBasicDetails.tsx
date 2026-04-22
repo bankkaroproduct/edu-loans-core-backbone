@@ -47,22 +47,49 @@ export default function StudentBasicDetails() {
     }
   }, [eligibilityData]);
 
-  // Pincode auto-fill — student-portal side. Only applies if district/state are blank
-  // (do not overwrite anything the student has typed).
+  // Pincode auto-fill — student-portal side.
+  // Apply when a valid pincode is found (and field was blank or previously auto-filled).
+  // CRITICAL: If pincode changes to one that doesn't match (or becomes invalid), clear the
+  // values we previously auto-filled so stale district/state never carry forward silently.
   const pincodeResult = usePincodeLookup(formData.pincode);
-  const lastApplied = useRef<string>("");
+  const lastApplied = useRef<{ pincode: string; state: string | null } | null>(null);
   useEffect(() => {
+    const current = (formData.pincode ?? "").trim();
+
+    // Case 1: New valid match — apply if state is blank OR we previously auto-filled it
     if (
       pincodeResult.found &&
-      formData.pincode &&
-      formData.pincode !== lastApplied.current
+      pincodeResult.pincode === current &&
+      current.length === 6 &&
+      lastApplied.current?.pincode !== current
     ) {
-      lastApplied.current = formData.pincode;
-      if (!formData.state && pincodeResult.state) updateField("state", pincodeResult.state);
-      // city is free-form on the student form; we don't overwrite it from district
+      const previouslyAuto = lastApplied.current;
+      const stateIsOurs =
+        previouslyAuto && formData.state === previouslyAuto.state;
+      if ((!formData.state || stateIsOurs) && pincodeResult.state) {
+        updateField("state", pincodeResult.state);
+        lastApplied.current = { pincode: current, state: pincodeResult.state };
+      } else {
+        // Field was user-edited; just remember we matched but don't overwrite
+        lastApplied.current = { pincode: current, state: formData.state };
+      }
+      return;
     }
-    if (pincodeResult.found === false && formData.pincode === lastApplied.current) {
-      lastApplied.current = "";
+
+    // Case 2: Pincode was auto-filled before, but it has now changed AND new pincode
+    // is either invalid (not 6 digits) or 6-digit-but-not-found. Clear stale autofill
+    // only if the user hasn't manually edited the auto-filled value since.
+    const prev = lastApplied.current;
+    if (prev && prev.pincode !== current) {
+      const newIsInvalid =
+        current.length !== 6 ||
+        (pincodeResult.found === false && pincodeResult.pincode === current);
+      if (newIsInvalid && prev.state && formData.state === prev.state) {
+        updateField("state", "");
+      }
+      if (current.length !== 6) {
+        lastApplied.current = null;
+      }
     }
   }, [pincodeResult, formData.pincode, formData.state, updateField]);
 
