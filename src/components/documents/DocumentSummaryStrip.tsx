@@ -5,9 +5,11 @@ import type { DocRequirement } from "@/pages/LeadDocuments";
 
 interface Props {
   requirements: DocRequirement[];
+  /** Hide action-oriented nudge copy (used in admin context). Status badges + counts still render. */
+  hideNudge?: boolean;
 }
 
-export function DocumentSummaryStrip({ requirements }: Props) {
+export function DocumentSummaryStrip({ requirements, hideNudge = false }: Props) {
   const counts = {
     total: requirements.length,
     pending: requirements.filter(r => r.status === "not_uploaded").length,
@@ -110,8 +112,8 @@ export function DocumentSummaryStrip({ requirements }: Props) {
           })}
         </div>
 
-        {/* Contextual guidance */}
-        {guidanceMessage && (
+        {/* Contextual guidance — suppress action-nudge "info" variant in admin context */}
+        {guidanceMessage && !(hideNudge && guidanceVariant === "info") && (
           <div className={`flex items-start gap-2 rounded-md p-3 text-sm ${
             guidanceVariant === "blocker"
               ? "bg-destructive/10 text-destructive border border-destructive/20"
