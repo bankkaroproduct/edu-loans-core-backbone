@@ -1654,6 +1654,8 @@ export type Database = {
         Args: { _action: string; _document_id: string; _remark?: string }
         Returns: Json
       }
+      bre_activate_lender_rule: { Args: { _id: string }; Returns: Json }
+      bre_activate_scoring_config: { Args: { _id: string }; Returns: Json }
       country_to_iso: { Args: { _name: string }; Returns: string }
       decide_edit_request: {
         Args: {
