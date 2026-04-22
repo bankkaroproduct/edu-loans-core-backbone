@@ -5,9 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Banknote, History, ScrollText, Settings2 } from "lucide-react";
+import { Banknote, History, ScrollText, Calculator } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { canEditBre, normalizeBrePermission, isReadOnlyBre } from "@/lib/bre/permissions";
 
 interface DashboardData {
   activeConfigVersion: number | null;
