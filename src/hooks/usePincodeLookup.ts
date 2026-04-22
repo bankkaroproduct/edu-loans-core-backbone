@@ -23,6 +23,7 @@ const EMPTY: PincodeLookupResult = {
   state: null,
   tier: null,
   hasConflict: false,
+  pincode: null,
 };
 
 // Tiny LRU
@@ -81,8 +82,9 @@ export function usePincodeLookup(pincode: string | null | undefined): PincodeLoo
             state: data.state ?? null,
             tier: data.tier ?? null,
             hasConflict: !!data.has_conflict,
+            pincode: trimmed,
           }
-        : { ...EMPTY, found: false };
+        : { ...EMPTY, found: false, pincode: trimmed };
 
       rememberInCache(trimmed, next);
       setResult(next);
