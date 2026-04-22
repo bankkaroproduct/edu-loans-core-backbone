@@ -5,9 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Lock } from "lucide-react";
+import { ArrowDownToLine, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { canEditBre, normalizeBrePermission } from "@/lib/bre/permissions";
+import { RollbackDialog } from "@/components/bre/editor/RollbackDialog";
+import { rollbackScoringConfigToVersion, rollbackLenderRuleToVersion } from "@/lib/bre/versioning";
 
 interface ConfigVersion {
   id: string;
