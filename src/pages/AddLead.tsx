@@ -736,12 +736,15 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   inputMode="numeric"
                 />
                 {form.pincode.length === 6 && pincodeResult.found === false && (
-                  <p className="text-[11px] text-muted-foreground">Pincode not in master — please confirm District/State manually.</p>
+                  <p className="text-[11px] text-muted-foreground">We couldn't match this pincode. Please confirm District and State manually.</p>
                 )}
                 {pincodeResult.hasConflict && (
                   <p className="text-[11px] text-amber-700 flex items-center gap-1">
-                    <Info className="h-3 w-3" /> Verify district — multiple values exist for this pincode in source.
+                    <Info className="h-3 w-3" /> Please verify District and State — this pincode maps to more than one location.
                   </p>
+                )}
+                {!pincodeResult.hasConflict && pincodeResult.found && form.pincode.length === 6 && (
+                  <p className="text-[11px] text-muted-foreground">Location details auto-filled. You can edit if needed.</p>
                 )}
               </div>
               <div className="space-y-2">
