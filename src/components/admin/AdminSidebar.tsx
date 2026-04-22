@@ -1,10 +1,12 @@
 import {
   Shield, Inbox, Banknote, GraduationCap, Users, LogOut, ArrowLeftRight,
   ClipboardCheck, Database, FilePlus, Upload, FileSpreadsheet,
+  SlidersHorizontal, History, ScrollText,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { canAccessBre, normalizeBrePermission } from "@/lib/bre/permissions";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter, useSidebar,
@@ -31,6 +33,13 @@ const adminMasterItems = [
   { title: "Partners", url: "/admin/partners", icon: Users },
   { title: "Lenders", url: "/admin/lenders", icon: Banknote },
   { title: "Universities", url: "/admin/master-data?tab=universities", icon: GraduationCap },
+];
+
+const breItems = [
+  { title: "BRE Dashboard", url: "/admin/bre", icon: SlidersHorizontal, end: true },
+  { title: "Lender Rules", url: "/admin/bre/lenders", icon: Banknote },
+  { title: "Version History", url: "/admin/bre/versions", icon: History },
+  { title: "Audit Log", url: "/admin/bre/audit", icon: ScrollText },
 ];
 
 export function AdminSidebar() {

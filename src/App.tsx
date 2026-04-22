@@ -20,6 +20,11 @@ import AdminMasterData from "./pages/admin/AdminMasterData";
 import AdminPartners from "./pages/admin/AdminPartners";
 import AdminLenders from "./pages/admin/AdminLenders";
 import AdminReports from "./pages/admin/AdminReports";
+import BreDashboard from "./pages/admin/bre/BreDashboard";
+import BreLenderRulesList from "./pages/admin/bre/BreLenderRulesList";
+import BreVersionHistory from "./pages/admin/bre/BreVersionHistory";
+import BreAuditLog from "./pages/admin/bre/BreAuditLog";
+import { BreAccessGate } from "./components/bre/BreAccessGate";
 import AdminAddLead from "./pages/admin/AdminAddLead";
 import AdminBulkUpload from "./pages/admin/AdminBulkUpload";
 import Login from "./pages/Login";
@@ -96,6 +101,11 @@ const App = () => (
             <Route path="/admin/partners" element={<AdminRoute><AdminPartners /></AdminRoute>} />
             <Route path="/admin/lenders" element={<AdminRoute><AdminLenders /></AdminRoute>} />
             <Route path="/admin/reports" element={<AdminRoute><AdminReports /></AdminRoute>} />
+            {/* BRE Engine — Admin only, additionally gated by bre_permission */}
+            <Route path="/admin/bre" element={<AdminRoute><BreAccessGate><BreDashboard /></BreAccessGate></AdminRoute>} />
+            <Route path="/admin/bre/lenders" element={<AdminRoute><BreAccessGate><BreLenderRulesList /></BreAccessGate></AdminRoute>} />
+            <Route path="/admin/bre/versions" element={<AdminRoute><BreAccessGate><BreVersionHistory /></BreAccessGate></AdminRoute>} />
+            <Route path="/admin/bre/audit" element={<AdminRoute><BreAccessGate><BreAuditLog /></BreAccessGate></AdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </StudentAuthProvider>
