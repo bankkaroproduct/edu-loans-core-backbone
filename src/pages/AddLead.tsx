@@ -289,6 +289,43 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const setMany = (patch: Partial<typeof form>) => {
+    setIsDirty(true);
+    setForm((prev) => ({ ...prev, ...patch }));
+  };
+
+  // Pincode auto-fill (only fires when 6 digits entered)
+  const pincodeResult = usePincodeLookup(form.pincode);
+  const lastAppliedPincode = useRef<string>("");
+  useEffect(() => {
+    if (pincodeResult.found && form.pincode && form.pincode !== lastAppliedPincode.current) {
+      lastAppliedPincode.current = form.pincode;
+      setForm((prev) => ({
+        ...prev,
+        district: pincodeResult.district ?? prev.district,
+        state: pincodeResult.state ?? prev.state,
+        tier: pincodeResult.tier ?? prev.tier,
+      }));
+    }
+    if (pincodeResult.found === false && form.pincode === lastAppliedPincode.current) {
+      // Pincode changed away from a found one — allow re-application later
+      lastAppliedPincode.current = "";
+    }
+  }, [pincodeResult, form.pincode]);
+
+  // Master combobox options
+  const universityOptions: MasterOption[] = useMemo(() => {
+    const filtered = form.intended_study_country
+      ? universities.filter((u) => u.country === form.intended_study_country)
+      : universities;
+    return filtered.map((u) => ({ id: u.id, label: u.university_name, hint: u.country }));
+  }, [universities, form.intended_study_country]);
+
+  const courseOptions: MasterOption[] = useMemo(
+    () => courses.map((c) => ({ id: c.id, label: c.course_name, hint: c.course_category ?? undefined })),
+    [courses],
+  );
+
   const fullName = `${form.student_first_name.trim()} ${form.student_last_name.trim()}`.trim();
   const resolvedCourseName = form.course_name || form.course_name_raw.trim();
   const resolvedUniversityName = form.university_name_raw.trim() || (form.university_id ? universities.find((u) => u.id === form.university_id)?.university_name : "") || "";
