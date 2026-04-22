@@ -140,19 +140,15 @@ export default function BreDashboard() {
       )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <NavTile icon={<Banknote className="h-4 w-4" />} title="Lender Rules" desc="View seeded lender rule rows" to="/admin/bre/lenders" />
-        <NavTile icon={<History className="h-4 w-4" />} title="Version History" desc="Active scoring & rule versions" to="/admin/bre/versions" />
+        <NavTile
+          icon={<Calculator className="h-4 w-4" />}
+          title={canEdit ? "Edit Scoring Config" : "Scoring Config"}
+          desc={canEdit ? "Edit weights, bands & overall mapping" : "View active scoring configuration"}
+          to="/admin/bre/scoring"
+        />
+        <NavTile icon={<Banknote className="h-4 w-4" />} title="Lender Rules" desc={canEdit ? "Open a lender to edit its rule" : "View active lender rule rows"} to="/admin/bre/lenders" />
+        <NavTile icon={<History className="h-4 w-4" />} title="Version History" desc={canEdit ? "Browse & roll back to old versions" : "View scoring & rule version history"} to="/admin/bre/versions" />
         <NavTile icon={<ScrollText className="h-4 w-4" />} title="Audit Log" desc="Filtered BRE audit events" to="/admin/bre/audit" />
-        <Card className="border-dashed">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <Settings2 className="h-4 w-4 text-muted-foreground" /> Editor (Phase 3)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">Lender rule editor, scoring editor and simulation runner are out of Phase 2 scope.</p>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
