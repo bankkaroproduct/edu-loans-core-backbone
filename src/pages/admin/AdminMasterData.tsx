@@ -30,7 +30,19 @@ export default function AdminMasterData() {
   const [activeKey, setActiveKey] = useState<string>(
     initialTab && MASTER_KEYS.includes(initialTab) ? initialTab : MASTER_KEYS[0]
   );
+  const [pincodeOpen, setPincodeOpen] = useState(false);
+  const [pincodeStats, setPincodeStats] = useState<{ count: number; loading: boolean }>({ count: 0, loading: true });
   const schema = MASTER_SCHEMAS[activeKey];
+
+  const refreshPincodeStats = async () => {
+    setPincodeStats((s) => ({ ...s, loading: true }));
+    const { count } = await supabase
+      .from("pincode_master")
+      .select("pincode", { count: "exact", head: true });
+    setPincodeStats({ count: count ?? 0, loading: false });
+  };
+
+  useEffect(() => { refreshPincodeStats(); }, []);
 
   const handleTabChange = (k: string) => {
     setActiveKey(k);
@@ -52,6 +64,39 @@ export default function AdminMasterData() {
       <PageHeader
         title="Master Data"
         description="Manage system reference data — countries, universities, courses, lifecycle, documents."
+      />
+
+      <Card>
+        <CardContent className="p-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="rounded-md bg-primary/10 p-2 text-primary">
+              <MapPin className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="text-sm font-medium text-foreground">Pincode Master</div>
+              <div className="text-xs text-muted-foreground">
+                {pincodeStats.loading
+                  ? "Loading…"
+                  : pincodeStats.count === 0
+                    ? "Not yet imported. Lead forms can capture pincode but District / State will not auto-fill until you import the master CSV."
+                    : `${pincodeStats.count.toLocaleString("en-IN")} pincodes loaded. District / State auto-fill is active on lead forms.`}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={refreshPincodeStats}>Refresh</Button>
+            <Button size="sm" onClick={() => setPincodeOpen(true)}>
+              <Upload className="h-4 w-4 mr-1.5" />
+              {pincodeStats.count === 0 ? "Import CSV" : "Re-import / Update CSV"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <PincodeMasterImportDialog
+        open={pincodeOpen}
+        onOpenChange={setPincodeOpen}
+        onCompleted={refreshPincodeStats}
       />
 
       <Tabs value={activeKey} onValueChange={handleTabChange}>
