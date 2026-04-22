@@ -48,7 +48,7 @@ const STEP_DEFS = {
 
 type StepId = keyof typeof STEP_DEFS;
 
-const PARTNER_STEPS: StepId[] = ["student", "study", "notes", "review"];
+const PARTNER_STEPS: StepId[] = ["student", "study", "financial", "notes", "review"];
 const ADMIN_STEPS: StepId[] = ["student", "study", "financial", "notes", "review"];
 const ADMIN_EDIT_STEPS: StepId[] = ["student", "study", "financial", "notes", "assign", "review"];
 
@@ -56,7 +56,50 @@ const CO_APPLICANT_RELATIONS = [
   "Father", "Mother", "Spouse", "Guardian", "Brother", "Sister", "Uncle", "Other",
 ];
 
+const EMPLOYMENT_TYPE_OPTIONS = [
+  "Salaried",
+  "Self-employed",
+  "Business owner",
+  "Retired",
+  "Other",
+];
+
 const TERMINAL_STAGES = ["disbursed", "rejected", "dropped"];
+
+/**
+ * Map a country display name (as stored in `countries_master.country_name`) to its ISO 2-letter
+ * code (as stored in `universities_master.country`). Falls back to the trimmed uppercase input
+ * so already-ISO values (or admin-entered codes) still match.
+ *
+ * Keep this list aligned with the DB-side `country_to_iso()` helper.
+ */
+function countryNameToIso(name: string | null | undefined): string {
+  if (!name) return "";
+  const n = name.trim();
+  const map: Record<string, string> = {
+    "United States": "US",
+    "United States of America": "US",
+    USA: "US",
+    "United Kingdom": "GB",
+    UK: "GB",
+    "Great Britain": "GB",
+    Canada: "CA",
+    Australia: "AU",
+    Germany: "DE",
+    France: "FR",
+    Netherlands: "NL",
+    Singapore: "SG",
+    Ireland: "IE",
+    "New Zealand": "NZ",
+    Spain: "ES",
+    Italy: "IT",
+    Switzerland: "CH",
+    Sweden: "SE",
+    Denmark: "DK",
+  };
+  if (map[n]) return map[n];
+  return n.length <= 3 ? n.toUpperCase() : n.toUpperCase().slice(0, 2);
+}
 
 interface AddLeadProps {
   hideOwnHeader?: boolean;
@@ -146,6 +189,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   const [partnerPickerOpen, setPartnerPickerOpen] = useState(false);
   const [originalPartnerId, setOriginalPartnerId] = useState<string | null>(null);
   const [partnerIdAssignment, setPartnerIdAssignment] = useState<string>("");
+  const [countryPickerOpen, setCountryPickerOpen] = useState(false);
 
   const [form, setForm] = useState({
     student_first_name: "",
@@ -174,6 +218,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     coapplicant_mobile: "",
     coapplicant_income: "",
     coapplicant_income_source: "",
+    coapplicant_employment_type: "",
+    coapplicant_employer: "",
     coapplicant_existing_emi: "",
     collateral_state: "unsure" as CollateralState,
     collateral_notes: "",
@@ -256,6 +302,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         coapplicant_mobile: stripPrefix((data as any).coapplicant_mobile ?? ""),
         coapplicant_income: data.coapplicant_income != null ? String(data.coapplicant_income) : "",
         coapplicant_income_source: (data as any).coapplicant_income_source ?? "",
+        coapplicant_employment_type: (data as any).coapplicant_employment_type ?? "",
+        coapplicant_employer: (data as any).coapplicant_employer ?? "",
         coapplicant_existing_emi: data.coapplicant_existing_emi != null ? String(data.coapplicant_existing_emi) : "",
         collateral_state: collateralBoolToState(data.collateral_available),
         collateral_notes: data.collateral_notes ?? "",
@@ -352,9 +400,14 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   }, [pincodeResult, form.pincode]);
 
   // Master combobox options
+  // Universities master stores `country` as ISO 2-letter code (US, AU, …) but the form
+  // stores `intended_study_country` as the human display name from countries_master.
+  // Map name → ISO before filtering, falling back to the raw value so admin-entered
+  // ISO codes still work.
   const universityOptions: MasterOption[] = useMemo(() => {
-    const filtered = form.intended_study_country
-      ? universities.filter((u) => u.country === form.intended_study_country)
+    const iso = countryNameToIso(form.intended_study_country);
+    const filtered = iso
+      ? universities.filter((u) => (u.country ?? "").toUpperCase() === iso)
       : universities;
     return filtered.map((u) => ({ id: u.id, label: u.university_name, hint: u.country }));
   }, [universities, form.intended_study_country]);
@@ -370,38 +423,65 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
 
   const isTerminalEdit = isEditMode && editLeadStage && TERMINAL_STAGES.includes(editLeadStage);
 
-  const validate = (isDraft: boolean): string | null => {
-    if (!form.student_first_name.trim()) return "Student first name is required";
-    if (!form.student_phone.trim()) return "Phone number is required";
-    if (!isValidIndianPhone(form.student_phone)) return "Phone must be a valid 10-digit Indian number (with or without +91)";
-    if (form.student_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.student_email.trim())) return "Email format is invalid";
+  type ValidationFailure = { message: string; step: StepId; field?: string };
+  const validate = (isDraft: boolean): ValidationFailure | null => {
+    if (!form.student_first_name.trim()) return { message: "Student first name is required", step: "student", field: "student_first_name" };
+    if (!form.student_phone.trim()) return { message: "Mobile number is required", step: "student", field: "student_phone" };
+    if (!isValidIndianPhone(form.student_phone)) return { message: "Mobile must be a valid 10-digit Indian number (with or without +91)", step: "student", field: "student_phone" };
+    if (form.student_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.student_email.trim())) return { message: "Email format is invalid", step: "student", field: "student_email" };
 
     if (!isDraft) {
-      if (!form.intended_study_country) return "Study country is required";
-      if (!resolvedUniversityName.trim()) return "University is required (pick from list or type manually)";
-      if (!resolvedCourseName) return "Course is required (pick from list or type manually)";
-      if (!form.intake_term) return "Intake term is required";
-      if (!form.intake_year) return "Intake year is required";
-      if (!form.loan_amount_required) return "Approx loan amount is required";
+      if (!form.intended_study_country) return { message: "Intended study country is required", step: "study", field: "intended_study_country" };
+      if (!resolvedUniversityName.trim()) return { message: "University is required (pick from list or type manually)", step: "study", field: "university" };
+      if (!resolvedCourseName) return { message: "Course is required (pick from list or type manually)", step: "study", field: "course" };
+      if (!form.intake_term) return { message: "Intake term is required", step: "study", field: "intake_term" };
+      if (!form.intake_year) return { message: "Intake year is required", step: "study", field: "intake_year" };
+
+      // Financial Info — required in BOTH partner and admin modes (restored).
+      if (!form.loan_amount_required) return { message: "Approx loan amount is required", step: "financial", field: "loan_amount_required" };
       if (isNaN(Number(form.loan_amount_required)) || Number(form.loan_amount_required) <= 0)
-        return "Loan amount must be a positive number";
-      if (form.coapplicant_income && (isNaN(Number(form.coapplicant_income)) || Number(form.coapplicant_income) < 0))
-        return "Co-applicant income must be a valid number";
-      // Admin-only mandatory financial validation. Partner mode stays light.
-      if (isAdminForm) {
-        if (!form.coapplicant_income || Number(form.coapplicant_income) <= 0) {
-          return "Annual co-applicant income is required";
-        }
-      }
+        return { message: "Loan amount must be a positive number", step: "financial", field: "loan_amount_required" };
+      if (!form.coapplicant_name.trim()) return { message: "Co-applicant name is required", step: "financial", field: "coapplicant_name" };
+      if (!form.coapplicant_mobile.trim()) return { message: "Co-applicant mobile is required", step: "financial", field: "coapplicant_mobile" };
+      if (!isValidIndianPhone(form.coapplicant_mobile)) return { message: "Co-applicant mobile must be a valid 10-digit Indian number", step: "financial", field: "coapplicant_mobile" };
+      if (!form.coapplicant_income_source) return { message: "Income source is required", step: "financial", field: "coapplicant_income_source" };
+      if (!form.coapplicant_employment_type) return { message: "Employment type is required", step: "financial", field: "coapplicant_employment_type" };
+      if (!form.coapplicant_employer.trim()) return { message: "Employer / occupation is required", step: "financial", field: "coapplicant_employer" };
+      if (!form.coapplicant_income || Number(form.coapplicant_income) <= 0)
+        return { message: "Monthly income is required", step: "financial", field: "coapplicant_income" };
+      if (form.coapplicant_existing_emi === "" || isNaN(Number(form.coapplicant_existing_emi)) || Number(form.coapplicant_existing_emi) < 0)
+        return { message: "Existing EMI is required (enter 0 if none)", step: "financial", field: "coapplicant_existing_emi" };
     }
 
-    if (!effectivePartnerId) return "No partner organization found for your account. Admins can use 'Test as Partner' in the sidebar.";
+    if (!effectivePartnerId) return { message: "No partner organization found for your account. Admins can use 'Test as Partner' in the sidebar.", step: stepIds[0] };
     return null;
   };
 
+  // Helper used by review-step nudges: jump to a step and try to focus the missing field.
+  const goToFieldAndFocus = useCallback(
+    (step: StepId, field?: string) => {
+      goToStep(step);
+      if (!field) return;
+      // Defer until after tab content mounts/becomes visible.
+      setTimeout(() => {
+        const el = document.querySelector<HTMLElement>(`[data-field="${field}"]`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          const focusable = el.querySelector<HTMLElement>("input, textarea, select, button");
+          (focusable ?? el).focus?.();
+        }
+      }, 80);
+    },
+    [goToStep],
+  );
+
   const handleSubmit = async (asDraft: boolean) => {
     const err = validate(asDraft);
-    if (err) return toast.error(err);
+    if (err) {
+      toast.error(err.message);
+      goToFieldAndFocus(err.step, err.field);
+      return;
+    }
 
     if (!asDraft) {
       const dups = await checkDuplicates({
@@ -453,7 +533,9 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       coapplicant_mobile: form.coapplicant_mobile.trim() ? (normalizePhone(form.coapplicant_mobile) ?? form.coapplicant_mobile.trim()) : null,
       coapplicant_income: form.coapplicant_income ? Number(form.coapplicant_income) : null,
       coapplicant_income_source: form.coapplicant_income_source || null,
-      coapplicant_existing_emi: form.coapplicant_existing_emi ? Number(form.coapplicant_existing_emi) : null,
+      coapplicant_employment_type: form.coapplicant_employment_type || null,
+      coapplicant_employer: form.coapplicant_employer.trim() || null,
+      coapplicant_existing_emi: form.coapplicant_existing_emi !== "" ? Number(form.coapplicant_existing_emi) : null,
       collateral_available: collateralStateToBool(form.collateral_state),
       collateral_notes: form.collateral_state === "likely" ? (form.collateral_notes.trim() || null) : null,
       partner_id: partnerIdAssignment || null,
@@ -528,7 +610,9 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       coapplicant_mobile: form.coapplicant_mobile.trim() ? (normalizePhone(form.coapplicant_mobile) ?? form.coapplicant_mobile.trim()) : null,
       coapplicant_income: form.coapplicant_income ? Number(form.coapplicant_income) : null,
       coapplicant_income_source: form.coapplicant_income_source || null,
-      coapplicant_existing_emi: form.coapplicant_existing_emi ? Number(form.coapplicant_existing_emi) : null,
+      coapplicant_employment_type: form.coapplicant_employment_type || null,
+      coapplicant_employer: form.coapplicant_employer.trim() || null,
+      coapplicant_existing_emi: form.coapplicant_existing_emi !== "" ? Number(form.coapplicant_existing_emi) : null,
       collateral_available: collateralStateToBool(form.collateral_state),
       collateral_notes: form.collateral_state === "likely" ? (form.collateral_notes.trim() || null) : null,
       source_sub_type: "add_lead",
@@ -629,14 +713,49 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
 
   const stepIndex = stepIds.findIndex((s) => s === activeStep);
 
-  const ReviewRow = ({ label, value }: { label: string; value: string | number | boolean | null | undefined }) => (
-    <div className="flex justify-between py-1.5 border-b border-border/50 last:border-0">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className="text-sm font-medium text-foreground text-right max-w-[60%]">
-        {value === true ? "Yes" : value === false ? "No" : value || "—"}
-      </span>
-    </div>
-  );
+  /**
+   * Review row.
+   * - If `value` is missing AND a `nudgeStep` is provided, render the missing slot as a
+   *   clickable "Please provide details" link that jumps the user back to the relevant
+   *   step (and field) so they can fix it without scrolling/hunting.
+   * - Optional fields (no nudge) just render an em-dash.
+   */
+  const ReviewRow = ({
+    label,
+    value,
+    nudgeStep,
+    nudgeField,
+  }: {
+    label: string;
+    value: string | number | boolean | null | undefined;
+    nudgeStep?: StepId;
+    nudgeField?: string;
+  }) => {
+    const display = value === true ? "Yes" : value === false ? "No" : value;
+    const isMissing = display === undefined || display === null || display === "" || display === 0;
+    return (
+      <div className="flex justify-between py-1.5 border-b border-border/50 last:border-0">
+        <span className="text-sm text-muted-foreground">{label}</span>
+        <span className="text-sm font-medium text-right max-w-[60%]">
+          {isMissing ? (
+            nudgeStep ? (
+              <button
+                type="button"
+                onClick={() => goToFieldAndFocus(nudgeStep, nudgeField)}
+                className="text-primary underline-offset-2 hover:underline"
+              >
+                Please provide details →
+              </button>
+            ) : (
+              <span className="text-muted-foreground">—</span>
+            )
+          ) : (
+            <span className="text-foreground">{display as React.ReactNode}</span>
+          )}
+        </span>
+      </div>
+    );
+  };
 
   if (hydrating) {
     return (
@@ -815,14 +934,58 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
           <Card>
             <CardHeader><CardTitle className="text-lg">Education & Study Intent</CardTitle></CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-span-2" data-field="intended_study_country">
                 <Label>Intended Study Country *</Label>
-                <Select value={form.intended_study_country} onValueChange={(v) => set("intended_study_country", v)}>
-                  <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
-                  <SelectContent>{countries.map((c) => <SelectItem key={c.id} value={c.country_name}>{c.country_name}</SelectItem>)}</SelectContent>
-                </Select>
+                <Popover open={countryPickerOpen} onOpenChange={setCountryPickerOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={countryPickerOpen}
+                      className={cn(
+                        "w-full justify-between font-normal h-9",
+                        !form.intended_study_country && "text-muted-foreground",
+                      )}
+                    >
+                      <span className="truncate text-left">
+                        {form.intended_study_country || "Search & select intended country…"}
+                      </span>
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Type a country name…" />
+                      <CommandList>
+                        <CommandEmpty>No countries match that search.</CommandEmpty>
+                        <CommandGroup>
+                          {countries.map((c) => (
+                            <CommandItem
+                              key={c.id}
+                              value={c.country_name}
+                              onSelect={() => {
+                                // Switching country must clear stale university selection
+                                // (master id + manual fallback) so partners aren't shown a
+                                // university from a different country in review.
+                                setMany({
+                                  intended_study_country: c.country_name,
+                                  university_id: "",
+                                  university_name_raw: "",
+                                });
+                                setCountryPickerOpen(false);
+                              }}
+                            >
+                              <Check className={cn("mr-2 h-4 w-4", form.intended_study_country === c.country_name ? "opacity-100" : "opacity-0")} />
+                              <span className="truncate">{c.country_name}</span>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
-              <div className="space-y-2 md:col-span-2">
+              <div className="space-y-2 md:col-span-2" data-field="university">
                 <Label>University *</Label>
                 <MasterCombobox
                   options={universityOptions}
@@ -836,7 +999,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   manualPlaceholder="Type the university name"
                 />
               </div>
-              <div className="space-y-2 md:col-span-2">
+              <div className="space-y-2 md:col-span-2" data-field="course">
                 <Label>Course *</Label>
                 <MasterCombobox
                   options={courseOptions}
@@ -850,28 +1013,21 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   manualPlaceholder="Type the course name"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2" data-field="intake_term">
                 <Label>Intake Term *</Label>
                 <Select value={form.intake_term} onValueChange={(v) => set("intake_term", v)}>
                   <SelectTrigger><SelectValue placeholder="Select term" /></SelectTrigger>
                   <SelectContent>{intakeTerms.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2" data-field="intake_year">
                 <Label>Intake Year *</Label>
                 <Select value={form.intake_year ? String(form.intake_year) : ""} onValueChange={(v) => set("intake_year", Number(v))}>
                   <SelectTrigger><SelectValue placeholder="Select year" /></SelectTrigger>
                   <SelectContent>{intakeYears.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              {/* Loan Amount — partner mode only here. Admin shows it in Financial Info. */}
-              {!isAdminForm && (
-                <div className="space-y-2 md:col-span-2">
-                  <Label>Approx Loan Amount Required (₹) *</Label>
-                  <MoneyInput value={form.loan_amount_required} onChange={(d) => set("loan_amount_required", d)} placeholder="e.g. 25,00,000" />
-                  <p className="text-xs text-muted-foreground">Rough expectation — exact figure can be refined later by ops.</p>
-                </div>
-              )}
+              {/* Loan Amount intentionally moved to the Financial Info step in both modes. */}
 
               {/* Read-only academic context for student-origin leads in admin edit mode */}
               {isAdminForm && isEditMode && originalLead?.source_type === "student_direct" && (
@@ -898,54 +1054,87 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
           </div>
         </TabsContent>
 
-        {/* Financial Info — admin mode only */}
-        {isAdminForm && (
-          <TabsContent value="financial" forceMount className="mt-0 data-[state=inactive]:hidden">
-            <Card>
-              <CardHeader><CardTitle className="text-lg">Financial Information</CardTitle></CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2 md:col-span-2">
-                  <Label>Approx Loan Amount Required (₹) *</Label>
-                  <Input type="number" min="0" value={form.loan_amount_required} onChange={(e) => set("loan_amount_required", e.target.value)} placeholder="e.g. 2500000" />
-                  <p className="text-xs text-muted-foreground">Rough expectation — exact figure can be refined later by ops.</p>
-                </div>
-                <div className="space-y-2">
-                  <Label>Co-Applicant Name</Label>
-                  <Input value={form.coapplicant_name} onChange={(e) => set("coapplicant_name", e.target.value)} placeholder="Full name" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Co-Applicant Relation</Label>
-                  <Select value={form.coapplicant_relation} onValueChange={(v) => set("coapplicant_relation", v)}>
-                    <SelectTrigger><SelectValue placeholder="Select relation" /></SelectTrigger>
-                    <SelectContent>
-                      {CO_APPLICANT_RELATIONS.map((r) => (
-                        <SelectItem key={r} value={r}>{r}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label>Co-Applicant Income (₹)</Label>
-                  <Input type="number" min="0" value={form.coapplicant_income} onChange={(e) => set("coapplicant_income", e.target.value)} placeholder="Annual income (optional)" />
-                  <p className="text-xs text-muted-foreground">Optional — can be refined later from documents.</p>
-                </div>
-                <div className="md:col-span-2">
-                  <CollateralRadio
-                    state={form.collateral_state}
-                    notes={form.collateral_notes}
-                    onChangeState={(s) => set("collateral_state", s)}
-                    onChangeNotes={(n) => set("collateral_notes", n)}
-                    idPrefix="admin-coll"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-            <div className="flex justify-between mt-4">
-              <Button variant="outline" onClick={() => goToStep("study")}>← Study Intent</Button>
-              <Button onClick={() => goToStep("notes")}>Next: Notes →</Button>
-            </div>
-          </TabsContent>
-        )}
+        {/* Financial Info — required step in BOTH partner and admin modes */}
+        <TabsContent value="financial" forceMount className="mt-0 data-[state=inactive]:hidden">
+          <Card>
+            <CardHeader><CardTitle className="text-lg">Financial Information</CardTitle></CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2 md:col-span-2" data-field="loan_amount_required">
+                <Label>Approx Loan Amount Required (₹) *</Label>
+                <MoneyInput value={form.loan_amount_required} onChange={(d) => set("loan_amount_required", d)} placeholder="e.g. 25,00,000" />
+                <p className="text-xs text-muted-foreground">Rough expectation — exact figure can be refined later by ops.</p>
+              </div>
+              <div className="space-y-2" data-field="coapplicant_name">
+                <Label>Co-Applicant Name *</Label>
+                <Input value={form.coapplicant_name} onChange={(e) => set("coapplicant_name", e.target.value)} placeholder="Full name" />
+                <p className="text-xs text-muted-foreground">As per Aadhaar and Passport</p>
+              </div>
+              <div className="space-y-2" data-field="coapplicant_mobile">
+                <Label>Mobile Number *</Label>
+                <Input value={form.coapplicant_mobile} onChange={(e) => set("coapplicant_mobile", e.target.value)} placeholder="+91 9876543210" />
+                <p className="text-xs text-muted-foreground">As per Aadhaar and Passport</p>
+              </div>
+              <div className="space-y-2" data-field="coapplicant_relation">
+                <Label>Co-Applicant Relation</Label>
+                <Select value={form.coapplicant_relation} onValueChange={(v) => set("coapplicant_relation", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select relation" /></SelectTrigger>
+                  <SelectContent>
+                    {CO_APPLICANT_RELATIONS.map((r) => (
+                      <SelectItem key={r} value={r}>{r}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2" data-field="coapplicant_income_source">
+                <Label>Income Source *</Label>
+                <Select value={form.coapplicant_income_source} onValueChange={(v) => set("coapplicant_income_source", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select income source" /></SelectTrigger>
+                  <SelectContent>
+                    {INCOME_SOURCE_OPTIONS.map((o) => (
+                      <SelectItem key={o} value={o}>{o}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2" data-field="coapplicant_employment_type">
+                <Label>Employment Type *</Label>
+                <Select value={form.coapplicant_employment_type} onValueChange={(v) => set("coapplicant_employment_type", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select employment type" /></SelectTrigger>
+                  <SelectContent>
+                    {EMPLOYMENT_TYPE_OPTIONS.map((o) => (
+                      <SelectItem key={o} value={o}>{o}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2" data-field="coapplicant_employer">
+                <Label>Employer / Occupation *</Label>
+                <Input value={form.coapplicant_employer} onChange={(e) => set("coapplicant_employer", e.target.value)} placeholder="Company / occupation" />
+              </div>
+              <div className="space-y-2" data-field="coapplicant_income">
+                <Label>Monthly Income (₹) *</Label>
+                <MoneyInput value={form.coapplicant_income} onChange={(d) => set("coapplicant_income", d)} placeholder="e.g. 1,25,000" />
+              </div>
+              <div className="space-y-2" data-field="coapplicant_existing_emi">
+                <Label>Existing EMI (₹) *</Label>
+                <MoneyInput value={form.coapplicant_existing_emi} onChange={(d) => set("coapplicant_existing_emi", d)} placeholder="Enter 0 if none" />
+              </div>
+              <div className="md:col-span-2">
+                <CollateralRadio
+                  state={form.collateral_state}
+                  notes={form.collateral_notes}
+                  onChangeState={(s) => set("collateral_state", s)}
+                  onChangeNotes={(n) => set("collateral_notes", n)}
+                  idPrefix="financial-coll"
+                />
+              </div>
+            </CardContent>
+          </Card>
+          <div className="flex justify-between mt-4">
+            <Button variant="outline" onClick={() => goToStep("study")}>← Study Intent</Button>
+            <Button onClick={() => goToStep("notes")}>Next: Notes →</Button>
+          </div>
+        </TabsContent>
 
         {/* Notes */}
         <TabsContent value="notes" forceMount className="mt-0 data-[state=inactive]:hidden">
@@ -955,50 +1144,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               <div className="space-y-2">
                 <Label>{isAdminForm ? "Admin / Partner Remark" : "Partner Remark"}</Label>
                 <Textarea value={form.partner_remark} onChange={(e) => set("partner_remark", e.target.value)} placeholder="Any additional context for the operations team..." rows={3} />
+                <p className="text-xs text-muted-foreground">Optional — leave blank if no additional context.</p>
               </div>
-
-              {/* Partner mode only: optional co-applicant context — collapsed by default */}
-              {!isAdminForm && (
-                <Collapsible open={coAppOpen} onOpenChange={setCoAppOpen}>
-                  <CollapsibleTrigger asChild>
-                    <button
-                      type="button"
-                      className="flex w-full items-center justify-between rounded-md border bg-muted/40 px-3 py-2 text-left text-xs font-medium hover:bg-muted/60 transition-colors"
-                    >
-                      <span>Co-applicant context (optional)</span>
-                      <ChevronDown className={`h-3.5 w-3.5 transition-transform ${coAppOpen ? "rotate-180" : ""}`} />
-                    </button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="pt-3">
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label>Co-Applicant Name</Label>
-                        <Input value={form.coapplicant_name} onChange={(e) => set("coapplicant_name", e.target.value)} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Co-Applicant Relation</Label>
-                        <Select value={form.coapplicant_relation} onValueChange={(v) => set("coapplicant_relation", v)}>
-                          <SelectTrigger><SelectValue placeholder="Select relation" /></SelectTrigger>
-                          <SelectContent>
-                            {CO_APPLICANT_RELATIONS.map((r) => (
-                              <SelectItem key={r} value={r}>{r}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="md:col-span-2">
-                        <CollateralRadio
-                          state={form.collateral_state}
-                          notes={form.collateral_notes}
-                          onChangeState={(s) => set("collateral_state", s)}
-                          onChangeNotes={(n) => set("collateral_notes", n)}
-                          idPrefix="partner-coll"
-                        />
-                      </div>
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
             </CardContent>
           </Card>
           <div className="flex justify-between mt-4">
@@ -1109,8 +1256,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
             <CardContent className="space-y-4">
               <div>
                 <Badge variant="outline" className="mb-2">Student Details</Badge>
-                <ReviewRow label="Name" value={fullName} />
-                <ReviewRow label="Phone" value={form.student_phone} />
+                <ReviewRow label="Name" value={fullName} nudgeStep="student" nudgeField="student_first_name" />
+                <ReviewRow label="Phone" value={form.student_phone} nudgeStep="student" nudgeField="student_phone" />
                 <ReviewRow label="Email" value={form.student_email} />
                 <ReviewRow label="WhatsApp" value={form.student_whatsapp} />
                 <ReviewRow label="City" value={form.city} />
@@ -1118,38 +1265,49 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               </div>
               <div>
                 <Badge variant="outline" className="mb-2">Study Intent</Badge>
-                <ReviewRow label="Study Country" value={form.intended_study_country} />
-                <ReviewRow label="University" value={resolvedUniversityName} />
-                <ReviewRow label="Course" value={resolvedCourseName} />
-                <ReviewRow label="Intake" value={`${form.intake_term} ${form.intake_year || ""}`} />
-                {!isAdminForm && (
-                  <ReviewRow label="Approx Loan Amount (₹)" value={form.loan_amount_required ? `₹${Number(form.loan_amount_required).toLocaleString("en-IN")}` : undefined} />
+                <ReviewRow label="Study Country" value={form.intended_study_country} nudgeStep="study" nudgeField="intended_study_country" />
+                <ReviewRow label="University" value={resolvedUniversityName} nudgeStep="study" nudgeField="university" />
+                <ReviewRow label="Course" value={resolvedCourseName} nudgeStep="study" nudgeField="course" />
+                <ReviewRow
+                  label="Intake"
+                  value={form.intake_term && form.intake_year ? `${form.intake_term} ${form.intake_year}` : ""}
+                  nudgeStep="study"
+                  nudgeField="intake_term"
+                />
+              </div>
+              {/* Financial Info — required group, rendered for both partner and admin modes */}
+              <div>
+                <Badge variant="outline" className="mb-2">Financial Info</Badge>
+                <ReviewRow
+                  label="Approx Loan Amount (₹)"
+                  value={form.loan_amount_required ? `₹${Number(form.loan_amount_required).toLocaleString("en-IN")}` : ""}
+                  nudgeStep="financial"
+                  nudgeField="loan_amount_required"
+                />
+                <ReviewRow label="Co-Applicant Name" value={form.coapplicant_name} nudgeStep="financial" nudgeField="coapplicant_name" />
+                <ReviewRow label="Mobile Number" value={form.coapplicant_mobile} nudgeStep="financial" nudgeField="coapplicant_mobile" />
+                <ReviewRow label="Relation" value={form.coapplicant_relation} />
+                <ReviewRow label="Income Source" value={form.coapplicant_income_source} nudgeStep="financial" nudgeField="coapplicant_income_source" />
+                <ReviewRow label="Employment Type" value={form.coapplicant_employment_type} nudgeStep="financial" nudgeField="coapplicant_employment_type" />
+                <ReviewRow label="Employer / Occupation" value={form.coapplicant_employer} nudgeStep="financial" nudgeField="coapplicant_employer" />
+                <ReviewRow
+                  label="Monthly Income (₹)"
+                  value={form.coapplicant_income ? `₹${Number(form.coapplicant_income).toLocaleString("en-IN")}` : ""}
+                  nudgeStep="financial"
+                  nudgeField="coapplicant_income"
+                />
+                <ReviewRow
+                  label="Existing EMI (₹)"
+                  value={form.coapplicant_existing_emi !== "" ? `₹${Number(form.coapplicant_existing_emi).toLocaleString("en-IN")}` : ""}
+                  nudgeStep="financial"
+                  nudgeField="coapplicant_existing_emi"
+                />
+                <ReviewRow label="Collateral" value={form.collateral_state === "likely" ? "Likely" : form.collateral_state === "unlikely" ? "Unlikely" : "Not sure"} />
+                {form.collateral_state === "likely" && form.collateral_notes && (
+                  <ReviewRow label="Collateral Notes" value={form.collateral_notes} />
                 )}
               </div>
-              {/* Admin: dedicated Financial Info group, always rendered */}
-              {isAdminForm && (
-                <div>
-                  <Badge variant="outline" className="mb-2">Financial Info</Badge>
-                  <ReviewRow label="Approx Loan Amount (₹)" value={form.loan_amount_required ? `₹${Number(form.loan_amount_required).toLocaleString("en-IN")}` : undefined} />
-                  <ReviewRow label="Co-Applicant" value={form.coapplicant_name} />
-                  <ReviewRow label="Relation" value={form.coapplicant_relation} />
-                  <ReviewRow label="Co-Applicant Income (₹)" value={form.coapplicant_income ? `₹${Number(form.coapplicant_income).toLocaleString("en-IN")}` : undefined} />
-                  <ReviewRow label="Collateral" value={form.collateral_state === "likely" ? "Likely" : form.collateral_state === "unlikely" ? "Unlikely" : "Not sure"} />
-                  {form.collateral_state === "likely" && form.collateral_notes && (
-                    <ReviewRow label="Collateral Notes" value={form.collateral_notes} />
-                  )}
-                </div>
-              )}
-              {/* Partner: keep conditional co-applicant context block */}
-              {!isAdminForm && (form.coapplicant_name || form.coapplicant_relation || form.collateral_state !== "unsure") && (
-                <div>
-                  <Badge variant="outline" className="mb-2">Co-applicant context</Badge>
-                  <ReviewRow label="Co-Applicant" value={form.coapplicant_name} />
-                  <ReviewRow label="Relation" value={form.coapplicant_relation} />
-                  <ReviewRow label="Secured preference" value={form.collateral_state === "likely" ? "Likely" : form.collateral_state === "unlikely" ? "Unlikely" : "Not sure"} />
-                </div>
-              )}
-              {form.partner_remark && (
+              {form.partner_remark.trim() && (
                 <div>
                   <Badge variant="outline" className="mb-2">Notes</Badge>
                   <ReviewRow label={isAdminForm ? "Admin / Partner Remark" : "Partner Remark"} value={form.partner_remark} />
