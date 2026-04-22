@@ -70,6 +70,9 @@ interface Props {
 }
 
 export function LeadProfileSection({ lead, submittedByName }: Props) {
+  const { isAdmin } = useRoleAccess();
+  const ed = (field: string, inputType?: string) =>
+    isAdmin ? { leadId: lead.id, field, inputType } : undefined;
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {/* Student Details */}
@@ -81,18 +84,18 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="First Name" value={lead.student_first_name} />
-            <Field label="Last Name" value={lead.student_last_name} />
+            <Field label="First Name" value={lead.student_first_name} editable={ed("student_first_name")} />
+            <Field label="Last Name" value={lead.student_last_name} editable={ed("student_last_name")} />
             <Field label="Full Name" value={lead.student_full_name} />
             <Field label="Mobile" value={lead.student_phone} />
-            <Field label="Email" value={lead.student_email} />
-            <Field label="WhatsApp" value={lead.student_whatsapp} />
-            <Field label="Pincode" value={lead.pincode} />
-            <Field label="City" value={lead.city} />
-            <Field label="District" value={lead.district ?? null} />
-            <Field label="State" value={lead.state} />
-            <Field label="Tier" value={lead.tier ?? null} />
-            <Field label="Country" value={lead.country_of_residence} />
+            <Field label="Email" value={lead.student_email} editable={ed("student_email", "email")} />
+            <Field label="WhatsApp" value={lead.student_whatsapp} editable={ed("student_whatsapp")} />
+            <Field label="Pincode" value={lead.pincode} editable={ed("pincode")} />
+            <Field label="City" value={lead.city} editable={ed("city")} />
+            <Field label="District" value={lead.district ?? null} editable={ed("district")} />
+            <Field label="State" value={lead.state} editable={ed("state")} />
+            <Field label="Tier" value={lead.tier ?? null} editable={ed("tier")} />
+            <Field label="Country" value={lead.country_of_residence} editable={ed("country_of_residence")} />
           </div>
         </CardContent>
       </Card>
