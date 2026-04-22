@@ -7,16 +7,21 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Plus, Pencil, Power, Banknote } from "lucide-react";
+import { Search, Plus, Pencil, Power, Banknote, SlidersHorizontal, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { LenderDrawer } from "@/components/admin/LenderDrawer";
+import { useAuth } from "@/hooks/useAuth";
+import { canAccessBre, normalizeBrePermission } from "@/lib/bre/permissions";
 
 type Lender = Tables<"lenders">;
 type StatusFilter = "all" | "active" | "inactive";
 
 export default function AdminLenders() {
+  const { appUser } = useAuth();
+  const breAccess = canAccessBre(appUser?.role, normalizeBrePermission(appUser?.bre_permission));
   const [lenders, setLenders] = useState<Lender[]>([]);
   const [mappingCounts, setMappingCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -102,6 +107,18 @@ export default function AdminLenders() {
           <Plus className="h-4 w-4 mr-1.5" /> Add Lender
         </Button>
       </PageHeader>
+
+      {breAccess && (
+        <div className="rounded-md border border-primary/20 bg-primary/5 px-4 py-2.5 text-sm flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2 text-primary">
+            <SlidersHorizontal className="h-4 w-4 shrink-0" />
+            <span><strong className="font-semibold">BRE Engine</strong> · lender rules, scoring config and version history are managed in the BRE console.</span>
+          </div>
+          <Button asChild size="sm" variant="outline" className="border-primary/30 text-primary hover:bg-primary/10 shrink-0">
+            <Link to="/admin/bre/lenders">Open BRE <ArrowRight className="h-3.5 w-3.5 ml-1" /></Link>
+          </Button>
+        </div>
+      )}
 
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         {kpis.map((k) => (
