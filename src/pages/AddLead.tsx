@@ -945,12 +945,14 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="md:col-span-2 flex items-center gap-3 rounded-md border p-2.5">
-                        <Switch checked={form.collateral_available} onCheckedChange={(v) => set("collateral_available", v)} />
-                        <div>
-                          <Label className="text-sm">Secured (collateral likely available)</Label>
-                          <p className="text-[11px] text-muted-foreground">Off = unsecured preference. Detailed collateral info is collected later.</p>
-                        </div>
+                      <div className="md:col-span-2">
+                        <CollateralRadio
+                          state={form.collateral_state}
+                          notes={form.collateral_notes}
+                          onChangeState={(s) => set("collateral_state", s)}
+                          onChangeNotes={(n) => set("collateral_notes", n)}
+                          idPrefix="partner-coll"
+                        />
                       </div>
                     </div>
                   </CollapsibleContent>
