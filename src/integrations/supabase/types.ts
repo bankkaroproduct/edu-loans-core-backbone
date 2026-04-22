@@ -61,6 +61,129 @@ export type Database = {
           },
         ]
       }
+      bre_lender_rules: {
+        Row: {
+          basic_info: Json
+          change_summary: string | null
+          collateral_ltv: Json
+          commercials: Json
+          coverage: Json
+          created_at: string
+          created_by: string | null
+          hard_thresholds: Json
+          id: string
+          is_active: boolean
+          lender_id: string
+          loan_caps: Json
+          policy: Json
+          version_number: number
+        }
+        Insert: {
+          basic_info?: Json
+          change_summary?: string | null
+          collateral_ltv?: Json
+          commercials?: Json
+          coverage?: Json
+          created_at?: string
+          created_by?: string | null
+          hard_thresholds?: Json
+          id?: string
+          is_active?: boolean
+          lender_id: string
+          loan_caps?: Json
+          policy?: Json
+          version_number: number
+        }
+        Update: {
+          basic_info?: Json
+          change_summary?: string | null
+          collateral_ltv?: Json
+          commercials?: Json
+          coverage?: Json
+          created_at?: string
+          created_by?: string | null
+          hard_thresholds?: Json
+          id?: string
+          is_active?: boolean
+          lender_id?: string
+          loan_caps?: Json
+          policy?: Json
+          version_number?: number
+        }
+        Relationships: []
+      }
+      bre_scoring_configs: {
+        Row: {
+          bucket_threshold: number
+          change_summary: string | null
+          coapplicant_params: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          overall_band_mapping: Json
+          student_params: Json
+          university_params: Json
+          version_number: number
+        }
+        Insert: {
+          bucket_threshold?: number
+          change_summary?: string | null
+          coapplicant_params?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          overall_band_mapping?: Json
+          student_params?: Json
+          university_params?: Json
+          version_number: number
+        }
+        Update: {
+          bucket_threshold?: number
+          change_summary?: string | null
+          coapplicant_params?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          overall_band_mapping?: Json
+          student_params?: Json
+          university_params?: Json
+          version_number?: number
+        }
+        Relationships: []
+      }
+      bre_simulation_runs: {
+        Row: {
+          id: string
+          profile_input: Json
+          result: Json
+          run_at: string
+          run_by: string | null
+          saved_name: string | null
+          scoring_config_version: number
+        }
+        Insert: {
+          id?: string
+          profile_input: Json
+          result: Json
+          run_at?: string
+          run_by?: string | null
+          saved_name?: string | null
+          scoring_config_version: number
+        }
+        Update: {
+          id?: string
+          profile_input?: Json
+          result?: Json
+          run_at?: string
+          run_by?: string | null
+          saved_name?: string | null
+          scoring_config_version?: number
+        }
+        Relationships: []
+      }
       bulk_upload_batches: {
         Row: {
           batch_id: string | null
@@ -715,6 +838,7 @@ export type Database = {
       lenders: {
         Row: {
           active_flag: boolean
+          bre_rule_id: string | null
           created_at: string
           id: string
           income_expectations_min: number | null
@@ -732,6 +856,7 @@ export type Database = {
         }
         Insert: {
           active_flag?: boolean
+          bre_rule_id?: string | null
           created_at?: string
           id?: string
           income_expectations_min?: number | null
@@ -749,6 +874,7 @@ export type Database = {
         }
         Update: {
           active_flag?: boolean
+          bre_rule_id?: string | null
           created_at?: string
           id?: string
           income_expectations_min?: number | null
@@ -1441,6 +1567,7 @@ export type Database = {
       users: {
         Row: {
           auth_user_id: string | null
+          bre_permission: string
           created_at: string
           email: string
           full_name: string
@@ -1454,6 +1581,7 @@ export type Database = {
         }
         Insert: {
           auth_user_id?: string | null
+          bre_permission?: string
           created_at?: string
           email: string
           full_name: string
@@ -1467,6 +1595,7 @@ export type Database = {
         }
         Update: {
           auth_user_id?: string | null
+          bre_permission?: string
           created_at?: string
           email?: string
           full_name?: string
