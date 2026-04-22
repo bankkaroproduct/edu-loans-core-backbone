@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,21 +11,25 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { DuplicateWarningDialog } from "@/components/leads/DuplicateWarningDialog";
 import { LeadSuccessDialog } from "@/components/leads/LeadSuccessDialog";
 import { toast } from "sonner";
-import { ArrowLeft, FileText, User, GraduationCap, MessageSquare, Eye, AlertTriangle, ChevronDown, Wallet, Building2, Check, ChevronsUpDown } from "lucide-react";
+import { ArrowLeft, FileText, User, GraduationCap, MessageSquare, Eye, AlertTriangle, ChevronDown, Wallet, Building2, Check, ChevronsUpDown, Info } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phone";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { computeAdminDiff, getAdminFieldLabel } from "@/lib/adminEditableFields";
+import { MoneyInput } from "@/components/ui/money-input";
+import { MasterCombobox, type MasterOption } from "@/components/ui/master-combobox";
+import { CollateralRadio, collateralBoolToState, collateralStateToBool, INCOME_SOURCE_OPTIONS, type CollateralState } from "@/components/shared/CollateralRadio";
+import { usePincodeLookup } from "@/hooks/usePincodeLookup";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Country = Tables<"countries_master">;
@@ -149,21 +153,29 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     student_email: "",
     student_phone: "",
     student_whatsapp: "",
+    whatsapp_same_as_phone: false,
     city: "",
     state: "",
+    district: "",
+    tier: "",
+    pincode: "",
     country_of_residence: "",
     intended_study_country: "",
     intake_term: "",
     intake_year: 0,
     course_name: "",
+    course_id: "",
     course_name_raw: "",
     university_name_raw: "",
     university_id: "",
     loan_amount_required: "",
     coapplicant_name: "",
     coapplicant_relation: "",
+    coapplicant_mobile: "",
     coapplicant_income: "",
-    collateral_available: false,
+    coapplicant_income_source: "",
+    coapplicant_existing_emi: "",
+    collateral_state: "unsure" as CollateralState,
     collateral_notes: "",
     partner_remark: "",
   });
@@ -215,27 +227,37 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         return;
       }
       const stripPrefix = (p: string | null) => (p ? p.replace(/^\+91/, "") : "");
+      const hydratedPhone = stripPrefix(data.student_phone);
+      const hydratedWhats = stripPrefix(data.student_whatsapp);
       setForm({
         student_first_name: data.student_first_name ?? "",
         student_last_name: data.student_last_name ?? "",
         student_email: data.student_email ?? "",
-        student_phone: stripPrefix(data.student_phone),
-        student_whatsapp: stripPrefix(data.student_whatsapp),
+        student_phone: hydratedPhone,
+        student_whatsapp: hydratedWhats,
+        whatsapp_same_as_phone: !!data.whatsapp_same_as_phone || (!!hydratedWhats && hydratedWhats === hydratedPhone),
         city: data.city ?? "",
         state: data.state ?? "",
+        district: (data as any).district ?? "",
+        tier: (data as any).tier ?? "",
+        pincode: data.pincode ?? "",
         country_of_residence: data.country_of_residence ?? "",
         intended_study_country: data.intended_study_country ?? "",
         intake_term: data.intake_term ?? "",
         intake_year: data.intake_year ?? 0,
         course_name: data.course_name ?? "",
+        course_id: "",
         course_name_raw: "",
         university_name_raw: data.university_name_raw ?? "",
         university_id: data.university_id ?? "",
         loan_amount_required: data.loan_amount_required != null ? String(data.loan_amount_required) : "",
         coapplicant_name: data.coapplicant_name ?? "",
         coapplicant_relation: data.coapplicant_relation ?? "",
+        coapplicant_mobile: stripPrefix((data as any).coapplicant_mobile ?? ""),
         coapplicant_income: data.coapplicant_income != null ? String(data.coapplicant_income) : "",
-        collateral_available: data.collateral_available ?? false,
+        coapplicant_income_source: (data as any).coapplicant_income_source ?? "",
+        coapplicant_existing_emi: data.coapplicant_existing_emi != null ? String(data.coapplicant_existing_emi) : "",
+        collateral_state: collateralBoolToState(data.collateral_available),
         collateral_notes: data.collateral_notes ?? "",
         partner_remark: "",
       });
@@ -267,6 +289,43 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const setMany = (patch: Partial<typeof form>) => {
+    setIsDirty(true);
+    setForm((prev) => ({ ...prev, ...patch }));
+  };
+
+  // Pincode auto-fill (only fires when 6 digits entered)
+  const pincodeResult = usePincodeLookup(form.pincode);
+  const lastAppliedPincode = useRef<string>("");
+  useEffect(() => {
+    if (pincodeResult.found && form.pincode && form.pincode !== lastAppliedPincode.current) {
+      lastAppliedPincode.current = form.pincode;
+      setForm((prev) => ({
+        ...prev,
+        district: pincodeResult.district ?? prev.district,
+        state: pincodeResult.state ?? prev.state,
+        tier: pincodeResult.tier ?? prev.tier,
+      }));
+    }
+    if (pincodeResult.found === false && form.pincode === lastAppliedPincode.current) {
+      // Pincode changed away from a found one — allow re-application later
+      lastAppliedPincode.current = "";
+    }
+  }, [pincodeResult, form.pincode]);
+
+  // Master combobox options
+  const universityOptions: MasterOption[] = useMemo(() => {
+    const filtered = form.intended_study_country
+      ? universities.filter((u) => u.country === form.intended_study_country)
+      : universities;
+    return filtered.map((u) => ({ id: u.id, label: u.university_name, hint: u.country }));
+  }, [universities, form.intended_study_country]);
+
+  const courseOptions: MasterOption[] = useMemo(
+    () => courses.map((c) => ({ id: c.id, label: c.course_name, hint: c.course_category ?? undefined })),
+    [courses],
+  );
+
   const fullName = `${form.student_first_name.trim()} ${form.student_last_name.trim()}`.trim();
   const resolvedCourseName = form.course_name || form.course_name_raw.trim();
   const resolvedUniversityName = form.university_name_raw.trim() || (form.university_id ? universities.find((u) => u.id === form.university_id)?.university_name : "") || "";
@@ -290,6 +349,12 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         return "Loan amount must be a positive number";
       if (form.coapplicant_income && (isNaN(Number(form.coapplicant_income)) || Number(form.coapplicant_income) < 0))
         return "Co-applicant income must be a valid number";
+      // Admin-only mandatory financial validation. Partner mode stays light.
+      if (isAdminForm) {
+        if (!form.coapplicant_income || Number(form.coapplicant_income) <= 0) {
+          return "Annual co-applicant income is required";
+        }
+      }
     }
 
     if (!effectivePartnerId) return "No partner organization found for your account. Admins can use 'Test as Partner' in the sidebar.";
@@ -322,14 +387,21 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
 
   const writeAdminAuditTrail = async (leadId: string) => {
     if (!isEditMode || !isAdmin || !appUser || !originalLead) return;
+    const effectiveWhatsapp = form.whatsapp_same_as_phone
+      ? (normalizePhone(form.student_phone) ?? form.student_phone.trim())
+      : (form.student_whatsapp.trim() ? (normalizePhone(form.student_whatsapp) ?? form.student_whatsapp.trim()) : null);
     const edited: Record<string, unknown> = {
       student_first_name: form.student_first_name.trim() || null,
       student_last_name: form.student_last_name.trim() || null,
       student_email: form.student_email.trim() || null,
       student_phone: normalizePhone(form.student_phone) ?? form.student_phone.trim() ?? null,
-      student_whatsapp: form.student_whatsapp.trim() ? (normalizePhone(form.student_whatsapp) ?? form.student_whatsapp.trim()) : null,
+      student_whatsapp: effectiveWhatsapp,
+      whatsapp_same_as_phone: form.whatsapp_same_as_phone,
       city: form.city.trim() || null,
       state: form.state.trim() || null,
+      district: form.district.trim() || null,
+      tier: form.tier.trim() || null,
+      pincode: form.pincode.trim() || null,
       country_of_residence: form.country_of_residence || null,
       intended_study_country: form.intended_study_country || null,
       intake_term: form.intake_term || null,
@@ -340,9 +412,12 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       loan_amount_required: form.loan_amount_required ? Number(form.loan_amount_required) : null,
       coapplicant_name: form.coapplicant_name.trim() || null,
       coapplicant_relation: form.coapplicant_relation || null,
+      coapplicant_mobile: form.coapplicant_mobile.trim() ? (normalizePhone(form.coapplicant_mobile) ?? form.coapplicant_mobile.trim()) : null,
       coapplicant_income: form.coapplicant_income ? Number(form.coapplicant_income) : null,
-      collateral_available: form.collateral_available,
-      collateral_notes: form.collateral_notes.trim() || null,
+      coapplicant_income_source: form.coapplicant_income_source || null,
+      coapplicant_existing_emi: form.coapplicant_existing_emi ? Number(form.coapplicant_existing_emi) : null,
+      collateral_available: collateralStateToBool(form.collateral_state),
+      collateral_notes: form.collateral_state === "likely" ? (form.collateral_notes.trim() || null) : null,
       partner_id: partnerIdAssignment || null,
     };
     const diff = computeAdminDiff(originalLead, edited);
@@ -386,14 +461,22 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     const stage = asDraft ? "draft" as const : "submitted" as const;
     const status = asDraft ? "in_progress" as const : "awaiting_verification" as const;
 
+    const effectiveWhatsapp = form.whatsapp_same_as_phone
+      ? (normalizePhone(form.student_phone) ?? form.student_phone.trim())
+      : (form.student_whatsapp.trim() ? (normalizePhone(form.student_whatsapp) ?? form.student_whatsapp.trim()) : null);
+
     const payload = {
       student_first_name: form.student_first_name.trim(),
       student_last_name: form.student_last_name.trim() || null,
       student_email: form.student_email.trim() || null,
       student_phone: normalizePhone(form.student_phone) ?? form.student_phone.trim(),
-      student_whatsapp: form.student_whatsapp.trim() ? (normalizePhone(form.student_whatsapp) ?? form.student_whatsapp.trim()) : null,
+      student_whatsapp: effectiveWhatsapp,
+      whatsapp_same_as_phone: form.whatsapp_same_as_phone,
       city: form.city.trim() || null,
       state: form.state.trim() || null,
+      district: form.district.trim() || null,
+      tier: form.tier.trim() || null,
+      pincode: form.pincode.trim() || null,
       country_of_residence: form.country_of_residence || null,
       intended_study_country: form.intended_study_country || "Not specified",
       intake_term: form.intake_term || "Not specified",
@@ -404,9 +487,12 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       loan_amount_required: form.loan_amount_required ? Number(form.loan_amount_required) : null,
       coapplicant_name: form.coapplicant_name.trim() || null,
       coapplicant_relation: form.coapplicant_relation || null,
+      coapplicant_mobile: form.coapplicant_mobile.trim() ? (normalizePhone(form.coapplicant_mobile) ?? form.coapplicant_mobile.trim()) : null,
       coapplicant_income: form.coapplicant_income ? Number(form.coapplicant_income) : null,
-      collateral_available: form.collateral_available,
-      collateral_notes: form.collateral_notes.trim() || null,
+      coapplicant_income_source: form.coapplicant_income_source || null,
+      coapplicant_existing_emi: form.coapplicant_existing_emi ? Number(form.coapplicant_existing_emi) : null,
+      collateral_available: collateralStateToBool(form.collateral_state),
+      collateral_notes: form.collateral_state === "likely" ? (form.collateral_notes.trim() || null) : null,
       source_sub_type: "add_lead",
       partner_id: effectivePartnerId!,
       partner_user_id: effectiveUserId!,
@@ -608,12 +694,6 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 <Label>Last Name</Label>
                 <Input value={form.student_last_name} onChange={(e) => set("student_last_name", e.target.value)} placeholder="Student last name" />
               </div>
-              {fullName && (
-                <div className="space-y-2 md:col-span-2">
-                  <Label>Full Name (auto-derived)</Label>
-                  <Input value={fullName} disabled className="bg-muted" />
-                </div>
-              )}
               <div className="space-y-2">
                 <Label>Mobile Number *</Label>
                 <Input value={form.student_phone} onChange={(e) => set("student_phone", e.target.value)} placeholder="+91 9876543210" />
@@ -622,17 +702,55 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 <Label>Email</Label>
                 <Input type="email" value={form.student_email} onChange={(e) => set("student_email", e.target.value)} placeholder="student@email.com" />
               </div>
-              <div className="space-y-2">
-                <Label>WhatsApp</Label>
-                <Input value={form.student_whatsapp} onChange={(e) => set("student_whatsapp", e.target.value)} placeholder="WhatsApp number" />
+              <div className="space-y-2 md:col-span-2">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="whatsapp-same"
+                    checked={form.whatsapp_same_as_phone}
+                    onCheckedChange={(v) => {
+                      const checked = !!v;
+                      setMany({
+                        whatsapp_same_as_phone: checked,
+                        student_whatsapp: checked ? form.student_phone : form.student_whatsapp,
+                      });
+                    }}
+                  />
+                  <Label htmlFor="whatsapp-same" className="text-sm font-normal cursor-pointer">
+                    WhatsApp same as primary mobile
+                  </Label>
+                </div>
+                <Input
+                  value={form.whatsapp_same_as_phone ? form.student_phone : form.student_whatsapp}
+                  onChange={(e) => set("student_whatsapp", e.target.value)}
+                  placeholder="WhatsApp number"
+                  disabled={form.whatsapp_same_as_phone}
+                  className={form.whatsapp_same_as_phone ? "bg-muted" : ""}
+                />
               </div>
               <div className="space-y-2">
-                <Label>City</Label>
-                <Input value={form.city} onChange={(e) => set("city", e.target.value)} />
+                <Label>Pincode</Label>
+                <Input
+                  value={form.pincode}
+                  onChange={(e) => set("pincode", e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder="6-digit pincode"
+                  inputMode="numeric"
+                />
+                {form.pincode.length === 6 && pincodeResult.found === false && (
+                  <p className="text-[11px] text-muted-foreground">Pincode not in master — please confirm District/State manually.</p>
+                )}
+                {pincodeResult.hasConflict && (
+                  <p className="text-[11px] text-amber-700 flex items-center gap-1">
+                    <Info className="h-3 w-3" /> Verify district — multiple values exist for this pincode in source.
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>District</Label>
+                <Input value={form.district} onChange={(e) => set("district", e.target.value)} placeholder="Auto-fills from pincode" />
               </div>
               <div className="space-y-2">
                 <Label>State</Label>
-                <Input value={form.state} onChange={(e) => set("state", e.target.value)} />
+                <Input value={form.state} onChange={(e) => set("state", e.target.value)} placeholder="Auto-fills from pincode" />
               </div>
               {isEditMode && isAdmin && (
                 <div className="space-y-2 md:col-span-2">
@@ -663,39 +781,33 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   <SelectContent>{countries.map((c) => <SelectItem key={c.id} value={c.country_name}>{c.country_name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>University (from list) *</Label>
-                <Select value={form.university_id} onValueChange={(v) => {
-                  const uni = universities.find((u) => u.id === v);
-                  set("university_id", v);
-                  set("university_name_raw", uni?.university_name ?? "");
-                }}>
-                  <SelectTrigger><SelectValue placeholder="Search university..." /></SelectTrigger>
-                  <SelectContent>{universities.map((u) => <SelectItem key={u.id} value={u.id}>{u.university_name} ({u.country})</SelectItem>)}</SelectContent>
-                </Select>
+              <div className="space-y-2 md:col-span-2">
+                <Label>University *</Label>
+                <MasterCombobox
+                  options={universityOptions}
+                  selectedId={form.university_id}
+                  manualValue={form.university_id ? "" : form.university_name_raw}
+                  onSelectMaster={(opt) => setMany({ university_id: opt.id, university_name_raw: opt.label })}
+                  onSelectManual={() => setMany({ university_id: "", university_name_raw: form.university_name_raw })}
+                  onChangeManual={(t) => setMany({ university_id: "", university_name_raw: t })}
+                  placeholder={form.intended_study_country ? `Search universities in ${form.intended_study_country}…` : "Pick a country first to filter universities"}
+                  helperText="Search the master list, or pick 'Not available in list' to type manually."
+                  manualPlaceholder="Type the university name"
+                />
               </div>
-              <div className="space-y-2">
-                <Label>Or enter university name *</Label>
-                <Input value={form.university_name_raw} onChange={(e) => {
-                  set("university_name_raw", e.target.value);
-                  if (form.university_id) set("university_id", "");
-                }} placeholder="If not in the list above" />
-                <p className="text-xs text-muted-foreground">Required — pick from list or type manually.</p>
-              </div>
-              <div className="space-y-2">
-                <Label>Course (from list) *</Label>
-                <Select value={form.course_name} onValueChange={(v) => set("course_name", v)}>
-                  <SelectTrigger><SelectValue placeholder="Select course" /></SelectTrigger>
-                  <SelectContent>{courses.map((c) => <SelectItem key={c.id} value={c.course_name}>{c.course_name}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Or enter course name *</Label>
-                <Input value={form.course_name_raw} onChange={(e) => {
-                  set("course_name_raw", e.target.value);
-                  if (form.course_name) set("course_name", "");
-                }} placeholder="If not in the list above" />
-                <p className="text-xs text-muted-foreground">Required — pick from list or type manually.</p>
+              <div className="space-y-2 md:col-span-2">
+                <Label>Course *</Label>
+                <MasterCombobox
+                  options={courseOptions}
+                  selectedId={form.course_id}
+                  manualValue={form.course_id ? "" : form.course_name}
+                  onSelectMaster={(opt) => setMany({ course_id: opt.id, course_name: opt.label })}
+                  onSelectManual={() => setMany({ course_id: "", course_name: form.course_name })}
+                  onChangeManual={(t) => setMany({ course_id: "", course_name: t })}
+                  placeholder="Search courses…"
+                  helperText="Search the master list, or pick 'Not available in list' to type manually."
+                  manualPlaceholder="Type the course name"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Intake Term *</Label>
@@ -715,9 +827,25 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               {!isAdminForm && (
                 <div className="space-y-2 md:col-span-2">
                   <Label>Approx Loan Amount Required (₹) *</Label>
-                  <Input type="number" min="0" value={form.loan_amount_required} onChange={(e) => set("loan_amount_required", e.target.value)} placeholder="e.g. 2500000" />
+                  <MoneyInput value={form.loan_amount_required} onChange={(d) => set("loan_amount_required", d)} placeholder="e.g. 25,00,000" />
                   <p className="text-xs text-muted-foreground">Rough expectation — exact figure can be refined later by ops.</p>
                 </div>
+              )}
+
+              {/* Read-only academic context for student-origin leads in admin edit mode */}
+              {isAdminForm && isEditMode && originalLead?.source_type === "student_direct" && (
+                (originalLead?.highest_qualification || originalLead?.marks_gpa || originalLead?.test_scores) && (
+                  <div className="md:col-span-2 rounded-md border bg-muted/30 p-3 space-y-1">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">From student portal (read-only)</p>
+                    <div className="grid gap-1 text-xs sm:grid-cols-2">
+                      {originalLead?.highest_qualification ? <div><span className="text-muted-foreground">Qualification: </span>{String(originalLead.highest_qualification)}</div> : null}
+                      {originalLead?.marks_gpa ? <div><span className="text-muted-foreground">Marks / GPA: </span>{String(originalLead.marks_gpa)}</div> : null}
+                      {originalLead?.test_scores && typeof originalLead.test_scores === "object" && Object.keys(originalLead.test_scores as object).length > 0 ? (
+                        <div className="sm:col-span-2"><span className="text-muted-foreground">Test scores: </span>{Object.entries(originalLead.test_scores as Record<string, unknown>).map(([k, v]) => `${k.toUpperCase()}: ${v}`).join(" · ")}</div>
+                      ) : null}
+                    </div>
+                  </div>
+                )
               )}
             </CardContent>
           </Card>
