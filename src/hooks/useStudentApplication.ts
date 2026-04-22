@@ -41,6 +41,7 @@ export interface StudentFormData {
   coapplicant_existing_emi: string;
   collateral_available: boolean | null;
   collateral_notes: string;
+  coapplicant_income_source: string;
 }
 
 const EMPTY_FORM: StudentFormData = {
@@ -54,6 +55,7 @@ const EMPTY_FORM: StudentFormData = {
   coapplicant_email: "", coapplicant_income: "", coapplicant_employment_type: "",
   coapplicant_employer: "", coapplicant_existing_emi: "",
   collateral_available: null, collateral_notes: "",
+  coapplicant_income_source: "",
 };
 
 export type StepKey = "basic" | "education" | "coapplicant" | "review";
@@ -172,6 +174,7 @@ export function useStudentApplication() {
       coapplicant_existing_emi: lead.coapplicant_existing_emi?.toString() || prev.coapplicant_existing_emi,
       collateral_available: lead.collateral_available ?? prev.collateral_available,
       collateral_notes: lead.collateral_notes || prev.collateral_notes,
+      coapplicant_income_source: lead.coapplicant_income_source || prev.coapplicant_income_source,
     }));
   };
 
@@ -220,6 +223,7 @@ export function useStudentApplication() {
           coapplicant_mobile: formData.coapplicant_mobile || null,
           coapplicant_email: formData.coapplicant_email || null,
           coapplicant_income: formData.coapplicant_income || null,
+          coapplicant_income_source: formData.coapplicant_income_source || null,
           coapplicant_employment_type: formData.coapplicant_employment_type || null,
           coapplicant_employer: formData.coapplicant_employer || null,
           coapplicant_existing_emi: formData.coapplicant_existing_emi || null,

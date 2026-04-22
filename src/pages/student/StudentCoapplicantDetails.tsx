@@ -7,10 +7,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
-import { Info, HeartHandshake } from "lucide-react";
+import { HeartHandshake } from "lucide-react";
+import { CollateralRadio, collateralBoolToState, collateralStateToBool, INCOME_SOURCE_OPTIONS } from "@/components/shared/CollateralRadio";
+import { MoneyInput } from "@/components/ui/money-input";
 
 const RELATIONSHIPS = ["Father", "Mother", "Spouse", "Sibling", "Uncle", "Aunt", "Grandparent", "Other"];
 const EMPLOYMENT_TYPES = ["Salaried", "Self-employed", "Business Owner", "Professional", "Retired", "Homemaker", "Other"];
@@ -31,6 +31,8 @@ export default function StudentCoapplicantDetails() {
     formData.course_name && `📚 ${formData.course_name}`,
   ].filter(Boolean);
 
+  const collateralState = collateralBoolToState(formData.collateral_available);
+
   const validateCoapplicant = (): string | null => {
     if (!formData.coapplicant_name?.trim()) return "Co-applicant full name is required";
     if (!formData.coapplicant_relation?.trim()) return "Co-applicant relationship is required";
@@ -44,9 +46,7 @@ export default function StudentCoapplicantDetails() {
     if (formData.coapplicant_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.coapplicant_email)) {
       return "Co-applicant email format is invalid";
     }
-    if (formData.collateral_available === true && !formData.collateral_notes?.trim()) {
-      return "Please describe the collateral";
-    }
+    // Collateral notes are OPTIONAL even when state === "likely". No hard validation here.
     return null;
   };
 
@@ -61,7 +61,6 @@ export default function StudentCoapplicantDetails() {
   };
 
   const handleSaveExit = async () => {
-    // Save & exit allows partial drafts — no hard validation here.
     await saveStep("save_coapplicant");
     toast({ title: "Progress saved" });
     navigate("/student/continue");
@@ -123,6 +122,16 @@ export default function StudentCoapplicantDetails() {
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Financial Profile</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
+              <Label>Income Source</Label>
+              <Select
+                value={(formData as unknown as { coapplicant_income_source?: string }).coapplicant_income_source ?? ""}
+                onValueChange={v => updateField("coapplicant_income_source" as never, v as never)}
+              >
+                <SelectTrigger><SelectValue placeholder="Select source" /></SelectTrigger>
+                <SelectContent>{INCOME_SOURCE_OPTIONS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
               <Label>Employment Type</Label>
               <Select value={formData.coapplicant_employment_type} onValueChange={v => updateField("coapplicant_employment_type", v)}>
                 <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
@@ -135,29 +144,28 @@ export default function StudentCoapplicantDetails() {
             </div>
             <div className="space-y-1.5">
               <Label>Monthly Income (₹)</Label>
-              <Input type="number" value={formData.coapplicant_income} onChange={e => updateField("coapplicant_income", e.target.value)} placeholder="e.g. 80000" />
+              <MoneyInput
+                value={formData.coapplicant_income}
+                onChange={d => updateField("coapplicant_income", d)}
+                placeholder="e.g. 80,000"
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Existing EMI (₹/month)</Label>
-              <Input type="number" value={formData.coapplicant_existing_emi} onChange={e => updateField("coapplicant_existing_emi", e.target.value)} placeholder="e.g. 15000" />
+              <MoneyInput
+                value={formData.coapplicant_existing_emi}
+                onChange={d => updateField("coapplicant_existing_emi", d)}
+                placeholder="e.g. 15,000"
+              />
             </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <div className="flex items-center justify-between">
-                <Label>Collateral / Property Available</Label>
-                <Switch
-                  checked={formData.collateral_available === true}
-                  onCheckedChange={v => updateField("collateral_available", v)}
-                />
-              </div>
-              {formData.collateral_available && (
-                <Textarea
-                  value={formData.collateral_notes}
-                  onChange={e => updateField("collateral_notes", e.target.value)}
-                  placeholder="Brief description of collateral (property type, approximate value)"
-                  rows={2}
-                  className="mt-2"
-                />
-              )}
+            <div className="sm:col-span-2">
+              <CollateralRadio
+                state={collateralState}
+                notes={formData.collateral_notes}
+                onChangeState={(s) => updateField("collateral_available", collateralStateToBool(s))}
+                onChangeNotes={(n) => updateField("collateral_notes", n)}
+                idPrefix="student-coll"
+              />
             </div>
           </div>
         </CardContent>
