@@ -476,7 +476,11 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
 
   const handleSubmit = async (asDraft: boolean) => {
     const err = validate(asDraft);
-    if (err) return toast.error(err);
+    if (err) {
+      toast.error(err.message);
+      goToFieldAndFocus(err.step, err.field);
+      return;
+    }
 
     if (!asDraft) {
       const dups = await checkDuplicates({
