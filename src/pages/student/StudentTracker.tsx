@@ -53,10 +53,11 @@ interface TrackerData {
 
 export default function StudentTracker() {
   const navigate = useNavigate();
-  const { isVerified, phone, leads } = useStudentAuth();
+  const { isVerified, phone, leads, refreshLeads } = useStudentAuth();
   const [data, setData] = useState<TrackerData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retried, setRetried] = useState(false);
 
   const activeLead = leads.length > 0 ? leads[0] : null;
 
@@ -74,19 +75,33 @@ export default function StudentTracker() {
     });
   }, [isVerified, phone, activeLead?.id]);
 
+  // Soft transitional retry — when context has no lead yet (e.g. just submitted),
+  // refresh leads once before giving up. Avoids the abrupt "No Application Found".
+  useEffect(() => {
+    if (!isVerified || !phone) return;
+    if (activeLead || retried) return;
+    setRetried(true);
+    setLoading(true);
+    refreshLeads().finally(() => setLoading(false));
+  }, [isVerified, phone, activeLead, retried, refreshLeads]);
+
   if (!isVerified) return null;
 
-  // Redirect non-submitted leads
+  // Transitional / fallback state — no lead in context yet.
   if (!loading && !activeLead) {
+    // We've already attempted a refresh. Send the user back to Continue gracefully.
     return (
       <div className="flex min-h-screen flex-col bg-gradient-to-br from-primary/[0.02] via-background to-primary/[0.04]">
         <StudentHeader />
         <main className="flex-1 flex items-center justify-center px-4">
           <Card className="max-w-md w-full"><CardContent className="p-8 text-center">
-            <Info className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
-            <h2 className="text-lg font-semibold">No Application Found</h2>
-            <p className="mt-2 text-sm text-muted-foreground">Start your application to access the tracker.</p>
-            <Button className="mt-4" onClick={() => navigate("/student/continue")}>Go to Application</Button>
+            <Loader2 className="mx-auto mb-3 h-8 w-8 animate-spin text-primary" />
+            <h2 className="text-lg font-semibold">Preparing your application…</h2>
+            <p className="mt-2 text-sm text-muted-foreground">Thanks for your details. We're getting your tracker ready.</p>
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
+              <Button variant="outline" onClick={() => { setRetried(false); }}>Refresh</Button>
+              <Button onClick={() => navigate("/student/continue")}>Go to Application</Button>
+            </div>
           </CardContent></Card>
         </main>
         <StudentFooter />
