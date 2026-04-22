@@ -227,27 +227,37 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         return;
       }
       const stripPrefix = (p: string | null) => (p ? p.replace(/^\+91/, "") : "");
+      const hydratedPhone = stripPrefix(data.student_phone);
+      const hydratedWhats = stripPrefix(data.student_whatsapp);
       setForm({
         student_first_name: data.student_first_name ?? "",
         student_last_name: data.student_last_name ?? "",
         student_email: data.student_email ?? "",
-        student_phone: stripPrefix(data.student_phone),
-        student_whatsapp: stripPrefix(data.student_whatsapp),
+        student_phone: hydratedPhone,
+        student_whatsapp: hydratedWhats,
+        whatsapp_same_as_phone: !!data.whatsapp_same_as_phone || (!!hydratedWhats && hydratedWhats === hydratedPhone),
         city: data.city ?? "",
         state: data.state ?? "",
+        district: (data as any).district ?? "",
+        tier: (data as any).tier ?? "",
+        pincode: data.pincode ?? "",
         country_of_residence: data.country_of_residence ?? "",
         intended_study_country: data.intended_study_country ?? "",
         intake_term: data.intake_term ?? "",
         intake_year: data.intake_year ?? 0,
         course_name: data.course_name ?? "",
+        course_id: "",
         course_name_raw: "",
         university_name_raw: data.university_name_raw ?? "",
         university_id: data.university_id ?? "",
         loan_amount_required: data.loan_amount_required != null ? String(data.loan_amount_required) : "",
         coapplicant_name: data.coapplicant_name ?? "",
         coapplicant_relation: data.coapplicant_relation ?? "",
+        coapplicant_mobile: stripPrefix((data as any).coapplicant_mobile ?? ""),
         coapplicant_income: data.coapplicant_income != null ? String(data.coapplicant_income) : "",
-        collateral_available: data.collateral_available ?? false,
+        coapplicant_income_source: (data as any).coapplicant_income_source ?? "",
+        coapplicant_existing_emi: data.coapplicant_existing_emi != null ? String(data.coapplicant_existing_emi) : "",
+        collateral_state: collateralBoolToState(data.collateral_available),
         collateral_notes: data.collateral_notes ?? "",
         partner_remark: "",
       });
