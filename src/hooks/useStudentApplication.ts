@@ -8,10 +8,14 @@ export interface StudentFormData {
   student_full_name: string;
   student_email: string;
   student_phone: string;
+  student_whatsapp: string;
+  whatsapp_same_as_phone: boolean;
   student_dob: string;
   student_gender: string;
   city: string;
   state: string;
+  district: string;
+  tier: string;
   pincode: string;
   intended_study_country: string;
   course_category: string;
@@ -21,6 +25,7 @@ export interface StudentFormData {
   marks_gpa: string;
   course_name: string;
   university_name_raw: string;
+  university_id: string;
   intake_term: string;
   intake_year: string;
   test_scores: {
@@ -46,10 +51,11 @@ export interface StudentFormData {
 
 const EMPTY_FORM: StudentFormData = {
   student_full_name: "", student_email: "", student_phone: "",
-  student_dob: "", student_gender: "", city: "", state: "", pincode: "",
+  student_whatsapp: "", whatsapp_same_as_phone: false,
+  student_dob: "", student_gender: "", city: "", state: "", district: "", tier: "", pincode: "",
   intended_study_country: "", course_category: "", loan_amount_required: "",
   highest_qualification: "", marks_gpa: "", course_name: "",
-  university_name_raw: "", intake_term: "", intake_year: "",
+  university_name_raw: "", university_id: "", intake_term: "", intake_year: "",
   test_scores: {},
   coapplicant_name: "", coapplicant_relation: "", coapplicant_mobile: "",
   coapplicant_email: "", coapplicant_income: "", coapplicant_employment_type: "",
@@ -183,10 +189,14 @@ export function useStudentApplication() {
       student_full_name: lead.student_full_name || lead.student_first_name || prev.student_full_name,
       student_email: lead.student_email || prev.student_email,
       student_phone: lead.student_phone || prev.student_phone,
+      student_whatsapp: lead.student_whatsapp || prev.student_whatsapp,
+      whatsapp_same_as_phone: lead.whatsapp_same_as_phone ?? prev.whatsapp_same_as_phone,
       student_dob: lead.student_dob || prev.student_dob,
       student_gender: lead.student_gender || prev.student_gender,
       city: lead.city || prev.city,
       state: lead.state || prev.state,
+      district: lead.district || prev.district,
+      tier: lead.tier || prev.tier,
       pincode: lead.pincode || prev.pincode,
       intended_study_country: lead.intended_study_country || prev.intended_study_country,
       course_category: lead.course_category || prev.course_category,
@@ -195,6 +205,7 @@ export function useStudentApplication() {
       marks_gpa: lead.marks_gpa || prev.marks_gpa,
       course_name: (lead.course_name && lead.course_name !== "Not specified") ? lead.course_name : prev.course_name,
       university_name_raw: lead.university_name_raw || prev.university_name_raw,
+      university_id: lead.university_id || prev.university_id,
       intake_term: lead.intake_term || prev.intake_term,
       intake_year: lead.intake_year?.toString() || prev.intake_year,
       test_scores: {
@@ -225,13 +236,23 @@ export function useStudentApplication() {
       let payload: Record<string, unknown> = {};
 
       if (action === "save_basic") {
+        // If "same as primary phone" is checked, mirror primary into whatsapp on save.
+        const primaryDigits = (formData.student_phone || phone || "").replace(/\D/g, "").slice(-10);
+        const whatsappToSend = formData.whatsapp_same_as_phone
+          ? primaryDigits
+          : (formData.student_whatsapp || "").replace(/\D/g, "").slice(-10);
+
         payload = {
           student_full_name: formData.student_full_name,
           student_email: formData.student_email,
+          student_whatsapp: whatsappToSend || null,
+          whatsapp_same_as_phone: !!formData.whatsapp_same_as_phone,
           student_dob: formData.student_dob || null,
           student_gender: formData.student_gender || null,
           city: formData.city || null,
           state: formData.state || null,
+          district: formData.district || null,
+          tier: formData.tier || null,
           pincode: formData.pincode || null,
           intended_study_country: formData.intended_study_country,
           course_category: formData.course_category || null,
@@ -252,6 +273,7 @@ export function useStudentApplication() {
           course_name: formData.course_name || "Not specified",
           course_category: formData.course_category || null,
           university_name_raw: formData.university_name_raw || null,
+          university_id: formData.university_id || null,
           intake_term: formData.intake_term || "Fall",
           intake_year: formData.intake_year ? parseInt(formData.intake_year) : new Date().getFullYear() + 1,
           test_scores: scores,

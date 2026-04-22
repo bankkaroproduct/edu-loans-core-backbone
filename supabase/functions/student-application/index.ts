@@ -467,15 +467,26 @@ Deno.serve(async (req) => {
       // We intentionally OMIT it from the payload — the DB derives it.
       // `derivedFullName` is computed only for client-side response convenience.
       void derivedFullName;
+      // Normalize whatsapp: accept 10-digit local; mirror primary if same_as_phone is true
+      const sameAsPhone = !!(data?.whatsapp_same_as_phone);
+      const rawWhatsapp = (data?.student_whatsapp as string | null) ?? null;
+      const whatsappCanonical = sameAsPhone
+        ? canonicalPhone
+        : (rawWhatsapp ? (normalizePhone(rawWhatsapp) ?? null) : null);
+
       const basicFields: Record<string, unknown> = {
         student_first_name: firstName,
         student_last_name: lastName,
         student_email: data?.student_email as string || null,
         student_phone: canonicalPhone,
+        student_whatsapp: whatsappCanonical,
+        whatsapp_same_as_phone: sameAsPhone,
         student_dob: data?.student_dob as string || null,
         student_gender: data?.student_gender as string || null,
         city: data?.city as string || null,
         state: data?.state as string || null,
+        district: data?.district as string || null,
+        tier: data?.tier as string || null,
         pincode: data?.pincode as string || null,
         intended_study_country: data?.intended_study_country as string,
         course_category: data?.course_category as string || null,
@@ -526,12 +537,13 @@ Deno.serve(async (req) => {
     // --- SAVE EDUCATION ---
     if (action === "save_education") {
       if (!existingLeadId) return jsonResponse({ error: "No existing application found. Complete basic details first." }, 400);
-      const eduFields = {
+      const eduFields: Record<string, unknown> = {
         highest_qualification: data?.highest_qualification as string || null,
         marks_gpa: data?.marks_gpa as string || null,
         course_name: data?.course_name as string || "Not specified",
         course_category: data?.course_category as string || null,
         university_name_raw: data?.university_name_raw as string || null,
+        university_id: (data?.university_id as string) || null,
         intake_term: data?.intake_term as string || "Fall",
         intake_year: data?.intake_year ? Number(data.intake_year) : new Date().getFullYear() + 1,
         test_scores: data?.test_scores || {},

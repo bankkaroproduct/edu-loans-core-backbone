@@ -6,7 +6,9 @@ import { useStudentApplication } from "@/hooks/useStudentApplication";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MoneyInput } from "@/components/ui/money-input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Shield, FileText, CreditCard, IdCard, BookOpen, ScrollText, Info } from "lucide-react";
@@ -48,15 +50,15 @@ export default function StudentBasicDetails() {
   }, [eligibilityData]);
 
   // Pincode auto-fill — student-portal side.
-  // Apply when a valid pincode is found (and field was blank or previously auto-filled).
+  // Apply BOTH city (district) and state when a valid pincode is found.
   // CRITICAL: If pincode changes to one that doesn't match (or becomes invalid), clear the
   // values we previously auto-filled so stale district/state never carry forward silently.
   const pincodeResult = usePincodeLookup(formData.pincode);
-  const lastApplied = useRef<{ pincode: string; state: string | null } | null>(null);
+  const lastApplied = useRef<{ pincode: string; city: string | null; state: string | null } | null>(null);
   useEffect(() => {
     const current = (formData.pincode ?? "").trim();
 
-    // Case 1: New valid match — apply if state is blank OR we previously auto-filled it
+    // Case 1: New valid match — apply if blank OR previously auto-filled
     if (
       pincodeResult.found &&
       pincodeResult.pincode === current &&
@@ -64,34 +66,50 @@ export default function StudentBasicDetails() {
       lastApplied.current?.pincode !== current
     ) {
       const previouslyAuto = lastApplied.current;
-      const stateIsOurs =
-        previouslyAuto && formData.state === previouslyAuto.state;
-      if ((!formData.state || stateIsOurs) && pincodeResult.state) {
-        updateField("state", pincodeResult.state);
-        lastApplied.current = { pincode: current, state: pincodeResult.state };
-      } else {
-        // Field was user-edited; just remember we matched but don't overwrite
-        lastApplied.current = { pincode: current, state: formData.state };
+      const cityIsOurs = !!(previouslyAuto && formData.city === previouslyAuto.city);
+      const stateIsOurs = !!(previouslyAuto && formData.state === previouslyAuto.state);
+
+      const newCity = pincodeResult.district || "";
+      const newState = pincodeResult.state || "";
+
+      if ((!formData.city || cityIsOurs) && newCity) {
+        updateField("city", newCity);
       }
+      if ((!formData.state || stateIsOurs) && newState) {
+        updateField("state", newState);
+      }
+      // Persist district + tier separately for downstream use
+      if (pincodeResult.district) updateField("district", pincodeResult.district);
+      if (pincodeResult.tier) updateField("tier", pincodeResult.tier);
+
+      lastApplied.current = {
+        pincode: current,
+        city: (!formData.city || cityIsOurs) ? newCity : formData.city,
+        state: (!formData.state || stateIsOurs) ? newState : formData.state,
+      };
       return;
     }
 
-    // Case 2: Pincode was auto-filled before, but it has now changed AND new pincode
-    // is either invalid (not 6 digits) or 6-digit-but-not-found. Clear stale autofill
-    // only if the user hasn't manually edited the auto-filled value since.
+    // Case 2: Pincode was auto-filled before but has now changed AND new value is
+    // invalid (not 6 digits) or 6-digit-but-not-found. Clear stale autofill only
+    // if the user hasn't manually edited the auto-filled value since.
     const prev = lastApplied.current;
     if (prev && prev.pincode !== current) {
       const newIsInvalid =
         current.length !== 6 ||
         (pincodeResult.found === false && pincodeResult.pincode === current);
-      if (newIsInvalid && prev.state && formData.state === prev.state) {
-        updateField("state", "");
+      if (newIsInvalid) {
+        if (prev.city && formData.city === prev.city) updateField("city", "");
+        if (prev.state && formData.state === prev.state) updateField("state", "");
+        // Always clear derived district/tier when pincode no longer matches
+        if (formData.district) updateField("district", "");
+        if (formData.tier) updateField("tier", "");
       }
       if (current.length !== 6) {
         lastApplied.current = null;
       }
     }
-  }, [pincodeResult, formData.pincode, formData.state, updateField]);
+  }, [pincodeResult, formData.pincode, formData.city, formData.state, formData.district, formData.tier, updateField]);
 
   const handleContinue = async () => {
     if (!formData.student_full_name.trim()) {
@@ -102,6 +120,9 @@ export default function StudentBasicDetails() {
     }
     if (!formData.intended_study_country) {
       toast({ title: "Please select a destination country", variant: "destructive" }); return;
+    }
+    if (!formData.whatsapp_same_as_phone && formData.student_whatsapp && formData.student_whatsapp.replace(/\D/g, "").length !== 10) {
+      toast({ title: "WhatsApp number must be 10 digits", variant: "destructive" }); return;
     }
     const result = await saveStep("save_basic");
     if (result) {
@@ -117,6 +138,9 @@ export default function StudentBasicDetails() {
   };
 
   if (!isVerified) return null;
+
+  const primaryDigits = (phone || "").slice(-10);
+  const whatsappDisplay = formData.whatsapp_same_as_phone ? primaryDigits : formData.student_whatsapp;
 
   return (
     <StudentStepLayout
@@ -142,9 +166,40 @@ export default function StudentBasicDetails() {
               <Label>Mobile Number</Label>
               <div className="flex">
                 <span className="flex items-center rounded-l-md border border-r-0 bg-muted px-3 text-sm text-muted-foreground">+91</span>
-                <Input value={phone?.slice(-10) || ""} disabled className="rounded-l-none bg-muted" />
+                <Input value={primaryDigits || ""} disabled className="rounded-l-none bg-muted" />
               </div>
               <p className="text-[11px] text-muted-foreground">Verified via OTP — cannot be changed here</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label>WhatsApp Number</Label>
+              <div className="flex">
+                <span className="flex items-center rounded-l-md border border-r-0 bg-muted px-3 text-sm text-muted-foreground">+91</span>
+                <Input
+                  value={whatsappDisplay || ""}
+                  onChange={e => updateField("student_whatsapp", e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  placeholder="10-digit WhatsApp number"
+                  inputMode="numeric"
+                  disabled={formData.whatsapp_same_as_phone}
+                  className={`rounded-l-none ${formData.whatsapp_same_as_phone ? "bg-muted" : ""}`}
+                />
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                <Checkbox
+                  id="wa-same"
+                  checked={formData.whatsapp_same_as_phone}
+                  onCheckedChange={(v) => {
+                    const checked = !!v;
+                    updateField("whatsapp_same_as_phone", checked);
+                    if (checked) {
+                      // mirror primary into whatsapp field for visibility
+                      updateField("student_whatsapp", primaryDigits);
+                    }
+                  }}
+                />
+                <label htmlFor="wa-same" className="text-xs text-muted-foreground cursor-pointer">
+                  This is the same number on WhatsApp
+                </label>
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label>Email Address <span className="text-destructive">*</span></Label>
@@ -221,8 +276,12 @@ export default function StudentBasicDetails() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Loan Amount Required (₹)</Label>
-              <Input type="number" value={formData.loan_amount_required} onChange={e => updateField("loan_amount_required", e.target.value)} placeholder="e.g. 2000000" />
+              <Label>Loan Amount Required</Label>
+              <MoneyInput
+                value={formData.loan_amount_required}
+                onChange={d => updateField("loan_amount_required", d)}
+                placeholder="e.g. 25,00,000"
+              />
             </div>
           </div>
         </CardContent>
