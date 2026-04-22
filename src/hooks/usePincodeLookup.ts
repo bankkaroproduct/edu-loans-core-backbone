@@ -12,6 +12,8 @@ export interface PincodeLookupResult {
   state: string | null;
   tier: string | null;
   hasConflict: boolean;
+  /** The pincode this result corresponds to. Used by callers to detect stale autofill. */
+  pincode: string | null;
 }
 
 const EMPTY: PincodeLookupResult = {
