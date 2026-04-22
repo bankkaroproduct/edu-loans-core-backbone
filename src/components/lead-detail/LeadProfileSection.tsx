@@ -1,8 +1,20 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, GraduationCap, Wallet, FolderInput } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { User, GraduationCap, Wallet, FolderInput, ShieldCheck } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
-type Lead = Tables<"student_leads">;
+type Lead = Tables<"student_leads"> & {
+  district?: string | null;
+  tier?: string | null;
+  lead_authenticity?: string | null;
+};
+
+const AUTHENTICITY_LABEL: Record<string, { label: string; tone: "default" | "secondary" | "destructive" | "outline" }> = {
+  unverified: { label: "Unverified", tone: "outline" },
+  verified: { label: "Verified", tone: "default" },
+  suspicious: { label: "Suspicious", tone: "secondary" },
+  fraudulent: { label: "Fraudulent", tone: "destructive" },
+};
 
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
   const hasValue = value !== null && value !== undefined && value !== "";
