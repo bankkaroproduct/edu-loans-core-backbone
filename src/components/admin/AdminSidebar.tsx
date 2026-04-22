@@ -1,7 +1,7 @@
 import {
   Shield, Inbox, Banknote, GraduationCap, Users, LogOut, ArrowLeftRight,
   ClipboardCheck, Database, FilePlus, Upload, FileSpreadsheet,
-  SlidersHorizontal, History, ScrollText, Calculator,
+  SlidersHorizontal, History, ScrollText, Calculator, FlaskConical,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
@@ -39,6 +39,7 @@ const breItems = [
   { title: "BRE Dashboard", url: "/admin/bre", icon: SlidersHorizontal, end: true },
   { title: "Scoring Config", url: "/admin/bre/scoring", icon: Calculator },
   { title: "Lender Rules", url: "/admin/bre/lenders", icon: Banknote },
+  { title: "Simulator", url: "/admin/bre/simulate", icon: FlaskConical },
   { title: "Version History", url: "/admin/bre/versions", icon: History },
   { title: "Audit Log", url: "/admin/bre/audit", icon: ScrollText },
 ];

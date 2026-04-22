@@ -26,6 +26,7 @@ import BreLenderRuleEditor from "./pages/admin/bre/BreLenderRuleEditor";
 import BreScoringConfigEditor from "./pages/admin/bre/BreScoringConfigEditor";
 import BreVersionHistory from "./pages/admin/bre/BreVersionHistory";
 import BreAuditLog from "./pages/admin/bre/BreAuditLog";
+import BreSimulate from "./pages/admin/bre/BreSimulate";
 import { BreAccessGate } from "./components/bre/BreAccessGate";
 import AdminAddLead from "./pages/admin/AdminAddLead";
 import AdminBulkUpload from "./pages/admin/AdminBulkUpload";
@@ -110,6 +111,7 @@ const App = () => (
             <Route path="/admin/bre/lenders/:lenderId" element={<AdminRoute><BreAccessGate><BreLenderRuleEditor /></BreAccessGate></AdminRoute>} />
             <Route path="/admin/bre/versions" element={<AdminRoute><BreAccessGate><BreVersionHistory /></BreAccessGate></AdminRoute>} />
             <Route path="/admin/bre/audit" element={<AdminRoute><BreAccessGate><BreAuditLog /></BreAccessGate></AdminRoute>} />
+            <Route path="/admin/bre/simulate" element={<AdminRoute><BreAccessGate><BreSimulate /></BreAccessGate></AdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </StudentAuthProvider>
