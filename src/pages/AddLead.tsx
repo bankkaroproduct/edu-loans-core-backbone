@@ -1109,50 +1109,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               <div className="space-y-2">
                 <Label>{isAdminForm ? "Admin / Partner Remark" : "Partner Remark"}</Label>
                 <Textarea value={form.partner_remark} onChange={(e) => set("partner_remark", e.target.value)} placeholder="Any additional context for the operations team..." rows={3} />
+                <p className="text-xs text-muted-foreground">Optional — leave blank if no additional context.</p>
               </div>
-
-              {/* Partner mode only: optional co-applicant context — collapsed by default */}
-              {!isAdminForm && (
-                <Collapsible open={coAppOpen} onOpenChange={setCoAppOpen}>
-                  <CollapsibleTrigger asChild>
-                    <button
-                      type="button"
-                      className="flex w-full items-center justify-between rounded-md border bg-muted/40 px-3 py-2 text-left text-xs font-medium hover:bg-muted/60 transition-colors"
-                    >
-                      <span>Co-applicant context (optional)</span>
-                      <ChevronDown className={`h-3.5 w-3.5 transition-transform ${coAppOpen ? "rotate-180" : ""}`} />
-                    </button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="pt-3">
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label>Co-Applicant Name</Label>
-                        <Input value={form.coapplicant_name} onChange={(e) => set("coapplicant_name", e.target.value)} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Co-Applicant Relation</Label>
-                        <Select value={form.coapplicant_relation} onValueChange={(v) => set("coapplicant_relation", v)}>
-                          <SelectTrigger><SelectValue placeholder="Select relation" /></SelectTrigger>
-                          <SelectContent>
-                            {CO_APPLICANT_RELATIONS.map((r) => (
-                              <SelectItem key={r} value={r}>{r}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="md:col-span-2">
-                        <CollateralRadio
-                          state={form.collateral_state}
-                          notes={form.collateral_notes}
-                          onChangeState={(s) => set("collateral_state", s)}
-                          onChangeNotes={(n) => set("collateral_notes", n)}
-                          idPrefix="partner-coll"
-                        />
-                      </div>
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
             </CardContent>
           </Card>
           <div className="flex justify-between mt-4">
