@@ -32,6 +32,7 @@ import AdminAddLead from "./pages/admin/AdminAddLead";
 import AdminBulkUpload from "./pages/admin/AdminBulkUpload";
 import AdminCommunications from "./pages/admin/AdminCommunications";
 import AdminCommunicationLogs from "./pages/admin/AdminCommunicationLogs";
+import AdminCommunicationTemplates from "./pages/admin/AdminCommunicationTemplates";
 import Login from "./pages/Login";
 import Leads from "./pages/Leads";
 import AddLead from "./pages/AddLead";
@@ -108,6 +109,7 @@ const App = () => (
             <Route path="/admin/reports" element={<AdminRoute><AdminReports /></AdminRoute>} />
             <Route path="/admin/communications" element={<AdminRoute><AdminCommunications /></AdminRoute>} />
             <Route path="/admin/communications/logs" element={<AdminRoute><AdminCommunicationLogs /></AdminRoute>} />
+            <Route path="/admin/communications/templates" element={<AdminRoute><AdminCommunicationTemplates /></AdminRoute>} />
             {/* BRE Engine — Admin only, additionally gated by bre_permission */}
             <Route path="/admin/bre" element={<AdminRoute><BreAccessGate><BreDashboard /></BreAccessGate></AdminRoute>} />
             <Route path="/admin/bre/scoring" element={<AdminRoute><BreAccessGate><BreScoringConfigEditor /></BreAccessGate></AdminRoute>} />
