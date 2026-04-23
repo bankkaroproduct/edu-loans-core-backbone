@@ -24,7 +24,8 @@ export function DocumentSummaryStrip({ requirements, hideNudge = false }: Props)
   const requiredOnly = requirements.filter(r => r.required_flag && !["waived", "not_applicable"].includes(r.status));
   const requiredVerified = requiredOnly.filter(r => r.status === "verified").length;
   const requiredTotal = requiredOnly.length;
-  const completePct = requiredTotal > 0 ? Math.round((requiredVerified / requiredTotal) * 100) : 100;
+  const noRequirements = requirements.length === 0;
+  const completePct = requiredTotal > 0 ? Math.round((requiredVerified / requiredTotal) * 100) : 0;
 
   const hasBlockers = counts.rejected > 0 || counts.reupload > 0;
   const hasPending = counts.pending > 0;
@@ -35,7 +36,10 @@ export function DocumentSummaryStrip({ requirements, hideNudge = false }: Props)
   let guidanceMessage = "";
   let guidanceVariant: "blocker" | "info" | "success" = "info";
 
-  if (allVerified) {
+  if (noRequirements) {
+    guidanceMessage = "No document requirements have been added for this lead yet.";
+    guidanceVariant = "info";
+  } else if (allVerified) {
     guidanceMessage = "All required documents are verified. No action needed.";
     guidanceVariant = "success";
   } else if (hasBlockers) {

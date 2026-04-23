@@ -1,6 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -10,17 +9,16 @@ import { DocumentSummaryStrip } from "@/components/documents/DocumentSummaryStri
 import { DocumentChecklist } from "@/components/documents/DocumentChecklist";
 import { DocumentUploadDialog } from "@/components/documents/DocumentUploadDialog";
 import { AdminAddDocumentButton } from "@/components/documents/AdminAddDocumentButton";
-import type { Tables } from "@/integrations/supabase/types";
+import { AdminDocumentReviewPanel } from "@/components/admin/AdminDocumentReviewPanel";
+import {
+  useLeadDocumentsData,
+  type LeadDocRequirement,
+  type LeadDocFile,
+} from "@/hooks/useLeadDocumentsData";
 
-type Lead = Tables<"student_leads">;
-
-export type DocRequirement = Tables<"lead_document_requirements"> & {
-  document_master?: { document_name: string; document_category: string | null; document_code?: string | null; applicable_for?: string | null } | null;
-};
-
-export type DocFile = Tables<"lead_documents"> & {
-  document_master?: { document_name: string } | null;
-};
+// Re-export for backwards compatibility with consumers that imported these from this page module.
+export type DocRequirement = LeadDocRequirement;
+export type DocFile = LeadDocFile;
 
 export default function LeadDocuments() {
   const { id } = useParams<{ id: string }>();
@@ -32,52 +30,14 @@ export default function LeadDocuments() {
     (typeof window !== "undefined" && window.location.pathname.startsWith("/admin"));
   const leadDetailPath = `${isAdminContext ? "/admin/leads" : "/leads"}/${id}`;
 
-  const [lead, setLead] = useState<Lead | null>(null);
-  const [requirements, setRequirements] = useState<DocRequirement[]>([]);
-  const [documents, setDocuments] = useState<DocFile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  const { lead, requirements, documents, loading, notFound, refresh } = useLeadDocumentsData(id);
 
-  // Upload dialog state
+  // Upload dialog state (used only by partner/student checklist; admin panel manages its own dialog)
   const [uploadTarget, setUploadTarget] = useState<DocRequirement | null>(null);
-
-  const loadData = useCallback(async () => {
-    if (!id) return;
-
-    const leadRes = await supabase.from("student_leads").select("*").eq("id", id).maybeSingle();
-    if (!leadRes.data) {
-      setNotFound(true);
-      setLoading(false);
-      return;
-    }
-
-    setLead(leadRes.data);
-
-    const [reqRes, docRes] = await Promise.all([
-      supabase
-        .from("lead_document_requirements")
-        .select("*, document_master(document_name, document_category, document_code, applicable_for)")
-        .eq("lead_id", id)
-        .order("created_at"),
-      supabase
-        .from("lead_documents")
-        .select("*, document_master(document_name)")
-        .eq("lead_id", id)
-        .order("uploaded_at", { ascending: false }),
-    ]);
-
-    setRequirements(reqRes.data ?? []);
-    setDocuments(docRes.data ?? []);
-    setLoading(false);
-  }, [id]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
 
   const handleUploadComplete = () => {
     setUploadTarget(null);
-    loadData();
+    refresh();
   };
 
   if (loading) {
@@ -126,30 +86,47 @@ export default function LeadDocuments() {
             <AdminAddDocumentButton
               leadId={lead.id}
               existingRequirements={requirements}
-              onRequirementReady={(req) => setUploadTarget(req)}
+              onRequirementReady={(req) => {
+                // For admin context the upload happens via the embedded panel which re-fetches on its own.
+                // Refresh shared data so the new requirement row shows up immediately.
+                refresh();
+                // Partner/student fallback: still allow direct upload dialog.
+                if (!isAdminContext) setUploadTarget(req);
+              }}
             />
           )}
-          <Button variant="outline" size="sm" onClick={() => loadData()}>
+          <Button variant="outline" size="sm" onClick={() => refresh()}>
             <RefreshCw className="h-3.5 w-3.5 mr-1" /> Refresh
           </Button>
         </div>
       </div>
 
-      {/* Summary Strip */}
+      {/* Summary Strip (shared) */}
       <DocumentSummaryStrip requirements={requirements} hideNudge={isAdminContext} />
 
-      {/* Checklist */}
+      {/* Body — admin gets the same review panel that's embedded in Lead Detail; partners/students get the checklist. */}
       {requirements.length === 0 ? (
         <div className="rounded-lg border bg-card p-8 text-center space-y-2">
           <FileText className="h-8 w-8 mx-auto text-muted-foreground" />
-          <h3 className="font-medium text-foreground">No Document Requirements</h3>
+          <h3 className="font-medium text-foreground">No document requirements have been added for this lead yet.</h3>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            No document requirements have been configured for this lead yet. Requirements will appear here once they are set by the operations team.
+            {isAdminContext
+              ? "Use “Add Document” above to create the first requirement, then upload on behalf of the lead."
+              : "Document requirements will appear here once they are set by the operations team."}
           </p>
-          <Button variant="outline" size="sm" onClick={() => navigate(leadDetailPath)}>
-            Back to Lead Detail
-          </Button>
+          {!isAdminContext && (
+            <Button variant="outline" size="sm" onClick={() => navigate(leadDetailPath)}>
+              Back to Lead Detail
+            </Button>
+          )}
         </div>
+      ) : isAdminContext ? (
+        <AdminDocumentReviewPanel
+          leadId={lead.id}
+          lead={lead}
+          requirements={requirements}
+          onChanged={refresh}
+        />
       ) : (
         <DocumentChecklist
           requirements={requirements}
@@ -160,8 +137,8 @@ export default function LeadDocuments() {
         />
       )}
 
-      {/* Upload Dialog */}
-      {uploadTarget && lead && (
+      {/* Upload Dialog — only used by the partner/student checklist path */}
+      {uploadTarget && lead && !isAdminContext && (
         <DocumentUploadDialog
           open={!!uploadTarget}
           onOpenChange={(open) => !open && setUploadTarget(null)}
