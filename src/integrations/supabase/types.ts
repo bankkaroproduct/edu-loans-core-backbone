@@ -301,6 +301,90 @@ export type Database = {
           },
         ]
       }
+      communication_logs: {
+        Row: {
+          channel: string
+          created_at: string
+          error_message: string | null
+          id: string
+          lead_id: string | null
+          mode_used: string
+          payload_snapshot: Json
+          provider: string
+          provider_message_id: string | null
+          recipient: string
+          send_status: string
+          template_key: string
+          triggered_by_user: string | null
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          lead_id?: string | null
+          mode_used: string
+          payload_snapshot?: Json
+          provider: string
+          provider_message_id?: string | null
+          recipient: string
+          send_status: string
+          template_key: string
+          triggered_by_user?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          lead_id?: string | null
+          mode_used?: string
+          payload_snapshot?: Json
+          provider?: string
+          provider_message_id?: string | null
+          recipient?: string
+          send_status?: string
+          template_key?: string
+          triggered_by_user?: string | null
+        }
+        Relationships: []
+      }
+      communication_templates: {
+        Row: {
+          active_flag: boolean
+          body: string
+          channel: string
+          created_at: string
+          description: string | null
+          id: string
+          subject: string | null
+          template_key: string
+          updated_at: string
+        }
+        Insert: {
+          active_flag?: boolean
+          body: string
+          channel: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          subject?: string | null
+          template_key: string
+          updated_at?: string
+        }
+        Update: {
+          active_flag?: boolean
+          body?: string
+          channel?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          subject?: string | null
+          template_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       countries_master: {
         Row: {
           active_flag: boolean
