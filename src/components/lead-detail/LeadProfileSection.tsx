@@ -22,18 +22,18 @@ function Field({
   label,
   value,
   editable,
-  leadId,
-  field,
-  inputType,
 }: {
   label: string;
   value: string | null | undefined;
-  /** When true (admin only), missing values render as a clickable inline edit. */
-  editable?: { leadId: string; field: string; inputType?: string };
-  // back-compat shorthand args (unused)
-  leadId?: never;
-  field?: never;
-  inputType?: never;
+  /** When provided (admin only), render an InlineEditField for missing OR existing value. */
+  editable?: {
+    leadId: string;
+    field: string;
+    inputType?: string;
+    options?: { value: string; label: string }[];
+    parseValue?: (raw: string) => unknown;
+    formatDisplay?: (v: string) => string;
+  };
 }) {
   const hasValue = value !== null && value !== undefined && value !== "";
   return (
@@ -53,6 +53,10 @@ function Field({
             label={label}
             value={value ?? null}
             inputType={editable.inputType}
+            options={editable.options}
+            parseValue={editable.parseValue}
+            formatDisplay={editable.formatDisplay}
+            allowEditExisting
           />
         ) : hasValue ? (
           value
@@ -71,8 +75,16 @@ interface Props {
 
 export function LeadProfileSection({ lead, submittedByName }: Props) {
   const { isAdmin } = useRoleAccess();
-  const ed = (field: string, inputType?: string) =>
-    isAdmin ? { leadId: lead.id, field, inputType } : undefined;
+  const ed = (
+    field: string,
+    extras?: {
+      inputType?: string;
+      options?: { value: string; label: string }[];
+      parseValue?: (raw: string) => unknown;
+      formatDisplay?: (v: string) => string;
+    },
+  ) => (isAdmin ? { leadId: lead.id, field, ...extras } : undefined);
+
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {/* Student Details */}
@@ -86,9 +98,9 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
           <div className="grid grid-cols-2 gap-3">
             <Field label="First Name" value={lead.student_first_name} editable={ed("student_first_name")} />
             <Field label="Last Name" value={lead.student_last_name} editable={ed("student_last_name")} />
-            <Field label="Full Name" value={lead.student_full_name} />
-            <Field label="Mobile" value={lead.student_phone} />
-            <Field label="Email" value={lead.student_email} editable={ed("student_email", "email")} />
+            <Field label="Full Name" value={lead.student_full_name} editable={ed("student_full_name")} />
+            <Field label="Mobile" value={lead.student_phone} editable={ed("student_phone")} />
+            <Field label="Email" value={lead.student_email} editable={ed("student_email", { inputType: "email" })} />
             <Field label="WhatsApp" value={lead.student_whatsapp} editable={ed("student_whatsapp")} />
             <Field label="Pincode" value={lead.pincode} editable={ed("pincode")} />
             <Field label="City" value={lead.city} editable={ed("city")} />
@@ -109,13 +121,34 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Study Country" value={lead.intended_study_country} />
-            <Field label="University" value={lead.university_name_raw} />
-            <Field label="Course" value={lead.course_name} />
-            <Field label="Course Category" value={lead.course_category} />
-            <Field label="Intake Term" value={lead.intake_term} />
-            <Field label="Intake Year" value={String(lead.intake_year)} />
-            <Field label="Loan Amount" value={lead.loan_amount_required ? `₹${Number(lead.loan_amount_required).toLocaleString()}` : null} />
+            <Field label="Study Country" value={lead.intended_study_country} editable={ed("intended_study_country")} />
+            <Field label="University" value={lead.university_name_raw} editable={ed("university_name_raw")} />
+            <Field label="Course" value={lead.course_name} editable={ed("course_name")} />
+            <Field label="Course Category" value={lead.course_category} editable={ed("course_category")} />
+            <Field label="Intake Term" value={lead.intake_term} editable={ed("intake_term")} />
+            <Field
+              label="Intake Year"
+              value={lead.intake_year ? String(lead.intake_year) : null}
+              editable={ed("intake_year", {
+                inputType: "number",
+                parseValue: (raw) => {
+                  const n = Number(raw);
+                  return Number.isFinite(n) ? n : raw;
+                },
+              })}
+            />
+            <Field
+              label="Loan Amount"
+              value={lead.loan_amount_required ? String(lead.loan_amount_required) : null}
+              editable={ed("loan_amount_required", {
+                inputType: "number",
+                formatDisplay: (v) => `₹${Number(v).toLocaleString()}`,
+                parseValue: (raw) => {
+                  const n = Number(raw);
+                  return Number.isFinite(n) ? n : raw;
+                },
+              })}
+            />
           </div>
         </CardContent>
       </Card>
@@ -131,8 +164,36 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
           <div className="grid grid-cols-2 gap-3">
             <Field label="Co-Applicant" value={lead.coapplicant_name} editable={ed("coapplicant_name")} />
             <Field label="Relation" value={lead.coapplicant_relation} editable={ed("coapplicant_relation")} />
-            <Field label="Co-Applicant Income" value={lead.coapplicant_income ? `₹${Number(lead.coapplicant_income).toLocaleString()}` : null} />
-            <Field label="Collateral" value={lead.collateral_available === null ? null : lead.collateral_available ? "Yes" : "No"} />
+            <Field
+              label="Co-Applicant Income"
+              value={lead.coapplicant_income ? String(lead.coapplicant_income) : null}
+              editable={ed("coapplicant_income", {
+                inputType: "number",
+                formatDisplay: (v) => `₹${Number(v).toLocaleString()}`,
+                parseValue: (raw) => {
+                  const n = Number(raw);
+                  return Number.isFinite(n) ? n : raw;
+                },
+              })}
+            />
+            <Field
+              label="Collateral"
+              value={
+                lead.collateral_available === null || lead.collateral_available === undefined
+                  ? null
+                  : lead.collateral_available
+                  ? "true"
+                  : "false"
+              }
+              editable={ed("collateral_available", {
+                options: [
+                  { value: "true", label: "Yes" },
+                  { value: "false", label: "No" },
+                ],
+                parseValue: (raw) => raw === "true",
+                formatDisplay: (v) => (v === "true" ? "Yes" : "No"),
+              })}
+            />
             <Field label="Collateral Notes" value={lead.collateral_notes} editable={ed("collateral_notes")} />
           </div>
         </CardContent>
@@ -147,7 +208,7 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Source Type" value={lead.source_type} />
+            <Field label="Source Type" value={lead.source_type} editable={ed("source_type")} />
             <Field label="Source Subtype" value={lead.source_sub_type} editable={ed("source_sub_type")} />
             <Field label="Submitted By" value={submittedByName} />
             <Field label="Created At" value={new Date(lead.created_at).toLocaleString()} />
