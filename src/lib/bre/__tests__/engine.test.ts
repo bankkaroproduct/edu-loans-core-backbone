@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { evaluate } from "../engine";
+import { evaluate, COAPPLICANT_AGE_CAP } from "../engine";
 import { DEFAULT_SCORING_CONFIG_V1 } from "../defaults";
 import { validateScoringConfig } from "../validate";
 import type { BreLenderRule, BreProfileInput } from "../types";
@@ -136,5 +136,71 @@ describe("BRE — empty eligible set", () => {
     ]);
     expect(r.best_match_lender_id).toBe(null);
     expect(r.eligible_lenders.every((l) => !l.eligible)).toBe(true);
+  });
+});
+
+describe("BRE — Bug 1: hard-gate status override", () => {
+  it("forces Rejected when no lender is eligible even with high score", () => {
+    const r = evaluate(strongProfile, DEFAULT_SCORING_CONFIG_V1, [
+      lenderRule({ coverage: { supported_countries: ["DE"], excluded_states: [], accepted_courses: [], university_tier_overrides: [] } }),
+    ]);
+    expect(r.eligibility_status).toBe("Rejected");
+    expect(r.rejection_reasons.some((s) => s.includes("Hard eligibility gate"))).toBe(true);
+  });
+
+  it("forces Rejected when destination_country is missing", () => {
+    const r = evaluate(
+      { ...strongProfile, destination_country: "" },
+      DEFAULT_SCORING_CONFIG_V1,
+      [lenderRule()],
+    );
+    expect(r.eligibility_status).toBe("Rejected");
+    expect(r.rejection_reasons.some((s) => s.includes("Destination country is required"))).toBe(true);
+  });
+});
+
+describe("BRE — Bug 2: universal co-applicant age cap", () => {
+  it(`rejects when co-applicant age exceeds ${COAPPLICANT_AGE_CAP} even if lender max_age is null`, () => {
+    const r = evaluate(
+      { ...strongProfile, coapplicant: { ...strongProfile.coapplicant, age: 64 } },
+      DEFAULT_SCORING_CONFIG_V1,
+      [lenderRule()],
+    );
+    expect(r.eligibility_status).toBe("Rejected");
+    expect(r.rejection_reasons.some((s) => s.includes("age 64") && s.includes("60"))).toBe(true);
+    expect(r.eligible_lenders.every((l) => !l.eligible)).toBe(true);
+  });
+
+  it("accepts when co-applicant age equals the cap", () => {
+    const r = evaluate(
+      { ...strongProfile, coapplicant: { ...strongProfile.coapplicant, age: COAPPLICANT_AGE_CAP } },
+      DEFAULT_SCORING_CONFIG_V1,
+      [lenderRule()],
+    );
+    expect(r.eligibility_status).not.toBe("Rejected");
+  });
+});
+
+describe("BRE — Bug 3: dynamic global loan-cap message", () => {
+  it("cites the global maximum across active lenders, not a single lender's cap", () => {
+    const small = lenderRule({
+      lender_id: "small",
+      basic_info: { ...lenderRule().basic_info, lender_code: "SMALL" },
+      loan_caps: { secured: { min: 100000, max: 1_00_00_000 }, unsecured: { min: 100000, max: 50_00_000 } },
+    });
+    const big = lenderRule({
+      lender_id: "big",
+      basic_info: { ...lenderRule().basic_info, lender_code: "BIG" },
+      loan_caps: { secured: { min: 100000, max: 3_00_00_000 }, unsecured: { min: 100000, max: 1_50_00_000 } },
+    });
+    const r = evaluate(
+      { ...strongProfile, loan_amount: 5_00_00_000, collateral_route: "either" },
+      DEFAULT_SCORING_CONFIG_V1,
+      [small, big],
+    );
+    expect(r.eligibility_status).toBe("Rejected");
+    const top = r.rejection_reasons.find((s) => s.includes("exceeds maximum available"));
+    expect(top).toBeDefined();
+    expect(top!).toContain("3,00,00,000");
   });
 });
