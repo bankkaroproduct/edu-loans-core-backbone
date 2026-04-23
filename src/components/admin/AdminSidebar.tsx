@@ -1,5 +1,5 @@
 import {
-  Shield, Inbox, Banknote, GraduationCap, Users, LogOut, ArrowLeftRight,
+  Shield, Inbox, Banknote, GraduationCap, Users, LogOut,
   ClipboardCheck, Database, FilePlus, Upload, FileSpreadsheet,
   SlidersHorizontal, History, ScrollText, Calculator, FlaskConical,
   MessageSquare, FileText,
@@ -234,17 +234,6 @@ export function AdminSidebar() {
               </Badge>
             </div>
           )}
-
-          <Button
-            variant="ghost"
-            size={collapsed ? "icon" : "sm"}
-            className="w-full justify-start text-xs"
-            onClick={() => navigate("/")}
-            title="Switch to Partner Portal view"
-          >
-            <ArrowLeftRight className="mr-2 h-4 w-4" />
-            {!collapsed && "Partner Portal view"}
-          </Button>
 
           <Button
             variant="ghost"
