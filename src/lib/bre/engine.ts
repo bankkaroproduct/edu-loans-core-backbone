@@ -26,7 +26,14 @@ import type {
   ParameterTrace,
   ScoringParameter,
 } from "./types";
-import { REASON } from "./reasons";
+import { REASON, getMaxCapForRoute } from "./reasons";
+
+/**
+ * Universal business cap for co-applicant age. Applied before per-lender
+ * checks so a single rule covers all lenders even when individual
+ * lender_rules have max_age = null.
+ */
+export const COAPPLICANT_AGE_CAP = 60;
 
 const BUCKETS: { key: BucketKey; field: keyof BreScoringConfig }[] = [
   { key: "student", field: "student_params" },
@@ -252,13 +259,27 @@ export function evaluate(
   const overall_band = mapOverallBand(overall_score, cfg.overall_band_mapping);
   if (!overall_band) rejection_reasons.push(REASON.no_overall_band());
 
-  const eligibility_status = eligibilityStatusFromBand(overall_band, failedBuckets.length > 0);
+  let eligibility_status = eligibilityStatusFromBand(overall_band, failedBuckets.length > 0);
+
+  // ---- Pre-scoring universal guard: co-applicant age cap (Bug 2) ----
+  const coAge = profile.coapplicant?.age;
+  const ageCapBreached =
+    typeof coAge === "number" && Number.isFinite(coAge) && coAge > COAPPLICANT_AGE_CAP;
+  if (ageCapBreached) {
+    rejection_reasons.unshift(REASON.coapplicant_age_cap(coAge as number, COAPPLICANT_AGE_CAP));
+    eligibility_status = "Rejected";
+  }
 
   // 1+6. Lender knockout + projection (only meaningful if approved)
   const allLenderResults: LenderMatchResult[] = lenderRules
     .filter((r) => r.basic_info?.active !== false)
     .map((lender) => {
       const ko = checkLenderKnockouts(lender, profile);
+      // Apply universal age-cap knockout to every lender
+      if (ageCapBreached) {
+        ko.eligible = false;
+        ko.reasons = [REASON.coapplicant_age_cap(coAge as number, COAPPLICANT_AGE_CAP), ...ko.reasons];
+      }
       const proj = ko.eligible
         ? projectLoanAndRate(lender, ko.product_type, overall_band, profile)
         : { projected_loan: null, projected_rate: null };
@@ -307,6 +328,36 @@ export function evaluate(
   if (hasSecured && hasUnsecured) collateral_route = "both";
   else if (hasSecured) collateral_route = "secured";
   else if (hasUnsecured) collateral_route = "unsecured";
+
+  // ---- Post-scoring hard-gate override (Bug 1) ----
+  // A profile that scores high but has zero fundable lenders, missing
+  // destination country, or missing/invalid loan amount must be Rejected.
+  const missingCountry = !profile.destination_country || String(profile.destination_country).trim() === "";
+  const missingLoan = !(typeof profile.loan_amount === "number" && profile.loan_amount > 0);
+  const noEligibleLender = eligible.length === 0;
+
+  if (missingCountry) rejection_reasons.unshift(REASON.missing_destination_country());
+  if (missingLoan) rejection_reasons.unshift(REASON.missing_loan_amount());
+
+  // ---- Dynamic global loan-cap message (Bug 3) ----
+  // If the loan amount exceeds every lender's cap for the chosen route,
+  // surface the real global maximum (not the first lender's cap) at the top.
+  if (!missingLoan) {
+    const route = profile.collateral_route ?? "either";
+    const globalMax = getMaxCapForRoute(lenderRules, route);
+    if (globalMax != null && profile.loan_amount > globalMax) {
+      rejection_reasons.unshift(
+        REASON.loan_above_global_max(profile.loan_amount, globalMax, route),
+      );
+    }
+  }
+
+  if (missingCountry || missingLoan || noEligibleLender) {
+    if (eligibility_status !== "Rejected") {
+      rejection_reasons.unshift(REASON.hard_gate_failed());
+      eligibility_status = "Rejected";
+    }
+  }
 
   return {
     scoring_config_version: cfg.version_number,
