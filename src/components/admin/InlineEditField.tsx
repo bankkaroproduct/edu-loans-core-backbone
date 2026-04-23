@@ -22,6 +22,10 @@ interface Props {
   /** Optional placeholder. */
   placeholder?: string;
   className?: string;
+  /** When provided, render a segmented toggle instead of a text input. Used for booleans / small enums. */
+  options?: { value: string; label: string }[];
+  /** When provided, transforms the draft string before save (e.g. "true" -> true for boolean columns). */
+  parseValue?: (raw: string) => unknown;
 }
 
 /**
