@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { evaluate } from "../engine";
+import { evaluate, COAPPLICANT_AGE_CAP } from "../engine";
 import { DEFAULT_SCORING_CONFIG_V1 } from "../defaults";
 import { validateScoringConfig } from "../validate";
 import type { BreLenderRule, BreProfileInput } from "../types";
