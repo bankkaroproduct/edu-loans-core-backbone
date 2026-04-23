@@ -59,7 +59,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      // Tab refocus / silent token refresh: Supabase fires TOKEN_REFRESHED or
+      // SIGNED_IN with the SAME user id. Do NOT flip `loading` or refetch
+      // appUser — that would unmount the current admin page (skeleton flash)
+      // and wipe in-memory state. Just keep the new session token.
+      const nextUserId = session?.user?.id ?? null;
+      const currentUserId = userRef.current?.id ?? null;
+      if (
+        (event === "TOKEN_REFRESHED" || event === "SIGNED_IN") &&
+        nextUserId &&
+        nextUserId === currentUserId
+      ) {
+        if (mounted) setUser(session!.user);
+        return;
+      }
       syncSession(session);
     });
 
