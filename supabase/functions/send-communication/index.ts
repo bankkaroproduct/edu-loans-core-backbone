@@ -182,35 +182,45 @@ Deno.serve(async (req) => {
           html: `<pre style="font-family:system-ui,sans-serif;white-space:pre-wrap">${renderedBody.replace(/</g, "&lt;")}</pre>`,
         }),
       });
-      const data = await r.json();
+      const raw = await r.text();
+      let data: Record<string, unknown> = {};
+      try { data = JSON.parse(raw); } catch { data = { raw }; }
       if (!r.ok) {
+        // Resend error shape: { name, message, statusCode }
+        const readable =
+          (typeof data?.message === "string" && data.message) ||
+          (typeof data?.error === "string" && data.error) ||
+          (typeof data?.raw === "string" && data.raw) ||
+          `HTTP ${r.status}`;
+        const errMsg = `Resend ${r.status}: ${readable}`;
         const { data: log } = await admin
           .from("communication_logs")
           .insert({
             ...baseLog,
             provider: "resend",
             send_status: "failed",
-            error_message: `Resend [${r.status}]: ${JSON.stringify(data)}`,
+            error_message: errMsg,
           })
           .select()
           .single();
         return new Response(
-          JSON.stringify({ ok: false, error: data, log_id: log?.id }),
+          JSON.stringify({ ok: false, error: errMsg, message: readable, log_id: log?.id }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
+      const messageId = typeof data?.id === "string" ? data.id : null;
       const { data: log } = await admin
         .from("communication_logs")
         .insert({
           ...baseLog,
           provider: "resend",
           send_status: "sent",
-          provider_message_id: data?.id ?? null,
+          provider_message_id: messageId,
         })
         .select()
         .single();
       return new Response(
-        JSON.stringify({ ok: true, provider: "resend", message_id: data?.id, log_id: log?.id }),
+        JSON.stringify({ ok: true, provider: "resend", message_id: messageId, log_id: log?.id }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     } catch (e: unknown) {
@@ -220,7 +230,7 @@ Deno.serve(async (req) => {
         .insert({ ...baseLog, provider: "resend", send_status: "failed", error_message: msg })
         .select()
         .single();
-      return new Response(JSON.stringify({ ok: false, error: msg, log_id: log?.id }), {
+      return new Response(JSON.stringify({ ok: false, error: msg, message: msg, log_id: log?.id }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -252,9 +262,26 @@ Deno.serve(async (req) => {
     }
 
     try {
-      const toFormatted = recipient.startsWith("whatsapp:")
-        ? recipient
-        : `whatsapp:${recipient.startsWith("+") ? recipient : "+" + recipient}`;
+      // Strict E.164 validation BEFORE calling Twilio (sandbox rejects malformed numbers)
+      const e164 = recipient.startsWith("whatsapp:") ? recipient.slice(9) : recipient;
+      if (!/^\+[1-9]\d{7,14}$/.test(e164)) {
+        const errMsg = `Invalid recipient: must be E.164 format with country code (e.g. +919876543210). Got: ${recipient}`;
+        const { data: log } = await admin
+          .from("communication_logs")
+          .insert({
+            ...baseLog,
+            provider: "twilio_sandbox",
+            send_status: "failed",
+            error_message: errMsg,
+          })
+          .select()
+          .single();
+        return new Response(
+          JSON.stringify({ ok: false, error: errMsg, message: errMsg, log_id: log?.id }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      const toFormatted = `whatsapp:${e164}`;
 
       const form = new URLSearchParams({
         To: toFormatted,
@@ -271,35 +298,45 @@ Deno.serve(async (req) => {
         },
         body: form.toString(),
       });
-      const data = await r.json();
+      const raw = await r.text();
+      let data: Record<string, unknown> = {};
+      try { data = JSON.parse(raw); } catch { data = { raw }; }
       if (!r.ok) {
+        // Twilio error shape: { code, message, more_info, status }
+        const readable =
+          (typeof data?.message === "string" && data.message) ||
+          (typeof data?.raw === "string" && data.raw) ||
+          `HTTP ${r.status}`;
+        const codePart = data?.code ? ` (code ${data.code})` : "";
+        const errMsg = `Twilio ${r.status}${codePart}: ${readable}`;
         const { data: log } = await admin
           .from("communication_logs")
           .insert({
             ...baseLog,
             provider: "twilio_sandbox",
             send_status: "failed",
-            error_message: `Twilio [${r.status}]: ${JSON.stringify(data)}`,
+            error_message: errMsg,
           })
           .select()
           .single();
         return new Response(
-          JSON.stringify({ ok: false, error: data, log_id: log?.id }),
+          JSON.stringify({ ok: false, error: errMsg, message: readable, log_id: log?.id }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
+      const sid = typeof data?.sid === "string" ? data.sid : null;
       const { data: log } = await admin
         .from("communication_logs")
         .insert({
           ...baseLog,
           provider: "twilio_sandbox",
           send_status: "sent",
-          provider_message_id: data?.sid ?? null,
+          provider_message_id: sid,
         })
         .select()
         .single();
       return new Response(
-        JSON.stringify({ ok: true, provider: "twilio_sandbox", message_id: data?.sid, log_id: log?.id }),
+        JSON.stringify({ ok: true, provider: "twilio_sandbox", message_id: sid, log_id: log?.id }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     } catch (e: unknown) {
@@ -314,7 +351,7 @@ Deno.serve(async (req) => {
         })
         .select()
         .single();
-      return new Response(JSON.stringify({ ok: false, error: msg, log_id: log?.id }), {
+      return new Response(JSON.stringify({ ok: false, error: msg, message: msg, log_id: log?.id }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
