@@ -30,6 +30,8 @@ import BreSimulate from "./pages/admin/bre/BreSimulate";
 import { BreAccessGate } from "./components/bre/BreAccessGate";
 import AdminAddLead from "./pages/admin/AdminAddLead";
 import AdminBulkUpload from "./pages/admin/AdminBulkUpload";
+import AdminCommunications from "./pages/admin/AdminCommunications";
+import AdminCommunicationLogs from "./pages/admin/AdminCommunicationLogs";
 import Login from "./pages/Login";
 import Leads from "./pages/Leads";
 import AddLead from "./pages/AddLead";
@@ -104,6 +106,8 @@ const App = () => (
             <Route path="/admin/partners" element={<AdminRoute><AdminPartners /></AdminRoute>} />
             <Route path="/admin/lenders" element={<AdminRoute><AdminLenders /></AdminRoute>} />
             <Route path="/admin/reports" element={<AdminRoute><AdminReports /></AdminRoute>} />
+            <Route path="/admin/communications" element={<AdminRoute><AdminCommunications /></AdminRoute>} />
+            <Route path="/admin/communications/logs" element={<AdminRoute><AdminCommunicationLogs /></AdminRoute>} />
             {/* BRE Engine — Admin only, additionally gated by bre_permission */}
             <Route path="/admin/bre" element={<AdminRoute><BreAccessGate><BreDashboard /></BreAccessGate></AdminRoute>} />
             <Route path="/admin/bre/scoring" element={<AdminRoute><BreAccessGate><BreScoringConfigEditor /></BreAccessGate></AdminRoute>} />

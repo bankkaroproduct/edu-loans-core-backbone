@@ -17,6 +17,7 @@ import { AdminDocumentReviewPanel } from "@/components/admin/AdminDocumentReview
 import { AdminInternalNotes } from "@/components/admin/AdminInternalNotes";
 import { AdminEditRequestPanel } from "@/components/admin/AdminEditRequestPanel";
 import { LeadAuthenticityEditor } from "@/components/admin/LeadAuthenticityEditor";
+import { LeadCommunicationPanel } from "@/components/admin/communications/LeadCommunicationPanel";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Lead = Tables<"student_leads">;

@@ -2,6 +2,7 @@ import {
   Shield, Inbox, Banknote, GraduationCap, Users, LogOut, ArrowLeftRight,
   ClipboardCheck, Database, FilePlus, Upload, FileSpreadsheet,
   SlidersHorizontal, History, ScrollText, Calculator, FlaskConical,
+  MessageSquare,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
@@ -42,6 +43,11 @@ const breItems = [
   { title: "Simulator", url: "/admin/bre/simulate", icon: FlaskConical },
   { title: "Version History", url: "/admin/bre/versions", icon: History },
   { title: "Audit Log", url: "/admin/bre/audit", icon: ScrollText },
+];
+
+const commsItems = [
+  { title: "Test Panel", url: "/admin/communications", icon: MessageSquare, end: true },
+  { title: "Logs", url: "/admin/communications/logs", icon: History },
 ];
 
 export function AdminSidebar() {
@@ -182,6 +188,36 @@ export function AdminSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         )}
+
+        <SidebarGroup>
+          <SidebarGroupLabel>
+            {!collapsed && (
+              <span className="flex items-center gap-1.5">
+                <MessageSquare className="h-3.5 w-3.5 text-primary" />
+                Communications
+              </span>
+            )}
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {commsItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      end={item.end}
+                      className="hover:bg-sidebar-accent/50"
+                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                    >
+                      <item.icon className="mr-2 h-4 w-4" />
+                      {!collapsed && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter>
