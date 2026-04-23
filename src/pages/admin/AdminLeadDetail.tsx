@@ -262,6 +262,9 @@ export default function AdminLeadDetail() {
         <div className="space-y-6">
           <AdminPartnerCard partner={partner} isStudentDirect={isStudentDirect} />
 
+          <LeadCommunicationPanel lead={lead} />
+
+
           <AdminStageStatusPanel
             lead={lead}
             unverifiedRequiredCount={unverifiedRequiredCount}
