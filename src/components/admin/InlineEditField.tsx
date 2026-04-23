@@ -136,23 +136,41 @@ export function InlineEditField({
   if (editing) {
     return (
       <span className={`inline-flex flex-col gap-1.5 ${className ?? ""}`}>
-        <Input
-          autoFocus
-          type={inputType}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder={placeholder ?? label}
-          className="h-7 text-sm"
-          disabled={saving}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              if (confirming) save();
-              else askConfirm();
-            } else if (e.key === "Escape") {
-              cancel();
-            }
-          }}
-        />
+        {options && options.length > 0 ? (
+          <span className="inline-flex items-center gap-1">
+            {options.map((opt) => (
+              <Button
+                key={opt.value}
+                size="sm"
+                type="button"
+                variant={draft === opt.value ? "default" : "outline"}
+                className="h-7 px-2 text-xs"
+                onClick={() => setDraft(opt.value)}
+                disabled={saving}
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </span>
+        ) : (
+          <Input
+            autoFocus
+            type={inputType}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder={placeholder ?? label}
+            className="h-7 text-sm"
+            disabled={saving}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                if (confirming) save();
+                else askConfirm();
+              } else if (e.key === "Escape") {
+                cancel();
+              }
+            }}
+          />
+        )}
         {!confirming ? (
           <span className="inline-flex items-center gap-1">
             <Button size="sm" className="h-6 px-2 text-[11px]" onClick={askConfirm} disabled={saving}>
