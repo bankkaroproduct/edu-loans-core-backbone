@@ -83,7 +83,11 @@ export function DocumentSummaryStrip({ requirements, hideNudge = false }: Props)
                 <AlertTriangle className="h-3 w-3 mr-1" /> Action Required
               </Badge>
             )}
-            <span className="text-xs text-muted-foreground">{completePct}% verified ({requiredVerified}/{requiredTotal})</span>
+            <span className="text-xs text-muted-foreground">
+              {noRequirements
+                ? "No required documents configured"
+                : `${completePct}% verified (${requiredVerified}/${requiredTotal})`}
+            </span>
           </div>
         </div>
 
