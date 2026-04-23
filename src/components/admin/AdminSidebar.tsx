@@ -2,7 +2,7 @@ import {
   Shield, Inbox, Banknote, GraduationCap, Users, LogOut, ArrowLeftRight,
   ClipboardCheck, Database, FilePlus, Upload, FileSpreadsheet,
   SlidersHorizontal, History, ScrollText, Calculator, FlaskConical,
-  MessageSquare,
+  MessageSquare, FileText,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
@@ -47,6 +47,7 @@ const breItems = [
 
 const commsItems = [
   { title: "Test Panel", url: "/admin/communications", icon: MessageSquare, end: true },
+  { title: "Templates", url: "/admin/communications/templates", icon: FileText },
   { title: "Logs", url: "/admin/communications/logs", icon: History },
 ];
 
