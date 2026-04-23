@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { MessageComposer } from "@/components/admin/communications/MessageComposer";
 import { CommunicationLogTable } from "@/components/admin/communications/CommunicationLogTable";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { MessageSquare, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import type { CommunicationLog } from "@/lib/communications/types";
@@ -36,7 +36,6 @@ export default function AdminCommunications() {
       <PageHeader
         title="Communications Test Panel"
         description="Send demo emails and WhatsApp messages. Mock mode is the default — nothing is actually sent."
-        icon={MessageSquare}
       />
 
       <div className="grid gap-6 lg:grid-cols-2">

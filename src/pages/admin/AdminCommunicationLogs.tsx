@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { CommunicationLogTable } from "@/components/admin/communications/CommunicationLogTable";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { History } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import type { CommunicationLog } from "@/lib/communications/types";
@@ -39,7 +38,6 @@ export default function AdminCommunicationLogs() {
       <PageHeader
         title="Communication Logs"
         description="Audit trail of every send attempt — admin only."
-        icon={History}
       />
 
       <Card className="p-4">
