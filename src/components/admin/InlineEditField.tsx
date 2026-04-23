@@ -49,6 +49,8 @@ export function InlineEditField({
   formatDisplay,
   placeholder,
   className,
+  options,
+  parseValue,
 }: Props) {
   const { appUser } = useAuth();
   const { isAdmin } = useRoleAccess();
@@ -85,9 +87,10 @@ export function InlineEditField({
     setSaving(true);
     const trimmed = draft.trim();
     const oldVal = localValue ?? null;
+    const writeValue = parseValue ? parseValue(trimmed) : trimmed;
     const { error } = await supabase
       .from("student_leads")
-      .update({ [field]: trimmed } as never)
+      .update({ [field]: writeValue } as never)
       .eq("id", leadId);
     if (error) {
       setSaving(false);
@@ -103,7 +106,7 @@ export function InlineEditField({
         actor_user_id: appUser.id,
         actor_role: appUser.role,
         old_value: { [field]: oldVal } as never,
-        new_value: { [field]: trimmed } as never,
+        new_value: { [field]: writeValue } as never,
         meta: { field_count: 1, source: "admin_inline_edit", field } as never,
       } as never);
     } catch (e) {
