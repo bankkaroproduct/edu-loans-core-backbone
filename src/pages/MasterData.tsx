@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -114,6 +115,28 @@ function MasterTable({ table, columns, searchKeys, orderBy, filterActive = true,
 }
 
 export default function MasterData() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState(
+    initialTab && ["countries", "universities", "courses", "intakes", "qualifications", "documents", "stages"].includes(initialTab)
+      ? initialTab
+      : "countries"
+  );
+
+  useEffect(() => {
+    const urlTab = searchParams.get("tab");
+    if (urlTab && urlTab !== activeTab) {
+      setActiveTab(urlTab);
+    }
+  }, [searchParams, activeTab]);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", value);
+    setSearchParams(next, { replace: true });
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -128,7 +151,7 @@ export default function MasterData() {
         </p>
       </div>
 
-      <Tabs defaultValue="countries">
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="countries">Countries</TabsTrigger>
           <TabsTrigger value="universities">Universities</TabsTrigger>
