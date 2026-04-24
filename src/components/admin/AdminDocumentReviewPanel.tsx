@@ -47,6 +47,10 @@ interface Props {
   leadId: string;
   lead?: LeadNameFields | null;
   requirements: DocRequirementInput[];
+  /** Optional: pre-loaded documents from the shared useLeadDocumentsData hook. When provided,
+   *  the panel will NOT do its own fetch — guaranteeing the embedded review panel and the
+   *  full Documents page render from the exact same in-memory snapshot. */
+  documents?: LeadDocument[];
   onChanged: () => void;
 }
 
@@ -61,25 +65,36 @@ const STATUS_BADGE: Record<string, { variant: "default" | "secondary" | "outline
   not_applicable: { variant: "outline", label: "N/A" },
 };
 
-export function AdminDocumentReviewPanel({ leadId, lead, requirements, onChanged }: Props) {
+export function AdminDocumentReviewPanel({ leadId, lead, requirements, documents, onChanged }: Props) {
   const [docsByType, setDocsByType] = useState<Record<string, LeadDocument | null>>({});
   const [versionCountByType, setVersionCountByType] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(documents === undefined);
+
+  // Derive maps from either the supplied documents prop (shared hook) or a local fetch fallback.
+  const buildMaps = (data: LeadDocument[] | null | undefined) => {
+    const latestMap: Record<string, LeadDocument | null> = {};
+    const countMap: Record<string, number> = {};
+    for (const d of data ?? []) {
+      if (!d.document_type_id) continue;
+      countMap[d.document_type_id] = (countMap[d.document_type_id] ?? 0) + 1;
+      if (d.is_latest) latestMap[d.document_type_id] = d;
+    }
+    return { latestMap, countMap };
+  };
 
   const reload = () => {
+    if (documents !== undefined) {
+      // Owned by parent — just ask the parent to refresh; we'll re-derive when the prop changes.
+      onChanged();
+      return;
+    }
     setLoading(true);
     supabase
       .from("lead_documents")
       .select("*")
       .eq("lead_id", leadId)
       .then(({ data }) => {
-        const latestMap: Record<string, LeadDocument | null> = {};
-        const countMap: Record<string, number> = {};
-        for (const d of data ?? []) {
-          if (!d.document_type_id) continue;
-          countMap[d.document_type_id] = (countMap[d.document_type_id] ?? 0) + 1;
-          if (d.is_latest) latestMap[d.document_type_id] = d as LeadDocument;
-        }
+        const { latestMap, countMap } = buildMaps(data as LeadDocument[] | null);
         setDocsByType(latestMap);
         setVersionCountByType(countMap);
         setLoading(false);
@@ -87,6 +102,13 @@ export function AdminDocumentReviewPanel({ leadId, lead, requirements, onChanged
   };
 
   useEffect(() => {
+    if (documents !== undefined) {
+      const { latestMap, countMap } = buildMaps(documents);
+      setDocsByType(latestMap);
+      setVersionCountByType(countMap);
+      setLoading(false);
+      return;
+    }
     let alive = true;
     setLoading(true);
     supabase
@@ -95,19 +117,13 @@ export function AdminDocumentReviewPanel({ leadId, lead, requirements, onChanged
       .eq("lead_id", leadId)
       .then(({ data }) => {
         if (!alive) return;
-        const latestMap: Record<string, LeadDocument | null> = {};
-        const countMap: Record<string, number> = {};
-        for (const d of data ?? []) {
-          if (!d.document_type_id) continue;
-          countMap[d.document_type_id] = (countMap[d.document_type_id] ?? 0) + 1;
-          if (d.is_latest) latestMap[d.document_type_id] = d as LeadDocument;
-        }
+        const { latestMap, countMap } = buildMaps(data as LeadDocument[] | null);
         setDocsByType(latestMap);
         setVersionCountByType(countMap);
         setLoading(false);
       });
     return () => { alive = false; };
-  }, [leadId]);
+  }, [leadId, documents]);
 
   const handleAfterUpload = () => {
     reload();
