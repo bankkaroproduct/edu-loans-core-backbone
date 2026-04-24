@@ -124,6 +124,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   const { isAdmin } = useRoleAccess();
   const { effectivePartnerId, effectiveUserId } = usePartnerContext();
   const { duplicates, checking, checkDuplicates } = useDuplicateCheck();
+  const { options: QUALIFICATIONS } = useHighestQualificationOptions();
   const [submitting, setSubmitting] = useState(false);
   const [hydrating, setHydrating] = useState(Boolean(hydrateId));
 
