@@ -75,6 +75,14 @@ export default function AdminLeadDetail() {
   const navigate = useNavigate();
   const [state, setState] = useState<State>(initialState);
 
+  // Shared source of truth for the lead's document requirements + uploaded files,
+  // used both here (embedded review panel) and on /admin/leads/:id/documents.
+  const {
+    requirements: sharedRequirements,
+    documents: sharedDocuments,
+    refresh: refreshDocs,
+  } = useLeadDocumentsData(id);
+
   const loadAll = useCallback(async () => {
     if (!id) return;
     setState((s) => ({ ...s, loading: true, error: null, notFound: false }));
@@ -192,14 +200,16 @@ export default function AdminLeadDetail() {
     );
   }
 
-  const { lead, history, notes, docRequirements, payouts, partner, submittedByName, audits, actorNames } = state;
+  const { lead, history, notes, payouts, partner, submittedByName, audits, actorNames } = state;
   const isDraft = lead.current_stage === "draft";
   const isStudentDirect = lead.source_type === "student_direct";
 
-  const unverifiedRequiredCount = docRequirements.filter(
+  const unverifiedRequiredCount = sharedRequirements.filter(
     (r) => r.required_flag && r.status !== "verified" && r.status !== "waived" && r.status !== "not_applicable",
   ).length;
   const hasSanctionInHistory = history.some((h) => h.new_stage === "sanction_received");
+
+  const onDocsChanged = () => { refreshDocs(); loadAll(); };
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -245,8 +255,9 @@ export default function AdminLeadDetail() {
           <AdminDocumentReviewPanel
             leadId={lead.id}
             lead={lead}
-            requirements={docRequirements}
-            onChanged={loadAll}
+            requirements={sharedRequirements as unknown as DocReq[]}
+            documents={sharedDocuments as unknown as never[]}
+            onChanged={onDocsChanged}
           />
 
           <AdminInternalNotes
