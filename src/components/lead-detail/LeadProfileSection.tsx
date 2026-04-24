@@ -22,10 +22,11 @@ function Field({
   label,
   value,
   editable,
+  /** Neutral non-editable fallback for derived/metadata fields. Never shows action-like nudge text. */
+  readOnlyFallback = "—",
 }: {
   label: string;
   value: string | null | undefined;
-  /** When provided (admin only), render an InlineEditField for missing OR existing value. */
   editable?: {
     leadId: string;
     field: string;
@@ -34,6 +35,7 @@ function Field({
     parseValue?: (raw: string) => unknown;
     formatDisplay?: (v: string) => string;
   };
+  readOnlyFallback?: string;
 }) {
   const hasValue = value !== null && value !== undefined && value !== "";
   return (
@@ -43,7 +45,7 @@ function Field({
         className={
           hasValue
             ? "text-sm font-medium break-words"
-            : "text-sm italic text-muted-foreground/70"
+            : "text-sm text-muted-foreground/70"
         }
       >
         {editable ? (
@@ -61,7 +63,7 @@ function Field({
         ) : hasValue ? (
           value
         ) : (
-          "Please provide details"
+          readOnlyFallback
         )}
       </p>
     </div>
