@@ -322,6 +322,10 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         highest_qualification: (data as any).highest_qualification ?? "",
         marks_gpa: (data as any).marks_gpa ?? "",
         partner_remark: "",
+        tenth_score: ((data as any).test_scores?.tenth ?? "").toString(),
+        twelfth_score: ((data as any).test_scores?.twelfth ?? "").toString(),
+        graduation_score: ((data as any).test_scores?.graduation ?? "").toString(),
+        highest_qualification_score: ((data as any).test_scores?.highest_qualification_score ?? "").toString(),
       });
       setOriginalLead(data as unknown as Record<string, unknown>);
       setEditLeadStage(data.current_stage ?? null);
