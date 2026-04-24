@@ -11,10 +11,7 @@ import { MasterCombobox, type MasterOption } from "@/components/ui/master-combob
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Lightbulb } from "lucide-react";
-
-const QUALIFICATIONS = [
-  "12th / High School", "Diploma", "Bachelor's Degree", "Master's Degree", "PhD / Doctorate", "Other",
-];
+import { HIGHEST_QUALIFICATION_OPTIONS as QUALIFICATIONS } from "@/lib/highestQualificationOptions";
 
 interface UniversityRow { id: string; university_name: string; country: string }
 interface CourseRow { id: string; course_name: string; course_category: string | null }

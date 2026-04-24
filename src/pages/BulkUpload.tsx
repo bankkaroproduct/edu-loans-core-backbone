@@ -25,6 +25,7 @@ import {
   type RowResult,
   type ProcessingStage,
 } from "@/hooks/useBulkUploadProcessor";
+import { HIGHEST_QUALIFICATION_OPTIONS } from "@/lib/highestQualificationOptions";
 
 type Batch = Tables<"bulk_upload_batches">;
 
@@ -476,7 +477,26 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
                 </div>
               </div>
 
-              {/* Collapsible field reference */}
+              {/* Always-visible Highest Qualification reference — visible to both Partner & Admin */}
+              <div className="rounded-lg border border-primary/20 bg-primary/[0.04] p-3">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                    Highest Qualification — Allowed Values
+                  </p>
+                  <Badge variant="secondary" className="text-[10px] px-1.5 h-5">Reference</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Use exactly one of these values in the <code className="font-mono text-[11px] px-1 py-0.5 rounded bg-muted">highest_qualification</code> column. Matching is case-insensitive, but spelling must match.
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {HIGHEST_QUALIFICATION_OPTIONS.map((q) => (
+                    <Badge key={q} variant="outline" className="text-[11px] font-normal">
+                      {q}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
               <Collapsible open={guideOpen} onOpenChange={setGuideOpen}>
                 <CollapsibleTrigger asChild>
                   <Button variant="ghost" size="sm" className="w-full justify-between text-muted-foreground hover:text-foreground">
@@ -514,7 +534,7 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
                               ) : c.name === "10th_score" || c.name === "12th_score" || c.name === "graduation_score" || c.name === "highest_qualification_score" ? (
                                 <span>{c.example} <em>(numeric score, ≥ 0)</em></span>
                               ) : c.name === "highest_qualification" ? (
-                                <span>{c.example} <em>(must be one of: 12th / High School, Diploma, Bachelor's Degree, Master's Degree, PhD / Doctorate, Other)</em></span>
+                                <span>{c.example} <em>(must be one of: {HIGHEST_QUALIFICATION_OPTIONS.join(", ")})</em></span>
                               ) : c.name === "intended_study_country" ? (
                                 <span>{c.example} <em>(must match countries master)</em></span>
                               ) : c.name === "intake_term" ? (

@@ -2,6 +2,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { createDownstreamRecords } from "@/hooks/useLeadWriteFlow";
 import type { Tables } from "@/integrations/supabase/types";
 import { normalizePhone } from "@/lib/phone";
+import {
+  HIGHEST_QUALIFICATION_OPTIONS,
+  matchHighestQualification,
+} from "@/lib/highestQualificationOptions";
 
 type AppUser = Tables<"users">;
 
@@ -86,11 +90,8 @@ const NEW_TEMPLATE_HEADERS = [
   "coapplicant_existing_emi",
 ];
 
-/** Allowed values for highest_qualification — must match Add Lead / Student portal list. */
-const ALLOWED_QUALIFICATIONS = [
-  "12th / High School", "Diploma", "Bachelor's Degree",
-  "Master's Degree", "PhD / Doctorate", "Other",
-];
+/** Allowed values for highest_qualification — sourced from the shared single-source list. */
+const ALLOWED_QUALIFICATIONS = HIGHEST_QUALIFICATION_OPTIONS;
 
 export function getTemplateCSV(): string {
   return ALL_HEADERS.join(",") + "\n";
@@ -293,9 +294,7 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
 
   let qualificationNormalized: string | undefined;
   if (qualification) {
-    const match = ALLOWED_QUALIFICATIONS.find(
-      (q) => q.toLowerCase() === qualification.toLowerCase(),
-    );
+    const match = matchHighestQualification(qualification);
     if (!match) {
       errors.push(`highest_qualification must be one of: ${ALLOWED_QUALIFICATIONS.join(" | ")}`);
     } else {
