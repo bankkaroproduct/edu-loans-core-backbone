@@ -478,19 +478,6 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
                 </div>
               </div>
 
-              {/* Subtle pointer to the Highest Qualification master (full list lives in Master Data). */}
-              <p className="text-xs text-muted-foreground">
-                Need the allowed values for <code className="font-mono text-[11px] px-1 py-0.5 rounded bg-muted">highest_qualification</code>?{" "}
-                <button
-                  type="button"
-                  onClick={() => navigate(isAdminContext ? "/admin/master-data?tab=qualifications" : "/master-data")}
-                  className="text-primary underline-offset-2 hover:underline font-medium"
-                >
-                  See Master Data → Highest Qualification
-                </button>
-                .
-              </p>
-
               <Collapsible open={guideOpen} onOpenChange={setGuideOpen}>
                 <CollapsibleTrigger asChild>
                   <Button variant="ghost" size="sm" className="w-full justify-between text-muted-foreground hover:text-foreground">
