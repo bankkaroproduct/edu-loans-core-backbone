@@ -18,6 +18,7 @@ import { AdminInternalNotes } from "@/components/admin/AdminInternalNotes";
 import { AdminEditRequestPanel } from "@/components/admin/AdminEditRequestPanel";
 import { LeadAuthenticityEditor } from "@/components/admin/LeadAuthenticityEditor";
 import { LeadCommunicationPanel } from "@/components/admin/communications/LeadCommunicationPanel";
+import { useLeadDocumentsData } from "@/hooks/useLeadDocumentsData";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Lead = Tables<"student_leads">;
@@ -48,7 +49,6 @@ interface State {
   lead: Lead | null;
   history: History[];
   notes: Note[];
-  docRequirements: DocReq[];
   payouts: PayoutRecord[];
   partner: PartnerOrg | null;
   submittedByName: string | null;
@@ -63,7 +63,6 @@ const initialState: State = {
   lead: null,
   history: [],
   notes: [],
-  docRequirements: [],
   payouts: [],
   partner: null,
   submittedByName: null,
