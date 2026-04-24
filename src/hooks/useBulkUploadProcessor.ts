@@ -549,8 +549,24 @@ export async function processBulkUpload(
         coapplicant_name: row.coapplicant_name ?? null,
         coapplicant_relation: row.coapplicant_relation ?? null,
         coapplicant_income: row.coapplicant_income ?? null,
+        coapplicant_existing_emi: row.coapplicant_existing_emi ?? null,
         collateral_available: row.collateral_available ?? null,
         collateral_notes: row.collateral_notes ?? null,
+        // Academic — mirror Add Lead conventions:
+        //  - highest_qualification → text column (Add Lead behavior)
+        //  - highest_qualification_score → marks_gpa text column (Add Lead behavior)
+        //  - 10th / 12th / graduation scores + qualification score → test_scores jsonb
+        //    (matches Student portal academic capture shape so Lead Detail can read it)
+        highest_qualification: row.highest_qualification ?? null,
+        marks_gpa: row.highest_qualification_score != null ? String(row.highest_qualification_score) : null,
+        test_scores: (() => {
+          const ts: Record<string, number> = {};
+          if (row.tenth_score != null) ts.tenth = row.tenth_score;
+          if (row.twelfth_score != null) ts.twelfth = row.twelfth_score;
+          if (row.graduation_score != null) ts.graduation = row.graduation_score;
+          if (row.highest_qualification_score != null) ts.highest_qualification = row.highest_qualification_score;
+          return Object.keys(ts).length > 0 ? ts : {};
+        })() as any,
         current_stage: "submitted" as any,
         current_status: "awaiting_verification" as any,
       })
