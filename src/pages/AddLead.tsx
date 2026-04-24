@@ -716,7 +716,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       resultLeadId = data?.id ?? null;
       opError = error;
     } else {
-      const { data, error } = await supabase.from("student_leads").insert(payload).select("id").single();
+      const { data, error } = await supabase.from("student_leads").insert(payload as any).select("id").single();
       resultLeadId = data?.id ?? null;
       opError = error;
     }
