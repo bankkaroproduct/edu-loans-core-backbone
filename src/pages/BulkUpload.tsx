@@ -44,7 +44,7 @@ const rowStatusConfig = {
 
 const fmt = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-/* ─── Template field reference ─── */
+/* ─── Template field reference (final canonical order) ─── */
 const REQUIRED_COLS = [
   { name: "student_first_name", example: "Rahul" },
   { name: "student_last_name", example: "Sharma" },
@@ -63,9 +63,15 @@ const OPTIONAL_COLS = [
   { name: "state", example: "Maharashtra" },
   { name: "country_of_residence", example: "India" },
   { name: "university_name", example: "MIT" },
+  { name: "10th_score", example: "92" },
+  { name: "12th_score", example: "88" },
+  { name: "graduation_score", example: "8.5" },
+  { name: "highest_qualification", example: "Bachelor's Degree" },
+  { name: "highest_qualification_score", example: "8.5" },
   { name: "coapplicant_name", example: "Suresh Sharma" },
   { name: "coapplicant_relation", example: "Father" },
   { name: "coapplicant_income", example: "1200000" },
+  { name: "coapplicant_existing_emi", example: "15000" },
   { name: "collateral_available", example: "yes" },
   { name: "collateral_notes", example: "Flat in Mumbai" },
   { name: "source_sub_type", example: "referral" },
