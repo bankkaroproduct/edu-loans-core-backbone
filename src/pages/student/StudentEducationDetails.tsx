@@ -192,6 +192,13 @@ export default function StudentEducationDetails() {
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Academic Profile</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
+              <Label>Highest Qualification <span className="text-destructive">*</span></Label>
+              <Select value={formData.highest_qualification} onValueChange={v => updateField("highest_qualification", v)}>
+                <SelectTrigger><SelectValue placeholder="Select qualification" /></SelectTrigger>
+                <SelectContent>{QUALIFICATIONS.map(q => <SelectItem key={q} value={q}>{q}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
               <Label>Highest Qualification Score</Label>
               <Input
                 value={formData.test_scores.highest_qualification_score || ""}
@@ -199,7 +206,6 @@ export default function StudentEducationDetails() {
                 placeholder="e.g. 8.5 CGPA or 78%"
               />
             </div>
-            <div className="hidden sm:block" />
             <div className="space-y-1.5">
               <Label>10th Score <span className="text-destructive">*</span></Label>
               <Input
@@ -224,7 +230,7 @@ export default function StudentEducationDetails() {
                 placeholder="e.g. 7.8 CGPA or 75%"
               />
               <p className="text-xs text-muted-foreground">
-                10th and 12th are required. Graduation and Highest Qualification Score are optional.
+                Highest Qualification, 10th and 12th are required. Graduation and Highest Qualification Score are optional.
               </p>
             </div>
           </div>
