@@ -90,11 +90,8 @@ const NEW_TEMPLATE_HEADERS = [
   "coapplicant_existing_emi",
 ];
 
-/** Allowed values for highest_qualification — must match Add Lead / Student portal list. */
-const ALLOWED_QUALIFICATIONS = [
-  "12th / High School", "Diploma", "Bachelor's Degree",
-  "Master's Degree", "PhD / Doctorate", "Other",
-];
+/** Allowed values for highest_qualification — sourced from the shared single-source list. */
+const ALLOWED_QUALIFICATIONS = HIGHEST_QUALIFICATION_OPTIONS;
 
 export function getTemplateCSV(): string {
   return ALL_HEADERS.join(",") + "\n";
