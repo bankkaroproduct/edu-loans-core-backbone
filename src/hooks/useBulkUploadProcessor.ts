@@ -238,6 +238,12 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
   const collateralStr = val("collateral_available");
   const collateralNotes = val("collateral_notes");
   const coapplicantIncomeStr = val("coapplicant_income");
+  const coapplicantEmiStr = val("coapplicant_existing_emi");
+  const tenthStr = val("10th_score");
+  const twelfthStr = val("12th_score");
+  const gradStr = val("graduation_score");
+  const qualification = val("highest_qualification");
+  const qualificationScoreStr = val("highest_qualification_score");
 
   if (!firstName) errors.push("student_first_name is required");
   if (!lastName) errors.push("student_last_name is required");
@@ -271,6 +277,32 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
     if (isNaN(coapplicantIncome)) errors.push("coapplicant_income must be numeric");
   }
 
+  // ─── New academic + EMI fields (all optional values, validated when present) ───
+  const parseNumeric = (s: string, label: string): number | undefined => {
+    if (!s) return undefined;
+    const n = parseFloat(s.replace(/,/g, ""));
+    if (isNaN(n)) { errors.push(`${label} must be numeric (got "${s}")`); return undefined; }
+    if (n < 0) { errors.push(`${label} must be ≥ 0`); return undefined; }
+    return n;
+  };
+  const tenth = parseNumeric(tenthStr, "10th_score");
+  const twelfth = parseNumeric(twelfthStr, "12th_score");
+  const grad = parseNumeric(gradStr, "graduation_score");
+  const qualScore = parseNumeric(qualificationScoreStr, "highest_qualification_score");
+  const coapplicantEmi = parseNumeric(coapplicantEmiStr, "coapplicant_existing_emi");
+
+  let qualificationNormalized: string | undefined;
+  if (qualification) {
+    const match = ALLOWED_QUALIFICATIONS.find(
+      (q) => q.toLowerCase() === qualification.toLowerCase(),
+    );
+    if (!match) {
+      errors.push(`highest_qualification must be one of: ${ALLOWED_QUALIFICATIONS.join(" | ")}`);
+    } else {
+      qualificationNormalized = match;
+    }
+  }
+
   const universityRaw = val("university_name");
 
   const parsed: ParsedRow = {
@@ -289,10 +321,16 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
     intake_year: isNaN(intakeYear) ? undefined : intakeYear,
     course_name: courseName,
     university_name: universityRaw || undefined,
+    tenth_score: tenth,
+    twelfth_score: twelfth,
+    graduation_score: grad,
+    highest_qualification: qualificationNormalized,
+    highest_qualification_score: qualScore,
     loan_amount_required: isNaN(loanAmount) ? undefined : loanAmount,
     coapplicant_name: val("coapplicant_name") || undefined,
     coapplicant_relation: val("coapplicant_relation") || undefined,
     coapplicant_income: coapplicantIncome,
+    coapplicant_existing_emi: coapplicantEmi,
     collateral_available: collateralAvailable ?? undefined,
     collateral_notes: collateralNotes || undefined,
     source_sub_type: val("source_sub_type") || undefined,
