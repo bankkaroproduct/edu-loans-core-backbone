@@ -4,12 +4,12 @@ import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, FileText, RefreshCw } from "lucide-react";
+import { ArrowLeft, RefreshCw } from "lucide-react";
 import { DocumentSummaryStrip } from "@/components/documents/DocumentSummaryStrip";
 import { DocumentChecklist } from "@/components/documents/DocumentChecklist";
 import { DocumentUploadDialog } from "@/components/documents/DocumentUploadDialog";
 import { AdminAddDocumentButton } from "@/components/documents/AdminAddDocumentButton";
-import { AdminDocumentReviewPanel } from "@/components/admin/AdminDocumentReviewPanel";
+import { AdminLeadDocumentsView } from "@/components/admin/AdminLeadDocumentsView";
 import {
   useLeadDocumentsData,
   type LeadDocRequirement,
@@ -101,27 +101,9 @@ export default function LeadDocuments() {
         </div>
       </div>
 
-      {/* Summary Strip (shared) */}
-      <DocumentSummaryStrip requirements={requirements} hideNudge={isAdminContext} />
-
-      {/* Body — admin gets the same review panel that's embedded in Lead Detail; partners/students get the checklist. */}
-      {requirements.length === 0 ? (
-        <div className="rounded-lg border bg-card p-8 text-center space-y-2">
-          <FileText className="h-8 w-8 mx-auto text-muted-foreground" />
-          <h3 className="font-medium text-foreground">No document requirements have been added for this lead yet.</h3>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            {isAdminContext
-              ? "Use “Add Document” above to create the first requirement, then upload on behalf of the lead."
-              : "Document requirements will appear here once they are set by the operations team."}
-          </p>
-          {!isAdminContext && (
-            <Button variant="outline" size="sm" onClick={() => navigate(leadDetailPath)}>
-              Back to Lead Detail
-            </Button>
-          )}
-        </div>
-      ) : isAdminContext ? (
-        <AdminDocumentReviewPanel
+      {/* Body — admin renders the SAME shared view used embedded in Lead Detail; partners/students keep the checklist. */}
+      {isAdminContext ? (
+        <AdminLeadDocumentsView
           leadId={lead.id}
           lead={lead}
           requirements={requirements}
@@ -129,13 +111,16 @@ export default function LeadDocuments() {
           onChanged={refresh}
         />
       ) : (
-        <DocumentChecklist
-          requirements={requirements}
-          documents={documents}
-          onUpload={(req) => setUploadTarget(req)}
-          leadId={lead.id}
-          hideNudge={isAdminContext}
-        />
+        <>
+          <DocumentSummaryStrip requirements={requirements} hideNudge={isAdminContext} />
+          <DocumentChecklist
+            requirements={requirements}
+            documents={documents}
+            onUpload={(req) => setUploadTarget(req)}
+            leadId={lead.id}
+            hideNudge={isAdminContext}
+          />
+        </>
       )}
 
       {/* Upload Dialog — only used by the partner/student checklist path */}

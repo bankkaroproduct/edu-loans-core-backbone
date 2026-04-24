@@ -13,7 +13,7 @@ import { LeadDuplicateContext } from "@/components/lead-detail/LeadDuplicateCont
 import { LeadPayoutSnapshot } from "@/components/lead-detail/LeadPayoutSnapshot";
 import { AdminPartnerCard } from "@/components/admin/AdminPartnerCard";
 import { AdminStageStatusPanel } from "@/components/admin/AdminStageStatusPanel";
-import { AdminDocumentReviewPanel } from "@/components/admin/AdminDocumentReviewPanel";
+import { AdminLeadDocumentsView } from "@/components/admin/AdminLeadDocumentsView";
 import { AdminInternalNotes } from "@/components/admin/AdminInternalNotes";
 import { AdminEditRequestPanel } from "@/components/admin/AdminEditRequestPanel";
 import { LeadAuthenticityEditor } from "@/components/admin/LeadAuthenticityEditor";
@@ -252,11 +252,11 @@ export default function AdminLeadDetail() {
         <div className="lg:col-span-2 space-y-6">
           <LeadProfileSection lead={lead} submittedByName={submittedByName} />
 
-          <AdminDocumentReviewPanel
+          <AdminLeadDocumentsView
             leadId={lead.id}
             lead={lead}
-            requirements={sharedRequirements as unknown as DocReq[]}
-            documents={sharedDocuments as unknown as never[]}
+            requirements={sharedRequirements}
+            documents={sharedDocuments}
             onChanged={onDocsChanged}
           />
 
