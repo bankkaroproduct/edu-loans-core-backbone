@@ -455,6 +455,11 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       if (!form.intake_term) return { message: "Intake term is required", step: "study", field: "intake_term" };
       if (!form.intake_year) return { message: "Intake year is required", step: "study", field: "intake_year" };
 
+      // Academic Profile — mandatory: highest qualification, 10th score, 12th score.
+      if (!form.highest_qualification) return { message: "Highest qualification is required", step: "study", field: "highest_qualification" };
+      if (!form.tenth_score.trim()) return { message: "10th score is required", step: "study", field: "tenth_score" };
+      if (!form.twelfth_score.trim()) return { message: "12th score is required", step: "study", field: "twelfth_score" };
+
       // Financial Info — required in BOTH partner and admin modes (restored).
       if (!form.loan_amount_required) return { message: "Approx loan amount is required", step: "financial", field: "loan_amount_required" };
       if (isNaN(Number(form.loan_amount_required)) || Number(form.loan_amount_required) <= 0)
