@@ -119,7 +119,7 @@ export default function StudentReviewSubmit() {
         readOnly={isReadOnly}
         items={[
           { label: "Highest Qualification", value: formData.highest_qualification },
-          { label: "Marks / GPA", value: formData.marks_gpa },
+          { label: "Highest Qualification Score", value: formData.test_scores.highest_qualification_score || formData.marks_gpa },
           { label: "Course", value: formData.course_name },
           { label: "University", value: formData.university_name_raw },
           { label: "Intake", value: formData.intake_term && formData.intake_year ? `${formData.intake_term} ${formData.intake_year}` : null },
