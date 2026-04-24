@@ -87,10 +87,9 @@ export default function AdminLeadDetail() {
       }
       const lead = leadRes.data;
 
-      const [histRes, notesRes, docRes, payoutRes, partnerRes, userRes, auditRes] = await Promise.all([
+      const [histRes, notesRes, payoutRes, partnerRes, userRes, auditRes] = await Promise.all([
         supabase.from("lead_stage_history").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
         supabase.from("lead_notes").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
-        supabase.from("lead_document_requirements").select("*, document_master(document_name, document_category, document_code, applicable_for)").eq("lead_id", id).order("created_at"),
         supabase.from("partner_payout_records").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
         lead.partner_id
           ? supabase.from("partner_organizations").select("*").eq("id", lead.partner_id).maybeSingle()
@@ -101,7 +100,7 @@ export default function AdminLeadDetail() {
         supabase.from("audit_logs").select("*").eq("entity_type", "student_lead").eq("entity_id", id).order("created_at", { ascending: false }),
       ]);
 
-      const errs = [histRes.error, notesRes.error, docRes.error, payoutRes.error, partnerRes.error, userRes.error, auditRes.error].filter(Boolean);
+      const errs = [histRes.error, notesRes.error, payoutRes.error, partnerRes.error, userRes.error, auditRes.error].filter(Boolean);
       if (errs.length) throw errs[0];
 
       // Resolve actor names for audit logs + history + notes
@@ -122,7 +121,6 @@ export default function AdminLeadDetail() {
         lead,
         history: histRes.data ?? [],
         notes: notesRes.data ?? [],
-        docRequirements: (docRes.data ?? []) as DocReq[],
         payouts: payoutRes.data ?? [],
         partner: (partnerRes.data ?? null) as PartnerOrg | null,
         submittedByName: (userRes.data as { full_name?: string } | null)?.full_name ?? null,
