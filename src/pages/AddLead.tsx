@@ -1394,8 +1394,15 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   nudgeStep="study"
                   nudgeField="intake_term"
                 />
-                <ReviewRow label="Highest Qualification" value={form.highest_qualification} />
-                <ReviewRow label="Marks / GPA" value={form.marks_gpa} />
+              </div>
+              <div>
+                <Badge variant="outline" className="mb-2">Academic Profile</Badge>
+                <ReviewRow label="Highest Qualification" value={form.highest_qualification} nudgeStep="study" nudgeField="highest_qualification" />
+                <ReviewRow label="Highest Qualification Score" value={form.highest_qualification_score} />
+                <ReviewRow label="10th Score" value={form.tenth_score} nudgeStep="study" nudgeField="tenth_score" />
+                <ReviewRow label="12th Score" value={form.twelfth_score} nudgeStep="study" nudgeField="twelfth_score" />
+                <ReviewRow label="Graduation Score" value={form.graduation_score} />
+                {form.marks_gpa ? <ReviewRow label="Marks / GPA (legacy)" value={form.marks_gpa} /> : null}
               </div>
               {/* Financial Info — required group, rendered for both partner and admin modes */}
               <div>
