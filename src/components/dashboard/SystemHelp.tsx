@@ -2,22 +2,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, FileText, HelpCircle, Info, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { getTemplateCSV } from "@/hooks/useBulkUploadProcessor";
 
 function downloadBulkTemplate() {
-  const headers = [
-    "student_first_name", "student_last_name", "student_email", "student_phone",
-    "student_whatsapp", "city", "state", "country_of_residence",
-    "intended_study_country", "university_name_raw", "course_name", "course_category",
-    "intake_term", "intake_year", "loan_amount_required",
-    "coapplicant_name", "coapplicant_relation", "coapplicant_income",
-    "collateral_available", "collateral_notes",
-  ];
-  const csv = headers.join(",") + "\n";
+  const csv = getTemplateCSV();
   const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "eduloans_bulk_upload_template.csv";
+  a.download = "lead_upload_template.csv";
   a.click();
   URL.revokeObjectURL(url);
 }
