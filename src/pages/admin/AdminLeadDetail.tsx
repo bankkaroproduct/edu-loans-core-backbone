@@ -18,6 +18,7 @@ import { AdminInternalNotes } from "@/components/admin/AdminInternalNotes";
 import { AdminEditRequestPanel } from "@/components/admin/AdminEditRequestPanel";
 import { LeadAuthenticityEditor } from "@/components/admin/LeadAuthenticityEditor";
 import { LeadCommunicationPanel } from "@/components/admin/communications/LeadCommunicationPanel";
+import { useLeadDocumentsData } from "@/hooks/useLeadDocumentsData";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Lead = Tables<"student_leads">;
@@ -48,7 +49,6 @@ interface State {
   lead: Lead | null;
   history: History[];
   notes: Note[];
-  docRequirements: DocReq[];
   payouts: PayoutRecord[];
   partner: PartnerOrg | null;
   submittedByName: string | null;
@@ -63,7 +63,6 @@ const initialState: State = {
   lead: null,
   history: [],
   notes: [],
-  docRequirements: [],
   payouts: [],
   partner: null,
   submittedByName: null,
@@ -75,6 +74,14 @@ export default function AdminLeadDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [state, setState] = useState<State>(initialState);
+
+  // Shared source of truth for the lead's document requirements + uploaded files,
+  // used both here (embedded review panel) and on /admin/leads/:id/documents.
+  const {
+    requirements: sharedRequirements,
+    documents: sharedDocuments,
+    refresh: refreshDocs,
+  } = useLeadDocumentsData(id);
 
   const loadAll = useCallback(async () => {
     if (!id) return;
@@ -88,10 +95,9 @@ export default function AdminLeadDetail() {
       }
       const lead = leadRes.data;
 
-      const [histRes, notesRes, docRes, payoutRes, partnerRes, userRes, auditRes] = await Promise.all([
+      const [histRes, notesRes, payoutRes, partnerRes, userRes, auditRes] = await Promise.all([
         supabase.from("lead_stage_history").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
         supabase.from("lead_notes").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
-        supabase.from("lead_document_requirements").select("*, document_master(document_name, document_category, document_code, applicable_for)").eq("lead_id", id).order("created_at"),
         supabase.from("partner_payout_records").select("*").eq("lead_id", id).order("created_at", { ascending: false }),
         lead.partner_id
           ? supabase.from("partner_organizations").select("*").eq("id", lead.partner_id).maybeSingle()
@@ -102,7 +108,7 @@ export default function AdminLeadDetail() {
         supabase.from("audit_logs").select("*").eq("entity_type", "student_lead").eq("entity_id", id).order("created_at", { ascending: false }),
       ]);
 
-      const errs = [histRes.error, notesRes.error, docRes.error, payoutRes.error, partnerRes.error, userRes.error, auditRes.error].filter(Boolean);
+      const errs = [histRes.error, notesRes.error, payoutRes.error, partnerRes.error, userRes.error, auditRes.error].filter(Boolean);
       if (errs.length) throw errs[0];
 
       // Resolve actor names for audit logs + history + notes
@@ -123,7 +129,6 @@ export default function AdminLeadDetail() {
         lead,
         history: histRes.data ?? [],
         notes: notesRes.data ?? [],
-        docRequirements: (docRes.data ?? []) as DocReq[],
         payouts: payoutRes.data ?? [],
         partner: (partnerRes.data ?? null) as PartnerOrg | null,
         submittedByName: (userRes.data as { full_name?: string } | null)?.full_name ?? null,
@@ -195,14 +200,16 @@ export default function AdminLeadDetail() {
     );
   }
 
-  const { lead, history, notes, docRequirements, payouts, partner, submittedByName, audits, actorNames } = state;
+  const { lead, history, notes, payouts, partner, submittedByName, audits, actorNames } = state;
   const isDraft = lead.current_stage === "draft";
   const isStudentDirect = lead.source_type === "student_direct";
 
-  const unverifiedRequiredCount = docRequirements.filter(
+  const unverifiedRequiredCount = sharedRequirements.filter(
     (r) => r.required_flag && r.status !== "verified" && r.status !== "waived" && r.status !== "not_applicable",
   ).length;
   const hasSanctionInHistory = history.some((h) => h.new_stage === "sanction_received");
+
+  const onDocsChanged = () => { refreshDocs(); loadAll(); };
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -248,8 +255,9 @@ export default function AdminLeadDetail() {
           <AdminDocumentReviewPanel
             leadId={lead.id}
             lead={lead}
-            requirements={docRequirements}
-            onChanged={loadAll}
+            requirements={sharedRequirements as unknown as DocReq[]}
+            documents={sharedDocuments as unknown as never[]}
+            onChanged={onDocsChanged}
           />
 
           <AdminInternalNotes

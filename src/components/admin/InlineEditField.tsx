@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Check, X, Loader2 } from "lucide-react";
@@ -59,6 +59,13 @@ export function InlineEditField({
   const [confirming, setConfirming] = useState(false);
   const [saving, setSaving] = useState(false);
   const [localValue, setLocalValue] = useState<string | null | undefined>(value);
+
+  // Re-sync display when parent refreshes the lead, but never blow away an active edit session.
+  useEffect(() => {
+    if (!editing && !confirming && !saving) {
+      setLocalValue(value);
+    }
+  }, [value, editing, confirming, saving]);
 
   const hasValue = localValue !== null && localValue !== undefined && localValue !== "";
 
