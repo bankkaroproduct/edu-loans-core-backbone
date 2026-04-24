@@ -134,6 +134,7 @@ export default function MasterData() {
           <TabsTrigger value="universities">Universities</TabsTrigger>
           <TabsTrigger value="courses">Courses</TabsTrigger>
           <TabsTrigger value="intakes">Intakes</TabsTrigger>
+          <TabsTrigger value="qualifications">Highest Qualification</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="stages">Lifecycle Stages</TabsTrigger>
         </TabsList>
@@ -220,6 +221,27 @@ export default function MasterData() {
                 searchKeys={["intake_term", "intake_year"]}
                 orderBy={{ column: "sort_order", ascending: true }}
                 searchPlaceholder="Search intakes…"
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="qualifications">
+          <Card>
+            <CardHeader>
+              <CardTitle>Highest Qualification</CardTitle>
+              <CardDescription>Allowed values for the <code className="font-mono text-xs px-1 py-0.5 rounded bg-muted">highest_qualification</code> field used in lead creation and bulk upload.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <MasterTable
+                table="highest_qualification_master"
+                columns={[
+                  { key: "sort_order", label: "#" },
+                  { key: "qualification_label", label: "Qualification" },
+                ]}
+                searchKeys={["qualification_label"]}
+                orderBy={{ column: "sort_order", ascending: true }}
+                searchPlaceholder="Search qualifications…"
               />
             </CardContent>
           </Card>
