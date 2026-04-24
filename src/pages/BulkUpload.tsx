@@ -25,6 +25,7 @@ import {
   type RowResult,
   type ProcessingStage,
 } from "@/hooks/useBulkUploadProcessor";
+import { HIGHEST_QUALIFICATION_OPTIONS } from "@/lib/highestQualificationOptions";
 
 type Batch = Tables<"bulk_upload_batches">;
 
