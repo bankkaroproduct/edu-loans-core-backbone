@@ -509,8 +509,12 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
                             <TableCell className="text-xs text-muted-foreground">
                               {c.name === "collateral_available" ? (
                                 <span><strong>yes</strong> / <strong>no</strong> / true / false / 1 / 0</span>
-                              ) : c.name === "coapplicant_income" || c.name === "loan_amount_required" ? (
-                                <span>{c.example} <em>(numeric, positive)</em></span>
+                              ) : c.name === "coapplicant_income" || c.name === "coapplicant_existing_emi" || c.name === "loan_amount_required" ? (
+                                <span>{c.example} <em>(numeric, ≥ 0)</em></span>
+                              ) : c.name === "10th_score" || c.name === "12th_score" || c.name === "graduation_score" || c.name === "highest_qualification_score" ? (
+                                <span>{c.example} <em>(numeric score, ≥ 0)</em></span>
+                              ) : c.name === "highest_qualification" ? (
+                                <span>{c.example} <em>(must be one of: 12th / High School, Diploma, Bachelor's Degree, Master's Degree, PhD / Doctorate, Other)</em></span>
                               ) : c.name === "intended_study_country" ? (
                                 <span>{c.example} <em>(must match countries master)</em></span>
                               ) : c.name === "intake_term" ? (
