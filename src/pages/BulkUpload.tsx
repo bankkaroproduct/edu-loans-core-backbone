@@ -515,7 +515,7 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
                               ) : c.name === "10th_score" || c.name === "12th_score" || c.name === "graduation_score" || c.name === "highest_qualification_score" ? (
                                 <span>{c.example} <em>(numeric score, ≥ 0)</em></span>
                               ) : c.name === "highest_qualification" ? (
-                                <span>{c.example} <em>(must be one of: 12th / High School, Diploma, Bachelor's Degree, Master's Degree, PhD / Doctorate, Other)</em></span>
+                                <span>{c.example} <em>(must be one of: {HIGHEST_QUALIFICATION_OPTIONS.join(", ")})</em></span>
                               ) : c.name === "intended_study_country" ? (
                                 <span>{c.example} <em>(must match countries master)</em></span>
                               ) : c.name === "intake_term" ? (
