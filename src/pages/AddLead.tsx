@@ -599,6 +599,36 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     }
   };
 
+  /**
+   * Build the merged test_scores JSONB to write back to student_leads.
+   *
+   * Critical: this MUST preserve any existing keys we don't manage in this
+   * form (e.g. IELTS / TOEFL / Duolingo / GRE / GMAT entered via the student
+   * portal) so the AddLead/Admin edit surface never wipes them out.
+   *
+   * Numeric scores are stored as numbers when parseable; otherwise as the raw
+   * trimmed string. Empty inputs are omitted (we never write empty strings).
+   */
+  const buildMergedTestScores = useCallback(() => {
+    const existing = (originalLead?.test_scores && typeof originalLead.test_scores === "object")
+      ? { ...(originalLead.test_scores as Record<string, unknown>) }
+      : {};
+    const setOrDelete = (key: string, raw: string) => {
+      const trimmed = raw.trim();
+      if (!trimmed) {
+        delete existing[key];
+        return;
+      }
+      const num = Number(trimmed);
+      existing[key] = Number.isFinite(num) && trimmed !== "" && !isNaN(num) ? num : trimmed;
+    };
+    setOrDelete("tenth", form.tenth_score);
+    setOrDelete("twelfth", form.twelfth_score);
+    setOrDelete("graduation", form.graduation_score);
+    setOrDelete("highest_qualification_score", form.highest_qualification_score);
+    return existing;
+  }, [originalLead, form.tenth_score, form.twelfth_score, form.graduation_score, form.highest_qualification_score]);
+
   const createLead = async (asDraft: boolean, hasDuplicateWarning: boolean) => {
     setSubmitting(true);
     setShowDupDialog(false);
@@ -609,6 +639,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     const effectiveWhatsapp = form.whatsapp_same_as_phone
       ? (normalizePhone(form.student_phone) ?? form.student_phone.trim())
       : (form.student_whatsapp.trim() ? (normalizePhone(form.student_whatsapp) ?? form.student_whatsapp.trim()) : null);
+
+    const mergedTestScores = buildMergedTestScores();
 
     const payload = {
       student_first_name: form.student_first_name.trim(),
@@ -642,6 +674,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       collateral_notes: form.collateral_state === "likely" ? (form.collateral_notes.trim() || null) : null,
       highest_qualification: form.highest_qualification || null,
       marks_gpa: form.marks_gpa.trim() || null,
+      test_scores: mergedTestScores,
       source_sub_type: "add_lead",
       partner_id: effectivePartnerId!,
       partner_user_id: effectiveUserId!,
