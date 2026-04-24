@@ -167,6 +167,16 @@ export function parseCSV(text: string): { headers: string[]; rows: Record<string
 
   if (missing.length > 0) return { error: `Missing required columns: ${missing.join(", ")}` };
 
+  // Reject outdated templates that don't include the new academic + EMI columns.
+  const missingNewCols = NEW_TEMPLATE_HEADERS.filter((h) => !headers.includes(h));
+  if (missingNewCols.length > 0) {
+    return {
+      error:
+        `Outdated template detected. Missing column(s): ${missingNewCols.join(", ")}. ` +
+        `Please re-download the latest template and re-upload.`,
+    };
+  }
+
   const rows: Record<string, string>[] = [];
   for (let i = 1; i < lines.length; i++) {
     const values = parseDelimitedLine(lines[i], delimiter);
