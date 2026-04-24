@@ -209,6 +209,24 @@ export const MASTER_SCHEMAS: Record<string, MasterSchema> = {
     defaultSort: { column: "sort_order", ascending: true },
     addLabel: "Add stage",
   },
+  qualifications: {
+    key: "qualifications",
+    label: "Highest Qualification",
+    table: "highest_qualification_master",
+    searchKeys: ["qualification_label"],
+    searchPlaceholder: "Search qualifications…",
+    columns: [
+      { key: "sort_order", label: "#" },
+      { key: "qualification_label", label: "Qualification" },
+    ],
+    fields: [
+      { key: "qualification_label", label: "Qualification name", type: "text", required: true, placeholder: "e.g. Bachelor's Degree" },
+      { key: "sort_order", label: "Sort order", type: "number", hint: "Lower numbers appear first in dropdowns" },
+    ],
+    hasActiveFlag: true,
+    defaultSort: { column: "sort_order", ascending: true },
+    addLabel: "Add qualification",
+  },
   statuses: {
     key: "statuses",
     label: "Lifecycle Statuses",
