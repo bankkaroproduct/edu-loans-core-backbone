@@ -5,6 +5,7 @@ import { normalizePhone } from "@/lib/phone";
 import {
   HIGHEST_QUALIFICATION_OPTIONS,
   matchHighestQualification,
+  fetchHighestQualificationOptions,
 } from "@/lib/highestQualificationOptions";
 
 type AppUser = Tables<"users">;
@@ -90,8 +91,8 @@ const NEW_TEMPLATE_HEADERS = [
   "coapplicant_existing_emi",
 ];
 
-/** Allowed values for highest_qualification — sourced from the shared single-source list. */
-const ALLOWED_QUALIFICATIONS = HIGHEST_QUALIFICATION_OPTIONS;
+/** Static fallback if the master fetch fails — keeps validation deterministic. */
+const FALLBACK_QUALIFICATIONS = HIGHEST_QUALIFICATION_OPTIONS;
 
 export function getTemplateCSV(): string {
   return ALL_HEADERS.join(",") + "\n";
@@ -204,13 +205,15 @@ interface MasterData {
   intakeTerms: string[];
   intakeYears: number[];
   universityMap: Map<string, string>; // lowercase name -> id
+  qualifications: readonly string[];
 }
 
 async function loadMasterData(): Promise<MasterData> {
-  const [cRes, iRes, uRes] = await Promise.all([
+  const [cRes, iRes, uRes, qOpts] = await Promise.all([
     supabase.from("countries_master").select("country_name").eq("active_flag", true),
     supabase.from("intake_master").select("intake_term,intake_year").eq("active_flag", true),
     supabase.from("universities_master").select("id,university_name").eq("active_flag", true),
+    fetchHighestQualificationOptions(),
   ]);
 
   const countries = (cRes.data ?? []).map((c) => c.country_name.toLowerCase());
@@ -218,8 +221,9 @@ async function loadMasterData(): Promise<MasterData> {
   const intakeYears = [...new Set((iRes.data ?? []).map((i) => i.intake_year))];
   const universityMap = new Map<string, string>();
   (uRes.data ?? []).forEach((u) => universityMap.set(u.university_name.toLowerCase(), u.id));
+  const qualifications = qOpts.length > 0 ? qOpts : FALLBACK_QUALIFICATIONS;
 
-  return { countries, intakeTerms, intakeYears, universityMap };
+  return { countries, intakeTerms, intakeYears, universityMap, qualifications };
 }
 
 function validateRow(row: Record<string, string>, master: MasterData): { parsed: ParsedRow; errors: string[] } {
@@ -294,9 +298,9 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
 
   let qualificationNormalized: string | undefined;
   if (qualification) {
-    const match = matchHighestQualification(qualification);
+    const match = matchHighestQualification(qualification, master.qualifications);
     if (!match) {
-      errors.push(`highest_qualification must be one of: ${ALLOWED_QUALIFICATIONS.join(" | ")}`);
+      errors.push(`highest_qualification must be one of: ${master.qualifications.join(" | ")}`);
     } else {
       qualificationNormalized = match;
     }

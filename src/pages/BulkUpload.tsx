@@ -25,7 +25,7 @@ import {
   type RowResult,
   type ProcessingStage,
 } from "@/hooks/useBulkUploadProcessor";
-import { HIGHEST_QUALIFICATION_OPTIONS } from "@/lib/highestQualificationOptions";
+import { useHighestQualificationOptions } from "@/hooks/useHighestQualificationOptions";
 
 type Batch = Tables<"bulk_upload_batches">;
 
@@ -89,6 +89,7 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
   const { appUser } = useAuth();
   const { agentUserId } = useRoleAccess();
   const { effectivePartnerId, effectiveUserId } = usePartnerContext();
+  const { options: qualificationOptions } = useHighestQualificationOptions();
 
   const [batches, setBatches] = useState<Batch[]>([]);
   const [batchesLoading, setBatchesLoading] = useState(true);
@@ -477,25 +478,18 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
                 </div>
               </div>
 
-              {/* Always-visible Highest Qualification reference — visible to both Partner & Admin */}
-              <div className="rounded-lg border border-primary/20 bg-primary/[0.04] p-3">
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-                    Highest Qualification — Allowed Values
-                  </p>
-                  <Badge variant="secondary" className="text-[10px] px-1.5 h-5">Reference</Badge>
-                </div>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Use exactly one of these values in the <code className="font-mono text-[11px] px-1 py-0.5 rounded bg-muted">highest_qualification</code> column. Matching is case-insensitive, but spelling must match.
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {HIGHEST_QUALIFICATION_OPTIONS.map((q) => (
-                    <Badge key={q} variant="outline" className="text-[11px] font-normal">
-                      {q}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
+              {/* Subtle pointer to the Highest Qualification master (full list lives in Master Data). */}
+              <p className="text-xs text-muted-foreground">
+                Need the allowed values for <code className="font-mono text-[11px] px-1 py-0.5 rounded bg-muted">highest_qualification</code>?{" "}
+                <button
+                  type="button"
+                  onClick={() => navigate(isAdminContext ? "/admin/master-data?tab=qualifications" : "/master-data")}
+                  className="text-primary underline-offset-2 hover:underline font-medium"
+                >
+                  See Master Data → Highest Qualification
+                </button>
+                .
+              </p>
 
               <Collapsible open={guideOpen} onOpenChange={setGuideOpen}>
                 <CollapsibleTrigger asChild>
@@ -534,7 +528,7 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
                               ) : c.name === "10th_score" || c.name === "12th_score" || c.name === "graduation_score" || c.name === "highest_qualification_score" ? (
                                 <span>{c.example} <em>(numeric score, ≥ 0)</em></span>
                               ) : c.name === "highest_qualification" ? (
-                                <span>{c.example} <em>(must be one of: {HIGHEST_QUALIFICATION_OPTIONS.join(", ")})</em></span>
+                                <span>{c.example} <em>(must be one of: {qualificationOptions.join(", ")})</em></span>
                               ) : c.name === "intended_study_country" ? (
                                 <span>{c.example} <em>(must match countries master)</em></span>
                               ) : c.name === "intake_term" ? (

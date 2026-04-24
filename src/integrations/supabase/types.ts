@@ -490,6 +490,33 @@ export type Database = {
         }
         Relationships: []
       }
+      highest_qualification_master: {
+        Row: {
+          active_flag: boolean
+          created_at: string
+          id: string
+          qualification_label: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active_flag?: boolean
+          created_at?: string
+          id?: string
+          qualification_label: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active_flag?: boolean
+          created_at?: string
+          id?: string
+          qualification_label?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       intake_master: {
         Row: {
           active_flag: boolean
