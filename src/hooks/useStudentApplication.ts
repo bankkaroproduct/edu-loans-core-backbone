@@ -34,6 +34,11 @@ export interface StudentFormData {
     duolingo?: string;
     gre?: string;
     gmat?: string;
+    // Academic Profile (aligned with Bulk Upload):
+    tenth?: string;
+    twelfth?: string;
+    graduation?: string;
+    highest_qualification_score?: string;
   };
   // Co-applicant
   coapplicant_name: string;
