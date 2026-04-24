@@ -21,10 +21,16 @@ export interface ParsedRow {
   intake_year?: number;
   course_name?: string;
   university_name?: string;
+  tenth_score?: number;
+  twelfth_score?: number;
+  graduation_score?: number;
+  highest_qualification?: string;
+  highest_qualification_score?: number;
   loan_amount_required?: number;
   coapplicant_name?: string;
   coapplicant_relation?: string;
   coapplicant_income?: number;
+  coapplicant_existing_emi?: number;
   collateral_available?: boolean;
   collateral_notes?: string;
   source_sub_type?: string;
@@ -44,19 +50,46 @@ export interface RowResult {
 
 export type ProcessingStage = "idle" | "parsing" | "validating" | "processing" | "completed" | "error";
 
+/** Required-fields contract — unchanged business rules. */
 const REQUIRED_HEADERS = [
   "student_first_name", "student_last_name", "student_phone",
   "intended_study_country", "intake_term", "intake_year",
   "course_name", "loan_amount_required",
 ];
 
+/**
+ * Final canonical header order — used everywhere (Partner + Admin):
+ * - Downloaded template
+ * - Parser strict-template check (rejects outdated templates missing the 6 new headers)
+ * - UI column reference
+ *
+ * The 6 new fields (academic scores + EMI) are required IN THE TEMPLATE
+ * (so old templates are cleanly rejected) but VALUES inside them stay optional.
+ */
 const ALL_HEADERS = [
   "student_first_name", "student_last_name", "student_phone", "student_email",
   "student_whatsapp", "city", "state", "country_of_residence",
   "intended_study_country", "intake_term", "intake_year", "course_name",
-  "university_name", "loan_amount_required", "coapplicant_name",
-  "coapplicant_relation", "coapplicant_income", "collateral_available",
-  "collateral_notes", "source_sub_type", "partner_remark",
+  "university_name",
+  "10th_score", "12th_score", "graduation_score",
+  "highest_qualification", "highest_qualification_score",
+  "loan_amount_required",
+  "coapplicant_name", "coapplicant_relation", "coapplicant_income",
+  "coapplicant_existing_emi",
+  "collateral_available", "collateral_notes", "source_sub_type", "partner_remark",
+];
+
+/** Headers introduced in the new template — used to detect outdated uploads. */
+const NEW_TEMPLATE_HEADERS = [
+  "10th_score", "12th_score", "graduation_score",
+  "highest_qualification", "highest_qualification_score",
+  "coapplicant_existing_emi",
+];
+
+/** Allowed values for highest_qualification — must match Add Lead / Student portal list. */
+const ALLOWED_QUALIFICATIONS = [
+  "12th / High School", "Diploma", "Bachelor's Degree",
+  "Master's Degree", "PhD / Doctorate", "Other",
 ];
 
 export function getTemplateCSV(): string {
