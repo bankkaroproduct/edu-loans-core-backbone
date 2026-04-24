@@ -194,6 +194,18 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
               })}
             />
             <Field
+              label="Co-Applicant Existing EMI"
+              value={lead.coapplicant_existing_emi != null ? String(lead.coapplicant_existing_emi) : null}
+              editable={ed("coapplicant_existing_emi", {
+                inputType: "number",
+                formatDisplay: (v) => `₹${Number(v).toLocaleString()}`,
+                parseValue: (raw) => {
+                  const n = Number(raw);
+                  return Number.isFinite(n) ? n : raw;
+                },
+              })}
+            />
+            <Field
               label="Collateral"
               value={
                 lead.collateral_available === null || lead.collateral_available === undefined
