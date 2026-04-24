@@ -34,6 +34,11 @@ export interface StudentFormData {
     duolingo?: string;
     gre?: string;
     gmat?: string;
+    // Academic Profile (aligned with Bulk Upload):
+    tenth?: string;
+    twelfth?: string;
+    graduation?: string;
+    highest_qualification_score?: string;
   };
   // Co-applicant
   coapplicant_name: string;
@@ -214,6 +219,10 @@ export function useStudentApplication() {
         duolingo: ts.duolingo?.toString() || prev.test_scores.duolingo || "",
         gre: ts.gre?.toString() || prev.test_scores.gre || "",
         gmat: ts.gmat?.toString() || prev.test_scores.gmat || "",
+        tenth: ts.tenth?.toString() || prev.test_scores.tenth || "",
+        twelfth: ts.twelfth?.toString() || prev.test_scores.twelfth || "",
+        graduation: ts.graduation?.toString() || prev.test_scores.graduation || "",
+        highest_qualification_score: ts.highest_qualification_score?.toString() || prev.test_scores.highest_qualification_score || "",
       },
       coapplicant_name: lead.coapplicant_name || prev.coapplicant_name,
       coapplicant_relation: lead.coapplicant_relation || prev.coapplicant_relation,
@@ -260,12 +269,28 @@ export function useStudentApplication() {
           country_of_residence: "India",
         };
       } else if (action === "save_education") {
-        const scores: Record<string, number> = {};
-        if (formData.test_scores.ielts) scores.ielts = parseFloat(formData.test_scores.ielts);
-        if (formData.test_scores.toefl) scores.toefl = parseFloat(formData.test_scores.toefl);
-        if (formData.test_scores.duolingo) scores.duolingo = parseFloat(formData.test_scores.duolingo);
-        if (formData.test_scores.gre) scores.gre = parseFloat(formData.test_scores.gre);
-        if (formData.test_scores.gmat) scores.gmat = parseFloat(formData.test_scores.gmat);
+        // CRITICAL: build the merged scores object so we never overwrite
+        // existing IELTS/TOEFL/Duolingo/GRE/GMAT keys when academic-only
+        // fields change, and vice-versa.
+        const scoresStr: Record<string, string | undefined> = {
+          ielts: formData.test_scores.ielts,
+          toefl: formData.test_scores.toefl,
+          duolingo: formData.test_scores.duolingo,
+          gre: formData.test_scores.gre,
+          gmat: formData.test_scores.gmat,
+          tenth: formData.test_scores.tenth,
+          twelfth: formData.test_scores.twelfth,
+          graduation: formData.test_scores.graduation,
+          highest_qualification_score: formData.test_scores.highest_qualification_score,
+        };
+        const scores: Record<string, number | string> = {};
+        for (const [k, raw] of Object.entries(scoresStr)) {
+          const trimmed = (raw ?? "").toString().trim();
+          if (!trimmed) continue;
+          const num = parseFloat(trimmed);
+          // Numeric scores stored as numbers; non-numeric (e.g. "85%") preserved as strings.
+          scores[k] = Number.isFinite(num) && !isNaN(num) && /^[\d.+-]+$/.test(trimmed) ? num : trimmed;
+        }
 
         payload = {
           highest_qualification: formData.highest_qualification || null,

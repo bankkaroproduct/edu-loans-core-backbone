@@ -231,6 +231,11 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     collateral_state: "unsure" as CollateralState,
     collateral_notes: "",
     partner_remark: "",
+    // Academic Profile (aligned with Bulk Upload)
+    tenth_score: "",
+    twelfth_score: "",
+    graduation_score: "",
+    highest_qualification_score: "",
   });
 
   useEffect(() => {
@@ -317,6 +322,10 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         highest_qualification: (data as any).highest_qualification ?? "",
         marks_gpa: (data as any).marks_gpa ?? "",
         partner_remark: "",
+        tenth_score: ((data as any).test_scores?.tenth ?? "").toString(),
+        twelfth_score: ((data as any).test_scores?.twelfth ?? "").toString(),
+        graduation_score: ((data as any).test_scores?.graduation ?? "").toString(),
+        highest_qualification_score: ((data as any).test_scores?.highest_qualification_score ?? "").toString(),
       });
       setOriginalLead(data as unknown as Record<string, unknown>);
       setEditLeadStage(data.current_stage ?? null);
@@ -445,6 +454,11 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       if (!resolvedCourseName) return { message: "Course is required (pick from list or type manually)", step: "study", field: "course" };
       if (!form.intake_term) return { message: "Intake term is required", step: "study", field: "intake_term" };
       if (!form.intake_year) return { message: "Intake year is required", step: "study", field: "intake_year" };
+
+      // Academic Profile — mandatory: highest qualification, 10th score, 12th score.
+      if (!form.highest_qualification) return { message: "Highest qualification is required", step: "study", field: "highest_qualification" };
+      if (!form.tenth_score.trim()) return { message: "10th score is required", step: "study", field: "tenth_score" };
+      if (!form.twelfth_score.trim()) return { message: "12th score is required", step: "study", field: "twelfth_score" };
 
       // Financial Info — required in BOTH partner and admin modes (restored).
       if (!form.loan_amount_required) return { message: "Approx loan amount is required", step: "financial", field: "loan_amount_required" };
@@ -585,6 +599,36 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     }
   };
 
+  /**
+   * Build the merged test_scores JSONB to write back to student_leads.
+   *
+   * Critical: this MUST preserve any existing keys we don't manage in this
+   * form (e.g. IELTS / TOEFL / Duolingo / GRE / GMAT entered via the student
+   * portal) so the AddLead/Admin edit surface never wipes them out.
+   *
+   * Numeric scores are stored as numbers when parseable; otherwise as the raw
+   * trimmed string. Empty inputs are omitted (we never write empty strings).
+   */
+  const buildMergedTestScores = useCallback(() => {
+    const existing = (originalLead?.test_scores && typeof originalLead.test_scores === "object")
+      ? { ...(originalLead.test_scores as Record<string, unknown>) }
+      : {};
+    const setOrDelete = (key: string, raw: string) => {
+      const trimmed = raw.trim();
+      if (!trimmed) {
+        delete existing[key];
+        return;
+      }
+      const num = Number(trimmed);
+      existing[key] = Number.isFinite(num) && trimmed !== "" && !isNaN(num) ? num : trimmed;
+    };
+    setOrDelete("tenth", form.tenth_score);
+    setOrDelete("twelfth", form.twelfth_score);
+    setOrDelete("graduation", form.graduation_score);
+    setOrDelete("highest_qualification_score", form.highest_qualification_score);
+    return existing;
+  }, [originalLead, form.tenth_score, form.twelfth_score, form.graduation_score, form.highest_qualification_score]);
+
   const createLead = async (asDraft: boolean, hasDuplicateWarning: boolean) => {
     setSubmitting(true);
     setShowDupDialog(false);
@@ -595,6 +639,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     const effectiveWhatsapp = form.whatsapp_same_as_phone
       ? (normalizePhone(form.student_phone) ?? form.student_phone.trim())
       : (form.student_whatsapp.trim() ? (normalizePhone(form.student_whatsapp) ?? form.student_whatsapp.trim()) : null);
+
+    const mergedTestScores = buildMergedTestScores();
 
     const payload = {
       student_first_name: form.student_first_name.trim(),
@@ -628,6 +674,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       collateral_notes: form.collateral_state === "likely" ? (form.collateral_notes.trim() || null) : null,
       highest_qualification: form.highest_qualification || null,
       marks_gpa: form.marks_gpa.trim() || null,
+      test_scores: mergedTestScores,
       source_sub_type: "add_lead",
       partner_id: effectivePartnerId!,
       partner_user_id: effectiveUserId!,
@@ -669,7 +716,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       resultLeadId = data?.id ?? null;
       opError = error;
     } else {
-      const { data, error } = await supabase.from("student_leads").insert(payload).select("id").single();
+      const { data, error } = await supabase.from("student_leads").insert(payload as any).select("id").single();
       resultLeadId = data?.id ?? null;
       opError = error;
     }
@@ -1041,16 +1088,23 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 </Select>
               </div>
               {/* Loan Amount intentionally moved to the Financial Info step in both modes. */}
+            </CardContent>
+          </Card>
 
-              {/* Education & Academic Details — admin/partner editable, both optional */}
+          {/* Academic Profile — placed AFTER Education & Study Intent and BEFORE financial step.
+              Aligned with Bulk Upload columns: highest_qualification, highest_qualification_score,
+              10th_score, 12th_score, graduation_score. */}
+          <Card className="mt-4">
+            <CardHeader><CardTitle className="text-lg">Academic Profile</CardTitle></CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2" data-field="highest_qualification">
-                <Label>Highest Qualification</Label>
+                <Label>Highest Qualification *</Label>
                 <Select
                   value={form.highest_qualification}
                   onValueChange={(v) => set("highest_qualification", v)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select qualification (optional)" />
+                    <SelectValue placeholder="Select qualification" />
                   </SelectTrigger>
                   <SelectContent>
                     {QUALIFICATIONS.map((q) => (
@@ -1059,25 +1113,48 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2" data-field="marks_gpa">
-                <Label>Marks / GPA</Label>
+              <div className="space-y-2" data-field="highest_qualification_score">
+                <Label>Highest Qualification Score</Label>
                 <Input
-                  value={form.marks_gpa}
-                  onChange={(e) => set("marks_gpa", e.target.value)}
+                  value={form.highest_qualification_score}
+                  onChange={(e) => set("highest_qualification_score", e.target.value)}
                   placeholder="e.g. 8.5 CGPA or 78%"
                 />
+              </div>
+              <div className="space-y-2" data-field="tenth_score">
+                <Label>10th Score *</Label>
+                <Input
+                  value={form.tenth_score}
+                  onChange={(e) => set("tenth_score", e.target.value)}
+                  placeholder="e.g. 85%"
+                />
+              </div>
+              <div className="space-y-2" data-field="twelfth_score">
+                <Label>12th Score *</Label>
+                <Input
+                  value={form.twelfth_score}
+                  onChange={(e) => set("twelfth_score", e.target.value)}
+                  placeholder="e.g. 88%"
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2" data-field="graduation_score">
+                <Label>Graduation Score</Label>
+                <Input
+                  value={form.graduation_score}
+                  onChange={(e) => set("graduation_score", e.target.value)}
+                  placeholder="e.g. 7.8 CGPA or 75%"
+                />
                 <p className="text-xs text-muted-foreground">
-                  Enter as you'd write it (CGPA, %, or GPA). Optional.
+                  10th and 12th are required. Graduation and Highest Qualification Score are optional.
                 </p>
               </div>
 
               {/* Read-only academic context for student-origin leads in admin edit mode */}
               {isAdminForm && isEditMode && originalLead?.source_type === "student_direct" && (
-                (originalLead?.highest_qualification || originalLead?.marks_gpa || originalLead?.test_scores) && (
+                (originalLead?.marks_gpa || originalLead?.test_scores) && (
                   <div className="md:col-span-2 rounded-md border bg-muted/30 p-3 space-y-1">
                     <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">From student portal (read-only)</p>
                     <div className="grid gap-1 text-xs sm:grid-cols-2">
-                      {originalLead?.highest_qualification ? <div><span className="text-muted-foreground">Qualification: </span>{String(originalLead.highest_qualification)}</div> : null}
                       {originalLead?.marks_gpa ? <div><span className="text-muted-foreground">Marks / GPA: </span>{String(originalLead.marks_gpa)}</div> : null}
                       {originalLead?.test_scores && typeof originalLead.test_scores === "object" && Object.keys(originalLead.test_scores as object).length > 0 ? (
                         <div className="sm:col-span-2"><span className="text-muted-foreground">Test scores: </span>{Object.entries(originalLead.test_scores as Record<string, unknown>).map(([k, v]) => `${k.toUpperCase()}: ${v}`).join(" · ")}</div>
@@ -1088,6 +1165,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               )}
             </CardContent>
           </Card>
+
           <div className="flex justify-between mt-4">
             <Button variant="outline" onClick={() => goToStep("student")}>← Student Details</Button>
             <Button onClick={() => goToStep(studyNextTarget)}>
@@ -1316,8 +1394,15 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   nudgeStep="study"
                   nudgeField="intake_term"
                 />
-                <ReviewRow label="Highest Qualification" value={form.highest_qualification} />
-                <ReviewRow label="Marks / GPA" value={form.marks_gpa} />
+              </div>
+              <div>
+                <Badge variant="outline" className="mb-2">Academic Profile</Badge>
+                <ReviewRow label="Highest Qualification" value={form.highest_qualification} nudgeStep="study" nudgeField="highest_qualification" />
+                <ReviewRow label="Highest Qualification Score" value={form.highest_qualification_score} />
+                <ReviewRow label="10th Score" value={form.tenth_score} nudgeStep="study" nudgeField="tenth_score" />
+                <ReviewRow label="12th Score" value={form.twelfth_score} nudgeStep="study" nudgeField="twelfth_score" />
+                <ReviewRow label="Graduation Score" value={form.graduation_score} />
+                {form.marks_gpa ? <ReviewRow label="Marks / GPA (legacy)" value={form.marks_gpa} /> : null}
               </div>
               {/* Financial Info — required group, rendered for both partner and admin modes */}
               <div>
