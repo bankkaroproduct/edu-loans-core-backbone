@@ -64,15 +64,8 @@ const EMPLOYMENT_TYPE_OPTIONS = [
   "Other",
 ];
 
-// Mirror of QUALIFICATIONS list used in Student Portal (StudentEducationDetails.tsx)
-const QUALIFICATIONS = [
-  "12th / High School",
-  "Diploma",
-  "Bachelor's Degree",
-  "Master's Degree",
-  "PhD / Doctorate",
-  "Other",
-];
+// Shared single source of truth for allowed qualification values.
+import { HIGHEST_QUALIFICATION_OPTIONS as QUALIFICATIONS } from "@/lib/highestQualificationOptions";
 
 const TERMINAL_STAGES = ["disbursed", "rejected", "dropped"];
 
