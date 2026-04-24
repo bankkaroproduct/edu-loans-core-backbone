@@ -21,10 +21,16 @@ export interface ParsedRow {
   intake_year?: number;
   course_name?: string;
   university_name?: string;
+  tenth_score?: number;
+  twelfth_score?: number;
+  graduation_score?: number;
+  highest_qualification?: string;
+  highest_qualification_score?: number;
   loan_amount_required?: number;
   coapplicant_name?: string;
   coapplicant_relation?: string;
   coapplicant_income?: number;
+  coapplicant_existing_emi?: number;
   collateral_available?: boolean;
   collateral_notes?: string;
   source_sub_type?: string;
@@ -44,19 +50,46 @@ export interface RowResult {
 
 export type ProcessingStage = "idle" | "parsing" | "validating" | "processing" | "completed" | "error";
 
+/** Required-fields contract — unchanged business rules. */
 const REQUIRED_HEADERS = [
   "student_first_name", "student_last_name", "student_phone",
   "intended_study_country", "intake_term", "intake_year",
   "course_name", "loan_amount_required",
 ];
 
+/**
+ * Final canonical header order — used everywhere (Partner + Admin):
+ * - Downloaded template
+ * - Parser strict-template check (rejects outdated templates missing the 6 new headers)
+ * - UI column reference
+ *
+ * The 6 new fields (academic scores + EMI) are required IN THE TEMPLATE
+ * (so old templates are cleanly rejected) but VALUES inside them stay optional.
+ */
 const ALL_HEADERS = [
   "student_first_name", "student_last_name", "student_phone", "student_email",
   "student_whatsapp", "city", "state", "country_of_residence",
   "intended_study_country", "intake_term", "intake_year", "course_name",
-  "university_name", "loan_amount_required", "coapplicant_name",
-  "coapplicant_relation", "coapplicant_income", "collateral_available",
-  "collateral_notes", "source_sub_type", "partner_remark",
+  "university_name",
+  "10th_score", "12th_score", "graduation_score",
+  "highest_qualification", "highest_qualification_score",
+  "loan_amount_required",
+  "coapplicant_name", "coapplicant_relation", "coapplicant_income",
+  "coapplicant_existing_emi",
+  "collateral_available", "collateral_notes", "source_sub_type", "partner_remark",
+];
+
+/** Headers introduced in the new template — used to detect outdated uploads. */
+const NEW_TEMPLATE_HEADERS = [
+  "10th_score", "12th_score", "graduation_score",
+  "highest_qualification", "highest_qualification_score",
+  "coapplicant_existing_emi",
+];
+
+/** Allowed values for highest_qualification — must match Add Lead / Student portal list. */
+const ALLOWED_QUALIFICATIONS = [
+  "12th / High School", "Diploma", "Bachelor's Degree",
+  "Master's Degree", "PhD / Doctorate", "Other",
 ];
 
 export function getTemplateCSV(): string {
@@ -134,6 +167,16 @@ export function parseCSV(text: string): { headers: string[]; rows: Record<string
 
   if (missing.length > 0) return { error: `Missing required columns: ${missing.join(", ")}` };
 
+  // Reject outdated templates that don't include the new academic + EMI columns.
+  const missingNewCols = NEW_TEMPLATE_HEADERS.filter((h) => !headers.includes(h));
+  if (missingNewCols.length > 0) {
+    return {
+      error:
+        `Outdated template detected. Missing column(s): ${missingNewCols.join(", ")}. ` +
+        `Please re-download the latest template and re-upload.`,
+    };
+  }
+
   const rows: Record<string, string>[] = [];
   for (let i = 1; i < lines.length; i++) {
     const values = parseDelimitedLine(lines[i], delimiter);
@@ -195,6 +238,12 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
   const collateralStr = val("collateral_available");
   const collateralNotes = val("collateral_notes");
   const coapplicantIncomeStr = val("coapplicant_income");
+  const coapplicantEmiStr = val("coapplicant_existing_emi");
+  const tenthStr = val("10th_score");
+  const twelfthStr = val("12th_score");
+  const gradStr = val("graduation_score");
+  const qualification = val("highest_qualification");
+  const qualificationScoreStr = val("highest_qualification_score");
 
   if (!firstName) errors.push("student_first_name is required");
   if (!lastName) errors.push("student_last_name is required");
@@ -228,6 +277,32 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
     if (isNaN(coapplicantIncome)) errors.push("coapplicant_income must be numeric");
   }
 
+  // ─── New academic + EMI fields (all optional values, validated when present) ───
+  const parseNumeric = (s: string, label: string): number | undefined => {
+    if (!s) return undefined;
+    const n = parseFloat(s.replace(/,/g, ""));
+    if (isNaN(n)) { errors.push(`${label} must be numeric (got "${s}")`); return undefined; }
+    if (n < 0) { errors.push(`${label} must be ≥ 0`); return undefined; }
+    return n;
+  };
+  const tenth = parseNumeric(tenthStr, "10th_score");
+  const twelfth = parseNumeric(twelfthStr, "12th_score");
+  const grad = parseNumeric(gradStr, "graduation_score");
+  const qualScore = parseNumeric(qualificationScoreStr, "highest_qualification_score");
+  const coapplicantEmi = parseNumeric(coapplicantEmiStr, "coapplicant_existing_emi");
+
+  let qualificationNormalized: string | undefined;
+  if (qualification) {
+    const match = ALLOWED_QUALIFICATIONS.find(
+      (q) => q.toLowerCase() === qualification.toLowerCase(),
+    );
+    if (!match) {
+      errors.push(`highest_qualification must be one of: ${ALLOWED_QUALIFICATIONS.join(" | ")}`);
+    } else {
+      qualificationNormalized = match;
+    }
+  }
+
   const universityRaw = val("university_name");
 
   const parsed: ParsedRow = {
@@ -246,10 +321,16 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
     intake_year: isNaN(intakeYear) ? undefined : intakeYear,
     course_name: courseName,
     university_name: universityRaw || undefined,
+    tenth_score: tenth,
+    twelfth_score: twelfth,
+    graduation_score: grad,
+    highest_qualification: qualificationNormalized,
+    highest_qualification_score: qualScore,
     loan_amount_required: isNaN(loanAmount) ? undefined : loanAmount,
     coapplicant_name: val("coapplicant_name") || undefined,
     coapplicant_relation: val("coapplicant_relation") || undefined,
     coapplicant_income: coapplicantIncome,
+    coapplicant_existing_emi: coapplicantEmi,
     collateral_available: collateralAvailable ?? undefined,
     collateral_notes: collateralNotes || undefined,
     source_sub_type: val("source_sub_type") || undefined,
@@ -468,8 +549,24 @@ export async function processBulkUpload(
         coapplicant_name: row.coapplicant_name ?? null,
         coapplicant_relation: row.coapplicant_relation ?? null,
         coapplicant_income: row.coapplicant_income ?? null,
+        coapplicant_existing_emi: row.coapplicant_existing_emi ?? null,
         collateral_available: row.collateral_available ?? null,
         collateral_notes: row.collateral_notes ?? null,
+        // Academic — mirror Add Lead conventions:
+        //  - highest_qualification → text column (Add Lead behavior)
+        //  - highest_qualification_score → marks_gpa text column (Add Lead behavior)
+        //  - 10th / 12th / graduation scores + qualification score → test_scores jsonb
+        //    (matches Student portal academic capture shape so Lead Detail can read it)
+        highest_qualification: row.highest_qualification ?? null,
+        marks_gpa: row.highest_qualification_score != null ? String(row.highest_qualification_score) : null,
+        test_scores: (() => {
+          const ts: Record<string, number> = {};
+          if (row.tenth_score != null) ts.tenth = row.tenth_score;
+          if (row.twelfth_score != null) ts.twelfth = row.twelfth_score;
+          if (row.graduation_score != null) ts.graduation = row.graduation_score;
+          if (row.highest_qualification_score != null) ts.highest_qualification = row.highest_qualification_score;
+          return Object.keys(ts).length > 0 ? ts : {};
+        })() as any,
         current_stage: "submitted" as any,
         current_status: "awaiting_verification" as any,
       })

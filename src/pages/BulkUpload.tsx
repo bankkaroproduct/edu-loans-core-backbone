@@ -44,7 +44,7 @@ const rowStatusConfig = {
 
 const fmt = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-/* ─── Template field reference ─── */
+/* ─── Template field reference (final canonical order) ─── */
 const REQUIRED_COLS = [
   { name: "student_first_name", example: "Rahul" },
   { name: "student_last_name", example: "Sharma" },
@@ -63,9 +63,15 @@ const OPTIONAL_COLS = [
   { name: "state", example: "Maharashtra" },
   { name: "country_of_residence", example: "India" },
   { name: "university_name", example: "MIT" },
+  { name: "10th_score", example: "92" },
+  { name: "12th_score", example: "88" },
+  { name: "graduation_score", example: "8.5" },
+  { name: "highest_qualification", example: "Bachelor's Degree" },
+  { name: "highest_qualification_score", example: "8.5" },
   { name: "coapplicant_name", example: "Suresh Sharma" },
   { name: "coapplicant_relation", example: "Father" },
   { name: "coapplicant_income", example: "1200000" },
+  { name: "coapplicant_existing_emi", example: "15000" },
   { name: "collateral_available", example: "yes" },
   { name: "collateral_notes", example: "Flat in Mumbai" },
   { name: "source_sub_type", example: "referral" },
@@ -503,8 +509,12 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
                             <TableCell className="text-xs text-muted-foreground">
                               {c.name === "collateral_available" ? (
                                 <span><strong>yes</strong> / <strong>no</strong> / true / false / 1 / 0</span>
-                              ) : c.name === "coapplicant_income" || c.name === "loan_amount_required" ? (
-                                <span>{c.example} <em>(numeric, positive)</em></span>
+                              ) : c.name === "coapplicant_income" || c.name === "coapplicant_existing_emi" || c.name === "loan_amount_required" ? (
+                                <span>{c.example} <em>(numeric, ≥ 0)</em></span>
+                              ) : c.name === "10th_score" || c.name === "12th_score" || c.name === "graduation_score" || c.name === "highest_qualification_score" ? (
+                                <span>{c.example} <em>(numeric score, ≥ 0)</em></span>
+                              ) : c.name === "highest_qualification" ? (
+                                <span>{c.example} <em>(must be one of: 12th / High School, Diploma, Bachelor's Degree, Master's Degree, PhD / Doctorate, Other)</em></span>
                               ) : c.name === "intended_study_country" ? (
                                 <span>{c.example} <em>(must match countries master)</em></span>
                               ) : c.name === "intake_term" ? (
