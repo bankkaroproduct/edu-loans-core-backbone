@@ -25,7 +25,7 @@ import {
   type RowResult,
   type ProcessingStage,
 } from "@/hooks/useBulkUploadProcessor";
-import { HIGHEST_QUALIFICATION_OPTIONS } from "@/lib/highestQualificationOptions";
+import { useHighestQualificationOptions } from "@/hooks/useHighestQualificationOptions";
 
 type Batch = Tables<"bulk_upload_batches">;
 
@@ -89,6 +89,7 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
   const { appUser } = useAuth();
   const { agentUserId } = useRoleAccess();
   const { effectivePartnerId, effectiveUserId } = usePartnerContext();
+  const { options: qualificationOptions } = useHighestQualificationOptions();
 
   const [batches, setBatches] = useState<Batch[]>([]);
   const [batchesLoading, setBatchesLoading] = useState(true);
@@ -527,7 +528,7 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
                               ) : c.name === "10th_score" || c.name === "12th_score" || c.name === "graduation_score" || c.name === "highest_qualification_score" ? (
                                 <span>{c.example} <em>(numeric score, ≥ 0)</em></span>
                               ) : c.name === "highest_qualification" ? (
-                                <span>{c.example} <em>(must be one of: {HIGHEST_QUALIFICATION_OPTIONS.join(", ")})</em></span>
+                                <span>{c.example} <em>(must be one of: {qualificationOptions.join(", ")})</em></span>
                               ) : c.name === "intended_study_country" ? (
                                 <span>{c.example} <em>(must match countries master)</em></span>
                               ) : c.name === "intake_term" ? (
