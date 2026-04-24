@@ -2,6 +2,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { createDownstreamRecords } from "@/hooks/useLeadWriteFlow";
 import type { Tables } from "@/integrations/supabase/types";
 import { normalizePhone } from "@/lib/phone";
+import {
+  HIGHEST_QUALIFICATION_OPTIONS,
+  matchHighestQualification,
+} from "@/lib/highestQualificationOptions";
 
 type AppUser = Tables<"users">;
 
