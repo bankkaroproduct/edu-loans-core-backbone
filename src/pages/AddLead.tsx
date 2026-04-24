@@ -64,8 +64,9 @@ const EMPLOYMENT_TYPE_OPTIONS = [
   "Other",
 ];
 
-// Shared single source of truth for allowed qualification values.
-import { HIGHEST_QUALIFICATION_OPTIONS as QUALIFICATIONS } from "@/lib/highestQualificationOptions";
+// Highest-qualification options come from the master table (admin-managed) with
+// a hard-coded fallback. See `useHighestQualificationOptions`.
+import { useHighestQualificationOptions } from "@/hooks/useHighestQualificationOptions";
 
 const TERMINAL_STAGES = ["disbursed", "rejected", "dropped"];
 
