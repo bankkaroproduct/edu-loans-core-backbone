@@ -1088,16 +1088,23 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 </Select>
               </div>
               {/* Loan Amount intentionally moved to the Financial Info step in both modes. */}
+            </CardContent>
+          </Card>
 
-              {/* Education & Academic Details — admin/partner editable, both optional */}
+          {/* Academic Profile — placed AFTER Education & Study Intent and BEFORE financial step.
+              Aligned with Bulk Upload columns: highest_qualification, highest_qualification_score,
+              10th_score, 12th_score, graduation_score. */}
+          <Card className="mt-4">
+            <CardHeader><CardTitle className="text-lg">Academic Profile</CardTitle></CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2" data-field="highest_qualification">
-                <Label>Highest Qualification</Label>
+                <Label>Highest Qualification *</Label>
                 <Select
                   value={form.highest_qualification}
                   onValueChange={(v) => set("highest_qualification", v)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select qualification (optional)" />
+                    <SelectValue placeholder="Select qualification" />
                   </SelectTrigger>
                   <SelectContent>
                     {QUALIFICATIONS.map((q) => (
@@ -1106,25 +1113,48 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2" data-field="marks_gpa">
-                <Label>Marks / GPA</Label>
+              <div className="space-y-2" data-field="highest_qualification_score">
+                <Label>Highest Qualification Score</Label>
                 <Input
-                  value={form.marks_gpa}
-                  onChange={(e) => set("marks_gpa", e.target.value)}
+                  value={form.highest_qualification_score}
+                  onChange={(e) => set("highest_qualification_score", e.target.value)}
                   placeholder="e.g. 8.5 CGPA or 78%"
                 />
+              </div>
+              <div className="space-y-2" data-field="tenth_score">
+                <Label>10th Score *</Label>
+                <Input
+                  value={form.tenth_score}
+                  onChange={(e) => set("tenth_score", e.target.value)}
+                  placeholder="e.g. 85%"
+                />
+              </div>
+              <div className="space-y-2" data-field="twelfth_score">
+                <Label>12th Score *</Label>
+                <Input
+                  value={form.twelfth_score}
+                  onChange={(e) => set("twelfth_score", e.target.value)}
+                  placeholder="e.g. 88%"
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2" data-field="graduation_score">
+                <Label>Graduation Score</Label>
+                <Input
+                  value={form.graduation_score}
+                  onChange={(e) => set("graduation_score", e.target.value)}
+                  placeholder="e.g. 7.8 CGPA or 75%"
+                />
                 <p className="text-xs text-muted-foreground">
-                  Enter as you'd write it (CGPA, %, or GPA). Optional.
+                  10th and 12th are required. Graduation and Highest Qualification Score are optional.
                 </p>
               </div>
 
               {/* Read-only academic context for student-origin leads in admin edit mode */}
               {isAdminForm && isEditMode && originalLead?.source_type === "student_direct" && (
-                (originalLead?.highest_qualification || originalLead?.marks_gpa || originalLead?.test_scores) && (
+                (originalLead?.marks_gpa || originalLead?.test_scores) && (
                   <div className="md:col-span-2 rounded-md border bg-muted/30 p-3 space-y-1">
                     <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">From student portal (read-only)</p>
                     <div className="grid gap-1 text-xs sm:grid-cols-2">
-                      {originalLead?.highest_qualification ? <div><span className="text-muted-foreground">Qualification: </span>{String(originalLead.highest_qualification)}</div> : null}
                       {originalLead?.marks_gpa ? <div><span className="text-muted-foreground">Marks / GPA: </span>{String(originalLead.marks_gpa)}</div> : null}
                       {originalLead?.test_scores && typeof originalLead.test_scores === "object" && Object.keys(originalLead.test_scores as object).length > 0 ? (
                         <div className="sm:col-span-2"><span className="text-muted-foreground">Test scores: </span>{Object.entries(originalLead.test_scores as Record<string, unknown>).map(([k, v]) => `${k.toUpperCase()}: ${v}`).join(" · ")}</div>
@@ -1135,6 +1165,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               )}
             </CardContent>
           </Card>
+
           <div className="flex justify-between mt-4">
             <Button variant="outline" onClick={() => goToStep("student")}>← Student Details</Button>
             <Button onClick={() => goToStep(studyNextTarget)}>
