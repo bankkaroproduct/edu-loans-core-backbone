@@ -231,6 +231,11 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     collateral_state: "unsure" as CollateralState,
     collateral_notes: "",
     partner_remark: "",
+    // Academic Profile (aligned with Bulk Upload)
+    tenth_score: "",
+    twelfth_score: "",
+    graduation_score: "",
+    highest_qualification_score: "",
   });
 
   useEffect(() => {
