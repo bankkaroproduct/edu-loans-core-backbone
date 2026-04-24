@@ -125,6 +125,7 @@ export default function LeadDocuments() {
           leadId={lead.id}
           lead={lead}
           requirements={requirements}
+          documents={documents}
           onChanged={refresh}
         />
       ) : (
