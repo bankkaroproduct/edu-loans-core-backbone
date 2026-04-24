@@ -115,7 +115,7 @@ export default function StudentEducationDetails() {
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Education Profile</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label>Highest Qualification</Label>
+              <Label>Highest Qualification <span className="text-destructive">*</span></Label>
               <Select value={formData.highest_qualification} onValueChange={v => updateField("highest_qualification", v)}>
                 <SelectTrigger><SelectValue placeholder="Select qualification" /></SelectTrigger>
                 <SelectContent>{QUALIFICATIONS.map(q => <SelectItem key={q} value={q}>{q}</SelectItem>)}</SelectContent>
