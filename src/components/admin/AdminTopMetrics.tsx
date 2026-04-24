@@ -79,8 +79,8 @@ export function AdminTopMetrics({ data, loading, error, onRetry, activeLendersCo
   return (
     <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
       {cards.map((c) => (
-        <Card key={c.label} className="p-4">
-          <div className="flex items-start justify-between gap-3">
+        <Card key={c.label} className="p-4 h-full">
+          <div className="flex items-start justify-between gap-3 h-full">
             <div className="space-y-1.5 min-w-0 flex-1">
               <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide leading-tight">
                 {c.label}
@@ -90,7 +90,7 @@ export function AdminTopMetrics({ data, loading, error, onRetry, activeLendersCo
               ) : (
                 <p className="text-2xl font-bold tabular-nums leading-none">{fmt(c.value)}</p>
               )}
-              <p className="text-[11px] text-muted-foreground leading-tight truncate" title={c.sub}>
+              <p className="text-[11px] text-muted-foreground leading-snug line-clamp-2" title={c.sub}>
                 {c.sub}
               </p>
             </div>

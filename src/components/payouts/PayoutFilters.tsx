@@ -43,18 +43,18 @@ export function PayoutFilters({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-3 items-end">
-        <div className="relative flex-1 min-w-[200px]">
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search by Lead ID or student name..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-9"
+            className="pl-9 h-10"
           />
         </div>
         <Select value={statusFilter} onValueChange={onStatusChange}>
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger className="w-[160px] h-10 shrink-0">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -63,8 +63,8 @@ export function PayoutFilters({
             ))}
           </SelectContent>
         </Select>
-        <Input type="date" value={dateFrom} onChange={(e) => onDateFromChange(e.target.value)} className="w-[150px]" placeholder="From" />
-        <Input type="date" value={dateTo} onChange={(e) => onDateToChange(e.target.value)} className="w-[150px]" placeholder="To" />
+        <Input type="date" value={dateFrom} onChange={(e) => onDateFromChange(e.target.value)} className="w-[150px] h-10 shrink-0" placeholder="From" />
+        <Input type="date" value={dateTo} onChange={(e) => onDateToChange(e.target.value)} className="w-[150px] h-10 shrink-0" placeholder="To" />
       </div>
       {chips.length > 0 && (
         <div className="flex flex-wrap gap-2 items-center">
