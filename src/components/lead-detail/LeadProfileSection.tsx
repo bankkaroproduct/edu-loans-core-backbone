@@ -151,6 +151,21 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
                 },
               })}
             />
+            <Field label="Highest Qualification" value={lead.highest_qualification} editable={ed("highest_qualification")} />
+            <Field label="Highest Qualification Score" value={lead.marks_gpa} editable={ed("marks_gpa")} />
+            {(() => {
+              const ts = (lead.test_scores ?? {}) as Record<string, unknown>;
+              const tenth = ts.tenth != null ? String(ts.tenth) : null;
+              const twelfth = ts.twelfth != null ? String(ts.twelfth) : null;
+              const grad = ts.graduation != null ? String(ts.graduation) : null;
+              return (
+                <>
+                  <Field label="10th Score" value={tenth} />
+                  <Field label="12th Score" value={twelfth} />
+                  <Field label="Graduation Score" value={grad} />
+                </>
+              );
+            })()}
           </div>
         </CardContent>
       </Card>
