@@ -11,7 +11,7 @@ import { MasterCombobox, type MasterOption } from "@/components/ui/master-combob
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Lightbulb } from "lucide-react";
-import { HIGHEST_QUALIFICATION_OPTIONS as QUALIFICATIONS } from "@/lib/highestQualificationOptions";
+import { useHighestQualificationOptions } from "@/hooks/useHighestQualificationOptions";
 
 interface UniversityRow { id: string; university_name: string; country: string }
 interface CourseRow { id: string; course_name: string; course_category: string | null }
@@ -20,6 +20,7 @@ export default function StudentEducationDetails() {
   const navigate = useNavigate();
   const { isVerified } = useStudentAuth();
   const { formData, updateField, updateTestScore, saveStep, saving } = useStudentApplication();
+  const { options: QUALIFICATIONS } = useHighestQualificationOptions();
   const [intakes, setIntakes] = useState<{ id: string; intake_term: string; intake_year: number }[]>([]);
   const [universities, setUniversities] = useState<UniversityRow[]>([]);
   const [courses, setCourses] = useState<CourseRow[]>([]);
