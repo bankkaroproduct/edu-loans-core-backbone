@@ -12,6 +12,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { reviewDocument } from "@/lib/adminActions";
 import { DocumentUploadDialog } from "@/components/documents/DocumentUploadDialog";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
+import {
+  STATUS_BADGE_VARIANT,
+  STATUS_LABEL,
+  type EffectiveDocStatus,
+} from "@/lib/leadDocumentViewModel";
 import type { DocRequirement } from "@/pages/LeadDocuments";
 import type { LeadNameFields } from "@/lib/referenceName";
 
@@ -179,8 +184,9 @@ function DocReviewRow({
   const [busy, setBusy] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
 
-  const status = doc?.verification_status ?? req.status;
-  const badge = STATUS_BADGE[status] ?? STATUS_BADGE.not_uploaded;
+  const status = (doc?.verification_status ?? req.status) as EffectiveDocStatus;
+  const badgeVariant = STATUS_BADGE_VARIANT[status] ?? STATUS_BADGE_VARIANT.not_uploaded;
+  const badgeLabel = STATUS_LABEL[status] ?? STATUS_LABEL.not_uploaded;
   const noUpload = !doc;
 
   const submit = async () => {
@@ -243,7 +249,7 @@ function DocReviewRow({
           </span>
           {req.required_flag && <span className="text-[10px] text-muted-foreground">(required)</span>}
         </div>
-        <Badge variant={badge.variant} className="text-[10px] shrink-0">{badge.label}</Badge>
+        <Badge variant={badgeVariant} className="text-[10px] shrink-0">{badgeLabel}</Badge>
       </button>
 
       {/* Row-level upload action — nudge text removed in admin per spec; OCR / upload pipeline preserved */}
