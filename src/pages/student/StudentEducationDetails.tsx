@@ -194,6 +194,54 @@ export default function StudentEducationDetails() {
         </CardContent>
       </Card>
 
+      {/* Academic Profile — placed AFTER Education Profile and BEFORE Test Scores.
+          Aligned with Bulk Upload columns: 10th_score, 12th_score, graduation_score,
+          highest_qualification_score. Highest qualification itself lives in Education
+          Profile above, also part of this academic group. */}
+      <Card>
+        <CardContent className="p-5 sm:p-6">
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Academic Profile</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Highest Qualification Score</Label>
+              <Input
+                value={formData.test_scores.highest_qualification_score || ""}
+                onChange={e => updateTestScore("highest_qualification_score", e.target.value)}
+                placeholder="e.g. 8.5 CGPA or 78%"
+              />
+            </div>
+            <div className="hidden sm:block" />
+            <div className="space-y-1.5">
+              <Label>10th Score <span className="text-destructive">*</span></Label>
+              <Input
+                value={formData.test_scores.tenth || ""}
+                onChange={e => updateTestScore("tenth", e.target.value)}
+                placeholder="e.g. 85%"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>12th Score <span className="text-destructive">*</span></Label>
+              <Input
+                value={formData.test_scores.twelfth || ""}
+                onChange={e => updateTestScore("twelfth", e.target.value)}
+                placeholder="e.g. 88%"
+              />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>Graduation Score</Label>
+              <Input
+                value={formData.test_scores.graduation || ""}
+                onChange={e => updateTestScore("graduation", e.target.value)}
+                placeholder="e.g. 7.8 CGPA or 75%"
+              />
+              <p className="text-xs text-muted-foreground">
+                10th and 12th are required. Graduation and Highest Qualification Score are optional.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Info note */}
       <div className="flex items-start gap-2.5 rounded-lg border border-primary/10 bg-primary/[0.03] p-4">
         <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
