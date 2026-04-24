@@ -38,16 +38,16 @@ export function PayoutSummaryCards({ metrics, onFilterStatus, activeStatus }: Pr
         return (
           <Card
             key={c.label}
-            className={`cursor-pointer transition-all hover:shadow-md ${isActive ? "ring-2 ring-primary" : ""} ${c.key === "leads" ? "cursor-default" : ""}`}
+            className={`h-full cursor-pointer transition-all hover:shadow-md ${isActive ? "ring-2 ring-primary" : ""} ${c.key === "leads" ? "cursor-default" : ""}`}
             onClick={() => {
               if (c.key === "leads") return;
               onFilterStatus(isActive ? null : c.key);
             }}
           >
-            <CardContent className="p-4 text-center">
-              <Icon className={`h-5 w-5 mx-auto mb-1.5 ${c.color}`} />
-              <p className="text-lg font-bold">{c.value}</p>
-              <p className="text-[11px] text-muted-foreground">{c.label}</p>
+            <CardContent className="p-4 text-center flex flex-col items-center justify-center gap-1 min-h-[96px]">
+              <Icon className={`h-5 w-5 ${c.color}`} />
+              <p className="text-lg font-bold leading-none truncate w-full" title={c.value}>{c.value}</p>
+              <p className="text-[11px] text-muted-foreground leading-tight">{c.label}</p>
             </CardContent>
           </Card>
         );

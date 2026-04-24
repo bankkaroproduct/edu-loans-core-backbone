@@ -372,7 +372,7 @@ export default function Leads() {
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6 max-w-screen-2xl mx-auto">
       {/* ── Header ── */}
       <PageHeader
         title="Submitted Leads"
@@ -398,11 +398,11 @@ export default function Leads() {
               setPage(1);
             }}
             className={cn(
-              "rounded-lg border px-4 py-3 text-center hover:bg-muted/50 transition-colors min-w-[100px] shrink-0",
+              "rounded-lg border px-4 py-3 text-center hover:bg-muted/50 transition-colors min-w-[110px] min-h-[68px] shrink-0 flex flex-col items-center justify-center gap-0.5",
               stageFilter === s.key && "ring-2 ring-primary/40"
             )}
           >
-            <p className={`text-lg font-bold ${s.color}`}>{summaryCounts[s.key] ?? 0}</p>
+            <p className={`text-lg font-bold leading-none ${s.color}`}>{summaryCounts[s.key] ?? 0}</p>
             <p className="text-xs text-muted-foreground leading-tight">{s.label}</p>
           </button>
         ))}
@@ -422,14 +422,14 @@ export default function Leads() {
               />
             </div>
             <Select value={stageFilter} onValueChange={(v) => { setStageFilter(v); setPage(1); }}>
-              <SelectTrigger className="w-[170px]"><SelectValue placeholder="All Stages" /></SelectTrigger>
+              <SelectTrigger className="w-[170px] shrink-0"><SelectValue placeholder="All Stages" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Stages</SelectItem>
                 {ALL_STAGES.map((s) => <SelectItem key={s} value={s}>{fmt(s)}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-              <SelectTrigger className="w-[170px]"><SelectValue placeholder="All Statuses" /></SelectTrigger>
+              <SelectTrigger className="w-[170px] shrink-0"><SelectValue placeholder="All Statuses" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
                 {ALL_STATUSES.map((s) => <SelectItem key={s} value={s}>{fmt(s)}</SelectItem>)}

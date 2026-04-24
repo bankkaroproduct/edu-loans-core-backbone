@@ -126,7 +126,7 @@ export default function LeadDetail() {
   ).length;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-screen-2xl mx-auto space-y-6">
       <LeadDetailHeader
         lead={lead}
         submittedByName={submittedByName}

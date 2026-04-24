@@ -152,7 +152,7 @@ export default function MasterData() {
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList className="flex-wrap h-auto">
+        <TabsList className="flex-wrap h-auto gap-1 p-1.5">
           <TabsTrigger value="countries">Countries</TabsTrigger>
           <TabsTrigger value="universities">Universities</TabsTrigger>
           <TabsTrigger value="courses">Courses</TabsTrigger>

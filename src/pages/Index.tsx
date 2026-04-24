@@ -178,7 +178,7 @@ export default function Dashboard() {
   const isFirstRun = !loading && leads.length === 0;
 
   return (
-    <div className="space-y-5 max-w-screen-2xl mx-auto">
+    <div className="space-y-6 max-w-screen-2xl mx-auto">
       <HeroPerformanceStrip
         appUser={appUser}
         partnerName={partnerName}
@@ -188,12 +188,12 @@ export default function Dashboard() {
         loading={loading}
       />
 
-      <div className="space-y-5">
+      <div className="space-y-6">
         {isFirstRun && <OnboardingEmptyState partnerName={partnerName} />}
 
         <YourLeads leads={leads} loading={loading} />
 
-        <div className="grid gap-5 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2 [&>*]:h-full">
           <DocumentSnapshot data={docSummary} loading={loading} />
           <BulkUploadSnapshot batches={batches} loading={loading} />
         </div>
