@@ -294,9 +294,7 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
 
   let qualificationNormalized: string | undefined;
   if (qualification) {
-    const match = ALLOWED_QUALIFICATIONS.find(
-      (q) => q.toLowerCase() === qualification.toLowerCase(),
-    );
+    const match = matchHighestQualification(qualification);
     if (!match) {
       errors.push(`highest_qualification must be one of: ${ALLOWED_QUALIFICATIONS.join(" | ")}`);
     } else {
