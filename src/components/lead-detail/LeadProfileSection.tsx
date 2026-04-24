@@ -212,9 +212,9 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
           <div className="grid grid-cols-2 gap-3">
             <Field label="Source Type" value={lead.source_type} editable={ed("source_type")} />
             <Field label="Source Subtype" value={lead.source_sub_type} editable={ed("source_sub_type")} />
-            <Field label="Submitted By" value={submittedByName} />
-            <Field label="Created At" value={new Date(lead.created_at).toLocaleString()} />
-            <Field label="Last Updated" value={new Date(lead.updated_at).toLocaleString()} />
+            <Field label="Submitted By" value={submittedByName} readOnlyFallback="Not captured" />
+            <Field label="Created At" value={new Date(lead.created_at).toLocaleString()} readOnlyFallback="—" />
+            <Field label="Last Updated" value={new Date(lead.updated_at).toLocaleString()} readOnlyFallback="—" />
             <div className="min-w-0">
               <span className="text-muted-foreground text-xs flex items-center gap-1">
                 <ShieldCheck className="h-3 w-3" /> Lead Authenticity
