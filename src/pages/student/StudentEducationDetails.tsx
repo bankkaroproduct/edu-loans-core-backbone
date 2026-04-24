@@ -60,6 +60,15 @@ export default function StudentEducationDetails() {
     if (!formData.course_name.trim()) {
       toast({ title: "Course name is required", variant: "destructive" }); return;
     }
+    if (!formData.highest_qualification) {
+      toast({ title: "Highest qualification is required", variant: "destructive" }); return;
+    }
+    if (!(formData.test_scores.tenth ?? "").toString().trim()) {
+      toast({ title: "10th score is required", variant: "destructive" }); return;
+    }
+    if (!(formData.test_scores.twelfth ?? "").toString().trim()) {
+      toast({ title: "12th score is required", variant: "destructive" }); return;
+    }
     const result = await saveStep("save_education");
     if (result) {
       toast({ title: "Education details saved" });
