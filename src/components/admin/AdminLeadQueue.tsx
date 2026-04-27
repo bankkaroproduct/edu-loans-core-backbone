@@ -57,7 +57,7 @@ export function AdminLeadQueue({ data, loading, error, onRetry, filters, onFilte
           tone: "amber",
         },
         {
-          label: "In lender",
+          label: "Sent to Lender",
           count: metrics.sentToLender,
           to: "/admin/leads?stage=sent_to_lender",
           tone: "primary",

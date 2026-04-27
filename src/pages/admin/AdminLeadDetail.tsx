@@ -265,10 +265,6 @@ export default function AdminLeadDetail() {
 
           <AdminLenderRecommendations leadId={lead.id} />
 
-          <AdminAssignLenderCard leadId={lead.id} />
-
-          <AdminCalculateBreCard lead={lead} />
-
           <AdminInternalNotes
             leadId={lead.id}
             notes={notes}
@@ -290,6 +286,10 @@ export default function AdminLeadDetail() {
           />
 
           <LeadTimeline history={history} notes={notes} audits={audits} actorNames={actorNames} />
+
+          <AdminCalculateBreCard lead={lead} />
+
+          <AdminAssignLenderCard leadId={lead.id} />
 
           <LeadPayoutSnapshot payouts={payouts} leadId={lead.id} />
         </div>
