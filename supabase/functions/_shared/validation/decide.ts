@@ -253,9 +253,7 @@ export function shouldSoftBlock(result: ValidationResult, code: string | null): 
       // BUT: if this is purely a name-warning that got promoted to review_needed,
       // we still want to honour the nameStrength rule below.
       // review_needed here is type-driven (verdict === type_mismatch_high), so allow.
-      if (result.type_check.verdict === "type_mismatch_high" || result.overall_flag !== "warn_name") {
-        return true;
-      }
+      return true;
     }
   }
 

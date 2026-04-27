@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
   }
 });
 
-async function handleList(supa: ReturnType<typeof createClient>) {
+async function handleList(supa: any) {
   const { data: lenders, error: lendersErr } = await supa
     .from("lenders")
     .select("id, lender_name, lender_code, active_flag")
@@ -234,7 +234,7 @@ async function handleList(supa: ReturnType<typeof createClient>) {
 }
 
 async function handleView(
-  supa: ReturnType<typeof createClient>,
+  supa: any,
   body: z.infer<typeof ViewSchema>,
 ) {
   const today = new Date().toISOString().slice(0, 10);
@@ -280,7 +280,7 @@ async function handleView(
 }
 
 async function handleAudit(
-  supa: ReturnType<typeof createClient>,
+  supa: any,
   body: z.infer<typeof AuditSchema>,
 ) {
   let q = supa
@@ -315,7 +315,7 @@ async function handleAudit(
 }
 
 async function handleDelete(
-  supa: ReturnType<typeof createClient>,
+  supa: any,
   body: z.infer<typeof DeleteSchema>,
   actorUserId: string,
 ) {
@@ -355,7 +355,7 @@ async function handleDelete(
 }
 
 async function handleUpload(
-  supa: ReturnType<typeof createClient>,
+  supa: any,
   body: z.infer<typeof UploadSchema>,
   actorUserId: string,
 ) {
@@ -536,7 +536,7 @@ async function handleUpload(
 }
 
 async function checkDailyCap(
-  supa: ReturnType<typeof createClient>,
+  supa: any,
   lenderId: string,
 ): Promise<boolean> {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
