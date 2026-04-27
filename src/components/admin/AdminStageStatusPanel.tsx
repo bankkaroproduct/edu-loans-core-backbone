@@ -271,40 +271,81 @@ function ChangeStageDialog({
 }
 
 // ---------------------------------------------------------------- Status dialog
+//
+// Cross-stage status updates: the dialog now lists every active status from
+// `lifecycle_status_master`, prefixed with its stage label so admins can
+// pick a meaningful state directly. If the chosen status belongs to the
+// lead's current stage we call admin_change_lead_status; otherwise we call
+// admin_change_lead_stage atomically (stage + status flip together).
 
 function UpdateStatusDialog({
-  open, onOpenChange, lead, statusOptions, onSuccess,
+  open, onOpenChange, lead, statusMaster, onSuccess,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   lead: Lead;
-  statusOptions: StatusMaster[];
+  statusMaster: StatusMaster[];
   onSuccess: () => void;
 }) {
-  const [newStatus, setNewStatus] = useState<LeadStatus | "">("");
+  const [selectedRowId, setSelectedRowId] = useState<string>("");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => { if (open) { setNewStatus(""); setReason(""); } }, [open]);
+  useEffect(() => { if (open) { setSelectedRowId(""); setReason(""); } }, [open]);
 
-  const reasonNeeded = newStatus ? statusRequiresReason(newStatus as LeadStatus) : false;
-  const canSubmit = newStatus && newStatus !== lead.current_status
-    && (!reasonNeeded || reason.trim().length >= 10) && !busy;
+  const currentStage = lead.current_stage as LeadStage;
+  const selectedRow = useMemo(
+    () => statusMaster.find((s) => s.id === selectedRowId) ?? null,
+    [statusMaster, selectedRowId],
+  );
+  const targetStage = (selectedRow?.stage_key ?? currentStage) as LeadStage;
+  const targetStatus = (selectedRow?.status_key ?? lead.current_status) as LeadStatus;
+  const isCrossStage = !!selectedRow && targetStage !== currentStage;
+
+  // Hide selecting the same (stage,status) pair we're already on, plus terminal
+  // stages and draft (admins should not arbitrarily move leads back to draft).
+  const visibleOptions = useMemo(
+    () => statusMaster.filter((s) => {
+      if (s.stage_key === "draft") return false;
+      if (s.stage_key === currentStage && s.status_key === lead.current_status) return false;
+      return true;
+    }),
+    [statusMaster, currentStage, lead.current_status],
+  );
+
+  const reasonNeeded = selectedRow
+    ? statusRequiresReason(targetStatus) || (isCrossStage && stageRequiresReason(targetStage))
+    : false;
+
+  const canSubmit = !!selectedRow
+    && (!reasonNeeded || reason.trim().length >= 10)
+    && !busy;
 
   const submit = async () => {
-    if (!newStatus) return;
+    if (!selectedRow) return;
     setBusy(true);
-    const res = await changeLeadStatus({
-      leadId: lead.id,
-      newStatus: newStatus as LeadStatus,
-      changeReason: reason.trim() || null,
-    });
+    const res = isCrossStage
+      ? await changeLeadStage({
+          leadId: lead.id,
+          newStage: targetStage,
+          newStatus: targetStatus,
+          changeReason: reason.trim() || null,
+        })
+      : await changeLeadStatus({
+          leadId: lead.id,
+          newStatus: targetStatus,
+          changeReason: reason.trim() || null,
+        });
     setBusy(false);
     if (!res.ok) {
       toast.error("Action failed — nothing was changed", { description: res.error });
       return;
     }
-    toast.success("Status updated");
+    toast.success(
+      isCrossStage
+        ? `Moved to ${formatStageLabel(targetStage)} — ${selectedRow.status_label}`
+        : "Status updated",
+    );
     onSuccess();
   };
 
@@ -314,21 +355,30 @@ function UpdateStatusDialog({
         <DialogHeader>
           <DialogTitle>Update Status</DialogTitle>
           <DialogDescription>
-            Stage <Badge variant="outline" className="ml-1">{formatStageLabel(lead.current_stage)}</Badge> stays the same.
+            Current: <Badge variant="outline" className="ml-1">{formatStageLabel(currentStage)}</Badge>
+            {" "}— picking a status from a different stage will move the lead atomically.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
           <div>
             <Label className="text-xs">New status</Label>
-            <Select value={newStatus} onValueChange={(v) => setNewStatus(v as LeadStatus)}>
+            <Select value={selectedRowId} onValueChange={setSelectedRowId}>
               <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
-              <SelectContent>
-                {statusOptions.map((s) => (
-                  <SelectItem key={s.id} value={s.status_key}>{s.status_label}</SelectItem>
+              <SelectContent className="max-h-[320px]">
+                {visibleOptions.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {formatStageLabel(s.stage_key)} — {s.status_label}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {isCrossStage && (
+              <p className="text-[10px] text-muted-foreground mt-1">
+                This will also move the stage from <strong>{formatStageLabel(currentStage)}</strong> to{" "}
+                <strong>{formatStageLabel(targetStage)}</strong>.
+              </p>
+            )}
           </div>
 
           {reasonNeeded && (
