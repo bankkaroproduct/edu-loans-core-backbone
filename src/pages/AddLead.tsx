@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePartnerContext } from "@/hooks/usePartnerContext";
+import { PartnerInactiveNotice } from "@/components/shared/PartnerInactiveNotice";
 import { useDuplicateCheck } from "@/hooks/useDuplicateCheck";
 import { createDownstreamRecords, fetchLeadDisplayId } from "@/hooks/useLeadWriteFlow";
 import { Button } from "@/components/ui/button";
@@ -101,7 +102,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
 
   const { user, appUser } = useAuth();
   const { isAdmin } = useRoleAccess();
-  const { effectivePartnerId, effectiveUserId } = usePartnerContext();
+  const { effectivePartnerId, effectiveUserId, isPartnerInactive } = usePartnerContext();
   const { duplicates, checking, checkDuplicates } = useDuplicateCheck();
   const { options: QUALIFICATIONS } = useHighestQualificationOptions();
   const [submitting, setSubmitting] = useState(false);
