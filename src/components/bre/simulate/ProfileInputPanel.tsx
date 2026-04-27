@@ -137,8 +137,7 @@ export function ProfileInputPanel({
 
         <Separator />
 
-        <div className="space-y-3">
-          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Loan request</div>
+        <FormSection title="Loan request">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="loan_amount" className="text-xs">Loan amount (₹) *</Label>
@@ -200,12 +199,11 @@ export function ProfileInputPanel({
               </Select>
             </div>
           </div>
-        </div>
+        </FormSection>
 
         <Separator />
 
-        <div className="space-y-3">
-          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Student</div>
+        <FormSection title="Student">
           <div className="grid grid-cols-2 gap-3">
             {studentParams.map((p) => (
               <ParamField
@@ -216,12 +214,11 @@ export function ProfileInputPanel({
               />
             ))}
           </div>
-        </div>
+        </FormSection>
 
         <Separator />
 
-        <div className="space-y-3">
-          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">University</div>
+        <FormSection title="University">
           <div className="grid grid-cols-2 gap-3">
             {universityParams.map((p) => (
               <ParamField
@@ -232,12 +229,11 @@ export function ProfileInputPanel({
               />
             ))}
           </div>
-        </div>
+        </FormSection>
 
         <Separator />
 
-        <div className="space-y-3">
-          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Co-applicant</div>
+        <FormSection title="Co-applicant">
           <div className="grid grid-cols-2 gap-3">
             {coapplicantParams.map((p) => (
               <ParamField
@@ -248,7 +244,7 @@ export function ProfileInputPanel({
               />
             ))}
           </div>
-        </div>
+        </FormSection>
 
         <Separator />
 
