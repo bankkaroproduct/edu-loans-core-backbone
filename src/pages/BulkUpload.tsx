@@ -89,8 +89,10 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
   const [searchParams] = useSearchParams();
   const { appUser } = useAuth();
   const { agentUserId } = useRoleAccess();
-  const { effectivePartnerId, effectiveUserId } = usePartnerContext();
+  const { effectivePartnerId, effectiveUserId, isPartnerInactive } = usePartnerContext();
   const { options: qualificationOptions } = useHighestQualificationOptions();
+  const isAdminRole = appUser?.role === "super_admin" || appUser?.role === "admin";
+  const blockNewUpload = !isAdminRole && isPartnerInactive === true;
 
   const [batches, setBatches] = useState<Batch[]>([]);
   const [batchesLoading, setBatchesLoading] = useState(true);
