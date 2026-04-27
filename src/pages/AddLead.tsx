@@ -991,7 +991,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                       role="combobox"
                       aria-expanded={countryPickerOpen}
                       className={cn(
-                        "w-full justify-between font-normal h-9",
+                        "w-full justify-between font-normal h-10",
                         !form.intended_study_country && "text-muted-foreground",
                       )}
                     >
@@ -1285,7 +1285,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                         role="combobox"
                         aria-expanded={partnerPickerOpen}
                         className={cn(
-                          "w-full justify-between font-normal h-9",
+                          "w-full justify-between font-normal h-10",
                           !selectedAssignedPartner && "text-muted-foreground"
                         )}
                       >
