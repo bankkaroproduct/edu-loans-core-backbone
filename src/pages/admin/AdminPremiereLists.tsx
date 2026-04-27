@@ -230,6 +230,7 @@ export default function AdminPremiereLists() {
       <PageHeader
         title="Premiere College Lists"
         description="Per-lender lists used to rank eligible recommendations. Premiere status never affects eligibility — only ordering."
+        count={loading ? null : rows.filter((r) => r.list_status === "Uploaded").length}
       >
         <Button variant="outline" size="sm" onClick={downloadTemplate}>
           <Download className="mr-2 h-4 w-4" />

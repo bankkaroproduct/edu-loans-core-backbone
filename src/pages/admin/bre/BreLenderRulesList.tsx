@@ -73,9 +73,8 @@ export default function BreLenderRulesList() {
       <PageHeader
         title="BRE Lender Rules"
         description="Active rule version per lender. Click Edit to view and create a new version."
-      >
-        <Badge variant="outline" className="bg-muted text-muted-foreground">{rows.length} active</Badge>
-      </PageHeader>
+        count={loading ? null : rows.length}
+      />
 
       <Card>
         <CardContent className="p-4 space-y-4">

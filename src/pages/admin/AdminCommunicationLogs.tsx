@@ -38,6 +38,7 @@ export default function AdminCommunicationLogs() {
       <PageHeader
         title="Communication Logs"
         description="Audit trail of every send attempt — admin only."
+        count={filtered.length}
       />
 
       <Card className="p-4">
