@@ -247,6 +247,12 @@ export default function AdminLeadDetail() {
       </div>
 
       <LeadSummaryStrip lead={lead} />
+
+      {/* Student PTR / Partner Source profile — promoted to the top of Admin Lead
+          Detail so the originating partner / student-direct context is always
+          visible above the fold. Single source of truth — not duplicated lower. */}
+      <AdminPartnerCard partner={partner} isStudentDirect={isStudentDirect} />
+
       <LeadLifecycleProgress lead={lead} />
       <LeadDuplicateContext lead={lead} />
       <AdminEditRequestPanel leadId={lead.id} onChanged={loadAll} />
