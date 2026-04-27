@@ -29,7 +29,7 @@ import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { computeAdminDiff, getAdminFieldLabel } from "@/lib/adminEditableFields";
 import { MoneyInput } from "@/components/ui/money-input";
 import { MasterCombobox, type MasterOption } from "@/components/ui/master-combobox";
-import { CollateralRadio, collateralBoolToState, collateralStateToBool, INCOME_SOURCE_OPTIONS, type CollateralState } from "@/components/shared/CollateralRadio";
+import { CollateralRadio, collateralBoolToState, collateralStateToBool, type CollateralState } from "@/components/shared/CollateralRadio";
 import { usePincodeLookup } from "@/hooks/usePincodeLookup";
 import type { Tables } from "@/integrations/supabase/types";
 
