@@ -772,7 +772,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   const intakeTerms = [...new Set(intakes.map((i) => i.intake_term))];
   const intakeYears = [...new Set(intakes.map((i) => i.intake_year))].sort();
 
-  const stepIndex = stepIds.findIndex((s) => s === activeStep);
+
 
   /**
    * Review row.
