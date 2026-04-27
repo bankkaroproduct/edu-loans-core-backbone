@@ -50,10 +50,6 @@ export function AdminStageStatusPanel({ lead, unverifiedRequiredCount, hasSancti
   const currentStage = lead.current_stage as LeadStage;
   const terminal = isTerminal(currentStage);
   const allowedNext = ALLOWED_TRANSITIONS[currentStage] ?? [];
-  const statusesForCurrentStage = useMemo(
-    () => statusMaster.filter((s) => s.stage_key === currentStage),
-    [statusMaster, currentStage],
-  );
 
   return (
     <Card>
@@ -79,7 +75,7 @@ export function AdminStageStatusPanel({ lead, unverifiedRequiredCount, hasSancti
             <Button size="sm" variant="default" onClick={() => setStageOpen(true)} disabled={allowedNext.length === 0}>
               Change Stage
             </Button>
-            <Button size="sm" variant="outline" onClick={() => setStatusOpen(true)} disabled={statusesForCurrentStage.length === 0}>
+            <Button size="sm" variant="outline" onClick={() => setStatusOpen(true)} disabled={statusMaster.length === 0}>
               Update Status
             </Button>
           </div>
@@ -100,7 +96,7 @@ export function AdminStageStatusPanel({ lead, unverifiedRequiredCount, hasSancti
         open={statusOpen}
         onOpenChange={setStatusOpen}
         lead={lead}
-        statusOptions={statusesForCurrentStage}
+        statusMaster={statusMaster}
         onSuccess={() => { setStatusOpen(false); onChanged(); }}
       />
     </Card>
