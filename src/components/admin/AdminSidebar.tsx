@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAdminPendingRequests } from "@/hooks/useAdminPendingRequests";
 import { AdminPartnerSwitcher } from "@/components/AdminPartnerSwitcher";
 
@@ -52,6 +53,19 @@ const commsItems = [
   { title: "Logs", url: "/admin/communications/logs", icon: History },
 ];
 
+// Shared className builders for nav items.
+// Active state: stronger bg + primary left border + medium font.
+// `border-l-2 border-transparent` on the base keeps row width identical so
+// active/inactive items don't shift horizontally.
+const navBaseClass =
+  "flex items-center gap-3 w-full px-2 py-1.5 rounded-md text-sm border-l-2 border-transparent hover:bg-sidebar-accent/50";
+const navActiveClass =
+  "bg-sidebar-accent text-sidebar-accent-foreground font-medium border-l-2 border-primary";
+
+// Section labels: text-xs uppercase tracking-wider, muted, with vertical rhythm.
+const sectionLabelClass =
+  "text-xs uppercase tracking-wider text-sidebar-foreground/60 mt-4 mb-1";
+
 export function AdminSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
@@ -72,7 +86,7 @@ export function AdminSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel>
             {!collapsed && (
-              <span className="flex items-center gap-1.5">
+              <span className={`flex items-center gap-1.5 ${sectionLabelClass}`}>
                 <Shield className="h-3.5 w-3.5 text-primary" />
                 Admin Console
               </span>
@@ -88,10 +102,10 @@ export function AdminSidebar() {
                       <NavLink
                         to={item.url}
                         end={item.end}
-                        className="hover:bg-sidebar-accent/50"
-                        activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                        className={navBaseClass}
+                        activeClassName={navActiveClass}
                       >
-                        <item.icon className="mr-2 h-4 w-4 shrink-0" />
+                        <item.icon className="h-4 w-4 shrink-0" />
                         {!collapsed && (
                           <span className="flex items-center justify-between w-full gap-2">
                             <span className="truncate">{item.title}</span>
@@ -115,7 +129,9 @@ export function AdminSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>{!collapsed && "Lead Operations"}</SidebarGroupLabel>
+          <SidebarGroupLabel>
+            {!collapsed && <span className={sectionLabelClass}>Lead Operations</span>}
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {leadOpsItems.map((item) => (
@@ -123,10 +139,10 @@ export function AdminSidebar() {
                   <SidebarMenuButton asChild>
                     <NavLink
                       to={item.url}
-                      className="hover:bg-sidebar-accent/50"
-                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                      className={navBaseClass}
+                      activeClassName={navActiveClass}
                     >
-                      <item.icon className="mr-2 h-4 w-4" />
+                      <item.icon className="h-4 w-4 shrink-0" />
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
@@ -138,7 +154,9 @@ export function AdminSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>{!collapsed && "Master Data"}</SidebarGroupLabel>
+          <SidebarGroupLabel>
+            {!collapsed && <span className={sectionLabelClass}>Master Data</span>}
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {adminMasterItems.map((item) => (
@@ -146,10 +164,10 @@ export function AdminSidebar() {
                   <SidebarMenuButton asChild>
                     <NavLink
                       to={item.url}
-                      className="hover:bg-sidebar-accent/50"
-                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                      className={navBaseClass}
+                      activeClassName={navActiveClass}
                     >
-                      <item.icon className="mr-2 h-4 w-4" />
+                      <item.icon className="h-4 w-4 shrink-0" />
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
@@ -163,7 +181,7 @@ export function AdminSidebar() {
           <SidebarGroup>
             <SidebarGroupLabel>
               {!collapsed && (
-                <span className="flex items-center gap-1.5">
+                <span className={`flex items-center gap-1.5 ${sectionLabelClass}`}>
                   <SlidersHorizontal className="h-3.5 w-3.5 text-primary" />
                   BRE Engine
                 </span>
@@ -177,10 +195,10 @@ export function AdminSidebar() {
                       <NavLink
                         to={item.url}
                         end={item.end}
-                        className="hover:bg-sidebar-accent/50"
-                        activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                        className={navBaseClass}
+                        activeClassName={navActiveClass}
                       >
-                        <item.icon className="mr-2 h-4 w-4" />
+                        <item.icon className="h-4 w-4 shrink-0" />
                         {!collapsed && <span>{item.title}</span>}
                       </NavLink>
                     </SidebarMenuButton>
@@ -194,7 +212,7 @@ export function AdminSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel>
             {!collapsed && (
-              <span className="flex items-center gap-1.5">
+              <span className={`flex items-center gap-1.5 ${sectionLabelClass}`}>
                 <MessageSquare className="h-3.5 w-3.5 text-primary" />
                 Communications
               </span>
@@ -208,10 +226,10 @@ export function AdminSidebar() {
                     <NavLink
                       to={item.url}
                       end={item.end}
-                      className="hover:bg-sidebar-accent/50"
-                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                      className={navBaseClass}
+                      activeClassName={navActiveClass}
                     >
-                      <item.icon className="mr-2 h-4 w-4" />
+                      <item.icon className="h-4 w-4 shrink-0" />
                       {!collapsed && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
@@ -225,26 +243,41 @@ export function AdminSidebar() {
       <SidebarFooter>
         <div className="p-2 space-y-2">
           {!collapsed && appUser && (
-            <div className="px-2">
-              <p className="text-sm font-medium text-sidebar-foreground truncate">{appUser.full_name}</p>
-              <div className="flex items-center gap-1.5">
-                <p className="text-xs text-muted-foreground truncate">{appUser.email}</p>
+            <div className="px-2 space-y-0.5">
+              {/* Line 1: name + role pill on one line */}
+              <div className="flex items-center gap-2 min-w-0">
+                <p className="text-sm font-medium text-sidebar-foreground truncate flex-1 min-w-0">
+                  {appUser.full_name}
+                </p>
+                <Badge
+                  variant="outline"
+                  className="text-[9px] px-1.5 py-0 bg-primary/10 text-primary border-primary/30 shrink-0"
+                >
+                  {appUser.role.replace(/_/g, " ").toUpperCase()}
+                </Badge>
               </div>
-              <Badge variant="outline" className="mt-1 text-[9px] px-1.5 py-0 bg-primary/10 text-primary border-primary/30">
-                {appUser.role.replace(/_/g, " ").toUpperCase()}
-              </Badge>
+              {/* Line 2: email muted */}
+              <p className="text-xs text-muted-foreground truncate">{appUser.email}</p>
             </div>
           )}
 
-          <Button
-            variant="ghost"
-            size={collapsed ? "icon" : "default"}
-            className="w-full justify-start"
-            onClick={handleSignOut}
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            {!collapsed && "Sign Out"}
-          </Button>
+          {/* Sign out: icon button (not full-width) */}
+          <div className={collapsed ? "flex justify-center" : "flex justify-end px-2"}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={handleSignOut}
+                  aria-label="Sign Out"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Sign Out</TooltipContent>
+            </Tooltip>
+          </div>
         </div>
       </SidebarFooter>
     </Sidebar>
