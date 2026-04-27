@@ -12,8 +12,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DuplicateWarningDialog } from "@/components/leads/DuplicateWarningDialog";
 import { LeadSuccessDialog } from "@/components/leads/LeadSuccessDialog";
+import { IndianPhoneInput, sanitizeIndianPhoneDigits } from "@/components/shared/IndianPhoneInput";
 import { toast } from "sonner";
 import { ArrowLeft, Zap } from "lucide-react";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phone";
@@ -28,7 +30,7 @@ const STATUS = "awaiting_verification" as const;
 export default function QuickLead() {
   const navigate = useNavigate();
   const { user, appUser } = useAuth();
-  const { effectivePartnerId, effectiveUserId, isPartnerInactive } = usePartnerContext();
+  const { effectivePartnerId, effectiveUserId, isEffectivePartnerInactive } = usePartnerContext();
   const { duplicates, checking, checkDuplicates } = useDuplicateCheck();
   const [submitting, setSubmitting] = useState(false);
   const [showDupDialog, setShowDupDialog] = useState(false);
@@ -83,6 +85,9 @@ export default function QuickLead() {
   };
 
   const handleSubmit = async () => {
+    if (isEffectivePartnerInactive === true) {
+      return toast.error("New lead submission is paused — the selected partner organization is inactive.");
+    }
     const err = validate();
     if (err) return toast.error(err);
 
@@ -178,8 +183,7 @@ export default function QuickLead() {
   const intakeTerms = [...new Set(futureIntakes.map((i) => i.intake_term))];
   const intakeYears = [...new Set(futureIntakes.map((i) => i.intake_year))].sort();
 
-  const isAdminRole = appUser?.role === "super_admin" || appUser?.role === "admin";
-  if (!isAdminRole && isPartnerInactive === true) {
+  if (isEffectivePartnerInactive === true) {
     return (
       <div className="max-w-2xl mx-auto space-y-6">
         <PartnerInactiveNotice surface="quick_lead" />

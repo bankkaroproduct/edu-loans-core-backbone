@@ -89,10 +89,12 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
   const [searchParams] = useSearchParams();
   const { appUser } = useAuth();
   const { agentUserId } = useRoleAccess();
-  const { effectivePartnerId, effectiveUserId, isPartnerInactive } = usePartnerContext();
+  const { effectivePartnerId, effectiveUserId, isEffectivePartnerInactive } = usePartnerContext();
   const { options: qualificationOptions } = useHighestQualificationOptions();
   const isAdminRole = appUser?.role === "super_admin" || appUser?.role === "admin";
-  const blockNewUpload = !isAdminRole && isPartnerInactive === true;
+  // Block NEW uploads when the *effective* partner (own org for partners, simulated
+  // org for admins) is inactive. Existing batches/history remain accessible.
+  const blockNewUpload = isEffectivePartnerInactive === true;
 
   const [batches, setBatches] = useState<Batch[]>([]);
   const [batchesLoading, setBatchesLoading] = useState(true);

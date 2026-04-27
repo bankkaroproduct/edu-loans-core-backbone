@@ -102,7 +102,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
 
   const { user, appUser } = useAuth();
   const { isAdmin } = useRoleAccess();
-  const { effectivePartnerId, effectiveUserId, isPartnerInactive } = usePartnerContext();
+  const { effectivePartnerId, effectiveUserId, isPartnerInactive, isEffectivePartnerInactive } = usePartnerContext();
   const { duplicates, checking, checkDuplicates } = useDuplicateCheck();
   const { options: QUALIFICATIONS } = useHighestQualificationOptions();
   const [submitting, setSubmitting] = useState(false);
@@ -516,6 +516,13 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   );
 
   const handleSubmit = async (asDraft: boolean) => {
+    // Defensive: if the effective partner is inactive and this is a NEW lead
+    // (not an edit), block submit even if the UI gate was somehow bypassed.
+    // Mirrors the DB-level RLS hard gate.
+    if (!isEditMode && isEffectivePartnerInactive === true) {
+      toast.error("New lead submission is paused — the selected partner organization is inactive.");
+      return;
+    }
     const err = validate(asDraft);
     if (err) {
       toast.error(err.message);
@@ -881,9 +888,11 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   const partnerChanged = !!partnerIdAssignment && partnerIdAssignment !== originalPartnerId;
   const originalPartner = partnersList.find((p) => p.id === originalPartnerId);
 
-  // Gate new-lead creation for inactive partner-role users. Edit mode and admins
-  // are not gated. Renders inside the same container so the shell is unchanged.
-  const showInactiveGate = !isAdmin && !isEditMode && isPartnerInactive === true;
+  // Gate NEW lead creation when the *effective* partner is inactive.
+  // Applies to both partner-role users (own org) AND admins acting on behalf
+  // of an inactive partner via simulation. Edit mode is never gated — admins
+  // and partners can continue managing existing leads.
+  const showInactiveGate = !isEditMode && isEffectivePartnerInactive === true;
 
   if (showInactiveGate) {
     return (

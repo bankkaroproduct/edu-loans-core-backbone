@@ -1925,6 +1925,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin_or_super: { Args: { _auth_id: string }; Returns: boolean }
+      is_partner_org_active: { Args: { _partner_id: string }; Returns: boolean }
       match_college_names: {
         Args: { _a_norm: string; _b_norm: string }
         Returns: boolean
