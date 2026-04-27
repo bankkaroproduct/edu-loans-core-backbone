@@ -412,6 +412,24 @@ export type Database = {
         }
         Relationships: []
       }
+      country_aliases: {
+        Row: {
+          alias_lower: string
+          canonical_name: string
+          created_at: string
+        }
+        Insert: {
+          alias_lower: string
+          canonical_name: string
+          created_at?: string
+        }
+        Update: {
+          alias_lower?: string
+          canonical_name?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       courses_master: {
         Row: {
           active_flag: boolean
@@ -906,6 +924,96 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      lender_premiere_audit: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          created_at: string
+          file_name: string | null
+          id: string
+          lender_id: string
+          list_version: number | null
+          meta: Json
+          row_count: number | null
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          created_at?: string
+          file_name?: string | null
+          id?: string
+          lender_id: string
+          list_version?: number | null
+          meta?: Json
+          row_count?: number | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          created_at?: string
+          file_name?: string | null
+          id?: string
+          lender_id?: string
+          list_version?: number | null
+          meta?: Json
+          row_count?: number | null
+        }
+        Relationships: []
+      }
+      lender_premiere_colleges: {
+        Row: {
+          city: string | null
+          college_name_normalized: string
+          college_name_raw: string
+          country_normalized: string
+          country_raw: string
+          effective_from: string | null
+          effective_to: string | null
+          id: string
+          is_current: boolean
+          lender_id: string
+          list_version: number
+          notes: string | null
+          source_file_name: string | null
+          uploaded_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          city?: string | null
+          college_name_normalized: string
+          college_name_raw: string
+          country_normalized: string
+          country_raw: string
+          effective_from?: string | null
+          effective_to?: string | null
+          id?: string
+          is_current?: boolean
+          lender_id: string
+          list_version: number
+          notes?: string | null
+          source_file_name?: string | null
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          city?: string | null
+          college_name_normalized?: string
+          college_name_raw?: string
+          country_normalized?: string
+          country_raw?: string
+          effective_from?: string | null
+          effective_to?: string | null
+          id?: string
+          is_current?: boolean
+          lender_id?: string
+          list_version?: number
+          notes?: string | null
+          source_file_name?: string | null
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
       }
       lender_university_mappings: {
         Row: {
@@ -1627,30 +1735,48 @@ export type Database = {
           active_flag: boolean
           aliases: string[] | null
           country: string
+          country_normalized: string | null
           created_at: string
+          grade: string | null
+          grade_source: string
           id: string
+          points: number | null
+          qs_rank: number | null
           ranking_bucket: string | null
           university_name: string
+          university_name_normalized: string | null
           updated_at: string
         }
         Insert: {
           active_flag?: boolean
           aliases?: string[] | null
           country: string
+          country_normalized?: string | null
           created_at?: string
+          grade?: string | null
+          grade_source?: string
           id?: string
+          points?: number | null
+          qs_rank?: number | null
           ranking_bucket?: string | null
           university_name: string
+          university_name_normalized?: string | null
           updated_at?: string
         }
         Update: {
           active_flag?: boolean
           aliases?: string[] | null
           country?: string
+          country_normalized?: string | null
           created_at?: string
+          grade?: string | null
+          grade_source?: string
           id?: string
+          points?: number | null
+          qs_rank?: number | null
           ranking_bucket?: string | null
           university_name?: string
+          university_name_normalized?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1799,7 +1925,13 @@ export type Database = {
         Returns: boolean
       }
       is_admin_or_super: { Args: { _auth_id: string }; Returns: boolean }
+      match_college_names: {
+        Args: { _a_norm: string; _b_norm: string }
+        Returns: boolean
+      }
+      normalize_college_name: { Args: { _name: string }; Returns: string }
       normalize_phone: { Args: { _phone: string }; Returns: string }
+      resolve_country_canonical: { Args: { _name: string }; Returns: string }
       seed_lead_document_requirements: {
         Args: { p_lead_id: string }
         Returns: number
@@ -1809,6 +1941,7 @@ export type Database = {
         Args: { _changes: Json; _lead_id: string; _reason: string }
         Returns: Json
       }
+      tokens_distinctive: { Args: { _norm_name: string }; Returns: string[] }
     }
     Enums: {
       app_role: "super_admin" | "admin" | "partner_admin" | "partner_agent"
