@@ -785,8 +785,13 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     setSubmitting(false);
   };
 
-  const intakeTerms = [...new Set(intakes.map((i) => i.intake_term))];
-  const intakeYears = [...new Set(intakes.map((i) => i.intake_year))].sort();
+  // Drop past intake years from the picker. We keep historical values flowing
+  // through edit-mode hydration (the saved value still renders on Review), but
+  // the dropdown should only offer current/future intakes for new selections.
+  const currentYear = new Date().getFullYear();
+  const futureIntakes = intakes.filter((i) => i.intake_year >= currentYear);
+  const intakeTerms = [...new Set(futureIntakes.map((i) => i.intake_term))];
+  const intakeYears = [...new Set(futureIntakes.map((i) => i.intake_year))].sort();
 
 
 
