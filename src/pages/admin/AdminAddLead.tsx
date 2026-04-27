@@ -75,7 +75,9 @@ export default function AdminAddLead() {
             >
               <span className="truncate">
                 {selected
-                  ? `${selected.display_name} (${selected.partner_code})`
+                  ? selected.partner_code === "PTR-DIRECT"
+                    ? `${selected.display_name} — Direct / Admin-owned`
+                    : `${selected.display_name} (${selected.partner_code})`
                   : "Search & select a partner organization…"}
               </span>
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
