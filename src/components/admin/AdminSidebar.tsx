@@ -1,5 +1,5 @@
 import {
-  Shield, Inbox, Banknote, GraduationCap, Users, LogOut,
+  Shield, Inbox, Banknote, Users, LogOut,
   ClipboardCheck, Database, FilePlus, Upload, FileSpreadsheet,
   SlidersHorizontal, History, ScrollText, Calculator, FlaskConical,
   MessageSquare, FileText, Star,
@@ -34,7 +34,6 @@ const adminMasterItems = [
   { title: "Master Data", url: "/admin/master-data", icon: Database },
   { title: "Partners", url: "/admin/partners", icon: Users },
   { title: "Lenders", url: "/admin/lenders", icon: Banknote },
-  { title: "Universities", url: "/admin/master-data?tab=universities", icon: GraduationCap },
   { title: "Premiere Lists", url: "/admin/premiere-lists", icon: Star },
 ];
 
