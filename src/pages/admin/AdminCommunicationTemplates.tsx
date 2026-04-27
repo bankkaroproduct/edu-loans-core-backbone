@@ -100,15 +100,14 @@ export default function AdminCommunicationTemplates() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <PageHeader
-          title="Communication Templates"
-          description="Manage email and WhatsApp templates. Edits take effect immediately in the test panel and lead-detail send block."
-        />
-        <Button onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-2" /> New template
+      <PageHeader
+        title="Communication Templates"
+        description="Manage email and WhatsApp templates. Edits take effect immediately in the test panel and lead-detail send block."
+      >
+        <Button onClick={openCreate} size="sm">
+          <Plus className="h-4 w-4 mr-1.5" /> New template
         </Button>
-      </div>
+      </PageHeader>
 
       <Card className="p-4">
         <div className="flex flex-wrap gap-3 items-center">

@@ -102,6 +102,7 @@ export default function AdminLenders() {
       <PageHeader
         title="Lenders"
         description="Manage lender catalog and supported configurations."
+        count={loading ? null : totalCount}
       >
         <Button onClick={openCreate} size="sm">
           <Plus className="h-4 w-4 mr-1.5" /> Add Lender

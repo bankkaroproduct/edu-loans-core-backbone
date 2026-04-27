@@ -111,6 +111,7 @@ export default function AdminPartners() {
       <PageHeader
         title="Partners"
         description="Manage partner organizations across the EduLoans network."
+        count={loading ? null : totalCount}
       >
         <Button onClick={openCreate} size="sm">
           <Plus className="h-4 w-4 mr-1.5" /> Add Partner

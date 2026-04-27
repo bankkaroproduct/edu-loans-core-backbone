@@ -61,9 +61,8 @@ export default function BreAuditLog() {
       <PageHeader
         title="BRE Audit Log"
         description="All audit events scoped to BRE entities only. Most recent 200 events."
-      >
-        <Badge variant="outline" className="bg-muted text-muted-foreground">{rows.length} BRE events</Badge>
-      </PageHeader>
+        count={loading ? null : rows.length}
+      />
 
       <Card>
         <CardContent className="p-4 space-y-4">
