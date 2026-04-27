@@ -41,10 +41,11 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const { appUser, signOut } = useAuth();
-  const { isSimulating, effectivePartnerName } = usePartnerContext();
+  const { isSimulating, effectivePartnerName, isPartnerInactive } = usePartnerContext();
 
   const isPartnerRole = appUser?.role === "partner_admin" || appUser?.role === "partner_agent";
   const isUnlinkedPartner = isPartnerRole && !appUser?.partner_id;
+  const showInactiveNotice = isPartnerRole && !!appUser?.partner_id && isPartnerInactive === true;
 
   return (
     <Sidebar collapsible="icon">
