@@ -1200,7 +1200,12 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               </div>
               <div className="space-y-2" data-field="coapplicant_mobile">
                 <Label>Co-Applicant Mobile *</Label>
-                <Input value={form.coapplicant_mobile} onChange={(e) => set("coapplicant_mobile", e.target.value)} placeholder="+91 9876543210" />
+                <Input
+                  value={form.coapplicant_mobile}
+                  onChange={(e) => set("coapplicant_mobile", e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  placeholder="10-digit mobile (without +91)"
+                  inputMode="numeric"
+                />
                 <p className="text-xs text-muted-foreground">Number as per Aadhaar and Passport</p>
               </div>
               <div className="space-y-2" data-field="coapplicant_relation">
@@ -1214,17 +1219,9 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2" data-field="coapplicant_income_source">
-                <Label>Income Source *</Label>
-                <Select value={form.coapplicant_income_source} onValueChange={(v) => set("coapplicant_income_source", v)}>
-                  <SelectTrigger><SelectValue placeholder="Select income source" /></SelectTrigger>
-                  <SelectContent>
-                    {INCOME_SOURCE_OPTIONS.map((o) => (
-                      <SelectItem key={o} value={o}>{o}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Income Source field removed from UI per scoped form-fix pass.
+                  Existing DB values are preserved on save (form state still hydrates +
+                  writes the value back) so legacy records are not wiped. */}
               <div className="space-y-2" data-field="coapplicant_employment_type">
                 <Label>Employment Type *</Label>
                 <Select value={form.coapplicant_employment_type} onValueChange={(v) => set("coapplicant_employment_type", v)}>
