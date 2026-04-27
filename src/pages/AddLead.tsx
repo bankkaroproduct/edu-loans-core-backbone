@@ -20,6 +20,7 @@ import { DuplicateWarningDialog } from "@/components/leads/DuplicateWarningDialo
 import { LeadSuccessDialog } from "@/components/leads/LeadSuccessDialog";
 import { toast } from "sonner";
 import { ArrowLeft, FileText, User, GraduationCap, MessageSquare, Eye, AlertTriangle, ChevronDown, Wallet, Building2, Check, ChevronsUpDown, Info } from "lucide-react";
+import { HorizontalStepper } from "@/components/shared/HorizontalStepper";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
@@ -771,7 +772,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   const intakeTerms = [...new Set(intakes.map((i) => i.intake_term))];
   const intakeYears = [...new Set(intakes.map((i) => i.intake_year))].sort();
 
-  const stepIndex = stepIds.findIndex((s) => s === activeStep);
+
 
   /**
    * Review row.
@@ -875,26 +876,13 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         </Alert>
       )}
 
-      {/* Step progress — mode-aware */}
-      <div className="flex items-center gap-1 overflow-x-auto pb-1">
-        {steps.map((step, i) => {
-          const Icon = step.icon;
-          const isActive = step.id === activeStep;
-          const isPast = i < stepIndex;
-          return (
-            <button
-              key={step.id}
-              onClick={() => goToStep(step.id as StepId)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
-                isActive ? "bg-primary text-primary-foreground" : isPast ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground hover:bg-muted/80"
-              }`}
-            >
-              <Icon className="h-3.5 w-3.5" />
-              {step.label}
-            </button>
-          );
-        })}
-      </div>
+      {/* Step progress — horizontal stepper (PR 5). Visual swap of the prior tab pill strip;
+          state machine unchanged: goToStep + activeStep + Tabs value still drive content. */}
+      <HorizontalStepper
+        steps={steps.map((s) => ({ id: s.id, label: s.label }))}
+        activeId={activeStep}
+        onStepClick={(id) => goToStep(id as StepId)}
+      />
 
       <Tabs value={activeStep} onValueChange={(v) => goToStep(v as StepId)} className="space-y-5">
         {/* Student Details */}
@@ -1003,7 +991,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                       role="combobox"
                       aria-expanded={countryPickerOpen}
                       className={cn(
-                        "w-full justify-between font-normal h-9",
+                        "w-full justify-between font-normal h-10",
                         !form.intended_study_country && "text-muted-foreground",
                       )}
                     >
@@ -1297,7 +1285,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                         role="combobox"
                         aria-expanded={partnerPickerOpen}
                         className={cn(
-                          "w-full justify-between font-normal h-9",
+                          "w-full justify-between font-normal h-10",
                           !selectedAssignedPartner && "text-muted-foreground"
                         )}
                       >

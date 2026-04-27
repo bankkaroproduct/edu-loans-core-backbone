@@ -65,7 +65,7 @@ function ParamField({
             onChange(v === "" ? null : Number(v));
           }}
           step="any"
-          className="h-8 text-sm"
+          className="h-10 text-sm"
         />
       </div>
     );
@@ -75,7 +75,7 @@ function ParamField({
     <div className="space-y-1.5">
       <Label htmlFor={id} className="text-xs">{param.label}</Label>
       <Select value={value == null ? "" : String(value)} onValueChange={(v) => onChange(v || null)}>
-        <SelectTrigger id={id} className="h-8 text-sm">
+        <SelectTrigger id={id} className="h-10 text-sm">
           <SelectValue placeholder="Select…" />
         </SelectTrigger>
         <SelectContent>
@@ -113,15 +113,16 @@ export function ProfileInputPanel({
     onChange({ ...profile, coapplicant: { ...profile.coapplicant, [k]: v as never } });
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
+    <Card className="flex flex-col max-h-[calc(100vh-8rem)]">
+      <CardHeader className="pb-3 shrink-0">
         <CardTitle className="text-sm">Profile input</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-5">
+      {/* Scrollable body — keeps the action bar pinned at the bottom of the card */}
+      <CardContent className="space-y-5 overflow-y-auto flex-1">
         <div className="space-y-1.5">
           <Label className="text-xs">Preset</Label>
           <Select value={presetKey} onValueChange={(v) => onPresetChange(v as PresetKey)}>
-            <SelectTrigger className="h-8 text-sm">
+            <SelectTrigger className="h-10 text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -146,13 +147,13 @@ export function ProfileInputPanel({
                 type="number"
                 value={profile.loan_amount || ""}
                 onChange={(e) => set({ loan_amount: Number(e.target.value) || 0 })}
-                className="h-8 text-sm"
+                className="h-10 text-sm"
               />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="destination_country" className="text-xs">Destination country *</Label>
               <Select value={profile.destination_country} onValueChange={(v) => set({ destination_country: v })}>
-                <SelectTrigger id="destination_country" className="h-8 text-sm">
+                <SelectTrigger id="destination_country" className="h-10 text-sm">
                   <SelectValue placeholder="Select…" />
                 </SelectTrigger>
                 <SelectContent>
@@ -165,7 +166,7 @@ export function ProfileInputPanel({
             <div className="space-y-1.5">
               <Label className="text-xs">Course category</Label>
               <Select value={profile.course_category ?? ""} onValueChange={(v) => set({ course_category: v || undefined })}>
-                <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select…" /></SelectTrigger>
+                <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Select…" /></SelectTrigger>
                 <SelectContent>
                   {COURSE_CATEGORIES.map((c) => (
                     <SelectItem key={c} value={c}>{c.toUpperCase()}</SelectItem>
@@ -176,7 +177,7 @@ export function ProfileInputPanel({
             <div className="space-y-1.5">
               <Label className="text-xs">Course level</Label>
               <Select value={profile.course_level ?? ""} onValueChange={(v) => set({ course_level: v || undefined })}>
-                <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select…" /></SelectTrigger>
+                <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Select…" /></SelectTrigger>
                 <SelectContent>
                   {COURSE_LEVELS.map((c) => (
                     <SelectItem key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</SelectItem>
@@ -190,7 +191,7 @@ export function ProfileInputPanel({
                 value={profile.collateral_route ?? "either"}
                 onValueChange={(v) => set({ collateral_route: v as BreProfileInput["collateral_route"] })}
               >
-                <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {COLLATERAL_ROUTES.map((c) => (
                     <SelectItem key={c.v} value={c.v}>{c.l}</SelectItem>
@@ -245,20 +246,20 @@ export function ProfileInputPanel({
             ))}
           </div>
         </FormSection>
-
-        <Separator />
-
-        <div className="flex items-center gap-2">
-          <Button onClick={onRun} disabled={running} size="sm" className="flex-1">
-            <Play className="mr-2 h-3.5 w-3.5" />
-            {running ? "Running…" : "Run simulation"}
-          </Button>
-          <Button onClick={onReset} variant="outline" size="sm">
-            <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-            Reset
-          </Button>
-        </div>
       </CardContent>
+
+      {/* Sticky action bar pinned to the bottom of the panel card (PR 5).
+          Secondary action (Reset) on the left, primary (Run) on the right. */}
+      <div className="shrink-0 border-t bg-muted/20 px-6 py-3 flex items-center justify-between gap-2 rounded-b-lg">
+        <Button onClick={onReset} variant="outline" size="sm">
+          <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+          Reset
+        </Button>
+        <Button onClick={onRun} disabled={running} size="sm" className="flex-1 max-w-[60%]">
+          <Play className="mr-2 h-3.5 w-3.5" />
+          {running ? "Running…" : "Run simulation"}
+        </Button>
+      </div>
     </Card>
   );
 }

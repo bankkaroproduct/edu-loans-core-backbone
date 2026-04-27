@@ -18,7 +18,8 @@ interface Props {
 }
 
 export function ParameterEditor({ param, onChange, onRemove, readOnly }: Props) {
-  const [open, setOpen] = useState(false);
+  // Default-open collapsible band list (PR 5 spec).
+  const [open, setOpen] = useState(true);
 
   const updateBand = (idx: number, next: NumericBand | EnumBand) => {
     const bands = [...param.bands];
@@ -105,15 +106,15 @@ export function ParameterEditor({ param, onChange, onRemove, readOnly }: Props) 
 
       <Collapsible open={open} onOpenChange={setOpen}>
         <CollapsibleTrigger asChild>
-          <button
+          <Button
             type="button"
-            className="flex w-full items-center justify-between border-t px-3 py-2 text-xs text-muted-foreground hover:bg-muted/40"
+            variant="ghost"
+            size="sm"
+            className="flex w-full items-center justify-start gap-1.5 rounded-none border-t px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted/40 hover:text-foreground"
           >
-            <span className="flex items-center gap-1.5">
-              {open ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-              {param.bands.length} band{param.bands.length === 1 ? "" : "s"}
-            </span>
-          </button>
+            {open ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+            {param.bands.length} band{param.bands.length === 1 ? "" : "s"}
+          </Button>
         </CollapsibleTrigger>
         <CollapsibleContent className="border-t bg-muted/20 p-3 space-y-2">
           <div className="grid grid-cols-12 gap-2 px-1 text-[10px] uppercase tracking-wider text-muted-foreground">
