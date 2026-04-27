@@ -341,7 +341,7 @@ export default function AdminLeads() {
       apply: () => { setFilters({ ...filters, stage: "documents_under_review" as StageEnum, status: "all" }); setPage(1); },
     },
     {
-      label: "With lender",
+      label: "Sent to Lender",
       active: filters.stage === "sent_to_lender",
       apply: () => { setFilters({ ...filters, stage: "sent_to_lender" as StageEnum, status: "all" }); setPage(1); },
     },
