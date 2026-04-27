@@ -61,11 +61,14 @@ export function PartnerContextProvider({ children }: { children: ReactNode }) {
   });
   const [partnerOptions, setPartnerOptions] = useState<Pick<PartnerOrg, "id" | "display_name" | "partner_code">[]>([]);
   const [partnerOrgStatus, setPartnerOrgStatus] = useState<string | null>(null);
+  const [simulatedPartnerStatus, setSimulatedPartnerStatus] = useState<string | null>(null);
 
   const isAdmin = appUser?.role === "super_admin" || appUser?.role === "admin";
   const isPartnerRole = appUser?.role === "partner_admin" || appUser?.role === "partner_agent";
 
-  // Fetch partner list for admins
+  // Fetch partner list for admins. Note: we list all non-archived orgs (not only
+  // status=active) so admins can still SEE inactive partners they previously
+  // selected. Lead-creation surfaces enforce active-status separately.
   useEffect(() => {
     if (!isAdmin) {
       setPartnerOptions([]);
@@ -74,7 +77,7 @@ export function PartnerContextProvider({ children }: { children: ReactNode }) {
     supabase
       .from("partner_organizations")
       .select("id, display_name, partner_code")
-      .eq("status", "active")
+      .eq("is_archived", false)
       .order("display_name")
       .then(({ data }) => {
         const opts = data ?? [];
