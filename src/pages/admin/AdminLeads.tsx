@@ -346,7 +346,7 @@ export default function AdminLeads() {
       apply: () => { setFilters({ ...filters, stage: "sent_to_lender" as StageEnum, status: "all" }); setPage(1); },
     },
     {
-      label: "Sanctioned",
+      label: "Sanction Received",
       active: filters.stage === "sanction_received",
       apply: () => { setFilters({ ...filters, stage: "sanction_received" as StageEnum, status: "all" }); setPage(1); },
     },
@@ -381,7 +381,7 @@ export default function AdminLeads() {
           { label: "Total in queue", value: healthCounts.total, color: "text-primary" },
           { label: "Pending review", value: healthCounts.pendingReview, color: "text-amber-700" },
           { label: "Sent to Lender", value: healthCounts.withLender, color: "text-primary" },
-          { label: "Sanctioned", value: healthCounts.sanction, color: "text-emerald-700" },
+          { label: "Sanction Received", value: healthCounts.sanction, color: "text-emerald-700" },
         ].map((m) => (
           <Card key={m.label} className="p-3">
             <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">{m.label}</p>
