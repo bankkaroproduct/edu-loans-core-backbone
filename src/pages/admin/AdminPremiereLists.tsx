@@ -103,14 +103,12 @@ export default function AdminPremiereLists() {
       <PageHeader
         title="Premiere College Lists"
         description="Per-lender lists used to rank eligible recommendations. Premiere status never affects eligibility — only ordering."
-        icon={Star}
-        actions={
-          <Button variant="outline" size="sm" onClick={loadRows} disabled={loading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-        }
-      />
+      >
+        <Button variant="outline" size="sm" onClick={loadRows} disabled={loading}>
+          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          Refresh
+        </Button>
+      </PageHeader>
 
       {error && (
         <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
