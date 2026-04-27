@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
-import { Plus, Upload, DollarSign, Clock, AlertTriangle, Zap, Activity, CheckCircle2, Banknote, XCircle, Wallet, Hourglass } from "lucide-react";
+import { Plus, Upload, DollarSign, Clock, AlertTriangle, Zap, Activity, CheckCircle2, Banknote, XCircle, Wallet, Hourglass, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Tables } from "@/integrations/supabase/types";
 import type { KPIData } from "./KPICards";
 
