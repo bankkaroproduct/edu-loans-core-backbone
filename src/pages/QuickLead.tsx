@@ -28,7 +28,7 @@ const STATUS = "awaiting_verification" as const;
 export default function QuickLead() {
   const navigate = useNavigate();
   const { user, appUser } = useAuth();
-  const { effectivePartnerId, effectiveUserId, isPartnerInactive } = usePartnerContext();
+  const { effectivePartnerId, effectiveUserId, isEffectivePartnerInactive } = usePartnerContext();
   const { duplicates, checking, checkDuplicates } = useDuplicateCheck();
   const [submitting, setSubmitting] = useState(false);
   const [showDupDialog, setShowDupDialog] = useState(false);
@@ -83,6 +83,9 @@ export default function QuickLead() {
   };
 
   const handleSubmit = async () => {
+    if (isEffectivePartnerInactive === true) {
+      return toast.error("New lead submission is paused — the selected partner organization is inactive.");
+    }
     const err = validate();
     if (err) return toast.error(err);
 
@@ -178,8 +181,7 @@ export default function QuickLead() {
   const intakeTerms = [...new Set(futureIntakes.map((i) => i.intake_term))];
   const intakeYears = [...new Set(futureIntakes.map((i) => i.intake_year))].sort();
 
-  const isAdminRole = appUser?.role === "super_admin" || appUser?.role === "admin";
-  if (!isAdminRole && isPartnerInactive === true) {
+  if (isEffectivePartnerInactive === true) {
     return (
       <div className="max-w-2xl mx-auto space-y-6">
         <PartnerInactiveNotice surface="quick_lead" />
