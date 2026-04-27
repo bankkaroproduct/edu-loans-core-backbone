@@ -86,6 +86,21 @@ export default function Dashboard() {
         if (notesRes.data) setNotes(notesRes.data);
       }
 
+      // Cumulative "ever sanctioned" — partner-scoped by intersecting with
+      // accessibleLeadIds. Includes leads currently AT sanction_received AND
+      // those that already moved on to disbursed. This is the only correct
+      // way to ensure sanctioned_count >= disbursed_count.
+      if (accessibleLeadIds.size > 0) {
+        const { data: sanctRows } = await supabase
+          .from("lead_stage_history")
+          .select("lead_id")
+          .eq("new_stage", "sanction_received")
+          .in("lead_id", Array.from(accessibleLeadIds));
+        setSanctionedEverIds(new Set((sanctRows ?? []).map((r) => r.lead_id)));
+      } else {
+        setSanctionedEverIds(new Set());
+      }
+
       if (partnerRes.data && "display_name" in partnerRes.data) {
         setPartnerName(partnerRes.data.display_name);
       }
