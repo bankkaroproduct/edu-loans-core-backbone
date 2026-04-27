@@ -142,10 +142,13 @@ export default function AdminAddLead() {
         <div className="ml-auto flex items-center gap-2">
           {selected ? (
             <span className="inline-flex items-center gap-1.5 text-xs text-primary">
-              <Check className="h-3.5 w-3.5" /> Attributed to {effectivePartnerName ?? selected.display_name}
+              <Check className="h-3.5 w-3.5" />
+              {selected.partner_code === "PTR-DIRECT"
+                ? "Direct / Admin-owned lead"
+                : `Attributed to ${effectivePartnerName ?? selected.display_name}`}
             </span>
           ) : (
-            <span className="text-xs text-muted-foreground">Choose a partner to enable submission.</span>
+            <span className="text-xs text-muted-foreground">Choose a partner — or pick Student Direct for an admin-owned lead.</span>
           )}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -158,7 +161,7 @@ export default function AdminAddLead() {
               </button>
             </TooltipTrigger>
             <TooltipContent side="left" className="max-w-xs text-xs">
-              True admin-owned (unassigned) leads require a future schema change. Every lead must currently be attributed to a partner.
+              Every lead must be attributed. Pick a real partner organization, or select <strong>Student Direct (PTR-DIRECT)</strong> for walk-in / admin-originated leads. PTR-DIRECT is excluded from billable partner reports.
             </TooltipContent>
           </Tooltip>
         </div>
