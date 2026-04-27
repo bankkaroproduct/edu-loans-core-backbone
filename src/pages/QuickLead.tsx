@@ -55,6 +55,7 @@ export default function QuickLead() {
     loan_amount_required: "",
     partner_remark: "",
   });
+  const [whatsappSameAsPhone, setWhatsappSameAsPhone] = useState(false);
 
   useEffect(() => {
     Promise.all([
