@@ -244,31 +244,6 @@ export function DocumentChecklist({ requirements, documents, onUpload, leadId, h
                       <p className="text-[10px] text-muted-foreground">Due: {new Date(req.due_date).toLocaleDateString()}</p>
                     )}
 
-                    {/* Action nudge — visible, row-specific, clickable. Hidden in admin context. */}
-                    {!hideNudge && isActionable && (() => {
-                      const docLabel = req.document_master?.document_name ?? "this document";
-                      const nudgeText =
-                        req.status === "rejected"
-                          ? `Please provide corrected ${docLabel}`
-                          : req.status === "reupload_needed"
-                            ? `Reupload required for ${docLabel}`
-                            : `Please provide details — upload ${docLabel}`;
-                      const nudgeCls = isReupload
-                        ? "bg-destructive/10 text-destructive border-destructive/30 hover:bg-destructive/15"
-                        : "bg-primary/10 text-primary border-primary/30 hover:bg-primary/15";
-                      return (
-                        <button
-                          type="button"
-                          onClick={() => onUpload(req)}
-                          data-nudge={req.status}
-                          data-doc-req-id={req.id}
-                          className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${nudgeCls}`}
-                        >
-                          {nudgeText}
-                          <ArrowRight className="h-3 w-3" />
-                        </button>
-                      );
-                    })()}
                   </div>
                 </div>
 
