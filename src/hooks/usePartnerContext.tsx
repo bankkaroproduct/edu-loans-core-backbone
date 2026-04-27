@@ -20,6 +20,15 @@ interface PartnerContextType {
   simulatePartner: (partnerId: string | null) => void;
   /** The effective user id for partner_user_id field */
   effectiveUserId: string | null;
+  /**
+   * For partner-role users: true when the partner organization status is anything
+   * other than 'active' (e.g. inactive, suspended, terminated, onboarding).
+   * Always false for admins (admins are never gated by partner-org status).
+   * `null` while still resolving on first load.
+   */
+  isPartnerInactive: boolean | null;
+  /** The raw partner organization status for partner-role users (null for admins or while loading). */
+  partnerOrgStatus: string | null;
 }
 
 const PartnerContext = createContext<PartnerContextType | undefined>(undefined);
