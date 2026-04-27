@@ -386,11 +386,17 @@ export default function AdminLeads() {
     },
     {
       label: "Stale > 48h",
-      active: false,
+      active: filters.staleOnly,
       apply: () => {
-        const d = new Date();
-        d.setHours(d.getHours() - 48);
-        setFilters({ ...filters, dateTo: d, stage: "all", status: "all" });
+        // Toggle the dedicated stale flag (real updated_at logic, terminal/blocked excluded).
+        // Clears any leftover dateTo from the legacy stale chip so it doesn't double-filter.
+        setFilters({
+          ...filters,
+          staleOnly: !filters.staleOnly,
+          dateTo: filters.staleOnly ? filters.dateTo : undefined,
+          stage: "all",
+          status: "all",
+        });
         setPage(1);
       },
     },
