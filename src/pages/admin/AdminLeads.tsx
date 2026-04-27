@@ -43,6 +43,20 @@ const PAGE_SIZE = 25;
 type SortKey = "updated_at" | "created_at" | "loan_amount_required";
 type SortDir = "asc" | "desc";
 
+/**
+ * "Stale > 48h" definition (single source of truth):
+ *   - last activity (`updated_at`) is older than 48h, AND
+ *   - lead is NOT in a terminal stage, AND
+ *   - lead is NOT in a blocked/awaiting-input status (admin can't act yet).
+ *
+ * This intentionally uses `updated_at` (not `created_at`) so editing or moving
+ * a lead immediately removes it from the Stale list — matching the operational
+ * meaning admins expect.
+ */
+const STALE_TERMINAL_STAGES: StageEnum[] = ["disbursed", "rejected", "dropped", "on_hold"];
+const STALE_BLOCKED_STATUSES: StatusEnum[] = ["pending_info", "query_raised", "reupload_needed"];
+const STALE_HOURS = 48;
+
 /** Sanitize search input for PostgREST .or() string — strip chars that break the parser. */
 function sanitizeSearch(s: string): string {
   return s.trim().replace(/[(),"]/g, "").slice(0, 100);
@@ -92,6 +106,7 @@ export default function AdminLeads() {
     loanRange: (searchParams.get("loan") as any) ?? "all",
     intake: (searchParams.get("intake") as any) ?? "all",
     loanType: (searchParams.get("loantype") as any) ?? "all",
+    staleOnly: searchParams.get("stale") === "1",
   }), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [filters, setFilters] = useState<AdminLeadFilterState>(initialFilters);
@@ -159,6 +174,7 @@ export default function AdminLeads() {
     if (filters.loanRange !== "all") p.set("loan", filters.loanRange);
     if (filters.intake !== "all") p.set("intake", filters.intake);
     if (filters.loanType !== "all") p.set("loantype", filters.loanType);
+    if (filters.staleOnly) p.set("stale", "1");
     if (sortKey !== "updated_at") p.set("sort", sortKey);
     if (sortDir !== "desc") p.set("dir", sortDir);
     if (page > 1) p.set("page", String(page));
@@ -204,6 +220,14 @@ export default function AdminLeads() {
           const end = new Date(filters.dateTo);
           end.setHours(23, 59, 59, 999);
           q = q.lte("created_at", end.toISOString());
+        }
+        // Stale > 48h: real latest activity logic (updated_at), excluding terminal/blocked states.
+        if (filters.staleOnly) {
+          const cutoff = new Date(Date.now() - STALE_HOURS * 3600 * 1000).toISOString();
+          q = q
+            .lt("updated_at", cutoff)
+            .not("current_stage", "in", `(${STALE_TERMINAL_STAGES.join(",")})`)
+            .not("current_status", "in", `(${STALE_BLOCKED_STATUSES.join(",")})`);
         }
         // Apply business bifurcation filters (Source / Type / Entry Mode / Region / Loan / Intake / Loan Type)
         q = applyBusinessFilters(q);
@@ -277,6 +301,16 @@ export default function AdminLeads() {
         const end = new Date(filters.dateTo);
         end.setHours(23, 59, 59, 999);
         q = q.lte("created_at", end.toISOString());
+      }
+      // Stale > 48h: keep counts in sync with the table (only when overriding for the
+      // four health cards, the stale gate is intentionally ignored — those tiles always
+      // reflect total/pending/lender/sanction in the current filter, not the stale subset).
+      if (filters.staleOnly && !overrideStage && !overrideStatuses) {
+        const cutoff = new Date(Date.now() - STALE_HOURS * 3600 * 1000).toISOString();
+        q = q
+          .lt("updated_at", cutoff)
+          .not("current_stage", "in", `(${STALE_TERMINAL_STAGES.join(",")})`)
+          .not("current_status", "in", `(${STALE_BLOCKED_STATUSES.join(",")})`);
       }
       // Apply business bifurcation filters (Source/Type/Entry/Region/Loan/Intake/LoanType)
       q = applyBusinessFilters(q);
@@ -352,11 +386,17 @@ export default function AdminLeads() {
     },
     {
       label: "Stale > 48h",
-      active: false,
+      active: filters.staleOnly,
       apply: () => {
-        const d = new Date();
-        d.setHours(d.getHours() - 48);
-        setFilters({ ...filters, dateTo: d, stage: "all", status: "all" });
+        // Toggle the dedicated stale flag (real updated_at logic, terminal/blocked excluded).
+        // Clears any leftover dateTo from the legacy stale chip so it doesn't double-filter.
+        setFilters({
+          ...filters,
+          staleOnly: !filters.staleOnly,
+          dateTo: filters.staleOnly ? filters.dateTo : undefined,
+          stage: "all",
+          status: "all",
+        });
         setPage(1);
       },
     },
