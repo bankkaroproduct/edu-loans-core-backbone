@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertTriangle, Save, Power, ArrowDownToLine } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { StickyFormFooter } from "@/components/shared/StickyFormFooter";
 import type { ValidationError } from "@/lib/bre/validate";
 
 interface Props {
@@ -19,11 +20,12 @@ interface Props {
 }
 
 /**
- * Sticky footer used by both editors.
- * - Validation list is always visible when there are errors.
+ * Sticky footer used by both BRE editors.
+ * - Validation list rendered above the footer when there are errors.
  * - Save button is disabled while errors exist OR while saving.
- * - In read-only mode (`hidden=true`), the entire bar is omitted from the DOM
- *   so there is no risk of a stale clickable control.
+ * - In read-only mode (`hidden=true`), the entire bar is omitted from the DOM.
+ *
+ * Built on the shared StickyFormFooter primitive (PR 5).
  */
 export function VersionActionBar({
   errors,
@@ -39,10 +41,45 @@ export function VersionActionBar({
   if (hidden) return null;
   const hasErrors = errors.length > 0;
 
+  const left = (
+    <div className="flex-1 min-w-0 space-y-1">
+      <Label className="text-[10px] uppercase text-muted-foreground">
+        Change summary (required)
+      </Label>
+      <Input
+        value={changeSummary}
+        onChange={(e) => onChangeSummary(e.target.value)}
+        placeholder="e.g. Adjusted CIBIL bands, raised salary threshold"
+        className="h-10 min-w-[260px] md:w-[420px]"
+      />
+    </div>
+  );
+
+  const right = (
+    <>
+      <Button
+        onClick={onSave}
+        disabled={hasErrors || saving || !changeSummary.trim()}
+        className={cn(hasErrors && "opacity-60")}
+      >
+        <Save className="mr-1.5 h-4 w-4" /> {saving ? "Saving…" : saveLabel}
+      </Button>
+      {showActivate && onSaveAndActivate && (
+        <Button
+          variant="default"
+          onClick={onSaveAndActivate}
+          disabled={hasErrors || saving || !changeSummary.trim()}
+        >
+          <Power className="mr-1.5 h-4 w-4" /> Save & activate
+        </Button>
+      )}
+    </>
+  );
+
   return (
-    <div className="sticky bottom-0 -mx-4 mt-6 border-t bg-background/95 px-4 py-3 shadow-[0_-4px_12px_-8px_rgba(0,0,0,0.2)] backdrop-blur md:mx-0 md:rounded-md md:border">
+    <>
       {hasErrors && (
-        <div className="mb-3 rounded-md border border-destructive/40 bg-destructive/10 p-3">
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3">
           <div className="flex items-center gap-2 text-xs font-medium text-destructive">
             <AlertTriangle className="h-3.5 w-3.5" /> {errors.length} validation issue{errors.length === 1 ? "" : "s"} — fix before saving
           </div>
@@ -57,37 +94,8 @@ export function VersionActionBar({
           </ul>
         </div>
       )}
-
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div className="flex-1 space-y-1">
-          <Label className="text-[10px] uppercase text-muted-foreground">Change summary (required)</Label>
-          <Input
-            value={changeSummary}
-            onChange={(e) => onChangeSummary(e.target.value)}
-            placeholder="e.g. Adjusted CIBIL bands, raised salary threshold"
-            className="h-9"
-          />
-        </div>
-        <div className="flex shrink-0 items-end gap-2">
-          <Button
-            onClick={onSave}
-            disabled={hasErrors || saving || !changeSummary.trim()}
-            className={cn(hasErrors && "opacity-60")}
-          >
-            <Save className="mr-1.5 h-4 w-4" /> {saving ? "Saving…" : saveLabel}
-          </Button>
-          {showActivate && onSaveAndActivate && (
-            <Button
-              variant="default"
-              onClick={onSaveAndActivate}
-              disabled={hasErrors || saving || !changeSummary.trim()}
-            >
-              <Power className="mr-1.5 h-4 w-4" /> Save & activate
-            </Button>
-          )}
-        </div>
-      </div>
-    </div>
+      <StickyFormFooter left={left} right={right} />
+    </>
   );
 }
 
