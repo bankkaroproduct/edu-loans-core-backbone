@@ -11,6 +11,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Lock, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { FormSection } from "@/components/shared/FormSection";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Lender = Tables<"lenders"> & { internal_notes?: string | null };
@@ -127,12 +128,8 @@ export function LenderDrawer({ open, onOpenChange, record, onSaved }: Props) {
     }
   };
 
-  const SectionHeader = ({ title, hint }: { title: string; hint?: string }) => (
-    <div className="flex items-baseline justify-between border-b pb-1.5">
-      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</h4>
-      {hint && <span className="text-[10px] text-muted-foreground">{hint}</span>}
-    </div>
-  );
+  // (SectionHeader replaced with shared FormSection — PR 5)
+
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
