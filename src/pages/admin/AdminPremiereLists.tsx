@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
-import { Upload, Trash2, Eye, RefreshCw, AlertCircle, FileSpreadsheet } from "lucide-react";
+import { Upload, Trash2, Eye, RefreshCw, AlertCircle, FileSpreadsheet, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
