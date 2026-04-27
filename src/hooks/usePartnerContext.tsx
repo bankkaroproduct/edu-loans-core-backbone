@@ -29,6 +29,16 @@ interface PartnerContextType {
   isPartnerInactive: boolean | null;
   /** The raw partner organization status for partner-role users (null for admins or while loading). */
   partnerOrgStatus: string | null;
+  /**
+   * True when the *effective* partner (own org for partners, simulated org for admins)
+   * is anything other than 'active'. Used to gate NEW lead initiation surfaces
+   * (Add Lead, Quick Lead, Bulk Upload) for both partners AND admins acting on
+   * behalf of an inactive partner. `null` while still resolving. `false` for
+   * admins when no partner is simulated (admin context with no target).
+   */
+  isEffectivePartnerInactive: boolean | null;
+  /** Status string for the effective partner (own for partner role, simulated for admin). */
+  effectivePartnerStatus: string | null;
 }
 
 const PartnerContext = createContext<PartnerContextType | undefined>(undefined);
