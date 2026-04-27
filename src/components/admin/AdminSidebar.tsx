@@ -2,7 +2,7 @@ import {
   Shield, Inbox, Banknote, GraduationCap, Users, LogOut,
   ClipboardCheck, Database, FilePlus, Upload, FileSpreadsheet,
   SlidersHorizontal, History, ScrollText, Calculator, FlaskConical,
-  MessageSquare, FileText,
+  MessageSquare, FileText, Star,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
@@ -34,6 +34,7 @@ const adminMasterItems = [
   { title: "Partners", url: "/admin/partners", icon: Users },
   { title: "Lenders", url: "/admin/lenders", icon: Banknote },
   { title: "Universities", url: "/admin/master-data?tab=universities", icon: GraduationCap },
+  { title: "Premiere Lists", url: "/admin/premiere-lists", icon: Star },
 ];
 
 const breItems = [

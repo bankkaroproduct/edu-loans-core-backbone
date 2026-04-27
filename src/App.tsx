@@ -17,6 +17,7 @@ import AdminLeadDetail from "./pages/admin/AdminLeadDetail";
 
 import AdminEditRequests from "./pages/admin/AdminEditRequests";
 import AdminMasterData from "./pages/admin/AdminMasterData";
+import AdminPremiereLists from "./pages/admin/AdminPremiereLists";
 import AdminPartners from "./pages/admin/AdminPartners";
 import AdminLenders from "./pages/admin/AdminLenders";
 import AdminReports from "./pages/admin/AdminReports";
@@ -104,6 +105,7 @@ const App = () => (
             <Route path="/admin/edit-requests" element={<AdminRoute><AdminEditRequests /></AdminRoute>} />
             <Route path="/admin/requests" element={<AdminRoute><AdminEditRequests /></AdminRoute>} />
             <Route path="/admin/master-data" element={<AdminRoute><AdminMasterData /></AdminRoute>} />
+            <Route path="/admin/premiere-lists" element={<AdminRoute><AdminPremiereLists /></AdminRoute>} />
             <Route path="/admin/partners" element={<AdminRoute><AdminPartners /></AdminRoute>} />
             <Route path="/admin/lenders" element={<AdminRoute><AdminLenders /></AdminRoute>} />
             <Route path="/admin/reports" element={<AdminRoute><AdminReports /></AdminRoute>} />
