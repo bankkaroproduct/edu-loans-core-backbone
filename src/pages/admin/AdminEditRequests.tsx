@@ -300,11 +300,11 @@ export default function AdminEditRequests() {
                       {r.decided_at ? `${new Date(r.decided_at).toLocaleDateString()} ${new Date(r.decided_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "—"}
                     </span>
                     <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setViewing(r)} title="View request">
-                        <Eye className="h-3.5 w-3.5" />
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setViewing(r)} title="View request">
+                        <Eye className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(`/admin/leads/${r.lead_id}`)} title="Open lead">
-                        <ExternalLink className="h-3.5 w-3.5" />
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => navigate(`/admin/leads/${r.lead_id}`)} title="Open lead">
+                        <ExternalLink className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
