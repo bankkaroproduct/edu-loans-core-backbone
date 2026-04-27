@@ -463,74 +463,76 @@ export default function AdminLeads() {
           )}
 
           {!loading && !error && rows.length > 0 && (
-            <div className="overflow-x-auto rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs">Lead ID</TableHead>
-                    <TableHead className="text-xs">Student</TableHead>
-                    <TableHead className="text-xs">Source</TableHead>
-                    <TableHead className="text-xs">Phone</TableHead>
-                    <TableHead className="text-xs">Country</TableHead>
-                    <TableHead className="text-xs">Course</TableHead>
-                    <TableHead className="text-xs text-right">
-                      <button type="button" onClick={() => toggleSort("loan_amount_required")} className="inline-flex items-center gap-1 hover:text-foreground">
-                        Loan {sortIcon("loan_amount_required")}
-                      </button>
-                    </TableHead>
-                    <TableHead className="text-xs">Stage</TableHead>
-                    <TableHead className="text-xs">Status</TableHead>
-                    <TableHead className="text-xs">
-                      <button type="button" onClick={() => toggleSort("updated_at")} className="inline-flex items-center gap-1 hover:text-foreground">
-                        Updated {sortIcon("updated_at")}
-                      </button>
-                    </TableHead>
-                    <TableHead className="text-xs text-right w-[60px]">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rows.map((r) => (
-                    <TableRow
-                      key={r.id}
-                      onClick={() => navigate(`/admin/leads/${r.id}`)}
-                      className="cursor-pointer"
-                    >
-                      <TableCell className="font-mono text-xs">{r.lead_id ?? "—"}</TableCell>
-                      <TableCell className="font-medium text-sm">{studentName(r)}</TableCell>
-                      <TableCell className="text-xs">
-                        {r.source_type === "student_direct" ? (
-                          <Badge variant="outline" className="text-[10px]">Student Portal</Badge>
-                        ) : (
-                          <span className="text-muted-foreground">{r.partner_display_name ? `Partner: ${r.partner_display_name}` : "Partner Lead"}</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{r.student_phone}</TableCell>
-                      <TableCell className="text-xs">{r.intended_study_country || "—"}</TableCell>
-                      <TableCell className="text-xs max-w-[180px] truncate" title={r.course_name}>{r.course_name || "—"}</TableCell>
-                      <TableCell className="text-xs text-right">{fmtAmount(r.loan_amount_required)}</TableCell>
-                      <TableCell><StageBadge stage={r.current_stage} /></TableCell>
-                      <TableCell><StatusBadge status={r.current_status} /></TableCell>
-                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                        {formatDistanceToNow(new Date(r.updated_at), { addSuffix: true })}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          title="Edit lead"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/admin/leads/new?edit=${r.id}`);
-                          }}
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                      </TableCell>
+            <div className="rounded-md border overflow-hidden">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Lead ID</TableHead>
+                      <TableHead>Student</TableHead>
+                      <TableHead>Source</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Country</TableHead>
+                      <TableHead>Course</TableHead>
+                      <TableHead className="text-right">
+                        <button type="button" onClick={() => toggleSort("loan_amount_required")} className="inline-flex items-center gap-1 hover:text-foreground">
+                          Loan {sortIcon("loan_amount_required")}
+                        </button>
+                      </TableHead>
+                      <TableHead>Stage</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>
+                        <button type="button" onClick={() => toggleSort("updated_at")} className="inline-flex items-center gap-1 hover:text-foreground">
+                          Updated {sortIcon("updated_at")}
+                        </button>
+                      </TableHead>
+                      <TableHead className="text-right w-[60px]">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {rows.map((r) => (
+                      <TableRow
+                        key={r.id}
+                        data-clickable="true"
+                        onClick={() => navigate(`/admin/leads/${r.id}`)}
+                      >
+                        <TableCell className="font-mono text-xs">{r.lead_id ?? "—"}</TableCell>
+                        <TableCell className="font-medium">{studentName(r)}</TableCell>
+                        <TableCell>
+                          {r.source_type === "student_direct" ? (
+                            <Badge variant="outline" className="text-[10px]">Student Portal</Badge>
+                          ) : (
+                            <span className="text-muted-foreground">{r.partner_display_name ? `Partner: ${r.partner_display_name}` : "Partner Lead"}</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground tabular-nums">{r.student_phone}</TableCell>
+                        <TableCell>{r.intended_study_country || "—"}</TableCell>
+                        <TableCell className="max-w-[180px] truncate" title={r.course_name}>{r.course_name || "—"}</TableCell>
+                        <TableCell className="text-right tabular-nums">{fmtAmount(r.loan_amount_required)}</TableCell>
+                        <TableCell><StageBadge stage={r.current_stage} /></TableCell>
+                        <TableCell><StatusBadge status={r.current_status} /></TableCell>
+                        <TableCell className="text-muted-foreground whitespace-nowrap">
+                          {formatDistanceToNow(new Date(r.updated_at), { addSuffix: true })}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            title="Edit lead"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/admin/leads/new?edit=${r.id}`);
+                            }}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
           )}
 
