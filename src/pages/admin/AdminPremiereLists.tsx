@@ -231,6 +231,10 @@ export default function AdminPremiereLists() {
         title="Premiere College Lists"
         description="Per-lender lists used to rank eligible recommendations. Premiere status never affects eligibility — only ordering."
       >
+        <Button variant="outline" size="sm" onClick={downloadTemplate}>
+          <Download className="mr-2 h-4 w-4" />
+          Download Template
+        </Button>
         <Button variant="outline" size="sm" onClick={loadRows} disabled={loading}>
           <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           Refresh
