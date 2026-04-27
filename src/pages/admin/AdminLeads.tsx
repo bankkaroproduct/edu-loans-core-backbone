@@ -43,6 +43,20 @@ const PAGE_SIZE = 25;
 type SortKey = "updated_at" | "created_at" | "loan_amount_required";
 type SortDir = "asc" | "desc";
 
+/**
+ * "Stale > 48h" definition (single source of truth):
+ *   - last activity (`updated_at`) is older than 48h, AND
+ *   - lead is NOT in a terminal stage, AND
+ *   - lead is NOT in a blocked/awaiting-input status (admin can't act yet).
+ *
+ * This intentionally uses `updated_at` (not `created_at`) so editing or moving
+ * a lead immediately removes it from the Stale list — matching the operational
+ * meaning admins expect.
+ */
+const STALE_TERMINAL_STAGES: StageEnum[] = ["disbursed", "rejected", "dropped", "on_hold"];
+const STALE_BLOCKED_STATUSES: StatusEnum[] = ["pending_info", "query_raised", "reupload_needed"];
+const STALE_HOURS = 48;
+
 /** Sanitize search input for PostgREST .or() string — strip chars that break the parser. */
 function sanitizeSearch(s: string): string {
   return s.trim().replace(/[(),"]/g, "").slice(0, 100);
