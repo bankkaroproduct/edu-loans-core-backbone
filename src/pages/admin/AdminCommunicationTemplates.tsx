@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { SemanticBadge } from "@/components/dashboard/StageBadge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -192,16 +193,12 @@ export default function AdminCommunicationTemplates() {
                   </TableCell>
                   <TableCell>
                     {t.active_flag ? (
-                      <Badge className="bg-emerald-100 text-emerald-900 hover:bg-emerald-100 border border-emerald-200 text-[10px] h-5">
-                        Active
-                      </Badge>
+                      <SemanticBadge tone="emerald">Active</SemanticBadge>
                     ) : (
-                      <Badge variant="secondary" className="text-[10px] h-5">
-                        Inactive
-                      </Badge>
+                      <SemanticBadge tone="slate">Inactive</SemanticBadge>
                     )}
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
+                  <TableCell className="text-muted-foreground whitespace-nowrap">
                     {new Date((t as unknown as { updated_at: string }).updated_at).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right">
