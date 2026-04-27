@@ -397,14 +397,16 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   }, [pincodeResult, form.pincode]);
 
   // Master combobox options
-  // Universities master stores `country` as ISO 2-letter code (US, AU, …) but the form
-  // stores `intended_study_country` as the human display name from countries_master.
-  // Map name → ISO before filtering, falling back to the raw value so admin-entered
-  // ISO codes still work.
+  // Universities master stores `country` as the full display name (e.g. "United States",
+  // "United Kingdom") — same shape as `countries_master.country_name`. The previous
+  // implementation incorrectly translated the form value to an ISO code (US, GB, …)
+  // and tried to match against that, which produced an empty list for every country.
+  // Compare the names directly (case-insensitive, trimmed). When no country is selected,
+  // show the full master list so the user still sees options.
   const universityOptions: MasterOption[] = useMemo(() => {
-    const iso = countryNameToIso(form.intended_study_country);
-    const filtered = iso
-      ? universities.filter((u) => (u.country ?? "").toUpperCase() === iso)
+    const country = (form.intended_study_country ?? "").trim();
+    const filtered = country
+      ? universities.filter((u) => sameCountryName(u.country, country))
       : universities;
     return filtered.map((u) => ({ id: u.id, label: u.university_name, hint: u.country }));
   }, [universities, form.intended_study_country]);
