@@ -1328,7 +1328,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                       >
                         <span className="truncate">
                           {selectedAssignedPartner
-                            ? `${selectedAssignedPartner.display_name} (${selectedAssignedPartner.partner_code})`
+                            ? `${selectedAssignedPartner.display_name} (${selectedAssignedPartner.partner_code})${selectedAssignedPartner.status && selectedAssignedPartner.status !== "active" ? ` — ${selectedAssignedPartner.status}` : ""}`
                             : "Search & select a partner organization…"}
                         </span>
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -1340,21 +1340,23 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                         <CommandList>
                           <CommandEmpty>No partners match that search.</CommandEmpty>
                           <CommandGroup>
-                            {partnersList.map((p) => (
-                              <CommandItem
-                                key={p.id}
-                                value={`${p.display_name} ${p.partner_code}`}
-                                onSelect={() => {
-                                  setPartnerIdAssignment(p.id);
-                                  setIsDirty(true);
-                                  setPartnerPickerOpen(false);
-                                }}
-                              >
-                                <Check className={cn("mr-2 h-4 w-4", partnerIdAssignment === p.id ? "opacity-100" : "opacity-0")} />
-                                <span className="truncate">{p.display_name}</span>
-                                <span className="ml-2 text-xs text-muted-foreground">{p.partner_code}</span>
-                              </CommandItem>
-                            ))}
+                            {partnersList
+                              .filter((p) => (p.status ?? "active") === "active")
+                              .map((p) => (
+                                <CommandItem
+                                  key={p.id}
+                                  value={`${p.display_name} ${p.partner_code}`}
+                                  onSelect={() => {
+                                    setPartnerIdAssignment(p.id);
+                                    setIsDirty(true);
+                                    setPartnerPickerOpen(false);
+                                  }}
+                                >
+                                  <Check className={cn("mr-2 h-4 w-4", partnerIdAssignment === p.id ? "opacity-100" : "opacity-0")} />
+                                  <span className="truncate">{p.display_name}</span>
+                                  <span className="ml-2 text-xs text-muted-foreground">{p.partner_code}</span>
+                                </CommandItem>
+                              ))}
                           </CommandGroup>
                         </CommandList>
                       </Command>
@@ -1362,7 +1364,13 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   </Popover>
                   {originalPartner && !partnerChanged && (
                     <p className="text-xs text-muted-foreground">
-                      Currently assigned to <strong className="text-foreground">{originalPartner.display_name}</strong>. Pick a different partner above to reassign.
+                      Currently assigned to <strong className="text-foreground">{originalPartner.display_name}</strong>
+                      {originalPartner.status && originalPartner.status !== "active" && (
+                        <> <span className="text-amber-700 dark:text-amber-400">(currently {originalPartner.status} — cannot be reassigned to another inactive partner; pick an active partner above to move this lead)</span></>
+                      )}
+                      {(!originalPartner.status || originalPartner.status === "active") && (
+                        <>. Pick a different partner above to reassign.</>
+                      )}
                     </p>
                   )}
                   {!originalPartner && (
