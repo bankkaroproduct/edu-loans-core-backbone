@@ -516,6 +516,13 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   );
 
   const handleSubmit = async (asDraft: boolean) => {
+    // Defensive: if the effective partner is inactive and this is a NEW lead
+    // (not an edit), block submit even if the UI gate was somehow bypassed.
+    // Mirrors the DB-level RLS hard gate.
+    if (!isEditMode && isEffectivePartnerInactive === true) {
+      toast.error("New lead submission is paused — the selected partner organization is inactive.");
+      return;
+    }
     const err = validate(asDraft);
     if (err) {
       toast.error(err.message);
