@@ -251,6 +251,16 @@ export default function AdminLeadDetail() {
       <LeadDuplicateContext lead={lead} />
       <AdminEditRequestPanel leadId={lead.id} onChanged={loadAll} />
 
+      {/* Lifecycle + lender workflow cluster — full-width, hoisted above the
+          two-column grid so the visual order is always:
+          Lifecycle Timeline → Lender Recommendations → Calculate BRE → Assign Lender. */}
+      <div className="space-y-6">
+        <LeadTimeline history={history} notes={notes} audits={audits} actorNames={actorNames} />
+        <AdminLenderRecommendations leadId={lead.id} />
+        <AdminCalculateBreCard lead={lead} />
+        <AdminAssignLenderCard leadId={lead.id} />
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
           <LeadProfileSection lead={lead} submittedByName={submittedByName} />
@@ -281,12 +291,6 @@ export default function AdminLeadDetail() {
             hasSanctionInHistory={hasSanctionInHistory}
             onChanged={loadAll}
           />
-
-          {/* Lender workflow cluster — kept together, immediately below the timeline */}
-          <LeadTimeline history={history} notes={notes} audits={audits} actorNames={actorNames} />
-          <AdminLenderRecommendations leadId={lead.id} />
-          <AdminCalculateBreCard lead={lead} />
-          <AdminAssignLenderCard leadId={lead.id} />
 
           <LeadPayoutSnapshot payouts={payouts} leadId={lead.id} />
         </div>
