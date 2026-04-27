@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { StatCard } from "@/components/shared/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Banknote, History, ScrollText, Calculator, FlaskConical } from "lucide-react";
+import { Banknote, History, ScrollText, Calculator, FlaskConical, GitBranch, ListChecks, Layers, Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -85,59 +86,36 @@ export default function BreDashboard() {
         </Badge>
       </PageHeader>
 
-      {loading || !data ? (
-        <div className="grid gap-4 md:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 w-full" />)}
-        </div>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground">Active scoring config</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold tabular-nums">
-                {data.activeConfigVersion !== null ? `v${data.activeConfigVersion}` : "—"}
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Bucket threshold: {data.configBucketThreshold ?? "—"}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground">Active lender rules</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold tabular-nums">{data.activeLenderRulesCount}</div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                of {data.totalLenderRulesCount} total rule rows
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground">Config versions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold tabular-nums">{data.totalConfigVersions}</div>
-              <p className="mt-1 text-xs text-muted-foreground">Across global scoring history</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground">BRE audit events</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold tabular-nums">{data.recentBreAuditCount}</div>
-              <p className="mt-1 text-xs text-muted-foreground">All-time, BRE entities only</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          label="Active scoring config"
+          value={data ? (data.activeConfigVersion !== null ? `v${data.activeConfigVersion}` : "—") : undefined}
+          sub={data ? `Bucket threshold: ${data.configBucketThreshold ?? "—"}` : undefined}
+          icon={GitBranch}
+          loading={loading}
+        />
+        <StatCard
+          label="Active lender rules"
+          value={data?.activeLenderRulesCount}
+          sub={data ? `of ${data.totalLenderRulesCount} total rule rows` : undefined}
+          icon={ListChecks}
+          loading={loading}
+        />
+        <StatCard
+          label="Config versions"
+          value={data?.totalConfigVersions}
+          sub="Across global scoring history"
+          icon={Layers}
+          loading={loading}
+        />
+        <StatCard
+          label="BRE audit events"
+          value={data?.recentBreAuditCount}
+          sub="All-time, BRE entities only"
+          icon={Activity}
+          loading={loading}
+        />
+      </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <NavTile
