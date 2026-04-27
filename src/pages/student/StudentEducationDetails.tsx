@@ -162,9 +162,13 @@ export default function StudentEducationDetails() {
               <Select value={formData.intake_term} onValueChange={v => updateField("intake_term", v)}>
                 <SelectTrigger><SelectValue placeholder="Select term" /></SelectTrigger>
                 <SelectContent>
-                  {[...new Set(intakes.map(i => i.intake_term))].map(term => (
-                    <SelectItem key={term} value={term}>{term}</SelectItem>
-                  ))}
+                  {(() => {
+                    const currentYear = new Date().getFullYear();
+                    const future = intakes.filter(i => i.intake_year >= currentYear);
+                    return [...new Set(future.map(i => i.intake_term))].map(term => (
+                      <SelectItem key={term} value={term}>{term}</SelectItem>
+                    ));
+                  })()}
                 </SelectContent>
               </Select>
             </div>
@@ -173,9 +177,15 @@ export default function StudentEducationDetails() {
               <Select value={formData.intake_year} onValueChange={v => updateField("intake_year", v)}>
                 <SelectTrigger><SelectValue placeholder="Select year" /></SelectTrigger>
                 <SelectContent>
-                  {[...new Set(intakes.map(i => i.intake_year.toString()))].map(yr => (
-                    <SelectItem key={yr} value={yr}>{yr}</SelectItem>
-                  ))}
+                  {(() => {
+                    const currentYear = new Date().getFullYear();
+                    const future = intakes.filter(i => i.intake_year >= currentYear);
+                    return [...new Set(future.map(i => i.intake_year.toString()))]
+                      .sort()
+                      .map(yr => (
+                        <SelectItem key={yr} value={yr}>{yr}</SelectItem>
+                      ));
+                  })()}
                 </SelectContent>
               </Select>
             </div>

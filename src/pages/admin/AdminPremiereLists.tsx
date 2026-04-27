@@ -190,8 +190,19 @@ export default function AdminPremiereLists() {
   const [uploadFor, setUploadFor] = useState<LenderRow | null>(null);
   const [viewFor, setViewFor] = useState<LenderRow | null>(null);
   const [deleteFor, setDeleteFor] = useState<LenderRow | null>(null);
+  const [search, setSearch] = useState("");
 
   const admin = isAdmin(appUser?.role);
+
+  const filteredRows = (() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter(
+      (r) =>
+        (r.lender_name ?? "").toLowerCase().includes(q) ||
+        (r.lender_code ?? "").toLowerCase().includes(q),
+    );
+  })();
 
   const loadRows = async () => {
     setLoading(true);
@@ -249,6 +260,21 @@ export default function AdminPremiereLists() {
         </div>
       )}
 
+      <div className="flex items-center justify-between gap-3">
+        <Input
+          type="search"
+          placeholder="Search lender name or code…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-xs"
+        />
+        {search && (
+          <span className="text-xs text-muted-foreground">
+            {filteredRows.length} of {rows.length} lender{rows.length === 1 ? "" : "s"}
+          </span>
+        )}
+      </div>
+
       <div className="rounded-md border bg-card">
         <Table>
           <TableHeader>
@@ -271,14 +297,16 @@ export default function AdminPremiereLists() {
                   </TableCell>
                 </TableRow>
               ))
-            ) : rows.length === 0 ? (
+            ) : filteredRows.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                  No active lenders found.
+                  {rows.length === 0
+                    ? "No active lenders found."
+                    : `No lenders match "${search}".`}
                 </TableCell>
               </TableRow>
             ) : (
-              rows.map((r) => (
+              filteredRows.map((r) => (
                 <TableRow key={r.lender_id}>
                   <TableCell className="font-medium">
                     <div>{r.lender_name}</div>

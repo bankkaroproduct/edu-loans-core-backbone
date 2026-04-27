@@ -26,6 +26,7 @@ import {
   type ProcessingStage,
 } from "@/hooks/useBulkUploadProcessor";
 import { useHighestQualificationOptions } from "@/hooks/useHighestQualificationOptions";
+import { PartnerInactiveNotice } from "@/components/shared/PartnerInactiveNotice";
 
 type Batch = Tables<"bulk_upload_batches">;
 
@@ -88,8 +89,10 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
   const [searchParams] = useSearchParams();
   const { appUser } = useAuth();
   const { agentUserId } = useRoleAccess();
-  const { effectivePartnerId, effectiveUserId } = usePartnerContext();
+  const { effectivePartnerId, effectiveUserId, isPartnerInactive } = usePartnerContext();
   const { options: qualificationOptions } = useHighestQualificationOptions();
+  const isAdminRole = appUser?.role === "super_admin" || appUser?.role === "admin";
+  const blockNewUpload = !isAdminRole && isPartnerInactive === true;
 
   const [batches, setBatches] = useState<Batch[]>([]);
   const [batchesLoading, setBatchesLoading] = useState(true);
@@ -177,6 +180,10 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
 
   const startProcessing = async () => {
     if (!selectedFile || !appUser || processingRef.current) return;
+    if (blockNewUpload) {
+      toast.error("New lead submission is paused for your account.");
+      return;
+    }
     if (!effectivePartnerId) {
       toast.error("No partner context available. Please select a partner to test as.");
       return;
@@ -447,6 +454,10 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
 
         {/* ===== UPLOAD TAB ===== */}
         <TabsContent value="upload" className="space-y-4">
+          {blockNewUpload ? (
+            <PartnerInactiveNotice surface="bulk_upload" />
+          ) : (
+          <>
 
           {/* ── Instructions & Template Guide ── */}
           <Card>
@@ -687,6 +698,8 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
                 </Card>
               )}
             </div>
+          )}
+          </>
           )}
         </TabsContent>
 
