@@ -287,8 +287,9 @@ export default function AdminLeadDetail() {
         </div>
 
         <div className="space-y-6">
-          <AdminPartnerCard partner={partner} isStudentDirect={isStudentDirect} />
-
+          {/* AdminPartnerCard intentionally NOT rendered here — it lives at the
+              top of the page (above LeadLifecycleProgress) as the sole source
+              of truth for the partner / student-direct profile. */}
           <LeadCommunicationPanel lead={lead} />
 
           <AdminStageStatusPanel
