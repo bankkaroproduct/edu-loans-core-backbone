@@ -24,7 +24,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
               </span>
             </div>
           </header>
-          <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6">{children}</main>
+          <main className="flex-1 px-6 py-6">{children}</main>
         </div>
       </div>
     </SidebarProvider>

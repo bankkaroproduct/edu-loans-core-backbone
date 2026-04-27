@@ -105,6 +105,7 @@ export default function AdminLeads() {
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastRefreshedAt, setLastRefreshedAt] = useState<Date>(() => new Date());
 
   // Health strip counts (filter-aware: same WHERE except status/stage overrides)
   const [healthCounts, setHealthCounts] = useState<{
@@ -246,6 +247,7 @@ export default function AdminLeads() {
 
       setRows(enriched);
       setTotalCount(count ?? 0);
+      setLastRefreshedAt(new Date());
     } catch (e: any) {
       setError(e?.message ?? "Failed to load leads");
       setRows([]);
@@ -365,6 +367,8 @@ export default function AdminLeads() {
       <PageHeader
         title="Lead Queue"
         description="Cross-partner lead inbox — student & partner leads in one place."
+        count={healthCounts.total}
+        lastUpdated={lastRefreshedAt}
       >
         <Button size="sm" variant="outline" onClick={() => fetchPage()} disabled={loading}>
           <RefreshCw className={`mr-1 h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Refresh
