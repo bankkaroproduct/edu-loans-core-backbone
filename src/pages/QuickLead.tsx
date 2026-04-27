@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePartnerContext } from "@/hooks/usePartnerContext";
+import { PartnerInactiveNotice } from "@/components/shared/PartnerInactiveNotice";
 import { useDuplicateCheck } from "@/hooks/useDuplicateCheck";
 import { createDownstreamRecords, fetchLeadDisplayId } from "@/hooks/useLeadWriteFlow";
 import { Button } from "@/components/ui/button";
@@ -27,7 +28,7 @@ const STATUS = "awaiting_verification" as const;
 export default function QuickLead() {
   const navigate = useNavigate();
   const { user, appUser } = useAuth();
-  const { effectivePartnerId, effectiveUserId } = usePartnerContext();
+  const { effectivePartnerId, effectiveUserId, isPartnerInactive } = usePartnerContext();
   const { duplicates, checking, checkDuplicates } = useDuplicateCheck();
   const [submitting, setSubmitting] = useState(false);
   const [showDupDialog, setShowDupDialog] = useState(false);
@@ -172,8 +173,19 @@ export default function QuickLead() {
     setSubmitting(false);
   };
 
-  const intakeTerms = [...new Set(intakes.map((i) => i.intake_term))];
-  const intakeYears = [...new Set(intakes.map((i) => i.intake_year))].sort();
+  const currentYear = new Date().getFullYear();
+  const futureIntakes = intakes.filter((i) => i.intake_year >= currentYear);
+  const intakeTerms = [...new Set(futureIntakes.map((i) => i.intake_term))];
+  const intakeYears = [...new Set(futureIntakes.map((i) => i.intake_year))].sort();
+
+  const isAdminRole = appUser?.role === "super_admin" || appUser?.role === "admin";
+  if (!isAdminRole && isPartnerInactive === true) {
+    return (
+      <div className="max-w-2xl mx-auto space-y-6">
+        <PartnerInactiveNotice surface="quick_lead" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">

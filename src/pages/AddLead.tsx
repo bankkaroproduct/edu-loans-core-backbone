@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePartnerContext } from "@/hooks/usePartnerContext";
+import { PartnerInactiveNotice } from "@/components/shared/PartnerInactiveNotice";
 import { useDuplicateCheck } from "@/hooks/useDuplicateCheck";
 import { createDownstreamRecords, fetchLeadDisplayId } from "@/hooks/useLeadWriteFlow";
 import { Button } from "@/components/ui/button";
@@ -72,38 +73,16 @@ import { useHighestQualificationOptions } from "@/hooks/useHighestQualificationO
 const TERMINAL_STAGES = ["disbursed", "rejected", "dropped"];
 
 /**
- * Map a country display name (as stored in `countries_master.country_name`) to its ISO 2-letter
- * code (as stored in `universities_master.country`). Falls back to the trimmed uppercase input
- * so already-ISO values (or admin-entered codes) still match.
- *
- * Keep this list aligned with the DB-side `country_to_iso()` helper.
+ * Compare two country labels case-insensitively, ignoring surrounding whitespace.
+ * `universities_master.country` and `countries_master.country_name` both store
+ * full display names (e.g. "United States", "United Kingdom"), so a normalized
+ * string compare is the correct match — there is no ISO code in the universities
+ * table to translate to. The earlier name→ISO map produced an empty result set
+ * because no `universities_master.country` row matches "US" / "GB" / etc.
  */
-function countryNameToIso(name: string | null | undefined): string {
-  if (!name) return "";
-  const n = name.trim();
-  const map: Record<string, string> = {
-    "United States": "US",
-    "United States of America": "US",
-    USA: "US",
-    "United Kingdom": "GB",
-    UK: "GB",
-    "Great Britain": "GB",
-    Canada: "CA",
-    Australia: "AU",
-    Germany: "DE",
-    France: "FR",
-    Netherlands: "NL",
-    Singapore: "SG",
-    Ireland: "IE",
-    "New Zealand": "NZ",
-    Spain: "ES",
-    Italy: "IT",
-    Switzerland: "CH",
-    Sweden: "SE",
-    Denmark: "DK",
-  };
-  if (map[n]) return map[n];
-  return n.length <= 3 ? n.toUpperCase() : n.toUpperCase().slice(0, 2);
+function sameCountryName(a: string | null | undefined, b: string | null | undefined): boolean {
+  const norm = (v: string | null | undefined) => (v ?? "").trim().toLowerCase();
+  return norm(a) === norm(b);
 }
 
 interface AddLeadProps {
@@ -123,7 +102,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
 
   const { user, appUser } = useAuth();
   const { isAdmin } = useRoleAccess();
-  const { effectivePartnerId, effectiveUserId } = usePartnerContext();
+  const { effectivePartnerId, effectiveUserId, isPartnerInactive } = usePartnerContext();
   const { duplicates, checking, checkDuplicates } = useDuplicateCheck();
   const { options: QUALIFICATIONS } = useHighestQualificationOptions();
   const [submitting, setSubmitting] = useState(false);
@@ -191,7 +170,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   const [intakes, setIntakes] = useState<Intake[]>([]);
 
   // Admin Assign-to-Partner state (admin-edit mode only)
-  const [partnersList, setPartnersList] = useState<{ id: string; display_name: string; partner_code: string }[]>([]);
+  const [partnersList, setPartnersList] = useState<{ id: string; display_name: string; partner_code: string; status?: string | null }[]>([]);
   const [partnerPickerOpen, setPartnerPickerOpen] = useState(false);
   const [originalPartnerId, setOriginalPartnerId] = useState<string | null>(null);
   const [partnerIdAssignment, setPartnerIdAssignment] = useState<string>("");
@@ -253,17 +232,30 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     });
   }, []);
 
-  // Admin-edit only: load full active partner list for the Assign-to-Partner picker.
+  // Admin-edit only: load active partner list for the Assign-to-Partner picker.
+  // We exclude inactive partners from being SELECTED as a new assignment, but still
+  // hydrate the lead's CURRENT partner record (even if inactive) so the form can
+  // render its name/code clearly. Selectability is gated separately at render time.
   useEffect(() => {
     if (!isAdminForm || !isEditMode) return;
     let cancelled = false;
     (async () => {
       const { data } = await supabase
         .from("partner_organizations")
-        .select("id, display_name, partner_code")
+        .select("id, display_name, partner_code, status")
         .eq("is_archived", false)
         .order("display_name");
-      if (!cancelled) setPartnersList((data ?? []).filter((p) => !!p.display_name?.trim()));
+      if (cancelled) return;
+      const rows = (data ?? []).filter((p) => !!p.display_name?.trim());
+      // Mark non-active rows; the picker will hide them from selection but the
+      // already-attached partner (if inactive) is still kept around so the
+      // "Currently assigned to …" line can resolve a name/code.
+      setPartnersList(rows.map((p) => ({
+        id: p.id,
+        display_name: p.display_name,
+        partner_code: p.partner_code,
+        status: p.status,
+      })));
     })();
     return () => { cancelled = true; };
   }, [isAdminForm, isEditMode]);
@@ -419,14 +411,16 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   }, [pincodeResult, form.pincode]);
 
   // Master combobox options
-  // Universities master stores `country` as ISO 2-letter code (US, AU, …) but the form
-  // stores `intended_study_country` as the human display name from countries_master.
-  // Map name → ISO before filtering, falling back to the raw value so admin-entered
-  // ISO codes still work.
+  // Universities master stores `country` as the full display name (e.g. "United States",
+  // "United Kingdom") — same shape as `countries_master.country_name`. The previous
+  // implementation incorrectly translated the form value to an ISO code (US, GB, …)
+  // and tried to match against that, which produced an empty list for every country.
+  // Compare the names directly (case-insensitive, trimmed). When no country is selected,
+  // show the full master list so the user still sees options.
   const universityOptions: MasterOption[] = useMemo(() => {
-    const iso = countryNameToIso(form.intended_study_country);
-    const filtered = iso
-      ? universities.filter((u) => (u.country ?? "").toUpperCase() === iso)
+    const country = (form.intended_study_country ?? "").trim();
+    const filtered = country
+      ? universities.filter((u) => sameCountryName(u.country, country))
       : universities;
     return filtered.map((u) => ({ id: u.id, label: u.university_name, hint: u.country }));
   }, [universities, form.intended_study_country]);
@@ -805,8 +799,13 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     setSubmitting(false);
   };
 
-  const intakeTerms = [...new Set(intakes.map((i) => i.intake_term))];
-  const intakeYears = [...new Set(intakes.map((i) => i.intake_year))].sort();
+  // Drop past intake years from the picker. We keep historical values flowing
+  // through edit-mode hydration (the saved value still renders on Review), but
+  // the dropdown should only offer current/future intakes for new selections.
+  const currentYear = new Date().getFullYear();
+  const futureIntakes = intakes.filter((i) => i.intake_year >= currentYear);
+  const intakeTerms = [...new Set(futureIntakes.map((i) => i.intake_term))];
+  const intakeYears = [...new Set(futureIntakes.map((i) => i.intake_year))].sort();
 
 
 
@@ -881,6 +880,18 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   const selectedAssignedPartner = partnersList.find((p) => p.id === partnerIdAssignment);
   const partnerChanged = !!partnerIdAssignment && partnerIdAssignment !== originalPartnerId;
   const originalPartner = partnersList.find((p) => p.id === originalPartnerId);
+
+  // Gate new-lead creation for inactive partner-role users. Edit mode and admins
+  // are not gated. Renders inside the same container so the shell is unchanged.
+  const showInactiveGate = !isAdmin && !isEditMode && isPartnerInactive === true;
+
+  if (showInactiveGate) {
+    return (
+      <div className={containerClassName ?? "max-w-4xl mx-auto space-y-5"}>
+        <PartnerInactiveNotice surface="add_lead" />
+      </div>
+    );
+  }
 
   return (
     <div className={containerClassName ?? "max-w-4xl mx-auto space-y-5"}>
@@ -1330,7 +1341,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                       >
                         <span className="truncate">
                           {selectedAssignedPartner
-                            ? `${selectedAssignedPartner.display_name} (${selectedAssignedPartner.partner_code})`
+                            ? `${selectedAssignedPartner.display_name} (${selectedAssignedPartner.partner_code})${selectedAssignedPartner.status && selectedAssignedPartner.status !== "active" ? ` — ${selectedAssignedPartner.status}` : ""}`
                             : "Search & select a partner organization…"}
                         </span>
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -1342,21 +1353,23 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                         <CommandList>
                           <CommandEmpty>No partners match that search.</CommandEmpty>
                           <CommandGroup>
-                            {partnersList.map((p) => (
-                              <CommandItem
-                                key={p.id}
-                                value={`${p.display_name} ${p.partner_code}`}
-                                onSelect={() => {
-                                  setPartnerIdAssignment(p.id);
-                                  setIsDirty(true);
-                                  setPartnerPickerOpen(false);
-                                }}
-                              >
-                                <Check className={cn("mr-2 h-4 w-4", partnerIdAssignment === p.id ? "opacity-100" : "opacity-0")} />
-                                <span className="truncate">{p.display_name}</span>
-                                <span className="ml-2 text-xs text-muted-foreground">{p.partner_code}</span>
-                              </CommandItem>
-                            ))}
+                            {partnersList
+                              .filter((p) => (p.status ?? "active") === "active")
+                              .map((p) => (
+                                <CommandItem
+                                  key={p.id}
+                                  value={`${p.display_name} ${p.partner_code}`}
+                                  onSelect={() => {
+                                    setPartnerIdAssignment(p.id);
+                                    setIsDirty(true);
+                                    setPartnerPickerOpen(false);
+                                  }}
+                                >
+                                  <Check className={cn("mr-2 h-4 w-4", partnerIdAssignment === p.id ? "opacity-100" : "opacity-0")} />
+                                  <span className="truncate">{p.display_name}</span>
+                                  <span className="ml-2 text-xs text-muted-foreground">{p.partner_code}</span>
+                                </CommandItem>
+                              ))}
                           </CommandGroup>
                         </CommandList>
                       </Command>
@@ -1364,7 +1377,13 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   </Popover>
                   {originalPartner && !partnerChanged && (
                     <p className="text-xs text-muted-foreground">
-                      Currently assigned to <strong className="text-foreground">{originalPartner.display_name}</strong>. Pick a different partner above to reassign.
+                      Currently assigned to <strong className="text-foreground">{originalPartner.display_name}</strong>
+                      {originalPartner.status && originalPartner.status !== "active" && (
+                        <> <span className="text-amber-700 dark:text-amber-400">(currently {originalPartner.status} — cannot be reassigned to another inactive partner; pick an active partner above to move this lead)</span></>
+                      )}
+                      {(!originalPartner.status || originalPartner.status === "active") && (
+                        <>. Pick a different partner above to reassign.</>
+                      )}
                     </p>
                   )}
                   {!originalPartner && (

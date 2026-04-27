@@ -20,6 +20,15 @@ interface PartnerContextType {
   simulatePartner: (partnerId: string | null) => void;
   /** The effective user id for partner_user_id field */
   effectiveUserId: string | null;
+  /**
+   * For partner-role users: true when the partner organization status is anything
+   * other than 'active' (e.g. inactive, suspended, terminated, onboarding).
+   * Always false for admins (admins are never gated by partner-org status).
+   * `null` while still resolving on first load.
+   */
+  isPartnerInactive: boolean | null;
+  /** The raw partner organization status for partner-role users (null for admins or while loading). */
+  partnerOrgStatus: string | null;
 }
 
 const PartnerContext = createContext<PartnerContextType | undefined>(undefined);
@@ -41,8 +50,10 @@ export function PartnerContextProvider({ children }: { children: ReactNode }) {
     } catch { return null; }
   });
   const [partnerOptions, setPartnerOptions] = useState<Pick<PartnerOrg, "id" | "display_name" | "partner_code">[]>([]);
+  const [partnerOrgStatus, setPartnerOrgStatus] = useState<string | null>(null);
 
   const isAdmin = appUser?.role === "super_admin" || appUser?.role === "admin";
+  const isPartnerRole = appUser?.role === "partner_admin" || appUser?.role === "partner_agent";
 
   // Fetch partner list for admins
   useEffect(() => {
@@ -67,6 +78,25 @@ export function PartnerContextProvider({ children }: { children: ReactNode }) {
       });
   }, [isAdmin]);
 
+  // Fetch own partner org status for partner-role users (one-shot per partner_id).
+  // Used to gate new-lead submission surfaces when status !== 'active'.
+  useEffect(() => {
+    if (!isPartnerRole || !appUser?.partner_id) {
+      setPartnerOrgStatus(null);
+      return;
+    }
+    let cancelled = false;
+    supabase
+      .from("partner_organizations")
+      .select("status")
+      .eq("id", appUser.partner_id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setPartnerOrgStatus(data?.status ?? null);
+      });
+    return () => { cancelled = true; };
+  }, [isPartnerRole, appUser?.partner_id]);
+
   const simulatePartner = (partnerId: string | null) => {
     if (!isAdmin) return;
     setSimulatedPartnerId(partnerId);
@@ -85,6 +115,15 @@ export function PartnerContextProvider({ children }: { children: ReactNode }) {
   const effectivePartnerName = isAdmin && simulatedPartnerId ? simulatedPartnerName : null;
   const isSimulating = isAdmin && !!simulatedPartnerId;
 
+  // Admins are never gated. For partner roles, treat as inactive whenever the
+  // org status is anything other than 'active'. `null` while the status query
+  // is still in flight, so callers can avoid flashing the gate prematurely.
+  const isPartnerInactive = isAdmin
+    ? false
+    : isPartnerRole
+      ? (partnerOrgStatus === null ? null : partnerOrgStatus !== "active")
+      : false;
+
   return (
     <PartnerContext.Provider
       value={{
@@ -94,6 +133,8 @@ export function PartnerContextProvider({ children }: { children: ReactNode }) {
         partnerOptions,
         simulatePartner,
         effectiveUserId: appUser?.id ?? null,
+        isPartnerInactive,
+        partnerOrgStatus,
       }}
     >
       {children}
