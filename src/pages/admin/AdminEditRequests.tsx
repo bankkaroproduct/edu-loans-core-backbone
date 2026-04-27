@@ -21,11 +21,11 @@ type Filter = "pending" | "applied" | "rejected" | "all";
 type SortKey = "latest_submitted" | "oldest_submitted" | "pending_first" | "latest_decided";
 
 const STATUS_CLS: Record<string, string> = {
-  pending: "bg-amber-100 text-amber-900 border-amber-300",
-  applied: "bg-emerald-100 text-emerald-900 border-emerald-300",
-  acknowledged: "bg-slate-100 text-slate-800 border-slate-300",
-  rejected: "bg-destructive/10 text-destructive border-destructive/30",
-  cancelled: "bg-muted text-muted-foreground border-border",
+  pending: "bg-amber-50 text-amber-700 border-amber-200",
+  applied: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  acknowledged: "bg-slate-100 text-slate-700 border-slate-200",
+  rejected: "bg-red-50 text-red-700 border-red-200",
+  cancelled: "bg-slate-100 text-slate-700 border-slate-200",
 };
 
 interface Counts {
