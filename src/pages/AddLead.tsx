@@ -772,6 +772,12 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       setCreatedLeadDisplayId(displayIdResult.displayId);
       setIsDraftSuccess(asDraft);
       setIsDirty(false);
+      // Re-anchor the original partner id so subsequent saves in the same
+      // session compute the change-correctly and the UI reflects persisted state.
+      if (isAdminForm && isEditMode && updateTargetId) {
+        const persistedPartnerId = partnerIdAssignment || originalPartnerId || null;
+        if (persistedPartnerId) setOriginalPartnerId(persistedPartnerId);
+      }
       setShowSuccess(true);
     }
 
