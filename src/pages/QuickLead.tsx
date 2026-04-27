@@ -93,7 +93,8 @@ export default function QuickLead() {
     if (err) return toast.error(err);
 
     const canonicalPhone = normalizePhone(form.student_phone)!;
-    const canonicalWhatsapp = form.student_whatsapp.trim() ? normalizePhone(form.student_whatsapp) : null;
+    const whatsappSource = whatsappSameAsPhone ? form.student_phone : form.student_whatsapp;
+    const canonicalWhatsapp = whatsappSource.trim() ? normalizePhone(whatsappSource) : null;
 
     const dups = await checkDuplicates({
       phone: canonicalPhone,
@@ -118,9 +119,10 @@ export default function QuickLead() {
     setShowDupDialog(false);
 
     const canonicalPhone = canonicalPhoneArg ?? normalizePhone(form.student_phone) ?? form.student_phone.trim();
+    const whatsappSource = whatsappSameAsPhone ? form.student_phone : form.student_whatsapp;
     const canonicalWhatsapp = canonicalWhatsappArg !== undefined
       ? canonicalWhatsappArg
-      : (form.student_whatsapp.trim() ? normalizePhone(form.student_whatsapp) : null);
+      : (whatsappSource.trim() ? normalizePhone(whatsappSource) : null);
 
     const payload = {
       student_first_name: form.student_first_name.trim(),
