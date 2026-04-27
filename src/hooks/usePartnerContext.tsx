@@ -110,6 +110,25 @@ export function PartnerContextProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; };
   }, [isPartnerRole, appUser?.partner_id]);
 
+  // Fetch status of the simulated partner (admin-as-partner flow). This is what
+  // gates admin-on-behalf NEW lead creation against an inactive partner.
+  useEffect(() => {
+    if (!isAdmin || !simulatedPartnerId) {
+      setSimulatedPartnerStatus(null);
+      return;
+    }
+    let cancelled = false;
+    supabase
+      .from("partner_organizations")
+      .select("status")
+      .eq("id", simulatedPartnerId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setSimulatedPartnerStatus(data?.status ?? null);
+      });
+    return () => { cancelled = true; };
+  }, [isAdmin, simulatedPartnerId]);
+
   const simulatePartner = (partnerId: string | null) => {
     if (!isAdmin) return;
     setSimulatedPartnerId(partnerId);
@@ -128,11 +147,31 @@ export function PartnerContextProvider({ children }: { children: ReactNode }) {
   const effectivePartnerName = isAdmin && simulatedPartnerId ? simulatedPartnerName : null;
   const isSimulating = isAdmin && !!simulatedPartnerId;
 
-  // Admins are never gated. For partner roles, treat as inactive whenever the
-  // org status is anything other than 'active'. `null` while the status query
-  // is still in flight, so callers can avoid flashing the gate prematurely.
+  // Admins are never gated by their *own* status — they have no partner org.
+  // For partner roles, treat as inactive whenever the org status is anything
+  // other than 'active'. `null` while status query is still in flight.
   const isPartnerInactive = isAdmin
     ? false
+    : isPartnerRole
+      ? (partnerOrgStatus === null ? null : partnerOrgStatus !== "active")
+      : false;
+
+  // Effective-partner inactive: this is the value that NEW lead initiation
+  // surfaces (Add Lead, Quick Lead, Bulk Upload) check. It correctly covers the
+  // admin-as-partner case: when an admin simulates an inactive partner, this
+  // returns true and the surface blocks creation.
+  // - Partner role: same as isPartnerInactive (their own org).
+  // - Admin without simulation: false (no target partner — page-level guards
+  //   already require a simulated partner before submission anyway).
+  // - Admin simulating: based on the simulated partner's status.
+  const effectivePartnerStatus = isAdmin
+    ? (simulatedPartnerId ? simulatedPartnerStatus : null)
+    : partnerOrgStatus;
+
+  const isEffectivePartnerInactive: boolean | null = isAdmin
+    ? (simulatedPartnerId
+        ? (simulatedPartnerStatus === null ? null : simulatedPartnerStatus !== "active")
+        : false)
     : isPartnerRole
       ? (partnerOrgStatus === null ? null : partnerOrgStatus !== "active")
       : false;
@@ -148,6 +187,8 @@ export function PartnerContextProvider({ children }: { children: ReactNode }) {
         effectiveUserId: appUser?.id ?? null,
         isPartnerInactive,
         partnerOrgStatus,
+        isEffectivePartnerInactive,
+        effectivePartnerStatus,
       }}
     >
       {children}
