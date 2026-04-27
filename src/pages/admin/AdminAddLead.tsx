@@ -92,27 +92,36 @@ export default function AdminAddLead() {
               <CommandList>
                 <CommandEmpty>No partners match that search.</CommandEmpty>
                 <CommandGroup>
-                  {partnerOptions.map((p) => (
-                    <CommandItem
-                      key={p.id}
-                      value={`${p.display_name} ${p.partner_code}`}
-                      onSelect={() => {
-                        simulatePartner(p.id);
-                        setOpen(false);
-                      }}
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          effectivePartnerId === p.id ? "opacity-100" : "opacity-0"
+                  {partnerOptions.map((p) => {
+                    const isDirect = p.partner_code === "PTR-DIRECT";
+                    return (
+                      <CommandItem
+                        key={p.id}
+                        value={`${p.display_name} ${p.partner_code}`}
+                        onSelect={() => {
+                          simulatePartner(p.id);
+                          setOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            effectivePartnerId === p.id ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        <span className="truncate">{p.display_name}</span>
+                        {isDirect ? (
+                          <Badge variant="secondary" className="ml-2 text-[9px] uppercase tracking-wide h-4 px-1.5">
+                            Direct / System
+                          </Badge>
+                        ) : (
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            {p.partner_code}
+                          </span>
                         )}
-                      />
-                      <span className="truncate">{p.display_name}</span>
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        {p.partner_code}
-                      </span>
-                    </CommandItem>
-                  ))}
+                      </CommandItem>
+                    );
+                  })}
                 </CommandGroup>
               </CommandList>
             </Command>
