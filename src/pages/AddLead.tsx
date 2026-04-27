@@ -916,7 +916,12 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               </div>
               <div className="space-y-2">
                 <Label>Mobile Number *</Label>
-                <Input value={form.student_phone} onChange={(e) => set("student_phone", e.target.value)} placeholder="+91 9876543210" />
+                <Input
+                  value={form.student_phone}
+                  onChange={(e) => set("student_phone", e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  placeholder="10-digit mobile (without +91)"
+                  inputMode="numeric"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Email</Label>
@@ -941,8 +946,9 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 </div>
                 <Input
                   value={form.whatsapp_same_as_phone ? form.student_phone : form.student_whatsapp}
-                  onChange={(e) => set("student_whatsapp", e.target.value)}
-                  placeholder="WhatsApp number"
+                  onChange={(e) => set("student_whatsapp", e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  placeholder="10-digit WhatsApp number"
+                  inputMode="numeric"
                   disabled={form.whatsapp_same_as_phone}
                   className={form.whatsapp_same_as_phone ? "bg-muted" : ""}
                 />
