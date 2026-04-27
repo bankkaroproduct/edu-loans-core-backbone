@@ -221,6 +221,14 @@ export default function AdminLeads() {
           end.setHours(23, 59, 59, 999);
           q = q.lte("created_at", end.toISOString());
         }
+        // Stale > 48h: real latest activity logic (updated_at), excluding terminal/blocked states.
+        if (filters.staleOnly) {
+          const cutoff = new Date(Date.now() - STALE_HOURS * 3600 * 1000).toISOString();
+          q = q
+            .lt("updated_at", cutoff)
+            .not("current_stage", "in", `(${STALE_TERMINAL_STAGES.join(",")})`)
+            .not("current_status", "in", `(${STALE_BLOCKED_STATUSES.join(",")})`);
+        }
         // Apply business bifurcation filters (Source / Type / Entry Mode / Region / Loan / Intake / Loan Type)
         q = applyBusinessFilters(q);
 
