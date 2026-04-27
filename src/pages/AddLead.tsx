@@ -231,17 +231,30 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     });
   }, []);
 
-  // Admin-edit only: load full active partner list for the Assign-to-Partner picker.
+  // Admin-edit only: load active partner list for the Assign-to-Partner picker.
+  // We exclude inactive partners from being SELECTED as a new assignment, but still
+  // hydrate the lead's CURRENT partner record (even if inactive) so the form can
+  // render its name/code clearly. Selectability is gated separately at render time.
   useEffect(() => {
     if (!isAdminForm || !isEditMode) return;
     let cancelled = false;
     (async () => {
       const { data } = await supabase
         .from("partner_organizations")
-        .select("id, display_name, partner_code")
+        .select("id, display_name, partner_code, status")
         .eq("is_archived", false)
         .order("display_name");
-      if (!cancelled) setPartnersList((data ?? []).filter((p) => !!p.display_name?.trim()));
+      if (cancelled) return;
+      const rows = (data ?? []).filter((p) => !!p.display_name?.trim());
+      // Mark non-active rows; the picker will hide them from selection but the
+      // already-attached partner (if inactive) is still kept around so the
+      // "Currently assigned to …" line can resolve a name/code.
+      setPartnersList(rows.map((p) => ({
+        id: p.id,
+        display_name: p.display_name,
+        partner_code: p.partner_code,
+        status: p.status,
+      })));
     })();
     return () => { cancelled = true; };
   }, [isAdminForm, isEditMode]);
