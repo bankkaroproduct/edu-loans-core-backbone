@@ -25,6 +25,8 @@ function Field({ icon: Icon, label, value }: { icon: typeof User; label: string;
 }
 
 export function AdminPartnerCard({ partner, isStudentDirect }: Props) {
+  const isDirectSystem = partner?.partner_code === "PTR-DIRECT";
+
   if (isStudentDirect || !partner) {
     return (
       <Card>
@@ -53,26 +55,48 @@ export function AdminPartnerCard({ partner, isStudentDirect }: Props) {
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
-          <Building2 className="h-4 w-4 text-primary" /> Partner Organization
+          {isDirectSystem ? (
+            <>
+              <GraduationCap className="h-4 w-4 text-primary" /> Source — Direct / Admin-owned
+            </>
+          ) : (
+            <>
+              <Building2 className="h-4 w-4 text-primary" /> Partner Organization
+            </>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="min-w-0">
             <p className="text-sm font-semibold truncate">{partner.display_name?.trim() || "Partner Lead"}</p>
-            <p className="text-xs text-muted-foreground">{partner.legal_name}</p>
+            <p className="text-xs text-muted-foreground">
+              {isDirectSystem ? "System bucket for walk-in / admin-originated leads" : partner.legal_name}
+            </p>
           </div>
-          <Badge variant="outline" className="font-mono text-[10px]">{partner.partner_code}</Badge>
+          <Badge variant={isDirectSystem ? "secondary" : "outline"} className="font-mono text-[10px]">
+            {partner.partner_code}
+          </Badge>
         </div>
 
-        <div className="grid grid-cols-1 gap-2 pt-2 border-t">
-          <Field icon={User} label="Contact Person" value={partner.contact_person_name} />
-          <Field icon={Mail} label="Email" value={partner.contact_person_email} />
-          <Field icon={Phone} label="Phone" value={partner.contact_person_phone} />
-        </div>
+        {isDirectSystem ? (
+          <div className="rounded-md border border-dashed bg-muted/30 p-2.5">
+            <p className="text-xs text-muted-foreground">
+              This lead is owned directly by the admin team. It is excluded from billable partner reports and payout calculations.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-2 pt-2 border-t">
+            <Field icon={User} label="Contact Person" value={partner.contact_person_name} />
+            <Field icon={Mail} label="Email" value={partner.contact_person_email} />
+            <Field icon={Phone} label="Phone" value={partner.contact_person_phone} />
+          </div>
+        )}
 
         <div className="flex items-center gap-2 pt-1">
-          <Badge variant="secondary" className="text-[10px]">{partner.partner_type.replace(/_/g, " ")}</Badge>
+          <Badge variant="secondary" className="text-[10px]">
+            {isDirectSystem ? "direct / system" : partner.partner_type.replace(/_/g, " ")}
+          </Badge>
           <Badge
             variant="outline"
             className={`text-[10px] ${

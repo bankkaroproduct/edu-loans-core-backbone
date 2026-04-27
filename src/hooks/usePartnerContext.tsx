@@ -74,13 +74,23 @@ export function PartnerContextProvider({ children }: { children: ReactNode }) {
       setPartnerOptions([]);
       return;
     }
+    // Include PTR-DIRECT (system bucket for admin-owned/direct leads) even when
+    // it's archived — admins MUST be able to attribute direct leads to it.
+    // Normal partner directory & reporting views explicitly exclude PTR-DIRECT
+    // by partner_code, so unarchiving here for the picker is safe.
     supabase
       .from("partner_organizations")
       .select("id, display_name, partner_code")
-      .eq("is_archived", false)
+      .or("is_archived.eq.false,partner_code.eq.PTR-DIRECT")
       .order("display_name")
       .then(({ data }) => {
-        const opts = data ?? [];
+        const raw = data ?? [];
+        // Sort PTR-DIRECT to the top so admins see the direct option first.
+        const opts = [...raw].sort((a, b) => {
+          if (a.partner_code === "PTR-DIRECT") return -1;
+          if (b.partner_code === "PTR-DIRECT") return 1;
+          return (a.display_name ?? "").localeCompare(b.display_name ?? "");
+        });
         setPartnerOptions(opts);
         // If restored partner no longer valid, clear
         if (simulatedPartnerId && !opts.find((p) => p.id === simulatedPartnerId)) {

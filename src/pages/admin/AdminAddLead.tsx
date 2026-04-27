@@ -75,7 +75,9 @@ export default function AdminAddLead() {
             >
               <span className="truncate">
                 {selected
-                  ? `${selected.display_name} (${selected.partner_code})`
+                  ? selected.partner_code === "PTR-DIRECT"
+                    ? `${selected.display_name} — Direct / Admin-owned`
+                    : `${selected.display_name} (${selected.partner_code})`
                   : "Search & select a partner organization…"}
               </span>
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -90,27 +92,36 @@ export default function AdminAddLead() {
               <CommandList>
                 <CommandEmpty>No partners match that search.</CommandEmpty>
                 <CommandGroup>
-                  {partnerOptions.map((p) => (
-                    <CommandItem
-                      key={p.id}
-                      value={`${p.display_name} ${p.partner_code}`}
-                      onSelect={() => {
-                        simulatePartner(p.id);
-                        setOpen(false);
-                      }}
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          effectivePartnerId === p.id ? "opacity-100" : "opacity-0"
+                  {partnerOptions.map((p) => {
+                    const isDirect = p.partner_code === "PTR-DIRECT";
+                    return (
+                      <CommandItem
+                        key={p.id}
+                        value={`${p.display_name} ${p.partner_code}`}
+                        onSelect={() => {
+                          simulatePartner(p.id);
+                          setOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            effectivePartnerId === p.id ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        <span className="truncate">{p.display_name}</span>
+                        {isDirect ? (
+                          <Badge variant="secondary" className="ml-2 text-[9px] uppercase tracking-wide h-4 px-1.5">
+                            Direct / System
+                          </Badge>
+                        ) : (
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            {p.partner_code}
+                          </span>
                         )}
-                      />
-                      <span className="truncate">{p.display_name}</span>
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        {p.partner_code}
-                      </span>
-                    </CommandItem>
-                  ))}
+                      </CommandItem>
+                    );
+                  })}
                 </CommandGroup>
               </CommandList>
             </Command>
@@ -131,10 +142,13 @@ export default function AdminAddLead() {
         <div className="ml-auto flex items-center gap-2">
           {selected ? (
             <span className="inline-flex items-center gap-1.5 text-xs text-primary">
-              <Check className="h-3.5 w-3.5" /> Attributed to {effectivePartnerName ?? selected.display_name}
+              <Check className="h-3.5 w-3.5" />
+              {selected.partner_code === "PTR-DIRECT"
+                ? "Direct / Admin-owned lead"
+                : `Attributed to ${effectivePartnerName ?? selected.display_name}`}
             </span>
           ) : (
-            <span className="text-xs text-muted-foreground">Choose a partner to enable submission.</span>
+            <span className="text-xs text-muted-foreground">Choose a partner — or pick Student Direct for an admin-owned lead.</span>
           )}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -147,7 +161,7 @@ export default function AdminAddLead() {
               </button>
             </TooltipTrigger>
             <TooltipContent side="left" className="max-w-xs text-xs">
-              True admin-owned (unassigned) leads require a future schema change. Every lead must currently be attributed to a partner.
+              Every lead must be attributed. Pick a real partner organization, or select <strong>Student Direct (PTR-DIRECT)</strong> for walk-in / admin-originated leads. PTR-DIRECT is excluded from billable partner reports.
             </TooltipContent>
           </Tooltip>
         </div>
