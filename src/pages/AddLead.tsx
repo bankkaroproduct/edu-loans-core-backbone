@@ -880,6 +880,18 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   const partnerChanged = !!partnerIdAssignment && partnerIdAssignment !== originalPartnerId;
   const originalPartner = partnersList.find((p) => p.id === originalPartnerId);
 
+  // Gate new-lead creation for inactive partner-role users. Edit mode and admins
+  // are not gated. Renders inside the same container so the shell is unchanged.
+  const showInactiveGate = !isAdmin && !isEditMode && isPartnerInactive === true;
+
+  if (showInactiveGate) {
+    return (
+      <div className={containerClassName ?? "max-w-4xl mx-auto space-y-5"}>
+        <PartnerInactiveNotice surface="add_lead" />
+      </div>
+    );
+  }
+
   return (
     <div className={containerClassName ?? "max-w-4xl mx-auto space-y-5"}>
       {!hideOwnHeader && (
