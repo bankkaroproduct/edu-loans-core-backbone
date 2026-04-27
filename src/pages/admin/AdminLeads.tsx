@@ -105,6 +105,7 @@ export default function AdminLeads() {
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastRefreshedAt, setLastRefreshedAt] = useState<Date>(() => new Date());
 
   // Health strip counts (filter-aware: same WHERE except status/stage overrides)
   const [healthCounts, setHealthCounts] = useState<{
