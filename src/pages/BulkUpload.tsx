@@ -26,6 +26,7 @@ import {
   type ProcessingStage,
 } from "@/hooks/useBulkUploadProcessor";
 import { useHighestQualificationOptions } from "@/hooks/useHighestQualificationOptions";
+import { PartnerInactiveNotice } from "@/components/shared/PartnerInactiveNotice";
 
 type Batch = Tables<"bulk_upload_batches">;
 
