@@ -702,12 +702,20 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       }
       if (!hasDuplicateWarning) delete updatePayload.duplicate_flag;
 
-      // Admin-edit only: persist partner reassignment if changed.
-      // When the partner org changes, also clear partner_user_id so we don't
-      // leak the old org's user attribution onto the new org.
-      if (isAdminForm && isEditMode && partnerIdAssignment && partnerIdAssignment !== originalPartnerId) {
-        updatePayload.partner_id = partnerIdAssignment;
-        updatePayload.partner_user_id = null;
+      // Admin-edit only: ALWAYS write partner_id back so the assignment persists across
+      // save → refresh → reopen edit. Sourced from the picker, falling back to the
+      // hydrated original so we never accidentally null out a partner. We only skip
+      // when the partners list hasn't loaded yet (avoids racing with hydration).
+      if (isAdminForm && isEditMode && partnersList.length > 0) {
+        const targetPartnerId = partnerIdAssignment || originalPartnerId || null;
+        if (targetPartnerId) {
+          updatePayload.partner_id = targetPartnerId;
+          // If the partner ORG changed, drop the old org's user attribution so it
+          // doesn't leak across organizations.
+          if (targetPartnerId !== originalPartnerId) {
+            updatePayload.partner_user_id = null;
+          }
+        }
       }
       const { data, error } = await supabase
         .from("student_leads")
