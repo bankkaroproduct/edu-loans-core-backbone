@@ -162,23 +162,30 @@ export function HeroPerformanceStrip({ appUser, partnerName, kpiData, loanMetric
           {heroMetrics.map((m) => {
             const Icon = m.icon;
             return (
-              <div
-                key={m.label}
-                className="flex items-center gap-4 p-5 rounded-xl bg-primary-foreground/10 hover:bg-primary-foreground/15 cursor-pointer transition-colors"
-                onClick={m.onClick}
-              >
-                <div className="bg-primary-foreground/10 p-3 rounded-full shrink-0">
-                  <Icon className="h-6 w-6" />
-                </div>
-                <div className="min-w-0">
-                  {loading ? (
-                    <Skeleton className="h-8 w-24 bg-primary-foreground/20" />
-                  ) : (
-                    <p className="text-2xl sm:text-3xl font-extrabold tracking-tight truncate">{m.value}</p>
-                  )}
-                  <p className="text-xs sm:text-sm opacity-80 mt-0.5">{m.label}</p>
-                </div>
-              </div>
+              <Tooltip key={m.label}>
+                <TooltipTrigger asChild>
+                  <div
+                    className="flex items-center gap-4 p-5 rounded-xl bg-primary-foreground/10 hover:bg-primary-foreground/15 cursor-pointer transition-colors relative"
+                    onClick={m.onClick}
+                  >
+                    <div className="bg-primary-foreground/10 p-3 rounded-full shrink-0">
+                      <Icon className="h-6 w-6" />
+                    </div>
+                    <div className="min-w-0">
+                      {loading ? (
+                        <Skeleton className="h-8 w-24 bg-primary-foreground/20" />
+                      ) : (
+                        <p className="text-2xl sm:text-3xl font-extrabold tracking-tight truncate">{m.value}</p>
+                      )}
+                      <p className="text-xs sm:text-sm opacity-80 mt-0.5">{m.label}</p>
+                    </div>
+                    <Info className="h-3 w-3 opacity-50 absolute top-2 right-2" aria-label="Definition" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs text-xs">
+                  {m.tooltip}
+                </TooltipContent>
+              </Tooltip>
             );
           })}
         </div>
@@ -189,31 +196,39 @@ export function HeroPerformanceStrip({ appUser, partnerName, kpiData, loanMetric
             const Icon = loanIconMap[m.key];
             const amountStr = formatINR(m.amount);
             return (
-              <div
-                key={m.key}
-                className="flex items-center gap-4 p-5 rounded-xl bg-primary-foreground/5 border border-primary-foreground/10"
-              >
-                <div className="bg-primary-foreground/10 p-3 rounded-full shrink-0">
-                  <Icon className="h-6 w-6" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  {loading ? (
-                    <>
-                      <Skeleton className="h-7 w-20 bg-primary-foreground/20 mb-1" />
-                      <Skeleton className="h-4 w-28 bg-primary-foreground/15" />
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex items-baseline gap-2">
-                        <p className="text-2xl sm:text-3xl font-extrabold tracking-tight">{m.count}</p>
-                        <span className="text-xs opacity-80">{m.count === 1 ? "lead" : "leads"}</span>
-                      </div>
-                      <p className="text-sm font-semibold opacity-95 truncate" title={amountStr}>{amountStr}</p>
-                    </>
-                  )}
-                  <p className="text-xs opacity-80 mt-0.5">{m.label}</p>
-                </div>
-              </div>
+              <Tooltip key={m.key}>
+                <TooltipTrigger asChild>
+                  <div
+                    className="flex items-center gap-4 p-5 rounded-xl bg-primary-foreground/5 border border-primary-foreground/10 cursor-pointer hover:bg-primary-foreground/10 transition-colors relative"
+                    onClick={() => navigate(loanMetricRoutes[m.key])}
+                  >
+                    <div className="bg-primary-foreground/10 p-3 rounded-full shrink-0">
+                      <Icon className="h-6 w-6" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      {loading ? (
+                        <>
+                          <Skeleton className="h-7 w-20 bg-primary-foreground/20 mb-1" />
+                          <Skeleton className="h-4 w-28 bg-primary-foreground/15" />
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-baseline gap-2">
+                            <p className="text-2xl sm:text-3xl font-extrabold tracking-tight">{m.count}</p>
+                            <span className="text-xs opacity-80">{m.count === 1 ? "lead" : "leads"}</span>
+                          </div>
+                          <p className="text-sm font-semibold opacity-95 truncate" title={amountStr}>{amountStr}</p>
+                        </>
+                      )}
+                      <p className="text-xs opacity-80 mt-0.5">{m.label}</p>
+                    </div>
+                    <Info className="h-3 w-3 opacity-50 absolute top-2 right-2" aria-label="Definition" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs text-xs">
+                  {loanMetricTooltips[m.key]}
+                </TooltipContent>
+              </Tooltip>
             );
           })}
         </div>
@@ -225,31 +240,38 @@ export function HeroPerformanceStrip({ appUser, partnerName, kpiData, loanMetric
               const Icon = secondaryIconMap[m.key];
               const amountStr = formatINR(m.amount);
               return (
-                <div
-                  key={m.key}
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary-foreground/[0.06] border border-primary-foreground/10"
-                >
-                  <div className="bg-primary-foreground/10 p-2 rounded-full shrink-0">
-                    <Icon className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    {loading ? (
-                      <>
-                        <Skeleton className="h-5 w-16 bg-primary-foreground/20 mb-1" />
-                        <Skeleton className="h-3 w-24 bg-primary-foreground/15" />
-                      </>
-                    ) : (
-                      <>
-                        <div className="flex items-baseline gap-2">
-                          <p className="text-lg sm:text-xl font-bold tracking-tight">{m.count}</p>
-                          <span className="text-[10px] opacity-80">{m.key === "rejected" ? (m.count === 1 ? "lead" : "leads") : "records"}</span>
-                        </div>
-                        <p className="text-xs font-medium opacity-95 truncate" title={amountStr}>{amountStr}</p>
-                      </>
-                    )}
-                    <p className="text-[11px] opacity-80 mt-0.5 truncate" title={m.label}>{m.label}</p>
-                  </div>
-                </div>
+                <Tooltip key={m.key}>
+                  <TooltipTrigger asChild>
+                    <div
+                      className="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary-foreground/[0.06] border border-primary-foreground/10 cursor-pointer hover:bg-primary-foreground/10 transition-colors relative"
+                      onClick={() => navigate(secondaryMetricRoutes[m.key])}
+                    >
+                      <div className="bg-primary-foreground/10 p-2 rounded-full shrink-0">
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        {loading ? (
+                          <>
+                            <Skeleton className="h-5 w-16 bg-primary-foreground/20 mb-1" />
+                            <Skeleton className="h-3 w-24 bg-primary-foreground/15" />
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-baseline gap-2">
+                              <p className="text-lg sm:text-xl font-bold tracking-tight">{m.count}</p>
+                              <span className="text-[10px] opacity-80">{m.key === "rejected" ? (m.count === 1 ? "lead" : "leads") : "records"}</span>
+                            </div>
+                            <p className="text-xs font-medium opacity-95 truncate" title={amountStr}>{amountStr}</p>
+                          </>
+                        )}
+                        <p className="text-[11px] opacity-80 mt-0.5 truncate" title={m.label}>{m.label}</p>
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs text-xs">
+                    {secondaryMetricTooltips[m.key]}
+                  </TooltipContent>
+                </Tooltip>
               );
             })}
           </div>
