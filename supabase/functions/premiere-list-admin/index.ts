@@ -51,6 +51,8 @@ interface Row {
   effective_to: string | null;
 }
 
+type AnyRow = Record<string, any>;
+
 const RowSchema = z.object({
   college_name_raw: z.string(),
   country_raw: z.string(),
@@ -112,9 +114,9 @@ Deno.serve(async (req) => {
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    const supaAuth = createClient(supabaseUrl, anonKey, {
+    const supaAuth: any = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
-    });
+    }) as any;
     const token = authHeader.replace("Bearer ", "");
     const { data: claimsData, error: claimsError } = await supaAuth.auth.getClaims(token);
     if (claimsError || !claimsData?.claims) {
@@ -143,7 +145,7 @@ Deno.serve(async (req) => {
     }
     const body = parsed.data;
 
-    const supaAdmin = createClient(supabaseUrl, serviceRoleKey);
+    const supaAdmin: any = createClient(supabaseUrl, serviceRoleKey) as any;
 
     if (body.action === "list") return await handleList(supaAdmin);
     if (body.action === "view") return await handleView(supaAdmin, body);
@@ -170,7 +172,8 @@ async function handleList(supa: any) {
     .order("lender_name", { ascending: true });
   if (lendersErr) return json({ error: lendersErr.message }, 500);
 
-  const lenderIds = (lenders ?? []).map((l) => l.id);
+  const lenderRows = (lenders ?? []) as AnyRow[];
+  const lenderIds = lenderRows.map((l) => l.id);
   if (lenderIds.length === 0) return json({ rows: [] }, 200);
 
   const { data: currentRows, error: rowsErr } = await supa
@@ -184,7 +187,7 @@ async function handleList(supa: any) {
     string,
     { count: number; latest: string | null; uploadedBy: string | null; version: number | null; fileName: string | null }
   >();
-  for (const r of currentRows ?? []) {
+  for (const r of (currentRows ?? []) as AnyRow[]) {
     const s = stats.get(r.lender_id) ?? {
       count: 0,
       latest: null,
@@ -212,11 +215,11 @@ async function handleList(supa: any) {
       .select("id, full_name, email")
       .in("id", uploaderIds);
     uploaderNames = Object.fromEntries(
-      (us ?? []).map((u) => [u.id as string, (u.full_name as string) || (u.email as string)]),
+      ((us ?? []) as AnyRow[]).map((u) => [u.id as string, (u.full_name as string) || (u.email as string)]),
     );
   }
 
-  const rows = (lenders ?? []).map((l) => {
+  const rows = lenderRows.map((l) => {
     const s = stats.get(l.id);
     return {
       lender_id: l.id,
@@ -294,20 +297,21 @@ async function handleAudit(
   const { data, error } = await q;
   if (error) return json({ error: error.message }, 500);
 
+  const auditRows = (data ?? []) as AnyRow[];
   const actorIds = Array.from(
-    new Set(((data ?? []).map((r) => r.actor_user_id).filter(Boolean)) as string[]),
+    new Set((auditRows.map((r) => r.actor_user_id).filter(Boolean)) as string[]),
   );
   let actors: Record<string, string> = {};
   if (actorIds.length > 0) {
     const { data: us } = await supa
       .from("users").select("id, full_name, email").in("id", actorIds);
     actors = Object.fromEntries(
-      (us ?? []).map((u) => [u.id as string, (u.full_name as string) || (u.email as string)]),
+      ((us ?? []) as AnyRow[]).map((u) => [u.id as string, (u.full_name as string) || (u.email as string)]),
     );
   }
 
   return json({
-    rows: (data ?? []).map((r) => ({
+    rows: auditRows.map((r) => ({
       ...r,
       actor_name: r.actor_user_id ? actors[r.actor_user_id as string] ?? null : null,
     })),
@@ -381,8 +385,8 @@ async function handleUpload(
     .from("country_aliases")
     .select("alias_lower, canonical_name");
   if (aliasErr) return json({ error: aliasErr.message }, 500);
-  const aliasMap = new Map(
-    (aliases ?? []).map((a) => [a.alias_lower as string, a.canonical_name as string]),
+  const aliasMap = new Map<string, string>(
+    ((aliases ?? []) as AnyRow[]).map((a) => [a.alias_lower as string, a.canonical_name as string]),
   );
 
   const valid: Array<{
