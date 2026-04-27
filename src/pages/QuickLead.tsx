@@ -228,15 +228,40 @@ export default function QuickLead() {
             </div>
             <div className="space-y-2">
               <Label>Mobile Number *</Label>
-              <Input value={form.student_phone} onChange={(e) => set("student_phone", e.target.value)} placeholder="+91 9876543210" />
+              <IndianPhoneInput
+                value={form.student_phone}
+                onChange={(digits) => {
+                  set("student_phone", digits);
+                  if (whatsappSameAsPhone) set("student_whatsapp", digits);
+                }}
+                placeholder="10-digit mobile number"
+              />
             </div>
             <div className="space-y-2">
               <Label>Email</Label>
               <Input type="email" value={form.student_email} onChange={(e) => set("student_email", e.target.value)} placeholder="student@email.com" />
             </div>
-            <div className="space-y-2">
-              <Label>WhatsApp</Label>
-              <Input value={form.student_whatsapp} onChange={(e) => set("student_whatsapp", e.target.value)} placeholder="WhatsApp number" />
+            <div className="space-y-2 md:col-span-2">
+              <div className="flex items-center justify-between">
+                <Label>WhatsApp</Label>
+                <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+                  <Checkbox
+                    checked={whatsappSameAsPhone}
+                    onCheckedChange={(v) => {
+                      const checked = v === true;
+                      setWhatsappSameAsPhone(checked);
+                      if (checked) set("student_whatsapp", form.student_phone);
+                    }}
+                  />
+                  Same number on WhatsApp
+                </label>
+              </div>
+              <IndianPhoneInput
+                value={whatsappSameAsPhone ? form.student_phone : form.student_whatsapp}
+                onChange={(digits) => set("student_whatsapp", digits)}
+                placeholder="WhatsApp number"
+                disabled={whatsappSameAsPhone}
+              />
             </div>
             <div className="space-y-2">
               <Label>City</Label>
