@@ -16,6 +16,7 @@ import { AdminStageStatusPanel } from "@/components/admin/AdminStageStatusPanel"
 import { AdminLeadDocumentsView } from "@/components/admin/AdminLeadDocumentsView";
 import { AdminInternalNotes } from "@/components/admin/AdminInternalNotes";
 import { AdminEditRequestPanel } from "@/components/admin/AdminEditRequestPanel";
+import { AdminLenderRecommendations } from "@/components/admin/AdminLenderRecommendations";
 import { LeadAuthenticityEditor } from "@/components/admin/LeadAuthenticityEditor";
 import { LeadCommunicationPanel } from "@/components/admin/communications/LeadCommunicationPanel";
 import { useLeadDocumentsData } from "@/hooks/useLeadDocumentsData";
@@ -259,6 +260,8 @@ export default function AdminLeadDetail() {
             documents={sharedDocuments}
             onChanged={onDocsChanged}
           />
+
+          <AdminLenderRecommendations leadId={lead.id} />
 
           <AdminInternalNotes
             leadId={lead.id}
