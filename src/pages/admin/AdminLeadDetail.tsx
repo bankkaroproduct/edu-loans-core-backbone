@@ -263,8 +263,6 @@ export default function AdminLeadDetail() {
             onChanged={onDocsChanged}
           />
 
-          <AdminLenderRecommendations leadId={lead.id} />
-
           <AdminInternalNotes
             leadId={lead.id}
             notes={notes}
@@ -277,7 +275,6 @@ export default function AdminLeadDetail() {
 
           <LeadCommunicationPanel lead={lead} />
 
-
           <AdminStageStatusPanel
             lead={lead}
             unverifiedRequiredCount={unverifiedRequiredCount}
@@ -285,10 +282,10 @@ export default function AdminLeadDetail() {
             onChanged={loadAll}
           />
 
+          {/* Lender workflow cluster — kept together, immediately below the timeline */}
           <LeadTimeline history={history} notes={notes} audits={audits} actorNames={actorNames} />
-
+          <AdminLenderRecommendations leadId={lead.id} />
           <AdminCalculateBreCard lead={lead} />
-
           <AdminAssignLenderCard leadId={lead.id} />
 
           <LeadPayoutSnapshot payouts={payouts} leadId={lead.id} />
