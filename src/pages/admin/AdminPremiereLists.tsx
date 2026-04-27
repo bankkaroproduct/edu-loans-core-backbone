@@ -47,7 +47,134 @@ type ParsedRow = {
   effective_to: string | null;
 };
 
-const REQUIRED_COLS = ["college name", "country"];
+// Canonical required columns + alias maps (case-insensitive, spaces/underscores stripped).
+// "name" intentionally excluded from college aliases — too generic, would silently
+// misroute student-name / lender-name columns.
+const COLLEGE_ALIASES = [
+  "college name",
+  "collegename",
+  "university name",
+  "universityname",
+  "institution",
+  "institution name",
+  "institute",
+  "school",
+];
+const COUNTRY_ALIASES = [
+  "country",
+  "country name",
+  "countryname",
+  "nation",
+  "location",
+];
+
+function normalizeHeader(h: string): string {
+  return String(h ?? "").toLowerCase().replace(/[\s_]+/g, " ").trim();
+}
+function normalizeForAlias(h: string): string {
+  // For alias matching: also collapse all whitespace away so "collegename" === "college name"
+  return normalizeHeader(h).replace(/\s+/g, "");
+}
+
+function findHeaderMatch(
+  headers: string[],
+  aliases: string[],
+): { rawHeader: string; alias: string } | null {
+  // Pass 1: exact normalized match (preserves spaces between words)
+  for (const raw of headers) {
+    const n = normalizeHeader(raw);
+    if (aliases.includes(n)) return { rawHeader: raw, alias: n };
+  }
+  // Pass 2: spaces/underscores stripped
+  const aliasesStripped = aliases.map((a) => a.replace(/\s+/g, ""));
+  for (const raw of headers) {
+    const n = normalizeForAlias(raw);
+    const idx = aliasesStripped.indexOf(n);
+    if (idx >= 0) return { rawHeader: raw, alias: aliases[idx] };
+  }
+  return null;
+}
+
+type HeaderMapping = {
+  collegeHeader: string; // raw header key as it appears in the file
+  countryHeader: string;
+  cityHeader: string | null;
+  notesHeader: string | null;
+  isExact: boolean; // true when both required headers were "college name" + "country" exactly
+};
+
+function detectMapping(headers: string[]): HeaderMapping | { error: string } {
+  const college = findHeaderMatch(headers, COLLEGE_ALIASES);
+  const country = findHeaderMatch(headers, COUNTRY_ALIASES);
+  if (!college) {
+    return {
+      error:
+        "Required column 'College Name' (or alias) not found in your file. Download the template using the button above, fill it in, and try again.",
+    };
+  }
+  if (!country) {
+    return {
+      error:
+        "Required column 'Country' (or alias) not found in your file. Download the template using the button above, fill it in, and try again.",
+    };
+  }
+  // Optional columns — straight lookup on normalized header
+  let cityHeader: string | null = null;
+  let notesHeader: string | null = null;
+  for (const raw of headers) {
+    const n = normalizeHeader(raw);
+    if (!cityHeader && n === "city") cityHeader = raw;
+    if (!notesHeader && n === "notes") notesHeader = raw;
+  }
+  const isExact =
+    normalizeHeader(college.rawHeader) === "college name" &&
+    normalizeHeader(country.rawHeader) === "country";
+  return {
+    collegeHeader: college.rawHeader,
+    countryHeader: country.rawHeader,
+    cityHeader,
+    notesHeader,
+    isExact,
+  };
+}
+
+function downloadTemplate() {
+  const headers = ["College Name", "Country", "City", "Notes"];
+  const examples = [
+    ["Harvard University", "United States", "Cambridge", "Example row — replace with your data"],
+    ["University of Oxford", "United Kingdom", "Oxford", "Example row — replace with your data"],
+    ["National University of Singapore (NUS)", "Singapore", "Singapore", "Example row — replace with your data"],
+  ];
+  const sheet1 = XLSX.utils.aoa_to_sheet([headers, ...examples]);
+  // Column widths
+  sheet1["!cols"] = [{ wch: 50 }, { wch: 20 }, { wch: 20 }, { wch: 50 }];
+  // Bold + light-yellow fill for header row
+  const headerStyle = {
+    font: { bold: true },
+    fill: { patternType: "solid", fgColor: { rgb: "FFF2CC" } },
+  };
+  ["A1", "B1", "C1", "D1"].forEach((addr) => {
+    if (sheet1[addr]) (sheet1[addr] as any).s = headerStyle;
+  });
+
+  const instructions = [
+    ["Premiere College List — Upload Instructions"],
+    [""],
+    ["• College Name and Country are required. City and Notes can be left blank."],
+    ["• Country must be a recognised country name. Common aliases (USA, UK, UAE, HK, ROK) will be auto-resolved."],
+    ["• Maximum 10,000 rows per file. Maximum file size 5 MB."],
+    ["• Duplicates within the same file are de-duped (first occurrence kept)."],
+    ["• The system supports .xlsx and .csv only."],
+    ["• To replace a lender's list, upload a new file using the Replace action — the previous version is archived and the new file becomes current."],
+  ];
+  const sheet2 = XLSX.utils.aoa_to_sheet(instructions);
+  sheet2["!cols"] = [{ wch: 110 }];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, sheet1, "Premiere List");
+  XLSX.utils.book_append_sheet(wb, sheet2, "Instructions");
+  XLSX.writeFile(wb, "premiere-list-template.xlsx");
+}
 
 function isAdmin(role: string | null | undefined) {
   return role === "admin" || role === "super_admin";
