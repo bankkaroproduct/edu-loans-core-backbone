@@ -17,6 +17,8 @@ import { AdminLeadDocumentsView } from "@/components/admin/AdminLeadDocumentsVie
 import { AdminInternalNotes } from "@/components/admin/AdminInternalNotes";
 import { AdminEditRequestPanel } from "@/components/admin/AdminEditRequestPanel";
 import { AdminLenderRecommendations } from "@/components/admin/AdminLenderRecommendations";
+import { AdminAssignLenderCard } from "@/components/admin/AdminAssignLenderCard";
+import { AdminCalculateBreCard } from "@/components/admin/AdminCalculateBreCard";
 import { LeadAuthenticityEditor } from "@/components/admin/LeadAuthenticityEditor";
 import { LeadCommunicationPanel } from "@/components/admin/communications/LeadCommunicationPanel";
 import { useLeadDocumentsData } from "@/hooks/useLeadDocumentsData";
@@ -262,6 +264,10 @@ export default function AdminLeadDetail() {
           />
 
           <AdminLenderRecommendations leadId={lead.id} />
+
+          <AdminAssignLenderCard leadId={lead.id} />
+
+          <AdminCalculateBreCard lead={lead} />
 
           <AdminInternalNotes
             leadId={lead.id}
