@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { FlaskConical } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -184,12 +186,12 @@ export default function BreSimulate() {
 
           <div className="space-y-4">
             {!result ? (
-              <div className="rounded-md border border-dashed py-20 text-center">
-                <div className="text-sm font-medium">No simulation run yet</div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Pick a preset or fill the inputs on the left and press <strong>Run simulation</strong>.
-                </p>
-              </div>
+              <EmptyState
+                icon={FlaskConical}
+                title="No simulation run yet"
+                description="Pick a preset or fill the inputs on the left and press Run simulation."
+                className="rounded-md border border-dashed"
+              />
             ) : (
               <>
                 <ResultSummaryCard result={result} />
