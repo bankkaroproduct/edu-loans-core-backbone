@@ -180,6 +180,10 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
 
   const startProcessing = async () => {
     if (!selectedFile || !appUser || processingRef.current) return;
+    if (blockNewUpload) {
+      toast.error("New lead submission is paused for your account.");
+      return;
+    }
     if (!effectivePartnerId) {
       toast.error("No partner context available. Please select a partner to test as.");
       return;
