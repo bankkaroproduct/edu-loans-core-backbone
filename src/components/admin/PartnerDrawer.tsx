@@ -152,8 +152,7 @@ export function PartnerDrawer({ open, onOpenChange, record, onSaved }: Props) {
 
         <div className="space-y-6 py-4">
           {/* Section 1 — Create Partner (identity) */}
-          <section className="space-y-3">
-            <SectionHeader title="Create Partner" hint="Required for record" />
+          <FormSection title="Create Partner" actions={<span className="text-[10px] text-muted-foreground">Required for record</span>}>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Display Name *</Label>
@@ -193,14 +192,14 @@ export function PartnerDrawer({ open, onOpenChange, record, onSaved }: Props) {
                 )}
               </div>
             </div>
-          </section>
+          </FormSection>
 
           {/* Section 2 — Activation Details */}
-          <section className="space-y-3">
-            <SectionHeader title="Activation Details" hint="Required to go live (Active)" />
-            <p className="text-[11px] text-muted-foreground -mt-1">
-              These fields are optional while the partner is in Onboarding, and become required to switch status to Active.
-            </p>
+          <FormSection
+            title="Activation Details"
+            description="Optional in Onboarding; required to switch status to Active."
+            actions={<span className="text-[10px] text-muted-foreground">Required to go live</span>}
+          >
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">
