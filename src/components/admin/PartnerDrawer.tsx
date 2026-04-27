@@ -231,7 +231,7 @@ export function PartnerDrawer({ open, onOpenChange, record, onSaved }: Props) {
                 <AlertDescription className="text-xs">{activationError}</AlertDescription>
               </Alert>
             )}
-          </section>
+          </FormSection>
         </div>
 
         <SheetFooter className="gap-2">
