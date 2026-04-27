@@ -3,7 +3,7 @@
 // We use `unpdf` which is a Deno-native PDF text extractor (serverless build of pdf.js).
 // `npm:` specifier is preferred over esm.sh for stability in edge-runtime.
 
-import { extractText, getDocumentProxy } from "npm:unpdf@0.12.1";
+import { extractText, getDocumentProxy } from "https://esm.sh/unpdf@0.12.1";
 
 export interface ExtractionOutput {
   method: "pdf_text" | "skipped_image_phase1" | "none";
