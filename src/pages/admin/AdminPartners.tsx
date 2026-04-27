@@ -20,9 +20,9 @@ type StatusFilter = "all" | Partner["status"];
 const statusStyles: Record<Partner["status"], string> = {
   active: "bg-emerald-50 text-emerald-700 border-emerald-200",
   onboarding: "bg-blue-50 text-blue-700 border-blue-200",
-  inactive: "bg-slate-100 text-slate-600 border-slate-200",
+  inactive: "bg-slate-100 text-slate-700 border-slate-200",
   suspended: "bg-amber-50 text-amber-700 border-amber-200",
-  terminated: "bg-rose-50 text-rose-700 border-rose-200",
+  terminated: "bg-red-50 text-red-700 border-red-200",
 };
 
 export default function AdminPartners() {
@@ -170,30 +170,30 @@ export default function AdminPartners() {
             <div className="border rounded-md overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted/40">
-                    <TableHead className="text-xs font-medium w-[110px]">Code</TableHead>
-                    <TableHead className="text-xs font-medium">Display Name</TableHead>
-                    <TableHead className="text-xs font-medium">Type</TableHead>
-                    <TableHead className="text-xs font-medium">Contact</TableHead>
-                    <TableHead className="text-xs font-medium w-[80px] text-right">Leads</TableHead>
-                    <TableHead className="text-xs font-medium w-[100px]">Status</TableHead>
-                    <TableHead className="text-xs font-medium w-[110px]">Created</TableHead>
-                    <TableHead className="text-xs font-medium w-[80px] text-right">Actions</TableHead>
+                  <TableRow>
+                    <TableHead className="w-[110px]">Code</TableHead>
+                    <TableHead>Display Name</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead className="w-[80px] text-right">Leads</TableHead>
+                    <TableHead className="w-[100px]">Status</TableHead>
+                    <TableHead className="w-[110px]">Created</TableHead>
+                    <TableHead className="w-[80px] text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtered.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-8">
+                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                         No partners match your filters.
                       </TableCell>
                     </TableRow>
                   ) : filtered.map((p) => {
                     const isSystem = p.partner_code === "PTR-DIRECT";
                     return (
-                      <TableRow key={p.id} className="hover:bg-muted/20">
-                        <TableCell className="text-sm py-2.5 font-mono text-xs">{p.partner_code}</TableCell>
-                        <TableCell className="text-sm py-2.5">
+                      <TableRow key={p.id}>
+                        <TableCell className="font-mono text-xs">{p.partner_code}</TableCell>
+                        <TableCell>
                           <div className="flex items-center gap-2">
                             <div className="rounded bg-primary/10 p-1.5">
                               {isSystem ? <ShieldCheck className="h-3.5 w-3.5 text-primary" /> : <Building2 className="h-3.5 w-3.5 text-primary" />}
@@ -207,10 +207,10 @@ export default function AdminPartners() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="text-xs py-2.5 capitalize text-muted-foreground">
+                        <TableCell className="capitalize text-muted-foreground">
                           {p.partner_type.replace(/_/g, " ")}
                         </TableCell>
-                        <TableCell className="text-xs py-2.5">
+                        <TableCell>
                           {p.contact_person_email ? (
                             <div className="min-w-0">
                               <p className="truncate">{p.contact_person_name ?? "—"}</p>
@@ -220,20 +220,20 @@ export default function AdminPartners() {
                             <span className="text-muted-foreground">—</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-sm py-2.5 text-right tabular-nums font-medium">
+                        <TableCell className="text-right tabular-nums font-medium">
                           {leadCounts[p.id] ?? 0}
                         </TableCell>
-                        <TableCell className="py-2.5">
-                          <Badge variant="outline" className={`${statusStyles[p.status]} text-[10px] px-1.5 py-0 capitalize`}>
+                        <TableCell>
+                          <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium capitalize ${statusStyles[p.status]}`}>
                             {p.status}
-                          </Badge>
+                          </span>
                         </TableCell>
-                        <TableCell className="text-xs py-2.5 text-muted-foreground">
+                        <TableCell className="text-muted-foreground whitespace-nowrap">
                           {format(new Date(p.created_at), "dd MMM yyyy")}
                         </TableCell>
-                        <TableCell className="py-2.5 text-right">
-                          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => openEdit(p)}>
-                            <Pencil className="h-3.5 w-3.5 mr-1" />Edit
+                        <TableCell className="text-right">
+                          <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => openEdit(p)}>
+                            <Pencil className="h-4 w-4 mr-1.5" />Edit
                           </Button>
                         </TableCell>
                       </TableRow>
