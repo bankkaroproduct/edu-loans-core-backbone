@@ -699,6 +699,8 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
               )}
             </div>
           )}
+          </>
+          )}
         </TabsContent>
 
         {/* ===== HISTORY TAB ===== */}
