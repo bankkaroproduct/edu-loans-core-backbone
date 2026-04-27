@@ -51,6 +51,8 @@ interface Row {
   effective_to: string | null;
 }
 
+type AnyRow = Record<string, any>;
+
 const RowSchema = z.object({
   college_name_raw: z.string(),
   country_raw: z.string(),
@@ -170,7 +172,8 @@ async function handleList(supa: any) {
     .order("lender_name", { ascending: true });
   if (lendersErr) return json({ error: lendersErr.message }, 500);
 
-  const lenderIds = (lenders ?? []).map((l) => l.id);
+  const lenderRows = (lenders ?? []) as AnyRow[];
+  const lenderIds = lenderRows.map((l) => l.id);
   if (lenderIds.length === 0) return json({ rows: [] }, 200);
 
   const { data: currentRows, error: rowsErr } = await supa
@@ -184,7 +187,7 @@ async function handleList(supa: any) {
     string,
     { count: number; latest: string | null; uploadedBy: string | null; version: number | null; fileName: string | null }
   >();
-  for (const r of currentRows ?? []) {
+  for (const r of (currentRows ?? []) as AnyRow[]) {
     const s = stats.get(r.lender_id) ?? {
       count: 0,
       latest: null,
@@ -212,11 +215,11 @@ async function handleList(supa: any) {
       .select("id, full_name, email")
       .in("id", uploaderIds);
     uploaderNames = Object.fromEntries(
-      (us ?? []).map((u) => [u.id as string, (u.full_name as string) || (u.email as string)]),
+      ((us ?? []) as AnyRow[]).map((u) => [u.id as string, (u.full_name as string) || (u.email as string)]),
     );
   }
 
-  const rows = (lenders ?? []).map((l) => {
+  const rows = lenderRows.map((l) => {
     const s = stats.get(l.id);
     return {
       lender_id: l.id,
