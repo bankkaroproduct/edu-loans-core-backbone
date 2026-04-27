@@ -302,6 +302,16 @@ export default function AdminLeads() {
         end.setHours(23, 59, 59, 999);
         q = q.lte("created_at", end.toISOString());
       }
+      // Stale > 48h: keep counts in sync with the table (only when overriding for the
+      // four health cards, the stale gate is intentionally ignored — those tiles always
+      // reflect total/pending/lender/sanction in the current filter, not the stale subset).
+      if (filters.staleOnly && !overrideStage && !overrideStatuses) {
+        const cutoff = new Date(Date.now() - STALE_HOURS * 3600 * 1000).toISOString();
+        q = q
+          .lt("updated_at", cutoff)
+          .not("current_stage", "in", `(${STALE_TERMINAL_STAGES.join(",")})`)
+          .not("current_status", "in", `(${STALE_BLOCKED_STATUSES.join(",")})`);
+      }
       // Apply business bifurcation filters (Source/Type/Entry/Region/Loan/Intake/LoanType)
       q = applyBusinessFilters(q);
       const t = sanitizeSearch(filters.search);
