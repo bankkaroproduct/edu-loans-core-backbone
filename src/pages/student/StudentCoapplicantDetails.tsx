@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { HeartHandshake } from "lucide-react";
-import { CollateralRadio, collateralBoolToState, collateralStateToBool, INCOME_SOURCE_OPTIONS } from "@/components/shared/CollateralRadio";
+import { CollateralRadio, collateralBoolToState, collateralStateToBool } from "@/components/shared/CollateralRadio";
 import { MoneyInput } from "@/components/ui/money-input";
 
 const RELATIONSHIPS = ["Father", "Mother", "Spouse", "Sibling", "Uncle", "Aunt", "Grandparent", "Other"];
