@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { FormSection } from "@/components/shared/FormSection";
 import { PRESET_OPTIONS, type PresetKey } from "@/lib/bre/presets";
 import type { BreProfileInput, BreScoringConfig, EnumBand, ScoringParameter } from "@/lib/bre/types";
 import { Play, RotateCcw } from "lucide-react";
