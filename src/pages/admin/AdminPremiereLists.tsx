@@ -373,16 +373,58 @@ function UploadDialog({
   const [parsed, setParsed] = useState<ParsedRow[] | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Pending mapping confirmation: set when fuzzy (non-exact) header match was used.
+  // Null = no pending confirmation. Holds the workbook rows + mapping until admin confirms.
+  const [pendingMapping, setPendingMapping] = useState<
+    { mapping: HeaderMapping; rawRows: any[] } | null
+  >(null);
+
+  // Convert the workbook rows into ParsedRow[] using the resolved mapping,
+  // then run the >20% failure check and commit to `parsed` state.
+  // Used for both exact-match (auto-proceed) and post-confirmation flows.
+  const finalizeParse = (rawRows: any[], mapping: HeaderMapping) => {
+    const out: ParsedRow[] = [];
+    for (const row of rawRows) {
+      const college = String(row[mapping.collegeHeader] ?? "").trim();
+      const country = String(row[mapping.countryHeader] ?? "").trim();
+      if (!college || !country) continue;
+      out.push({
+        college_name_raw: college,
+        country_raw: country,
+        city: mapping.cityHeader ? stringOrNull(row[mapping.cityHeader]) : null,
+        notes: mapping.notesHeader ? stringOrNull(row[mapping.notesHeader]) : null,
+        // effective_from / effective_to intentionally omitted from admin UI for v1.
+        // DB columns remain nullable; null = always-effective in BRE lookup.
+        effective_from: null,
+        effective_to: null,
+      });
+    }
+    if (out.length === 0) {
+      setParseError("No valid rows after parsing.");
+      return;
+    }
+    const failureRate = (rawRows.length - out.length) / rawRows.length;
+    if (failureRate > 0.2) {
+      setParseError(
+        `Parse failure rate ${(failureRate * 100).toFixed(0)}% exceeds 20%. Fix the file and retry.`,
+      );
+      return;
+    }
+    setParsed(out);
+  };
 
   const handleFile = async (f: File) => {
     setFile(f);
     setParsed(null);
     setParseError(null);
+    setPendingMapping(null);
     if (f.size > 5 * 1024 * 1024) {
       setParseError("File exceeds 5 MB limit.");
       return;
     }
     try {
+      // Single code path for .xlsx AND .csv — XLSX.read auto-detects format from
+      // the file bytes. Header detection + alias mapping below applies uniformly.
       const buf = await f.arrayBuffer();
       const wb = XLSX.read(buf, { type: "array" });
       const sheet = wb.Sheets[wb.SheetNames[0]];
@@ -395,45 +437,35 @@ function UploadDialog({
         setParseError("File exceeds 10,000 row limit.");
         return;
       }
-      const headerKeys = Object.keys(rows[0]).map((h) => h.toLowerCase().trim());
-      const missing = REQUIRED_COLS.filter(
-        (c) => !headerKeys.some((h) => h === c || h.includes(c)),
-      );
-      if (missing.length > 0) {
-        setParseError(`Missing required columns: ${missing.join(", ")}`);
+      const headers = Object.keys(rows[0]);
+      const result = detectMapping(headers);
+      if ("error" in result) {
+        setParseError(result.error);
         return;
       }
-      const out: ParsedRow[] = [];
-      for (const row of rows) {
-        const lc: Record<string, any> = {};
-        for (const k of Object.keys(row)) lc[k.toLowerCase().trim()] = row[k];
-        const college = String(lc["college name"] ?? lc["college"] ?? "").trim();
-        const country = String(lc["country"] ?? "").trim();
-        if (!college || !country) continue;
-        out.push({
-          college_name_raw: college,
-          country_raw: country,
-          city: stringOrNull(lc["city"]),
-          notes: stringOrNull(lc["notes"]),
-          effective_from: stringOrNull(lc["effective from"] ?? lc["effective_from"]),
-          effective_to: stringOrNull(lc["effective to"] ?? lc["effective_to"]),
-        });
+      if (result.isExact) {
+        // No friction — proceed straight to validation
+        finalizeParse(rows, result);
+      } else {
+        // Show confirmation panel before validating
+        setPendingMapping({ mapping: result, rawRows: rows });
       }
-      if (out.length === 0) {
-        setParseError("No valid rows after parsing.");
-        return;
-      }
-      const failureRate = (rows.length - out.length) / rows.length;
-      if (failureRate > 0.2) {
-        setParseError(
-          `Parse failure rate ${(failureRate * 100).toFixed(0)}% exceeds 20%. Fix the file and retry.`,
-        );
-        return;
-      }
-      setParsed(out);
     } catch (e: any) {
       setParseError(e?.message ?? "Failed to parse file.");
     }
+  };
+
+  const confirmMapping = () => {
+    if (!pendingMapping) return;
+    const { rawRows, mapping } = pendingMapping;
+    setPendingMapping(null);
+    finalizeParse(rawRows, mapping);
+  };
+
+  const cancelMapping = () => {
+    setPendingMapping(null);
+    setFile(null);
+    setParsed(null);
   };
 
   const submit = async () => {
@@ -471,8 +503,8 @@ function UploadDialog({
           <DialogTitle>Upload Premiere List — {lender.lender_name}</DialogTitle>
           <DialogDescription>
             Accepts <code>.xlsx</code> or <code>.csv</code>. Required columns:{" "}
-            <code>College Name</code>, <code>Country</code>. Optional: City, Notes,
-            Effective From, Effective To. Replaces the current list.
+            <code>College Name</code>, <code>Country</code>. Optional: City, Notes.
+            Replaces the current list.
           </DialogDescription>
         </DialogHeader>
 
@@ -488,6 +520,44 @@ function UploadDialog({
           {parseError && (
             <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {parseError}
+            </div>
+          )}
+          {pendingMapping && (
+            <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-3 text-sm">
+              <div className="font-medium mb-2">Confirm column mapping</div>
+              <div className="text-muted-foreground mb-2">
+                Detected columns from your file:
+              </div>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>
+                  <code>'{pendingMapping.mapping.collegeHeader}'</code> → will be
+                  treated as <code>'College Name'</code>
+                </li>
+                <li>
+                  <code>'{pendingMapping.mapping.countryHeader}'</code> → will be
+                  treated as <code>'Country'</code>
+                </li>
+                {pendingMapping.mapping.cityHeader && (
+                  <li>
+                    <code>'{pendingMapping.mapping.cityHeader}'</code> → will be
+                    treated as <code>'City'</code>
+                  </li>
+                )}
+                {pendingMapping.mapping.notesHeader && (
+                  <li>
+                    <code>'{pendingMapping.mapping.notesHeader}'</code> → will be
+                    treated as <code>'Notes'</code>
+                  </li>
+                )}
+              </ul>
+              <div className="mt-3 flex gap-2">
+                <Button size="sm" onClick={confirmMapping}>
+                  Confirm
+                </Button>
+                <Button size="sm" variant="outline" onClick={cancelMapping}>
+                  Cancel
+                </Button>
+              </div>
             </div>
           )}
           {parsed && (
