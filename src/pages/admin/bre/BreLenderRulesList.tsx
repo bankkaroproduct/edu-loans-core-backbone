@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { SemanticBadge } from "@/components/dashboard/StageBadge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -122,16 +123,16 @@ export default function BreLenderRulesList() {
                           <div className="font-medium">{r.basic_info?.lender_name ?? "—"}</div>
                           <div className="text-xs text-muted-foreground font-mono">{r.basic_info?.lender_code ?? "—"}</div>
                         </TableCell>
-                        <TableCell className="text-sm">{r.basic_info?.lender_type ?? "—"}</TableCell>
+                        <TableCell>{r.basic_info?.lender_type ?? "—"}</TableCell>
                         <TableCell>
                           <Badge variant="secondary">v{r.version_number}</Badge>
                         </TableCell>
-                        <TableCell className="text-sm tabular-nums">
+                        <TableCell className="tabular-nums">
                           {min !== null && max !== null
                             ? `${formatLakhs(min)} – ${formatLakhs(max)}`
                             : "—"}
                         </TableCell>
-                        <TableCell className="text-xs">
+                        <TableCell>
                           {countries.length === 0 ? (
                             <span className="text-muted-foreground">—</span>
                           ) : countries.length <= 4 ? (
@@ -140,24 +141,24 @@ export default function BreLenderRulesList() {
                             <span title={countries.join(", ")}>{countries.slice(0, 4).join(", ")} +{countries.length - 4}</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-sm tabular-nums">{r.policy?.processing_time_days ?? "—"}</TableCell>
+                        <TableCell className="tabular-nums">{r.policy?.processing_time_days ?? "—"}</TableCell>
                         <TableCell>
                           {r.basic_info?.active_flag === false ? (
-                            <Badge variant="outline" className="bg-muted">Inactive</Badge>
+                            <SemanticBadge tone="slate">Inactive</SemanticBadge>
                           ) : (
-                            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-300">Active</Badge>
+                            <SemanticBadge tone="emerald">Active</SemanticBadge>
                           )}
                         </TableCell>
                         <TableCell className="text-right">
                           {canEdit ? (
-                            <Button asChild size="sm" variant="ghost">
+                            <Button asChild size="sm" variant="ghost" className="h-8">
                               <Link to={`/admin/bre/lenders/${r.lender_id}`}>
-                                <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
+                                <Pencil className="h-4 w-4 mr-1.5" /> Edit
                               </Link>
                             </Button>
                           ) : (
-                            <Button size="sm" variant="ghost" disabled title="Read-only — your BRE permission is read">
-                              <Lock className="h-3.5 w-3.5 mr-1" /> View only
+                            <Button size="sm" variant="ghost" className="h-8" disabled title="Read-only — your BRE permission is read">
+                              <Lock className="h-4 w-4 mr-1.5" /> View only
                             </Button>
                           )}
                         </TableCell>

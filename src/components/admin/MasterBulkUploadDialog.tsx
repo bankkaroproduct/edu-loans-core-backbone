@@ -390,23 +390,23 @@ export function MasterBulkUploadDialog({ open, onOpenChange, masterKey, onComple
               <div className="border rounded-md max-h-[300px] overflow-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-muted/40">
-                      <TableHead className="text-xs w-[60px]">Row</TableHead>
-                      <TableHead className="text-xs w-[100px]">Status</TableHead>
-                      <TableHead className="text-xs">Preview</TableHead>
+                    <TableRow>
+                      <TableHead className="w-[60px]">Row</TableHead>
+                      <TableHead className="w-[100px]">Status</TableHead>
+                      <TableHead>Preview</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {preview.slice(0, 50).map((r) => (
                       <TableRow key={r.num}>
-                        <TableCell className="text-xs py-1.5">{r.num}</TableCell>
-                        <TableCell className="py-1.5">
+                        <TableCell className="tabular-nums">{r.num}</TableCell>
+                        <TableCell>
                           {r.status === "new" && <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] px-1.5 py-0">NEW</Badge>}
                           {r.status === "exists" && <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] px-1.5 py-0">{spec.mode === "upsert" ? "UPDATE" : "SKIP"}</Badge>}
-                          {r.status === "invalid" && <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 text-[10px] px-1.5 py-0">INVALID</Badge>}
+                          {r.status === "invalid" && <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-[10px] px-1.5 py-0">INVALID</Badge>}
                         </TableCell>
-                        <TableCell className="text-xs py-1.5 font-mono truncate max-w-[400px]">
-                          {r.error ? <span className="text-rose-600">{r.error}</span> : JSON.stringify(r.data).slice(0, 120)}
+                        <TableCell className="text-xs font-mono truncate max-w-[400px]">
+                          {r.error ? <span className="text-red-700">{r.error}</span> : JSON.stringify(r.data).slice(0, 120)}
                         </TableCell>
                       </TableRow>
                     ))}

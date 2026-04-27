@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { SemanticBadge } from "@/components/dashboard/StageBadge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -140,28 +141,29 @@ export default function BreVersionHistory() {
                       <TableCell><Badge variant="secondary">v{c.version_number}</Badge></TableCell>
                       <TableCell>
                         {c.is_active ? (
-                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-300">Active</Badge>
+                          <SemanticBadge tone="emerald">Active</SemanticBadge>
                         ) : (
-                          <Badge variant="outline" className="bg-muted">Archived</Badge>
+                          <SemanticBadge tone="slate">Archived</SemanticBadge>
                         )}
                       </TableCell>
                       <TableCell className="tabular-nums">{c.bucket_threshold}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleString()}</TableCell>
-                      <TableCell className="text-sm">{c.change_summary ?? "—"}</TableCell>
+                      <TableCell className="text-muted-foreground whitespace-nowrap">{new Date(c.created_at).toLocaleString()}</TableCell>
+                      <TableCell>{c.change_summary ?? "—"}</TableCell>
                       <TableCell className="text-right">
                         {canEdit ? (
                           <Button
                             size="sm"
                             variant="ghost"
+                            className="h-8"
                             onClick={() => setRollbackTarget({ kind: "scoring", id: c.id, version: c.version_number })}
                             disabled={c.is_active}
                             title={c.is_active ? "Already active — nothing to roll back to" : "Clone this version into a new inactive version"}
                           >
-                            <ArrowDownToLine className="h-3.5 w-3.5 mr-1" /> Rollback
+                            <ArrowDownToLine className="h-4 w-4 mr-1.5" /> Rollback
                           </Button>
                         ) : (
-                          <Button size="sm" variant="ghost" disabled title="Read-only — your BRE permission is read">
-                            <Lock className="h-3.5 w-3.5 mr-1" /> Rollback
+                          <Button size="sm" variant="ghost" className="h-8" disabled title="Read-only — your BRE permission is read">
+                            <Lock className="h-4 w-4 mr-1.5" /> Rollback
                           </Button>
                         )}
                       </TableCell>
@@ -206,27 +208,28 @@ export default function BreVersionHistory() {
                       <TableCell><Badge variant="secondary">v{r.version_number}</Badge></TableCell>
                       <TableCell>
                         {r.is_active ? (
-                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-300">Active</Badge>
+                          <SemanticBadge tone="emerald">Active</SemanticBadge>
                         ) : (
-                          <Badge variant="outline" className="bg-muted">Archived</Badge>
+                          <SemanticBadge tone="slate">Archived</SemanticBadge>
                         )}
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString()}</TableCell>
-                      <TableCell className="text-sm">{r.change_summary ?? "—"}</TableCell>
+                      <TableCell className="text-muted-foreground whitespace-nowrap">{new Date(r.created_at).toLocaleString()}</TableCell>
+                      <TableCell>{r.change_summary ?? "—"}</TableCell>
                       <TableCell className="text-right">
                         {canEdit ? (
                           <Button
                             size="sm"
                             variant="ghost"
+                            className="h-8"
                             onClick={() => setRollbackTarget({ kind: "lender", id: r.id, version: r.version_number, lenderName: r.basic_info?.lender_name ?? "—" })}
                             disabled={r.is_active}
                             title={r.is_active ? "Already active — nothing to roll back to" : "Clone this version into a new inactive version for this lender"}
                           >
-                            <ArrowDownToLine className="h-3.5 w-3.5 mr-1" /> Rollback
+                            <ArrowDownToLine className="h-4 w-4 mr-1.5" /> Rollback
                           </Button>
                         ) : (
-                          <Button size="sm" variant="ghost" disabled title="Read-only — your BRE permission is read">
-                            <Lock className="h-3.5 w-3.5 mr-1" /> Rollback
+                          <Button size="sm" variant="ghost" className="h-8" disabled title="Read-only — your BRE permission is read">
+                            <Lock className="h-4 w-4 mr-1.5" /> Rollback
                           </Button>
                         )}
                       </TableCell>

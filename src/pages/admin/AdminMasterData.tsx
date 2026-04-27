@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { SemanticBadge } from "@/components/dashboard/StageBadge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -241,49 +242,49 @@ function MasterDataTable({ schema, bulkUploadEnabled }: { schema: MasterSchema; 
             <div className="border rounded-md overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted/40">
+                  <TableRow>
                     {schema.columns.map((c) => (
-                      <TableHead key={c.key} className="text-xs font-medium">{c.label}</TableHead>
+                      <TableHead key={c.key}>{c.label}</TableHead>
                     ))}
-                    <TableHead className="text-xs font-medium w-[100px]">Status</TableHead>
-                    <TableHead className="text-xs font-medium w-[140px] text-right">Actions</TableHead>
+                    <TableHead className="w-[100px]">Status</TableHead>
+                    <TableHead className="w-[100px] text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtered.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={schema.columns.length + 2} className="text-center text-sm text-muted-foreground py-8">
+                      <TableCell colSpan={schema.columns.length + 2} className="text-center text-muted-foreground py-8">
                         No records match your filters.
                       </TableCell>
                     </TableRow>
                   ) : (
                     filtered.map((row) => (
-                      <TableRow key={row.id} className="hover:bg-muted/20">
+                      <TableRow key={row.id}>
                         {schema.columns.map((c) => (
-                          <TableCell key={c.key} className="text-sm py-2.5">
+                          <TableCell key={c.key}>
                             {renderCell(row[c.key], c.render)}
                           </TableCell>
                         ))}
-                        <TableCell className="py-2.5">
+                        <TableCell>
                           {row.active_flag ? (
-                            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] px-1.5 py-0">Active</Badge>
+                            <SemanticBadge tone="emerald">Active</SemanticBadge>
                           ) : (
-                            <Badge variant="outline" className="bg-slate-100 text-slate-600 border-slate-200 text-[10px] px-1.5 py-0">Inactive</Badge>
+                            <SemanticBadge tone="slate">Inactive</SemanticBadge>
                           )}
                         </TableCell>
-                        <TableCell className="py-2.5 text-right">
+                        <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => openEdit(row)}>
-                              <Pencil className="h-3.5 w-3.5 mr-1" />Edit
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => openEdit(row)} title="Edit">
+                              <Pencil className="h-4 w-4" />
                             </Button>
                             <Button
-                              size="sm"
+                              size="icon"
                               variant="ghost"
-                              className="h-7 px-2"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
                               onClick={() => handleToggleActive(row)}
                               title={row.active_flag ? "Deactivate" : "Activate"}
                             >
-                              <Power className="h-3.5 w-3.5" />
+                              <Power className="h-4 w-4" />
                             </Button>
                           </div>
                         </TableCell>

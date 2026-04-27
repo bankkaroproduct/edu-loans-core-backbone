@@ -100,15 +100,15 @@ export default function BreAuditLog() {
                 <TableBody>
                   {filtered.map((r) => (
                     <TableRow key={r.id}>
-                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                      <TableCell className="text-muted-foreground whitespace-nowrap">
                         {new Date(r.created_at).toLocaleString()}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="font-mono text-[10px]">{r.entity_type}</Badge>
                       </TableCell>
-                      <TableCell className="text-sm font-medium">{r.action_type}</TableCell>
-                      <TableCell className="text-xs">{r.actor_role ?? "—"}</TableCell>
-                      <TableCell className="text-xs font-mono text-muted-foreground">{r.entity_id?.slice(0, 8) ?? "—"}…</TableCell>
+                      <TableCell className="font-medium">{r.action_type}</TableCell>
+                      <TableCell>{r.actor_role ?? "—"}</TableCell>
+                      <TableCell className="font-mono text-muted-foreground">{r.entity_id?.slice(0, 8) ?? "—"}…</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

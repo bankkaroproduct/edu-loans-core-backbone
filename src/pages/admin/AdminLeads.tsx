@@ -518,14 +518,14 @@ export default function AdminLeads() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
                             title="Edit lead"
                             onClick={(e) => {
                               e.stopPropagation();
                               navigate(`/admin/leads/new?edit=${r.id}`);
                             }}
                           >
-                            <Pencil className="h-3.5 w-3.5" />
+                            <Pencil className="h-4 w-4" />
                           </Button>
                         </TableCell>
                       </TableRow>
