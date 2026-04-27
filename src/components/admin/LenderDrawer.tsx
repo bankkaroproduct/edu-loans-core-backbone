@@ -143,8 +143,7 @@ export function LenderDrawer({ open, onOpenChange, record, onSaved }: Props) {
 
         <div className="space-y-6 py-4">
           {/* Identity */}
-          <section className="space-y-3">
-            <SectionHeader title="Identity" />
+          <FormSection title="Identity">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs flex items-center gap-1">
@@ -173,11 +172,13 @@ export function LenderDrawer({ open, onOpenChange, record, onSaved }: Props) {
               </div>
               <Switch checked={form.active_flag} onCheckedChange={(v) => setField("active_flag", v)} />
             </div>
-          </section>
+          </FormSection>
 
           {/* Loan Coverage */}
-          <section className="space-y-3">
-            <SectionHeader title="Loan Coverage" hint="Drives BRE matching" />
+          <FormSection
+            title="Loan Coverage"
+            actions={<span className="text-[10px] text-muted-foreground">Drives BRE matching</span>}
+          >
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Min Loan (₹)</Label>
@@ -218,11 +219,10 @@ export function LenderDrawer({ open, onOpenChange, record, onSaved }: Props) {
                 <p className="text-[10px] text-muted-foreground">Only relevant for unsecured underwriting.</p>
               </div>
             )}
-          </section>
+          </FormSection>
 
           {/* Eligibility */}
-          <section className="space-y-3">
-            <SectionHeader title="Eligibility" />
+          <FormSection title="Eligibility">
             <div>
               <Label className="text-xs">Supported Countries (ISO) *</Label>
               <div className="flex gap-2 mt-1.5">
@@ -248,18 +248,20 @@ export function LenderDrawer({ open, onOpenChange, record, onSaved }: Props) {
               </div>
               <p className="text-[10px] text-muted-foreground mt-1">At least one country required.</p>
             </div>
-          </section>
+          </FormSection>
 
           {/* Internal Notes */}
-          <section className="space-y-2">
-            <SectionHeader title="Internal Notes" hint="Ops only — not shown to partners" />
+          <FormSection
+            title="Internal Notes"
+            actions={<span className="text-[10px] text-muted-foreground">Ops only — not shown to partners</span>}
+          >
             <Textarea
               value={form.internal_notes}
               onChange={(e) => setField("internal_notes", e.target.value)}
               placeholder="Escalation contacts, special conditions, ops context…"
               rows={3}
             />
-          </section>
+          </FormSection>
         </div>
 
         <SheetFooter className="gap-2">
