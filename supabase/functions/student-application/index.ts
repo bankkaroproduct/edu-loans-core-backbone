@@ -599,7 +599,8 @@ Deno.serve(async (req) => {
 
     return jsonResponse({ error: "Invalid action" }, 400);
   } catch (err) {
-    return jsonResponse({ error: err.message || "Internal error" }, 500);
+    const message = err instanceof Error ? err.message : String(err || "Internal error");
+    return jsonResponse({ error: message }, 500);
   }
 });
 
@@ -730,7 +731,8 @@ async function handleUploadDocument(req: Request, supabaseAdmin: any) {
       soft_block,
     });
   } catch (err) {
-    return jsonResponse({ error: err.message || "Upload error" }, 500);
+    const message = err instanceof Error ? err.message : String(err || "Upload error");
+    return jsonResponse({ error: message }, 500);
   }
 }
 
