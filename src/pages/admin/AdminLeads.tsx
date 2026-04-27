@@ -92,6 +92,7 @@ export default function AdminLeads() {
     loanRange: (searchParams.get("loan") as any) ?? "all",
     intake: (searchParams.get("intake") as any) ?? "all",
     loanType: (searchParams.get("loantype") as any) ?? "all",
+    staleOnly: searchParams.get("stale") === "1",
   }), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [filters, setFilters] = useState<AdminLeadFilterState>(initialFilters);
