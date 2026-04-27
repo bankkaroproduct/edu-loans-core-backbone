@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { HeartHandshake } from "lucide-react";
-import { CollateralRadio, collateralBoolToState, collateralStateToBool, INCOME_SOURCE_OPTIONS } from "@/components/shared/CollateralRadio";
+import { CollateralRadio, collateralBoolToState, collateralStateToBool } from "@/components/shared/CollateralRadio";
 import { MoneyInput } from "@/components/ui/money-input";
 
 const RELATIONSHIPS = ["Father", "Mother", "Spouse", "Sibling", "Uncle", "Aunt", "Grandparent", "Other"];
@@ -121,16 +121,8 @@ export default function StudentCoapplicantDetails() {
         <CardContent className="p-5 sm:p-6">
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Financial Profile</h2>
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label>Income Source</Label>
-              <Select
-                value={(formData as unknown as { coapplicant_income_source?: string }).coapplicant_income_source ?? ""}
-                onValueChange={v => updateField("coapplicant_income_source" as never, v as never)}
-              >
-                <SelectTrigger><SelectValue placeholder="Select source" /></SelectTrigger>
-                <SelectContent>{INCOME_SOURCE_OPTIONS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
+            {/* Income Source field removed from UI per scoped form-fix pass.
+                Existing `coapplicant_income_source` values in storage remain untouched. */}
             <div className="space-y-1.5">
               <Label>Employment Type</Label>
               <Select value={formData.coapplicant_employment_type} onValueChange={v => updateField("coapplicant_employment_type", v)}>

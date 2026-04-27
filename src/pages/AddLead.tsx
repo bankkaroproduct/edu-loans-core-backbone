@@ -29,7 +29,7 @@ import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { computeAdminDiff, getAdminFieldLabel } from "@/lib/adminEditableFields";
 import { MoneyInput } from "@/components/ui/money-input";
 import { MasterCombobox, type MasterOption } from "@/components/ui/master-combobox";
-import { CollateralRadio, collateralBoolToState, collateralStateToBool, INCOME_SOURCE_OPTIONS, type CollateralState } from "@/components/shared/CollateralRadio";
+import { CollateralRadio, collateralBoolToState, collateralStateToBool, type CollateralState } from "@/components/shared/CollateralRadio";
 import { usePincodeLookup } from "@/hooks/usePincodeLookup";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -468,7 +468,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       if (!form.coapplicant_name.trim()) return { message: "Co-applicant name is required", step: "financial", field: "coapplicant_name" };
       if (!form.coapplicant_mobile.trim()) return { message: "Co-applicant mobile is required", step: "financial", field: "coapplicant_mobile" };
       if (!isValidIndianPhone(form.coapplicant_mobile)) return { message: "Co-applicant mobile must be a valid 10-digit Indian number", step: "financial", field: "coapplicant_mobile" };
-      if (!form.coapplicant_income_source) return { message: "Income source is required", step: "financial", field: "coapplicant_income_source" };
+      // NOTE: coapplicant_income_source removed from UI per scoped form-fix pass.
+      // Existing DB values are preserved on save; the field is no longer captured.
       if (!form.coapplicant_employment_type) return { message: "Employment type is required", step: "financial", field: "coapplicant_employment_type" };
       if (!form.coapplicant_employer.trim()) return { message: "Employer / occupation is required", step: "financial", field: "coapplicant_employer" };
       if (!form.coapplicant_income || Number(form.coapplicant_income) <= 0)
@@ -479,6 +480,27 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
 
     if (!effectivePartnerId) return { message: "No partner organization found for your account. Admins can use 'Test as Partner' in the sidebar.", step: stepIds[0] };
     return null;
+  };
+
+  /**
+   * Per-step required-field gate used by Next buttons.
+   * Reuses `validate(false)` and only flags failures that belong to the CURRENT step.
+   * - Save as Draft must remain lenient: callers MUST NOT invoke this for draft saves.
+   * - Submit on the Review step is still gated by the existing full `validate()` call
+   *   inside `handleSubmit`.
+   */
+  const guardStep = (step: StepId): boolean => {
+    const failure = validate(false);
+    if (failure && failure.step === step) {
+      toast.error(failure.message);
+      goToFieldAndFocus(failure.step, failure.field);
+      return false;
+    }
+    return true;
+  };
+  const goNextFrom = (current: StepId, target: StepId) => {
+    if (!guardStep(current)) return;
+    goToStep(target);
   };
 
   // Helper used by review-step nudges: jump to a step and try to focus the missing field.
@@ -701,12 +723,20 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       }
       if (!hasDuplicateWarning) delete updatePayload.duplicate_flag;
 
-      // Admin-edit only: persist partner reassignment if changed.
-      // When the partner org changes, also clear partner_user_id so we don't
-      // leak the old org's user attribution onto the new org.
-      if (isAdminForm && isEditMode && partnerIdAssignment && partnerIdAssignment !== originalPartnerId) {
-        updatePayload.partner_id = partnerIdAssignment;
-        updatePayload.partner_user_id = null;
+      // Admin-edit only: ALWAYS write partner_id back so the assignment persists across
+      // save → refresh → reopen edit. Sourced from the picker, falling back to the
+      // hydrated original so we never accidentally null out a partner. We only skip
+      // when the partners list hasn't loaded yet (avoids racing with hydration).
+      if (isAdminForm && isEditMode && partnersList.length > 0) {
+        const targetPartnerId = partnerIdAssignment || originalPartnerId || null;
+        if (targetPartnerId) {
+          updatePayload.partner_id = targetPartnerId;
+          // If the partner ORG changed, drop the old org's user attribution so it
+          // doesn't leak across organizations.
+          if (targetPartnerId !== originalPartnerId) {
+            updatePayload.partner_user_id = null;
+          }
+        }
       }
       const { data, error } = await supabase
         .from("student_leads")
@@ -763,6 +793,12 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       setCreatedLeadDisplayId(displayIdResult.displayId);
       setIsDraftSuccess(asDraft);
       setIsDirty(false);
+      // Re-anchor the original partner id so subsequent saves in the same
+      // session compute the change-correctly and the UI reflects persisted state.
+      if (isAdminForm && isEditMode && updateTargetId) {
+        const persistedPartnerId = partnerIdAssignment || originalPartnerId || null;
+        if (persistedPartnerId) setOriginalPartnerId(persistedPartnerId);
+      }
       setShowSuccess(true);
     }
 
@@ -901,7 +937,12 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               </div>
               <div className="space-y-2">
                 <Label>Mobile Number *</Label>
-                <Input value={form.student_phone} onChange={(e) => set("student_phone", e.target.value)} placeholder="+91 9876543210" />
+                <Input
+                  value={form.student_phone}
+                  onChange={(e) => set("student_phone", e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  placeholder="10-digit mobile (without +91)"
+                  inputMode="numeric"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Email</Label>
@@ -926,8 +967,9 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 </div>
                 <Input
                   value={form.whatsapp_same_as_phone ? form.student_phone : form.student_whatsapp}
-                  onChange={(e) => set("student_whatsapp", e.target.value)}
-                  placeholder="WhatsApp number"
+                  onChange={(e) => set("student_whatsapp", e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  placeholder="10-digit WhatsApp number"
+                  inputMode="numeric"
                   disabled={form.whatsapp_same_as_phone}
                   className={form.whatsapp_same_as_phone ? "bg-muted" : ""}
                 />
@@ -973,7 +1015,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
             </CardContent>
           </Card>
           <div className="flex justify-end mt-4">
-            <Button onClick={() => goToStep("study")}>Next: Study Intent →</Button>
+            <Button onClick={() => goNextFrom("student", "study")}>Next: Study Intent →</Button>
           </div>
         </TabsContent>
 
@@ -1156,7 +1198,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
 
           <div className="flex justify-between mt-4">
             <Button variant="outline" onClick={() => goToStep("student")}>← Student Details</Button>
-            <Button onClick={() => goToStep(studyNextTarget)}>
+            <Button onClick={() => goNextFrom("study", studyNextTarget)}>
               Next: {studyNextTarget === "financial" ? "Financial Info" : "Notes"} →
             </Button>
           </div>
@@ -1179,7 +1221,12 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               </div>
               <div className="space-y-2" data-field="coapplicant_mobile">
                 <Label>Co-Applicant Mobile *</Label>
-                <Input value={form.coapplicant_mobile} onChange={(e) => set("coapplicant_mobile", e.target.value)} placeholder="+91 9876543210" />
+                <Input
+                  value={form.coapplicant_mobile}
+                  onChange={(e) => set("coapplicant_mobile", e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  placeholder="10-digit mobile (without +91)"
+                  inputMode="numeric"
+                />
                 <p className="text-xs text-muted-foreground">Number as per Aadhaar and Passport</p>
               </div>
               <div className="space-y-2" data-field="coapplicant_relation">
@@ -1193,17 +1240,9 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2" data-field="coapplicant_income_source">
-                <Label>Income Source *</Label>
-                <Select value={form.coapplicant_income_source} onValueChange={(v) => set("coapplicant_income_source", v)}>
-                  <SelectTrigger><SelectValue placeholder="Select income source" /></SelectTrigger>
-                  <SelectContent>
-                    {INCOME_SOURCE_OPTIONS.map((o) => (
-                      <SelectItem key={o} value={o}>{o}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Income Source field removed from UI per scoped form-fix pass.
+                  Existing DB values are preserved on save (form state still hydrates +
+                  writes the value back) so legacy records are not wiped. */}
               <div className="space-y-2" data-field="coapplicant_employment_type">
                 <Label>Employment Type *</Label>
                 <Select value={form.coapplicant_employment_type} onValueChange={(v) => set("coapplicant_employment_type", v)}>
@@ -1240,7 +1279,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
           </Card>
           <div className="flex justify-between mt-4">
             <Button variant="outline" onClick={() => goToStep("study")}>← Study Intent</Button>
-            <Button onClick={() => goToStep("notes")}>Next: Notes →</Button>
+            <Button onClick={() => goNextFrom("financial", "notes")}>Next: Notes →</Button>
           </div>
         </TabsContent>
 
@@ -1260,7 +1299,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
             <Button variant="outline" onClick={() => goToStep(notesBackTarget)}>
               ← {notesBackTarget === "financial" ? "Financial Info" : "Study Intent"}
             </Button>
-            <Button onClick={() => goToStep(notesNextTarget)}>
+            <Button onClick={() => goNextFrom("notes", notesNextTarget)}>
               Next: {notesNextTarget === "assign" ? "Assign to Partner" : "Review & Submit"} →
             </Button>
           </div>
@@ -1347,7 +1386,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
             </Card>
             <div className="flex justify-between mt-4">
               <Button variant="outline" onClick={() => goToStep("notes")}>← Notes</Button>
-              <Button onClick={() => goToStep("review")}>Next: Review & Submit →</Button>
+              <Button onClick={() => goNextFrom("assign", "review")}>Next: Review & Submit →</Button>
             </div>
           </TabsContent>
         )}
@@ -1404,7 +1443,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 <ReviewRow label="Co-Applicant Name" value={form.coapplicant_name} nudgeStep="financial" nudgeField="coapplicant_name" />
                 <ReviewRow label="Mobile Number" value={form.coapplicant_mobile} nudgeStep="financial" nudgeField="coapplicant_mobile" />
                 <ReviewRow label="Relation" value={form.coapplicant_relation} />
-                <ReviewRow label="Income Source" value={form.coapplicant_income_source} nudgeStep="financial" nudgeField="coapplicant_income_source" />
+                {/* Income Source review row removed — field no longer captured in UI. */}
                 <ReviewRow label="Employment Type" value={form.coapplicant_employment_type} nudgeStep="financial" nudgeField="coapplicant_employment_type" />
                 <ReviewRow label="Employer / Occupation" value={form.coapplicant_employer} nudgeStep="financial" nudgeField="coapplicant_employer" />
                 <ReviewRow
