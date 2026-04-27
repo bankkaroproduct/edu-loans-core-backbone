@@ -454,6 +454,10 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
 
         {/* ===== UPLOAD TAB ===== */}
         <TabsContent value="upload" className="space-y-4">
+          {blockNewUpload ? (
+            <PartnerInactiveNotice surface="bulk_upload" />
+          ) : (
+          <>
 
           {/* ── Instructions & Template Guide ── */}
           <Card>
