@@ -8,28 +8,41 @@ export type LeadStatus = Database["public"]["Enums"]["lead_status_enum"];
 
 export const TERMINAL_STAGES: LeadStage[] = ["disbursed", "rejected", "dropped"];
 
+// Operationally meaningful operational stages an admin can jump a lead to
+// from any non-terminal source (skip-ahead allowed; reverse to draft/submitted is not).
+// Reason / override guardrails for on_hold/rejected/dropped/documents_pending and
+// for bre_evaluated / disbursed remain enforced at the dialog + RPC layer.
+const OPERATIONAL_TARGETS: LeadStage[] = [
+  "under_initial_review",
+  "documents_pending",
+  "documents_under_review",
+  "bre_evaluated",
+  "sent_to_lender",
+  "login_submitted",
+  "credit_query",
+  "sanction_received",
+  "disbursed",
+  "on_hold",
+  "rejected",
+  "dropped",
+];
+
+function targetsFor(current: LeadStage): LeadStage[] {
+  return OPERATIONAL_TARGETS.filter((t) => t !== current);
+}
+
 export const ALLOWED_TRANSITIONS: Record<LeadStage, LeadStage[]> = {
   draft: [], // partner-owned, admin cannot transition
-  submitted: ["under_initial_review", "on_hold", "rejected", "dropped"],
-  under_initial_review: ["documents_pending", "bre_evaluated", "on_hold", "rejected", "dropped"],
-  documents_pending: ["documents_under_review", "on_hold", "rejected", "dropped"],
-  documents_under_review: ["bre_evaluated", "documents_pending", "on_hold", "rejected", "dropped"],
-  bre_evaluated: ["sent_to_lender", "on_hold", "rejected", "dropped"],
-  sent_to_lender: ["login_submitted", "credit_query", "on_hold", "rejected", "dropped"],
-  login_submitted: ["credit_query", "sanction_received", "on_hold", "rejected", "dropped"],
-  credit_query: ["sanction_received", "sent_to_lender", "rejected", "dropped", "on_hold"],
-  sanction_received: ["disbursed", "rejected", "dropped", "on_hold"],
-  on_hold: [
-    "submitted",
-    "under_initial_review",
-    "documents_pending",
-    "documents_under_review",
-    "bre_evaluated",
-    "sent_to_lender",
-    "login_submitted",
-    "credit_query",
-    "sanction_received",
-  ],
+  submitted: targetsFor("submitted"),
+  under_initial_review: targetsFor("under_initial_review"),
+  documents_pending: targetsFor("documents_pending"),
+  documents_under_review: targetsFor("documents_under_review"),
+  bre_evaluated: targetsFor("bre_evaluated"),
+  sent_to_lender: targetsFor("sent_to_lender"),
+  login_submitted: targetsFor("login_submitted"),
+  credit_query: targetsFor("credit_query"),
+  sanction_received: targetsFor("sanction_received"),
+  on_hold: targetsFor("on_hold"),
   disbursed: [],
   rejected: [],
   dropped: [],
