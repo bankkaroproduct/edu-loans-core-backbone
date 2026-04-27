@@ -261,8 +261,10 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
   else if (!master.intakeTerms.includes(intakeTerm.toLowerCase())) errors.push(`Intake term "${intakeTerm}" not found in master data`);
 
   const intakeYear = parseInt(intakeYearStr, 10);
+  const currentYear = new Date().getFullYear();
   if (!intakeYearStr) errors.push("intake_year is required");
   else if (isNaN(intakeYear) || intakeYear < 2020 || intakeYear > 2035) errors.push("intake_year must be a valid year (2020-2035)");
+  else if (intakeYear < currentYear) errors.push(`intake_year ${intakeYear} is in the past — only ${currentYear} or later is accepted`);
 
   if (!courseName) errors.push("course_name is required");
   if (!loanStr) errors.push("loan_amount_required is required");
