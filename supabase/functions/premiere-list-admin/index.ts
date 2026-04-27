@@ -297,20 +297,21 @@ async function handleAudit(
   const { data, error } = await q;
   if (error) return json({ error: error.message }, 500);
 
+  const auditRows = (data ?? []) as AnyRow[];
   const actorIds = Array.from(
-    new Set(((data ?? []).map((r) => r.actor_user_id).filter(Boolean)) as string[]),
+    new Set((auditRows.map((r) => r.actor_user_id).filter(Boolean)) as string[]),
   );
   let actors: Record<string, string> = {};
   if (actorIds.length > 0) {
     const { data: us } = await supa
       .from("users").select("id, full_name, email").in("id", actorIds);
     actors = Object.fromEntries(
-      (us ?? []).map((u) => [u.id as string, (u.full_name as string) || (u.email as string)]),
+      ((us ?? []) as AnyRow[]).map((u) => [u.id as string, (u.full_name as string) || (u.email as string)]),
     );
   }
 
   return json({
-    rows: (data ?? []).map((r) => ({
+    rows: auditRows.map((r) => ({
       ...r,
       actor_name: r.actor_user_id ? actors[r.actor_user_id as string] ?? null : null,
     })),
@@ -384,8 +385,8 @@ async function handleUpload(
     .from("country_aliases")
     .select("alias_lower, canonical_name");
   if (aliasErr) return json({ error: aliasErr.message }, 500);
-  const aliasMap = new Map(
-    (aliases ?? []).map((a) => [a.alias_lower as string, a.canonical_name as string]),
+  const aliasMap = new Map<string, string>(
+    ((aliases ?? []) as AnyRow[]).map((a) => [a.alias_lower as string, a.canonical_name as string]),
   );
 
   const valid: Array<{
