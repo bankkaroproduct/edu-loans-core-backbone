@@ -367,6 +367,8 @@ export default function AdminLeads() {
       <PageHeader
         title="Lead Queue"
         description="Cross-partner lead inbox — student & partner leads in one place."
+        count={healthCounts.total}
+        lastUpdated={lastRefreshedAt}
       >
         <Button size="sm" variant="outline" onClick={() => fetchPage()} disabled={loading}>
           <RefreshCw className={`mr-1 h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Refresh
