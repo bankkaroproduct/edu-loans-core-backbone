@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   CheckCircle, Clock, XCircle, AlertTriangle, Upload, Eye,
-  FileText, ShieldCheck, Ban, RotateCcw, Info, History, ShieldAlert, HelpCircle, ArrowRight
+  FileText, ShieldCheck, Ban, RotateCcw, Info, History, ShieldAlert, HelpCircle
 } from "lucide-react";
 
 type ValidationFlag = "ok" | "warn_name" | "warn_type" | "review_needed" | "inconclusive";
