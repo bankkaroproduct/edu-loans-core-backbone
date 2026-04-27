@@ -112,9 +112,9 @@ Deno.serve(async (req) => {
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    const supaAuth = createClient(supabaseUrl, anonKey, {
+    const supaAuth: any = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
-    });
+    }) as any;
     const token = authHeader.replace("Bearer ", "");
     const { data: claimsData, error: claimsError } = await supaAuth.auth.getClaims(token);
     if (claimsError || !claimsData?.claims) {
@@ -143,7 +143,7 @@ Deno.serve(async (req) => {
     }
     const body = parsed.data;
 
-    const supaAdmin = createClient(supabaseUrl, serviceRoleKey);
+    const supaAdmin: any = createClient(supabaseUrl, serviceRoleKey) as any;
 
     if (body.action === "list") return await handleList(supaAdmin);
     if (body.action === "view") return await handleView(supaAdmin, body);
