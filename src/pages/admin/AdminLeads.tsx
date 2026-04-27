@@ -247,6 +247,7 @@ export default function AdminLeads() {
 
       setRows(enriched);
       setTotalCount(count ?? 0);
+      setLastRefreshedAt(new Date());
     } catch (e: any) {
       setError(e?.message ?? "Failed to load leads");
       setRows([]);
