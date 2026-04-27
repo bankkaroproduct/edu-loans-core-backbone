@@ -473,6 +473,7 @@ export function AdminLeadFilters({
   if (filters.loanRange !== "all") activeChips.push({ label: `Loan: ${labelOf(LOAN_RANGE_OPTIONS, filters.loanRange)}`, clear: () => set("loanRange", "all") });
   if (filters.intake !== "all") activeChips.push({ label: `Intake: ${labelOf(INTAKE_OPTIONS, filters.intake)}`, clear: () => set("intake", "all") });
   if (filters.loanType !== "all") activeChips.push({ label: `Loan Type: ${labelOf(LOAN_TYPE_OPTIONS, filters.loanType)}`, clear: () => set("loanType", "all") });
+  if (filters.staleOnly) activeChips.push({ label: "Stale > 48h", clear: () => set("staleOnly", false) });
 
   const clearAll = () => {
     onSearchInputChange("");
