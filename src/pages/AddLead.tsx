@@ -468,7 +468,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       if (!form.coapplicant_name.trim()) return { message: "Co-applicant name is required", step: "financial", field: "coapplicant_name" };
       if (!form.coapplicant_mobile.trim()) return { message: "Co-applicant mobile is required", step: "financial", field: "coapplicant_mobile" };
       if (!isValidIndianPhone(form.coapplicant_mobile)) return { message: "Co-applicant mobile must be a valid 10-digit Indian number", step: "financial", field: "coapplicant_mobile" };
-      if (!form.coapplicant_income_source) return { message: "Income source is required", step: "financial", field: "coapplicant_income_source" };
+      // NOTE: coapplicant_income_source removed from UI per scoped form-fix pass.
+      // Existing DB values are preserved on save; the field is no longer captured.
       if (!form.coapplicant_employment_type) return { message: "Employment type is required", step: "financial", field: "coapplicant_employment_type" };
       if (!form.coapplicant_employer.trim()) return { message: "Employer / occupation is required", step: "financial", field: "coapplicant_employer" };
       if (!form.coapplicant_income || Number(form.coapplicant_income) <= 0)
