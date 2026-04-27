@@ -63,6 +63,12 @@ export interface AdminLeadFilterState {
   loanRange: LoanRangeFilter;
   intake: IntakeFilter;
   loanType: LoanTypeFilter;
+  /**
+   * When true, restrict the queue to leads whose latest activity (`updated_at`)
+   * is older than 48h AND that are still in an actionable, non-terminal,
+   * non-blocked state. Set by the "Stale > 48h" quick chip in AdminLeads.
+   */
+  staleOnly: boolean;
 }
 
 export const defaultAdminLeadFilters: AdminLeadFilterState = {
@@ -80,6 +86,7 @@ export const defaultAdminLeadFilters: AdminLeadFilterState = {
   loanRange: "all",
   intake: "all",
   loanType: "all",
+  staleOnly: false,
 };
 
 // Primary visible source buckets (admin-thinking first)
