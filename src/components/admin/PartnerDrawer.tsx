@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Lock, AlertTriangle, Info } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { FormSection } from "@/components/shared/FormSection";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Partner = Tables<"partner_organizations">;
@@ -87,12 +88,7 @@ export function PartnerDrawer({ open, onOpenChange, record, onSaved }: Props) {
     [form.contact_person_name, form.contact_person_email],
   );
 
-  const SectionHeader = ({ title, hint }: { title: string; hint?: string }) => (
-    <div className="flex items-baseline justify-between border-b pb-1.5">
-      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</h4>
-      {hint && <span className="text-[10px] text-muted-foreground">{hint}</span>}
-    </div>
-  );
+  // (SectionHeader replaced with shared FormSection — PR 5)
 
   const handleSave = async () => {
     if (!form.display_name.trim() || !form.legal_name.trim() || !form.partner_code.trim()) {
