@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
-import { Upload, Trash2, Eye, RefreshCw, AlertCircle, FileSpreadsheet, Download } from "lucide-react";
+import { Upload, Trash2, Eye, ArrowUp, RefreshCw, AlertCircle, FileSpreadsheet, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { SemanticBadge } from "@/components/dashboard/StageBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shared/PageHeader";
 import {
@@ -285,43 +286,49 @@ export default function AdminPremiereLists() {
                   </TableCell>
                   <TableCell>
                     {r.list_status === "Uploaded" ? (
-                      <Badge variant="secondary" className="bg-emerald-100 text-emerald-900 border-emerald-200">
-                        Uploaded
-                      </Badge>
+                      <SemanticBadge tone="emerald">Uploaded</SemanticBadge>
                     ) : (
-                      <Badge variant="outline" className="text-muted-foreground">
-                        Not Uploaded
-                      </Badge>
+                      <SemanticBadge tone="slate">Not Uploaded</SemanticBadge>
                     )}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">{r.row_count}</TableCell>
                   <TableCell className="text-right tabular-nums">{r.list_version ?? "—"}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
+                  <TableCell className="text-muted-foreground whitespace-nowrap">
                     {r.last_updated_at ? new Date(r.last_updated_at).toLocaleString() : "—"}
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
+                  <TableCell className="text-muted-foreground">
                     {r.last_updated_by ?? "—"}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
                         onClick={() => setViewFor(r)}
                         disabled={r.row_count === 0}
+                        title="View list"
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => setUploadFor(r)}>
-                        <Upload className="h-4 w-4" />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        onClick={() => setUploadFor(r)}
+                        title="Upload list"
+                      >
+                        <ArrowUp className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-red-600"
                         onClick={() => setDeleteFor(r)}
                         disabled={r.row_count === 0}
+                        title="Delete list"
                       >
-                        <Trash2 className="h-4 w-4 text-destructive" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>
