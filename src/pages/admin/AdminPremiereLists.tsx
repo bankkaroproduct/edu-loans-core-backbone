@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
-import { Upload, Trash2, Eye, RefreshCw, AlertCircle, FileSpreadsheet } from "lucide-react";
+import { Upload, Trash2, Eye, RefreshCw, AlertCircle, FileSpreadsheet, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -47,7 +47,134 @@ type ParsedRow = {
   effective_to: string | null;
 };
 
-const REQUIRED_COLS = ["college name", "country"];
+// Canonical required columns + alias maps (case-insensitive, spaces/underscores stripped).
+// "name" intentionally excluded from college aliases — too generic, would silently
+// misroute student-name / lender-name columns.
+const COLLEGE_ALIASES = [
+  "college name",
+  "collegename",
+  "university name",
+  "universityname",
+  "institution",
+  "institution name",
+  "institute",
+  "school",
+];
+const COUNTRY_ALIASES = [
+  "country",
+  "country name",
+  "countryname",
+  "nation",
+  "location",
+];
+
+function normalizeHeader(h: string): string {
+  return String(h ?? "").toLowerCase().replace(/[\s_]+/g, " ").trim();
+}
+function normalizeForAlias(h: string): string {
+  // For alias matching: also collapse all whitespace away so "collegename" === "college name"
+  return normalizeHeader(h).replace(/\s+/g, "");
+}
+
+function findHeaderMatch(
+  headers: string[],
+  aliases: string[],
+): { rawHeader: string; alias: string } | null {
+  // Pass 1: exact normalized match (preserves spaces between words)
+  for (const raw of headers) {
+    const n = normalizeHeader(raw);
+    if (aliases.includes(n)) return { rawHeader: raw, alias: n };
+  }
+  // Pass 2: spaces/underscores stripped
+  const aliasesStripped = aliases.map((a) => a.replace(/\s+/g, ""));
+  for (const raw of headers) {
+    const n = normalizeForAlias(raw);
+    const idx = aliasesStripped.indexOf(n);
+    if (idx >= 0) return { rawHeader: raw, alias: aliases[idx] };
+  }
+  return null;
+}
+
+type HeaderMapping = {
+  collegeHeader: string; // raw header key as it appears in the file
+  countryHeader: string;
+  cityHeader: string | null;
+  notesHeader: string | null;
+  isExact: boolean; // true when both required headers were "college name" + "country" exactly
+};
+
+function detectMapping(headers: string[]): HeaderMapping | { error: string } {
+  const college = findHeaderMatch(headers, COLLEGE_ALIASES);
+  const country = findHeaderMatch(headers, COUNTRY_ALIASES);
+  if (!college) {
+    return {
+      error:
+        "Required column 'College Name' (or alias) not found in your file. Download the template using the button above, fill it in, and try again.",
+    };
+  }
+  if (!country) {
+    return {
+      error:
+        "Required column 'Country' (or alias) not found in your file. Download the template using the button above, fill it in, and try again.",
+    };
+  }
+  // Optional columns — straight lookup on normalized header
+  let cityHeader: string | null = null;
+  let notesHeader: string | null = null;
+  for (const raw of headers) {
+    const n = normalizeHeader(raw);
+    if (!cityHeader && n === "city") cityHeader = raw;
+    if (!notesHeader && n === "notes") notesHeader = raw;
+  }
+  const isExact =
+    normalizeHeader(college.rawHeader) === "college name" &&
+    normalizeHeader(country.rawHeader) === "country";
+  return {
+    collegeHeader: college.rawHeader,
+    countryHeader: country.rawHeader,
+    cityHeader,
+    notesHeader,
+    isExact,
+  };
+}
+
+function downloadTemplate() {
+  const headers = ["College Name", "Country", "City", "Notes"];
+  const examples = [
+    ["Harvard University", "United States", "Cambridge", "Example row — replace with your data"],
+    ["University of Oxford", "United Kingdom", "Oxford", "Example row — replace with your data"],
+    ["National University of Singapore (NUS)", "Singapore", "Singapore", "Example row — replace with your data"],
+  ];
+  const sheet1 = XLSX.utils.aoa_to_sheet([headers, ...examples]);
+  // Column widths
+  sheet1["!cols"] = [{ wch: 50 }, { wch: 20 }, { wch: 20 }, { wch: 50 }];
+  // Bold + light-yellow fill for header row
+  const headerStyle = {
+    font: { bold: true },
+    fill: { patternType: "solid", fgColor: { rgb: "FFF2CC" } },
+  };
+  ["A1", "B1", "C1", "D1"].forEach((addr) => {
+    if (sheet1[addr]) (sheet1[addr] as any).s = headerStyle;
+  });
+
+  const instructions = [
+    ["Premiere College List — Upload Instructions"],
+    [""],
+    ["• College Name and Country are required. City and Notes can be left blank."],
+    ["• Country must be a recognised country name. Common aliases (USA, UK, UAE, HK, ROK) will be auto-resolved."],
+    ["• Maximum 10,000 rows per file. Maximum file size 5 MB."],
+    ["• Duplicates within the same file are de-duped (first occurrence kept)."],
+    ["• The system supports .xlsx and .csv only."],
+    ["• To replace a lender's list, upload a new file using the Replace action — the previous version is archived and the new file becomes current."],
+  ];
+  const sheet2 = XLSX.utils.aoa_to_sheet(instructions);
+  sheet2["!cols"] = [{ wch: 110 }];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, sheet1, "Premiere List");
+  XLSX.utils.book_append_sheet(wb, sheet2, "Instructions");
+  XLSX.writeFile(wb, "premiere-list-template.xlsx");
+}
 
 function isAdmin(role: string | null | undefined) {
   return role === "admin" || role === "super_admin";
@@ -104,6 +231,10 @@ export default function AdminPremiereLists() {
         title="Premiere College Lists"
         description="Per-lender lists used to rank eligible recommendations. Premiere status never affects eligibility — only ordering."
       >
+        <Button variant="outline" size="sm" onClick={downloadTemplate}>
+          <Download className="mr-2 h-4 w-4" />
+          Download Template
+        </Button>
         <Button variant="outline" size="sm" onClick={loadRows} disabled={loading}>
           <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           Refresh
@@ -242,16 +373,58 @@ function UploadDialog({
   const [parsed, setParsed] = useState<ParsedRow[] | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Pending mapping confirmation: set when fuzzy (non-exact) header match was used.
+  // Null = no pending confirmation. Holds the workbook rows + mapping until admin confirms.
+  const [pendingMapping, setPendingMapping] = useState<
+    { mapping: HeaderMapping; rawRows: any[] } | null
+  >(null);
+
+  // Convert the workbook rows into ParsedRow[] using the resolved mapping,
+  // then run the >20% failure check and commit to `parsed` state.
+  // Used for both exact-match (auto-proceed) and post-confirmation flows.
+  const finalizeParse = (rawRows: any[], mapping: HeaderMapping) => {
+    const out: ParsedRow[] = [];
+    for (const row of rawRows) {
+      const college = String(row[mapping.collegeHeader] ?? "").trim();
+      const country = String(row[mapping.countryHeader] ?? "").trim();
+      if (!college || !country) continue;
+      out.push({
+        college_name_raw: college,
+        country_raw: country,
+        city: mapping.cityHeader ? stringOrNull(row[mapping.cityHeader]) : null,
+        notes: mapping.notesHeader ? stringOrNull(row[mapping.notesHeader]) : null,
+        // effective_from / effective_to intentionally omitted from admin UI for v1.
+        // DB columns remain nullable; null = always-effective in BRE lookup.
+        effective_from: null,
+        effective_to: null,
+      });
+    }
+    if (out.length === 0) {
+      setParseError("No valid rows after parsing.");
+      return;
+    }
+    const failureRate = (rawRows.length - out.length) / rawRows.length;
+    if (failureRate > 0.2) {
+      setParseError(
+        `Parse failure rate ${(failureRate * 100).toFixed(0)}% exceeds 20%. Fix the file and retry.`,
+      );
+      return;
+    }
+    setParsed(out);
+  };
 
   const handleFile = async (f: File) => {
     setFile(f);
     setParsed(null);
     setParseError(null);
+    setPendingMapping(null);
     if (f.size > 5 * 1024 * 1024) {
       setParseError("File exceeds 5 MB limit.");
       return;
     }
     try {
+      // Single code path for .xlsx AND .csv — XLSX.read auto-detects format from
+      // the file bytes. Header detection + alias mapping below applies uniformly.
       const buf = await f.arrayBuffer();
       const wb = XLSX.read(buf, { type: "array" });
       const sheet = wb.Sheets[wb.SheetNames[0]];
@@ -264,45 +437,35 @@ function UploadDialog({
         setParseError("File exceeds 10,000 row limit.");
         return;
       }
-      const headerKeys = Object.keys(rows[0]).map((h) => h.toLowerCase().trim());
-      const missing = REQUIRED_COLS.filter(
-        (c) => !headerKeys.some((h) => h === c || h.includes(c)),
-      );
-      if (missing.length > 0) {
-        setParseError(`Missing required columns: ${missing.join(", ")}`);
+      const headers = Object.keys(rows[0]);
+      const result = detectMapping(headers);
+      if ("error" in result) {
+        setParseError(result.error);
         return;
       }
-      const out: ParsedRow[] = [];
-      for (const row of rows) {
-        const lc: Record<string, any> = {};
-        for (const k of Object.keys(row)) lc[k.toLowerCase().trim()] = row[k];
-        const college = String(lc["college name"] ?? lc["college"] ?? "").trim();
-        const country = String(lc["country"] ?? "").trim();
-        if (!college || !country) continue;
-        out.push({
-          college_name_raw: college,
-          country_raw: country,
-          city: stringOrNull(lc["city"]),
-          notes: stringOrNull(lc["notes"]),
-          effective_from: stringOrNull(lc["effective from"] ?? lc["effective_from"]),
-          effective_to: stringOrNull(lc["effective to"] ?? lc["effective_to"]),
-        });
+      if (result.isExact) {
+        // No friction — proceed straight to validation
+        finalizeParse(rows, result);
+      } else {
+        // Show confirmation panel before validating
+        setPendingMapping({ mapping: result, rawRows: rows });
       }
-      if (out.length === 0) {
-        setParseError("No valid rows after parsing.");
-        return;
-      }
-      const failureRate = (rows.length - out.length) / rows.length;
-      if (failureRate > 0.2) {
-        setParseError(
-          `Parse failure rate ${(failureRate * 100).toFixed(0)}% exceeds 20%. Fix the file and retry.`,
-        );
-        return;
-      }
-      setParsed(out);
     } catch (e: any) {
       setParseError(e?.message ?? "Failed to parse file.");
     }
+  };
+
+  const confirmMapping = () => {
+    if (!pendingMapping) return;
+    const { rawRows, mapping } = pendingMapping;
+    setPendingMapping(null);
+    finalizeParse(rawRows, mapping);
+  };
+
+  const cancelMapping = () => {
+    setPendingMapping(null);
+    setFile(null);
+    setParsed(null);
   };
 
   const submit = async () => {
@@ -340,8 +503,8 @@ function UploadDialog({
           <DialogTitle>Upload Premiere List — {lender.lender_name}</DialogTitle>
           <DialogDescription>
             Accepts <code>.xlsx</code> or <code>.csv</code>. Required columns:{" "}
-            <code>College Name</code>, <code>Country</code>. Optional: City, Notes,
-            Effective From, Effective To. Replaces the current list.
+            <code>College Name</code>, <code>Country</code>. Optional: City, Notes.
+            Replaces the current list.
           </DialogDescription>
         </DialogHeader>
 
@@ -357,6 +520,44 @@ function UploadDialog({
           {parseError && (
             <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {parseError}
+            </div>
+          )}
+          {pendingMapping && (
+            <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-3 text-sm">
+              <div className="font-medium mb-2">Confirm column mapping</div>
+              <div className="text-muted-foreground mb-2">
+                Detected columns from your file:
+              </div>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>
+                  <code>'{pendingMapping.mapping.collegeHeader}'</code> → will be
+                  treated as <code>'College Name'</code>
+                </li>
+                <li>
+                  <code>'{pendingMapping.mapping.countryHeader}'</code> → will be
+                  treated as <code>'Country'</code>
+                </li>
+                {pendingMapping.mapping.cityHeader && (
+                  <li>
+                    <code>'{pendingMapping.mapping.cityHeader}'</code> → will be
+                    treated as <code>'City'</code>
+                  </li>
+                )}
+                {pendingMapping.mapping.notesHeader && (
+                  <li>
+                    <code>'{pendingMapping.mapping.notesHeader}'</code> → will be
+                    treated as <code>'Notes'</code>
+                  </li>
+                )}
+              </ul>
+              <div className="mt-3 flex gap-2">
+                <Button size="sm" onClick={confirmMapping}>
+                  Confirm
+                </Button>
+                <Button size="sm" variant="outline" onClick={cancelMapping}>
+                  Cancel
+                </Button>
+              </div>
             </div>
           )}
           {parsed && (
