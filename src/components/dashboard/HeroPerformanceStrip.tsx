@@ -69,20 +69,49 @@ export function HeroPerformanceStrip({ appUser, partnerName, kpiData, loanMetric
       value: formatINR(kpiData.paidPayout),
       icon: DollarSign,
       onClick: () => navigate("/payouts"),
+      tooltip: "Total commission accrued on disbursed leads (pending + approved + paid). Includes amounts not yet released to your bank.",
     },
     {
-      label: "Pending Payout",
+      label: "Pending Payout Amount",
       value: formatINR(kpiData.pendingPayout),
       icon: Clock,
       onClick: () => navigate("/payouts?status=pending"),
+      tooltip: "Total ₹ value of payout records that are pending, triggered, or approved but not yet paid out.",
     },
     {
       label: "Needs Attention",
       value: kpiData.needsAttention.toString(),
       icon: AlertTriangle,
       onClick: () => navigate("/leads?attention=true"),
+      tooltip: "Leads on hold, with documents pending, awaiting reupload, query raised, pending info, in credit query, or flagged as duplicate. Click to filter the Leads page.",
     },
   ];
+
+  // Tooltip definitions for the loan business metrics row.
+  const loanMetricTooltips: Record<LoanMetric["key"], string> = {
+    active: "Submitted leads currently in the pipeline. Excludes drafts, sanctioned, disbursed, rejected, and dropped.",
+    sanctioned: "All leads ever sanctioned, including those subsequently disbursed. Cumulative count.",
+    disbursed: "All leads where loan funds have been released to the student or institution.",
+  };
+
+  // Tooltip definitions for the secondary loan/payout row.
+  const secondaryMetricTooltips: Record<SecondaryLoanMetric["key"], string> = {
+    rejected: "Leads in terminal rejected or dropped state.",
+    payout_released: "Payout records that have been paid out to your bank.",
+    payout_pending: "Number of payout records pending, triggered, or approved but not yet paid. Same underlying set as the top 'Pending Payout Amount' card — shown here as a record count.",
+  };
+
+  // Click-through routes for loan metric cards (filters Lead Queue to match).
+  const loanMetricRoutes: Record<LoanMetric["key"], string> = {
+    active: "/leads?stage=submitted,under_initial_review,documents_under_review,bre_evaluated,sent_to_lender,login_submitted,credit_query,documents_pending,on_hold",
+    sanctioned: "/leads?stage=sanction_received",
+    disbursed: "/leads?stage=disbursed",
+  };
+  const secondaryMetricRoutes: Record<SecondaryLoanMetric["key"], string> = {
+    rejected: "/leads?stage=rejected,dropped",
+    payout_released: "/payouts?status=paid",
+    payout_pending: "/payouts?status=pending",
+  };
 
   return (
     <div className="bg-primary text-primary-foreground rounded-2xl shadow-xl overflow-hidden">
