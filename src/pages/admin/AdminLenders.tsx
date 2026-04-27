@@ -165,30 +165,30 @@ export default function AdminLenders() {
             <div className="border rounded-md overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted/40">
-                    <TableHead className="text-xs font-medium w-[110px]">Code</TableHead>
-                    <TableHead className="text-xs font-medium">Lender Name</TableHead>
-                    <TableHead className="text-xs font-medium">Type</TableHead>
-                    <TableHead className="text-xs font-medium">Loan Range</TableHead>
-                    <TableHead className="text-xs font-medium">Loan Types</TableHead>
-                    <TableHead className="text-xs font-medium">Countries</TableHead>
-                    <TableHead className="text-xs font-medium w-[90px]">Days</TableHead>
-                    <TableHead className="text-xs font-medium w-[100px] text-right">Mapped</TableHead>
-                    <TableHead className="text-xs font-medium w-[100px]">Status</TableHead>
-                    <TableHead className="text-xs font-medium w-[120px] text-right">Actions</TableHead>
+                  <TableRow>
+                    <TableHead className="w-[110px]">Code</TableHead>
+                    <TableHead>Lender Name</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Loan Range</TableHead>
+                    <TableHead>Loan Types</TableHead>
+                    <TableHead>Countries</TableHead>
+                    <TableHead className="w-[90px]">Days</TableHead>
+                    <TableHead className="w-[100px] text-right">Mapped</TableHead>
+                    <TableHead className="w-[100px]">Status</TableHead>
+                    <TableHead className="w-[100px] text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtered.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center text-sm text-muted-foreground py-8">
+                      <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                         No lenders match your filters.
                       </TableCell>
                     </TableRow>
                   ) : filtered.map((l) => (
-                    <TableRow key={l.id} className="hover:bg-muted/20">
-                      <TableCell className="text-xs py-2.5 font-mono">{l.lender_code}</TableCell>
-                      <TableCell className="text-sm py-2.5">
+                    <TableRow key={l.id}>
+                      <TableCell className="font-mono text-xs">{l.lender_code}</TableCell>
+                      <TableCell>
                         <div className="flex items-center gap-2">
                           <div className="rounded bg-primary/10 p-1.5">
                             <Banknote className="h-3.5 w-3.5 text-primary" />
@@ -196,8 +196,8 @@ export default function AdminLenders() {
                           <span className="font-medium">{l.lender_name}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-xs py-2.5 text-muted-foreground">{l.lender_type ?? "—"}</TableCell>
-                      <TableCell className="text-xs py-2.5 tabular-nums">
+                      <TableCell className="text-muted-foreground">{l.lender_type ?? "—"}</TableCell>
+                      <TableCell className="tabular-nums">
                         {l.loan_amount_min || l.loan_amount_max ? (
                           <span>
                             {l.loan_amount_min ? `₹${(l.loan_amount_min / 100000).toFixed(0)}L` : "—"}
@@ -206,14 +206,14 @@ export default function AdminLenders() {
                           </span>
                         ) : <span className="text-muted-foreground">—</span>}
                       </TableCell>
-                      <TableCell className="py-2.5">
+                      <TableCell>
                         <div className="flex gap-1">
                           {l.supports_collateral && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Coll.</Badge>}
                           {l.supports_unsecured && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Unsec.</Badge>}
-                          {!l.supports_collateral && !l.supports_unsecured && <span className="text-muted-foreground text-xs">—</span>}
+                          {!l.supports_collateral && !l.supports_unsecured && <span className="text-muted-foreground">—</span>}
                         </div>
                       </TableCell>
-                      <TableCell className="py-2.5">
+                      <TableCell>
                         {l.supported_countries && l.supported_countries.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
                             {l.supported_countries.slice(0, 3).map((c) => (
@@ -223,29 +223,29 @@ export default function AdminLenders() {
                               <span className="text-[10px] text-muted-foreground">+{l.supported_countries.length - 3}</span>
                             )}
                           </div>
-                        ) : <span className="text-muted-foreground text-xs">—</span>}
+                        ) : <span className="text-muted-foreground">—</span>}
                       </TableCell>
-                      <TableCell className="text-xs py-2.5 tabular-nums text-muted-foreground">
+                      <TableCell className="tabular-nums text-muted-foreground">
                         {l.processing_time_days ?? "—"}
                       </TableCell>
-                      <TableCell className="text-xs py-2.5 tabular-nums text-right">
+                      <TableCell className="tabular-nums text-right">
                         <span className="font-medium">{mappingCounts[l.id] ?? 0}</span>
                         <span className="text-muted-foreground ml-1">univ.</span>
                       </TableCell>
-                      <TableCell className="py-2.5">
+                      <TableCell>
                         {l.active_flag ? (
-                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] px-1.5 py-0">Active</Badge>
+                          <SemanticBadge tone="emerald">Active</SemanticBadge>
                         ) : (
-                          <Badge variant="outline" className="bg-slate-100 text-slate-600 border-slate-200 text-[10px] px-1.5 py-0">Inactive</Badge>
+                          <SemanticBadge tone="slate">Inactive</SemanticBadge>
                         )}
                       </TableCell>
-                      <TableCell className="py-2.5 text-right">
+                      <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => openEdit(l)}>
-                            <Pencil className="h-3.5 w-3.5 mr-1" />Edit
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => openEdit(l)} title="Edit lender">
+                            <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => handleToggle(l)} title={l.active_flag ? "Deactivate" : "Activate"}>
-                            <Power className="h-3.5 w-3.5" />
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => handleToggle(l)} title={l.active_flag ? "Deactivate" : "Activate"}>
+                            <Power className="h-4 w-4" />
                           </Button>
                         </div>
                       </TableCell>
