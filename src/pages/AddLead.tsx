@@ -1422,7 +1422,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 <ReviewRow label="Co-Applicant Name" value={form.coapplicant_name} nudgeStep="financial" nudgeField="coapplicant_name" />
                 <ReviewRow label="Mobile Number" value={form.coapplicant_mobile} nudgeStep="financial" nudgeField="coapplicant_mobile" />
                 <ReviewRow label="Relation" value={form.coapplicant_relation} />
-                <ReviewRow label="Income Source" value={form.coapplicant_income_source} nudgeStep="financial" nudgeField="coapplicant_income_source" />
+                {/* Income Source review row removed — field no longer captured in UI. */}
                 <ReviewRow label="Employment Type" value={form.coapplicant_employment_type} nudgeStep="financial" nudgeField="coapplicant_employment_type" />
                 <ReviewRow label="Employer / Occupation" value={form.coapplicant_employer} nudgeStep="financial" nudgeField="coapplicant_employer" />
                 <ReviewRow
