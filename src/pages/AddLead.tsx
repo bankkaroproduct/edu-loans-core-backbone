@@ -482,6 +482,27 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     return null;
   };
 
+  /**
+   * Per-step required-field gate used by Next buttons.
+   * Reuses `validate(false)` and only flags failures that belong to the CURRENT step.
+   * - Save as Draft must remain lenient: callers MUST NOT invoke this for draft saves.
+   * - Submit on the Review step is still gated by the existing full `validate()` call
+   *   inside `handleSubmit`.
+   */
+  const guardStep = (step: StepId): boolean => {
+    const failure = validate(false);
+    if (failure && failure.step === step) {
+      toast.error(failure.message);
+      goToFieldAndFocus(failure.step, failure.field);
+      return false;
+    }
+    return true;
+  };
+  const goNextFrom = (current: StepId, target: StepId) => {
+    if (!guardStep(current)) return;
+    goToStep(target);
+  };
+
   // Helper used by review-step nudges: jump to a step and try to focus the missing field.
   const goToFieldAndFocus = useCallback(
     (step: StepId, field?: string) => {
