@@ -190,8 +190,19 @@ export default function AdminPremiereLists() {
   const [uploadFor, setUploadFor] = useState<LenderRow | null>(null);
   const [viewFor, setViewFor] = useState<LenderRow | null>(null);
   const [deleteFor, setDeleteFor] = useState<LenderRow | null>(null);
+  const [search, setSearch] = useState("");
 
   const admin = isAdmin(appUser?.role);
+
+  const filteredRows = (() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter(
+      (r) =>
+        (r.lender_name ?? "").toLowerCase().includes(q) ||
+        (r.lender_code ?? "").toLowerCase().includes(q),
+    );
+  })();
 
   const loadRows = async () => {
     setLoading(true);
