@@ -35,6 +35,10 @@ export default function Dashboard() {
   const [stageHistory, setStageHistory] = useState<StageHistory[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [partnerName, setPartnerName] = useState<string | null>(null);
+  /** IDs of leads (within accessible scope) that have EVER reached sanction_received,
+   *  including those subsequently disbursed. Cumulative; partner-scoped via the
+   *  inner-join on student_leads.partner_id. */
+  const [sanctionedEverIds, setSanctionedEverIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchData = async () => {
