@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DuplicateWarningDialog } from "@/components/leads/DuplicateWarningDialog";
 import { LeadSuccessDialog } from "@/components/leads/LeadSuccessDialog";
-import { IndianPhoneInput, sanitizeIndianPhoneDigits } from "@/components/shared/IndianPhoneInput";
+import { IndianPhoneInput } from "@/components/shared/IndianPhoneInput";
 import { toast } from "sonner";
 import { ArrowLeft, Zap } from "lucide-react";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phone";
