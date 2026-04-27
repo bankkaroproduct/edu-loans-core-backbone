@@ -72,38 +72,16 @@ import { useHighestQualificationOptions } from "@/hooks/useHighestQualificationO
 const TERMINAL_STAGES = ["disbursed", "rejected", "dropped"];
 
 /**
- * Map a country display name (as stored in `countries_master.country_name`) to its ISO 2-letter
- * code (as stored in `universities_master.country`). Falls back to the trimmed uppercase input
- * so already-ISO values (or admin-entered codes) still match.
- *
- * Keep this list aligned with the DB-side `country_to_iso()` helper.
+ * Compare two country labels case-insensitively, ignoring surrounding whitespace.
+ * `universities_master.country` and `countries_master.country_name` both store
+ * full display names (e.g. "United States", "United Kingdom"), so a normalized
+ * string compare is the correct match — there is no ISO code in the universities
+ * table to translate to. The earlier name→ISO map produced an empty result set
+ * because no `universities_master.country` row matches "US" / "GB" / etc.
  */
-function countryNameToIso(name: string | null | undefined): string {
-  if (!name) return "";
-  const n = name.trim();
-  const map: Record<string, string> = {
-    "United States": "US",
-    "United States of America": "US",
-    USA: "US",
-    "United Kingdom": "GB",
-    UK: "GB",
-    "Great Britain": "GB",
-    Canada: "CA",
-    Australia: "AU",
-    Germany: "DE",
-    France: "FR",
-    Netherlands: "NL",
-    Singapore: "SG",
-    Ireland: "IE",
-    "New Zealand": "NZ",
-    Spain: "ES",
-    Italy: "IT",
-    Switzerland: "CH",
-    Sweden: "SE",
-    Denmark: "DK",
-  };
-  if (map[n]) return map[n];
-  return n.length <= 3 ? n.toUpperCase() : n.toUpperCase().slice(0, 2);
+function sameCountryName(a: string | null | undefined, b: string | null | undefined): boolean {
+  const norm = (v: string | null | undefined) => (v ?? "").trim().toLowerCase();
+  return norm(a) === norm(b);
 }
 
 interface AddLeadProps {
