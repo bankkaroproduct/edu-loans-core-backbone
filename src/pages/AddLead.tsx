@@ -947,7 +947,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
           <Card>
             <CardHeader><CardTitle className="text-lg">Student Basic Details</CardTitle></CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
+              <div className="space-y-2" data-field="student_first_name">
                 <Label>First Name *</Label>
                 <Input value={form.student_first_name} onChange={(e) => set("student_first_name", e.target.value)} placeholder="Student first name" />
                 <p className="text-xs text-muted-foreground">Name as per Aadhaar Card / Passport</p>
