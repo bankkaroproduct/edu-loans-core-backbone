@@ -1067,6 +1067,8 @@ export type Database = {
         Row: {
           active_flag: boolean
           bre_rule_id: string | null
+          cc_emails: string[]
+          contact_email: string | null
           created_at: string
           id: string
           income_expectations_min: number | null
@@ -1085,6 +1087,8 @@ export type Database = {
         Insert: {
           active_flag?: boolean
           bre_rule_id?: string | null
+          cc_emails?: string[]
+          contact_email?: string | null
           created_at?: string
           id?: string
           income_expectations_min?: number | null
@@ -1103,6 +1107,8 @@ export type Database = {
         Update: {
           active_flag?: boolean
           bre_rule_id?: string | null
+          cc_emails?: string[]
+          contact_email?: string | null
           created_at?: string
           id?: string
           income_expectations_min?: number | null

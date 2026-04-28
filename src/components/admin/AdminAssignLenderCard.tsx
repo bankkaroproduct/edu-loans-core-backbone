@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
-import { Loader2, Lock, Check } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Loader2, Lock, Check, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -33,6 +34,7 @@ interface CurrentAssignment {
 }
 
 export function AdminAssignLenderCard({ leadId }: { leadId: string }) {
+  const navigate = useNavigate();
   const [lenders, setLenders] = useState<Lender[]>([]);
   const [current, setCurrent] = useState<CurrentAssignment | null>(null);
   const [selected, setSelected] = useState<string>("");
@@ -211,6 +213,22 @@ export function AdminAssignLenderCard({ leadId }: { leadId: string }) {
           <p className="text-[11px] text-muted-foreground">
             Manual assignment is independent of BRE recommendations and persists across refresh.
           </p>
+
+          {current && (
+            <div className="pt-2 border-t border-border/40">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => navigate(`/admin/leads/${leadId}/send-to-lender`)}
+              >
+                <Send className="h-3.5 w-3.5 mr-1.5" /> Send to Lender
+              </Button>
+              <p className="text-[10px] text-muted-foreground mt-1.5">
+                Opens a prefilled compose screen. Does not change lifecycle stage.
+              </p>
+            </div>
+          )}
         </>
       )}
     </div>

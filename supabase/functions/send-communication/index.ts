@@ -10,12 +10,27 @@ const RESEND_GATEWAY = "https://connector-gateway.lovable.dev/resend";
 const TWILIO_GATEWAY = "https://connector-gateway.lovable.dev/twilio";
 const TWILIO_SANDBOX_FROM = "whatsapp:+14155238886";
 
+interface AttachmentManifestEntry {
+  document_id?: string;
+  file_name?: string;
+  storage_path?: string | null;
+  document_name?: string | null;
+}
+
 interface SendInput {
   template_key: string;
   recipient: string;
   lead_id?: string | null;
   mode: "mock" | "demo_live";
   variables?: Record<string, string | number | null | undefined>;
+  // --- Additive optional fields (used by the Admin "Send to Lender" flow) ---
+  // All are backwards-compatible. If absent, the function behaves exactly
+  // as before. None of these change lifecycle, partner, or BRE state.
+  cc?: string[];
+  subject_override?: string;
+  body_override?: string;
+  attachments_manifest?: AttachmentManifestEntry[];
+  recipient_label?: string;
 }
 
 function renderTemplate(text: string, vars: Record<string, unknown>): string {
@@ -77,7 +92,18 @@ Deno.serve(async (req) => {
     });
   }
 
-  const { template_key, recipient, lead_id, mode, variables = {} } = body;
+  const {
+    template_key,
+    recipient,
+    lead_id,
+    mode,
+    variables = {},
+    cc,
+    subject_override,
+    body_override,
+    attachments_manifest,
+    recipient_label,
+  } = body;
   if (!template_key || !recipient || !mode) {
     return new Response(
       JSON.stringify({ error: "template_key, recipient, mode are required" }),
@@ -106,14 +132,32 @@ Deno.serve(async (req) => {
     });
   }
 
-  const renderedSubject = tpl.subject ? renderTemplate(tpl.subject, variables) : null;
-  const renderedBody = renderTemplate(tpl.body, variables);
+  // Allow caller to override subject/body (used by the Send-to-Lender compose
+  // page where the admin has already reviewed/edited the draft). Falls back
+  // to the template's own subject/body so existing callers are unaffected.
+  const subjectSource = typeof subject_override === "string" && subject_override.length > 0
+    ? subject_override
+    : tpl.subject;
+  const bodySource = typeof body_override === "string" && body_override.length > 0
+    ? body_override
+    : tpl.body;
+
+  const renderedSubject = subjectSource ? renderTemplate(subjectSource, variables) : null;
+  const renderedBody = renderTemplate(bodySource, variables);
+
+  const sanitizedCc = Array.isArray(cc)
+    ? cc.map((s) => String(s).trim()).filter((s) => s.length > 0)
+    : [];
 
   const payloadSnapshot = {
     subject: renderedSubject,
     body: renderedBody,
     variables,
     template: { key: tpl.template_key, channel: tpl.channel },
+    // Additive — preserved on the log for audit/debug. No behavior change.
+    cc: sanitizedCc,
+    attachments_manifest: attachments_manifest ?? [],
+    recipient_label: recipient_label ?? null,
   };
 
   const baseLog = {
@@ -178,6 +222,7 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           from: "EduLoans <onboarding@resend.dev>",
           to: [recipient],
+          ...(sanitizedCc.length > 0 ? { cc: sanitizedCc } : {}),
           subject: renderedSubject ?? "(no subject)",
           html: `<pre style="font-family:system-ui,sans-serif;white-space:pre-wrap">${renderedBody.replace(/</g, "&lt;")}</pre>`,
         }),

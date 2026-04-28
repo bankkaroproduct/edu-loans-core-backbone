@@ -15,6 +15,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminLeads from "./pages/admin/AdminLeads";
 import AdminLeadDetail from "./pages/admin/AdminLeadDetail";
+import AdminSendToLender from "./pages/admin/AdminSendToLender";
 
 import AdminEditRequests from "./pages/admin/AdminEditRequests";
 import AdminMasterData from "./pages/admin/AdminMasterData";
@@ -103,6 +104,7 @@ const App = () => (
             <Route path="/admin/leads/bulk" element={<AdminRoute><AdminBulkUpload /></AdminRoute>} />
             <Route path="/admin/leads/:id" element={<AdminRoute><AdminLeadDetail /></AdminRoute>} />
             <Route path="/admin/leads/:id/documents" element={<AdminRoute><LeadDocuments /></AdminRoute>} />
+            <Route path="/admin/leads/:id/send-to-lender" element={<AdminRoute><AdminSendToLender /></AdminRoute>} />
             <Route path="/admin/edit-requests" element={<AdminRoute><AdminEditRequests /></AdminRoute>} />
             <Route path="/admin/requests" element={<AdminRoute><AdminEditRequests /></AdminRoute>} />
             <Route path="/admin/master-data" element={<AdminRoute><AdminMasterData /></AdminRoute>} />
