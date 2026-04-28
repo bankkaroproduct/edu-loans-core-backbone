@@ -92,7 +92,18 @@ Deno.serve(async (req) => {
     });
   }
 
-  const { template_key, recipient, lead_id, mode, variables = {} } = body;
+  const {
+    template_key,
+    recipient,
+    lead_id,
+    mode,
+    variables = {},
+    cc,
+    subject_override,
+    body_override,
+    attachments_manifest,
+    recipient_label,
+  } = body;
   if (!template_key || !recipient || !mode) {
     return new Response(
       JSON.stringify({ error: "template_key, recipient, mode are required" }),
@@ -121,14 +132,32 @@ Deno.serve(async (req) => {
     });
   }
 
-  const renderedSubject = tpl.subject ? renderTemplate(tpl.subject, variables) : null;
-  const renderedBody = renderTemplate(tpl.body, variables);
+  // Allow caller to override subject/body (used by the Send-to-Lender compose
+  // page where the admin has already reviewed/edited the draft). Falls back
+  // to the template's own subject/body so existing callers are unaffected.
+  const subjectSource = typeof subject_override === "string" && subject_override.length > 0
+    ? subject_override
+    : tpl.subject;
+  const bodySource = typeof body_override === "string" && body_override.length > 0
+    ? body_override
+    : tpl.body;
+
+  const renderedSubject = subjectSource ? renderTemplate(subjectSource, variables) : null;
+  const renderedBody = renderTemplate(bodySource, variables);
+
+  const sanitizedCc = Array.isArray(cc)
+    ? cc.map((s) => String(s).trim()).filter((s) => s.length > 0)
+    : [];
 
   const payloadSnapshot = {
     subject: renderedSubject,
     body: renderedBody,
     variables,
     template: { key: tpl.template_key, channel: tpl.channel },
+    // Additive — preserved on the log for audit/debug. No behavior change.
+    cc: sanitizedCc,
+    attachments_manifest: attachments_manifest ?? [],
+    recipient_label: recipient_label ?? null,
   };
 
   const baseLog = {
