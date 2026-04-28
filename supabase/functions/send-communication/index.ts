@@ -222,6 +222,7 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           from: "EduLoans <onboarding@resend.dev>",
           to: [recipient],
+          ...(sanitizedCc.length > 0 ? { cc: sanitizedCc } : {}),
           subject: renderedSubject ?? "(no subject)",
           html: `<pre style="font-family:system-ui,sans-serif;white-space:pre-wrap">${renderedBody.replace(/</g, "&lt;")}</pre>`,
         }),
