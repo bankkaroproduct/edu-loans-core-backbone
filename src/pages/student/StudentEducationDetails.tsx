@@ -199,7 +199,7 @@ export default function StudentEducationDetails() {
           Profile above, also part of this academic group. */}
       <Card>
         <CardContent className="p-5 sm:p-6">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Academic Profile</h2>
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Current Academic Profile</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Highest Qualification <span className="text-destructive">*</span></Label>
