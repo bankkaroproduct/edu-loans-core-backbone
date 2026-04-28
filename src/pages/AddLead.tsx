@@ -439,6 +439,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   type ValidationFailure = { message: string; step: StepId; field?: string };
   const validate = (isDraft: boolean): ValidationFailure | null => {
     if (!form.student_first_name.trim()) return { message: "Student first name is required", step: "student", field: "student_first_name" };
+    if (!form.student_last_name.trim()) return { message: "Student last name is required", step: "student", field: "student_last_name" };
     if (!form.student_phone.trim()) return { message: "Mobile number is required", step: "student", field: "student_phone" };
     if (!isValidIndianPhone(form.student_phone)) return { message: "Mobile must be a valid 10-digit Indian number (with or without +91)", step: "student", field: "student_phone" };
     if (form.student_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.student_email.trim())) return { message: "Email format is invalid", step: "student", field: "student_email" };
