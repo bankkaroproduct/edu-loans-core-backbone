@@ -33,6 +33,8 @@ import { LakhsInput } from "@/components/ui/lakhs-input";
 import { MasterCombobox, type MasterOption } from "@/components/ui/master-combobox";
 import { CollateralRadio, collateralBoolToState, collateralStateToBool, type CollateralState } from "@/components/shared/CollateralRadio";
 import { usePincodeLookup } from "@/hooks/usePincodeLookup";
+import { sortByPriority } from "@/lib/countryOrder";
+import { buildIntakeSessionOptions, intakeSessionValue, parseIntakeSessionValue } from "@/lib/intakeSession";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Country = Tables<"countries_master">;
@@ -811,10 +813,20 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   // Drop past intake years from the picker. We keep historical values flowing
   // through edit-mode hydration (the saved value still renders on Review), but
   // the dropdown should only offer current/future intakes for new selections.
-  const currentYear = new Date().getFullYear();
-  const futureIntakes = intakes.filter((i) => i.intake_year >= currentYear);
-  const intakeTerms = [...new Set(futureIntakes.map((i) => i.intake_term))];
-  const intakeYears = [...new Set(futureIntakes.map((i) => i.intake_year))].sort();
+  // Intake Session options come STRICTLY from intake_master (only future years).
+  // No invented (term, year) combinations — Winter only appears in years where
+  // it actually exists in the master.
+  const intakeSessionOptions = useMemo(
+    () => buildIntakeSessionOptions(intakes, { onlyFuture: true }),
+    [intakes],
+  );
+
+  // Country list with study-destination priority on top, then alphabetical.
+  // Uses the EXACT country_name values from countries_master.
+  const sortedCountries = useMemo(
+    () => sortByPriority(countries, (c) => c.country_name),
+    [countries],
+  );
 
 
 
