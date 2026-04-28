@@ -29,6 +29,7 @@ import { normalizePhone, isValidIndianPhone } from "@/lib/phone";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { computeAdminDiff, getAdminFieldLabel } from "@/lib/adminEditableFields";
 import { MoneyInput } from "@/components/ui/money-input";
+import { LakhsInput } from "@/components/ui/lakhs-input";
 import { MasterCombobox, type MasterOption } from "@/components/ui/master-combobox";
 import { CollateralRadio, collateralBoolToState, collateralStateToBool, type CollateralState } from "@/components/shared/CollateralRadio";
 import { usePincodeLookup } from "@/hooks/usePincodeLookup";
@@ -1232,7 +1233,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
             <CardContent className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2 md:col-span-2" data-field="loan_amount_required">
                 <Label>Approx Loan Amount Required (₹) *</Label>
-                <MoneyInput value={form.loan_amount_required} onChange={(d) => set("loan_amount_required", d)} placeholder="e.g. 25,00,000" />
+                <LakhsInput value={form.loan_amount_required} onChange={(d) => set("loan_amount_required", d)} placeholder="e.g. 25 or 12.5" />
                 <p className="text-xs text-muted-foreground">Rough expectation — exact figure can be refined later by ops.</p>
               </div>
               <div className="space-y-2" data-field="coapplicant_name">
