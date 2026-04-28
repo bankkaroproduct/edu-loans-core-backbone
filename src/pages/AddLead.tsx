@@ -1146,7 +1146,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               Aligned with Bulk Upload columns: highest_qualification, highest_qualification_score,
               10th_score, 12th_score, graduation_score. */}
           <Card className="mt-4">
-            <CardHeader><CardTitle className="text-lg">Academic Profile</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-lg">Current Academic Profile</CardTitle></CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2" data-field="highest_qualification">
                 <Label>Highest Qualification *</Label>
