@@ -1,12 +1,8 @@
-import { Button } from "@/components/ui/button";
 import { Clock, AlertTriangle, Activity, CheckCircle2, Banknote, XCircle, Wallet, Hourglass, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import type { Tables } from "@/integrations/supabase/types";
 import type { KPIData } from "./KPICards";
-
-type AppUser = Tables<"users">;
 
 export interface LoanMetric {
   key: "active" | "sanctioned" | "disbursed";
@@ -22,20 +18,11 @@ export interface SecondaryLoanMetric {
   amount: number;
 }
 
-function getGreeting() {
-  const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 17) return "Good afternoon";
-  return "Good evening";
-}
-
 function formatINR(n: number) {
   return `₹${n.toLocaleString("en-IN")}`;
 }
 
 interface Props {
-  appUser: AppUser | null;
-  partnerName: string | null;
   kpiData: KPIData;
   loanMetrics: LoanMetric[];
   secondaryLoanMetrics?: SecondaryLoanMetric[];
@@ -54,14 +41,8 @@ const secondaryIconMap: Record<SecondaryLoanMetric["key"], React.ElementType> = 
   payout_pending: Hourglass,
 };
 
-export function HeroPerformanceStrip({ appUser, partnerName, kpiData, loanMetrics, secondaryLoanMetrics, loading }: Props) {
+export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetrics, loading }: Props) {
   const navigate = useNavigate();
-  const today = new Date().toLocaleDateString("en-IN", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
 
   const heroMetrics = [
     {
