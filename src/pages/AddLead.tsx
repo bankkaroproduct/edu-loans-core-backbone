@@ -439,6 +439,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   type ValidationFailure = { message: string; step: StepId; field?: string };
   const validate = (isDraft: boolean): ValidationFailure | null => {
     if (!form.student_first_name.trim()) return { message: "Student first name is required", step: "student", field: "student_first_name" };
+    if (!form.student_last_name.trim()) return { message: "Student last name is required", step: "student", field: "student_last_name" };
     if (!form.student_phone.trim()) return { message: "Mobile number is required", step: "student", field: "student_phone" };
     if (!isValidIndianPhone(form.student_phone)) return { message: "Mobile must be a valid 10-digit Indian number (with or without +91)", step: "student", field: "student_phone" };
     if (form.student_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.student_email.trim())) return { message: "Email format is invalid", step: "student", field: "student_email" };
@@ -946,13 +947,13 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
           <Card>
             <CardHeader><CardTitle className="text-lg">Student Basic Details</CardTitle></CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
+              <div className="space-y-2" data-field="student_first_name">
                 <Label>First Name *</Label>
                 <Input value={form.student_first_name} onChange={(e) => set("student_first_name", e.target.value)} placeholder="Student first name" />
                 <p className="text-xs text-muted-foreground">Name as per Aadhaar Card / Passport</p>
               </div>
-              <div className="space-y-2">
-                <Label>Last Name</Label>
+              <div className="space-y-2" data-field="student_last_name">
+                <Label>Last Name *</Label>
                 <Input value={form.student_last_name} onChange={(e) => set("student_last_name", e.target.value)} placeholder="Student last name" />
               </div>
               <div className="space-y-2">
@@ -1145,7 +1146,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               Aligned with Bulk Upload columns: highest_qualification, highest_qualification_score,
               10th_score, 12th_score, graduation_score. */}
           <Card className="mt-4">
-            <CardHeader><CardTitle className="text-lg">Academic Profile</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-lg">Current Academic Profile</CardTitle></CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2" data-field="highest_qualification">
                 <Label>Highest Qualification *</Label>
@@ -1451,7 +1452,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 />
               </div>
               <div>
-                <Badge variant="outline" className="mb-2">Academic Profile</Badge>
+                <Badge variant="outline" className="mb-2">Current Academic Profile</Badge>
                 <ReviewRow label="Highest Qualification" value={form.highest_qualification} nudgeStep="study" nudgeField="highest_qualification" />
                 <ReviewRow label="Highest Qualification Score" value={form.highest_qualification_score} />
                 <ReviewRow label="10th Score" value={form.tenth_score} nudgeStep="study" nudgeField="tenth_score" />
