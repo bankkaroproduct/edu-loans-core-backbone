@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Shield, FileText, CreditCard, IdCard, BookOpen, ScrollText, Info } from "lucide-react";
 import { usePincodeLookup } from "@/hooks/usePincodeLookup";
+import { sortByPriority } from "@/lib/countryOrder";
 
 const GENDERS = ["Male", "Female", "Non-binary", "Prefer not to say"];
 
@@ -262,7 +263,7 @@ export default function StudentBasicDetails() {
               <Label>Destination Country <span className="text-destructive">*</span></Label>
               <Select value={formData.intended_study_country} onValueChange={v => updateField("intended_study_country", v)}>
                 <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
-                <SelectContent>{countries.map(c => <SelectItem key={c.id} value={c.country_name}>{c.country_name}</SelectItem>)}</SelectContent>
+                <SelectContent>{sortByPriority(countries, c => c.country_name).map(c => <SelectItem key={c.id} value={c.country_name}>{c.country_name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
