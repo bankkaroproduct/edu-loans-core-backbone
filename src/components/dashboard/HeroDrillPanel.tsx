@@ -52,18 +52,9 @@ export function HeroDrillPanel({ cardKey, data, onClose }: Props) {
           <>
             {/* Header */}
             <div className="px-6 py-5 border-b shrink-0">
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <h2 className="text-lg font-semibold text-foreground truncate">{view.title}</h2>
-                  <p className="text-sm text-muted-foreground mt-1">{view.subtitle}</p>
-                </div>
-                <button
-                  onClick={onClose}
-                  className="rounded-md p-1 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                  aria-label="Close panel"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+              <div className="min-w-0 pr-8">
+                <h2 className="text-lg font-semibold text-foreground truncate">{view.title}</h2>
+                <p className="text-sm text-muted-foreground mt-1">{view.subtitle}</p>
               </div>
             </div>
 
