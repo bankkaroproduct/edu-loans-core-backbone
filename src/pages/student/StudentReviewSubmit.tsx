@@ -122,7 +122,7 @@ export default function StudentReviewSubmit() {
           { label: "Highest Qualification Score", value: formData.test_scores.highest_qualification_score || formData.marks_gpa },
           { label: "Course", value: formData.course_name },
           { label: "University", value: formData.university_name_raw },
-          { label: "Intake", value: formData.intake_term && formData.intake_year ? `${formData.intake_term} ${formData.intake_year}` : null },
+          { label: "Intake", value: formData.intake_term && formData.intake_year ? intakeSessionLabel(formData.intake_term, Number(formData.intake_year)) : null },
           { label: "Test Scores", value: scoreDisplay },
         ]}
       />
