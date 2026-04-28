@@ -7,6 +7,8 @@ import type { Tables } from "@/integrations/supabase/types";
 import { usePartnerContext } from "@/hooks/usePartnerContext";
 
 import { HeroPerformanceStrip, type LoanMetric, type SecondaryLoanMetric } from "@/components/dashboard/HeroPerformanceStrip";
+import { HeroDrillPanel } from "@/components/dashboard/HeroDrillPanel";
+import type { CardKey, DrilldownData } from "@/lib/dashboardDrilldowns";
 import type { KPIData } from "@/components/dashboard/KPICards";
 import { YourLeads } from "@/components/dashboard/YourLeads";
 import { DocumentSnapshot, type DocSummary } from "@/components/dashboard/DocumentSnapshot";
