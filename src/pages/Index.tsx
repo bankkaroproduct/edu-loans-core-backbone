@@ -233,8 +233,6 @@ export default function Dashboard() {
   return (
     <div className="space-y-6 max-w-screen-2xl mx-auto">
       <HeroPerformanceStrip
-        appUser={appUser}
-        partnerName={partnerName}
         kpiData={kpiData}
         loanMetrics={loanMetrics}
         secondaryLoanMetrics={secondaryLoanMetrics}
