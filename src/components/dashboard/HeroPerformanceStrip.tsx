@@ -89,16 +89,16 @@ export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetric
     payout_pending: "Number of payout records pending, triggered, or approved but not yet paid. Same underlying set as the top 'Pending Payout Amount' card — shown here as a record count.",
   };
 
-  // Click-through routes for loan metric cards (filters Lead Queue to match).
-  const loanMetricRoutes: Record<LoanMetric["key"], string> = {
-    active: "/leads?stage=submitted,under_initial_review,documents_under_review,bre_evaluated,sent_to_lender,login_submitted,credit_query,documents_pending,on_hold",
-    sanctioned: "/leads?stage=sanction_received",
-    disbursed: "/leads?stage=disbursed",
+  // Card-key mapping for drill-down panel routing.
+  const loanMetricCardKey: Record<LoanMetric["key"], CardKey> = {
+    active: "active",
+    sanctioned: "sanctioned",
+    disbursed: "disbursed",
   };
-  const secondaryMetricRoutes: Record<SecondaryLoanMetric["key"], string> = {
-    rejected: "/leads?stage=rejected,dropped",
-    payout_released: "/payouts?status=paid",
-    payout_pending: "/payouts?status=pending",
+  const secondaryMetricCardKey: Record<SecondaryLoanMetric["key"], CardKey> = {
+    rejected: "rejected",
+    payout_released: "payout_released",
+    payout_pending: "payout_pending",
   };
 
   return (
@@ -112,8 +112,8 @@ export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetric
               <Tooltip key={m.label}>
                 <TooltipTrigger asChild>
                   <div
-                    className="flex items-center gap-4 p-5 rounded-xl bg-primary-foreground/10 hover:bg-primary-foreground/15 cursor-pointer transition-colors relative"
-                    onClick={m.onClick}
+                    className="flex items-center gap-4 p-5 rounded-xl bg-primary-foreground/10 hover:bg-primary-foreground/15 hover:ring-1 hover:ring-primary-foreground/30 cursor-pointer transition-all relative"
+                    onClick={() => open(m.key)}
                   >
                     <div className="bg-primary-foreground/10 p-3 rounded-full shrink-0">
                       <Icon className="h-6 w-6" />
@@ -146,8 +146,8 @@ export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetric
               <Tooltip key={m.key}>
                 <TooltipTrigger asChild>
                   <div
-                    className="flex items-center gap-4 p-5 rounded-xl bg-primary-foreground/5 border border-primary-foreground/10 cursor-pointer hover:bg-primary-foreground/10 transition-colors relative"
-                    onClick={() => navigate(loanMetricRoutes[m.key])}
+                    className="flex items-center gap-4 p-5 rounded-xl bg-primary-foreground/5 border border-primary-foreground/10 cursor-pointer hover:bg-primary-foreground/10 hover:ring-1 hover:ring-primary-foreground/30 transition-all relative"
+                    onClick={() => open(loanMetricCardKey[m.key])}
                   >
                     <div className="bg-primary-foreground/10 p-3 rounded-full shrink-0">
                       <Icon className="h-6 w-6" />
@@ -190,8 +190,8 @@ export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetric
                 <Tooltip key={m.key}>
                   <TooltipTrigger asChild>
                     <div
-                      className="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary-foreground/[0.06] border border-primary-foreground/10 cursor-pointer hover:bg-primary-foreground/10 transition-colors relative"
-                      onClick={() => navigate(secondaryMetricRoutes[m.key])}
+                      className="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary-foreground/[0.06] border border-primary-foreground/10 cursor-pointer hover:bg-primary-foreground/10 hover:ring-1 hover:ring-primary-foreground/30 transition-all relative"
+                      onClick={() => open(secondaryMetricCardKey[m.key])}
                     >
                       <div className="bg-primary-foreground/10 p-2 rounded-full shrink-0">
                         <Icon className="h-4 w-4" />
