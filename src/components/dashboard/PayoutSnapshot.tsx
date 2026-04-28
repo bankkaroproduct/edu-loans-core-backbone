@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CreditCard, Clock, CheckCircle, DollarSign, AlertTriangle } from "lucide-react";
+import { CreditCard, Clock, CheckCircle, Wallet, AlertTriangle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -26,7 +26,7 @@ function formatINR(n: number) {
 export function PayoutSnapshot({ data, loading }: { data: PayoutSummary; loading: boolean }) {
   const navigate = useNavigate();
   const metrics = [
-    { label: "Total Earned", value: data.totalAccrued, icon: DollarSign, route: "/payouts" },
+    { label: "Total Earned", value: data.totalAccrued, icon: Wallet, route: "/payouts" },
     { label: "Coming Soon", value: data.pending, icon: Clock, route: "/payouts?status=pending", accent: "bg-amber-50 dark:bg-amber-950/20" },
     { label: "Approved", value: data.approved, icon: CheckCircle, route: "/payouts?status=approved" },
     { label: "Received", value: data.paid, icon: CreditCard, route: "/payouts?status=paid", accent: "bg-emerald-50 dark:bg-emerald-950/20" },

@@ -4,8 +4,9 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useAuth } from "@/hooks/useAuth";
 import { usePartnerContext } from "@/hooks/usePartnerContext";
-import { Navigate } from "react-router-dom";
-import { FlaskConical } from "lucide-react";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { FlaskConical, Plus, Upload, Zap } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 function SimulationBanner() {
   const { isSimulating, effectivePartnerName } = usePartnerContext();
@@ -19,8 +20,44 @@ function SimulationBanner() {
   );
 }
 
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+/**
+ * Dashboard-only header content. Rendered INSIDE the existing top white header
+ * strip (no extra band added). Activated on the partner dashboard route only.
+ */
+function DashboardHeaderContent({ fullName }: { fullName: string }) {
+  const navigate = useNavigate();
+  return (
+    <div className="flex flex-1 items-center justify-between gap-4 min-w-0">
+      <div className="min-w-0 truncate">
+        <span className="text-sm sm:text-base font-semibold text-foreground">
+          {getGreeting()}, {fullName}
+        </span>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <Button size="sm" onClick={() => navigate("/leads/quick")}>
+          <Zap className="mr-1.5 h-4 w-4" /> Add Quick Lead
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => navigate("/leads/new")}>
+          <Plus className="mr-1.5 h-4 w-4" /> Add New Lead
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => navigate("/bulk-upload")}>
+          <Upload className="mr-1.5 h-4 w-4" /> Bulk Upload
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function AppLayout({ children }: { children: ReactNode }) {
   const { user, appUser, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -33,10 +70,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
   if (!user) return <Navigate to="/login" replace />;
 
   // Block admins from rendering inside the partner shell — they belong in /admin/*.
-  // Keeps the two portal experiences fully separate even if an admin lands on a partner URL.
   if (appUser && (appUser.role === "super_admin" || appUser.role === "admin")) {
     return <Navigate to="/admin" replace />;
   }
+
+  // Partner dashboard route only — render greeting + CTA buttons inside the
+  // existing white top header strip (no new band inserted).
+  const isDashboard = location.pathname === "/";
 
   return (
     <SidebarProvider>
@@ -44,8 +84,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
         <AppSidebar />
         <div className="flex-1 flex flex-col">
           <SimulationBanner />
-          <header className="h-12 flex items-center justify-between border-b px-4">
+          <header className="h-14 flex items-center gap-3 border-b px-4">
             <SidebarTrigger />
+            {isDashboard ? (
+              <DashboardHeaderContent fullName={appUser?.full_name ?? "User"} />
+            ) : (
+              <div className="flex-1" />
+            )}
             <NotificationBell />
           </header>
           <main className="flex-1 px-4 lg:px-6 py-5">{children}</main>

@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { DollarSign, Clock, CheckCircle, CreditCard, AlertTriangle, Users } from "lucide-react";
+import { Wallet, Clock, CheckCircle, CreditCard, AlertTriangle, Users } from "lucide-react";
 
 export interface PayoutMetrics {
   totalAccrued: number;
@@ -22,7 +22,7 @@ interface Props {
 
 export function PayoutSummaryCards({ metrics, onFilterStatus, activeStatus }: Props) {
   const cards = [
-    { key: null, label: "Total Accrued", value: formatINR(metrics.totalAccrued), icon: DollarSign, color: "text-primary" },
+    { key: null, label: "Total Accrued", value: formatINR(metrics.totalAccrued), icon: Wallet, color: "text-primary" },
     { key: "pending", label: "Pending", value: formatINR(metrics.pending), icon: Clock, color: "text-amber-600" },
     { key: "approved", label: "Approved", value: formatINR(metrics.approved), icon: CheckCircle, color: "text-blue-600" },
     { key: "paid", label: "Paid", value: formatINR(metrics.paid), icon: CreditCard, color: "text-emerald-600" },

@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import {
   FileText, TrendingUp, Clock, CheckCircle, AlertCircle,
-  Upload, CreditCard, XCircle, Eye, Send, Ban, DollarSign,
+  Upload, CreditCard, XCircle, Eye, Send, Ban, Wallet,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -82,7 +82,7 @@ const clusters: Cluster[] = [
     heading: "Business Outcome",
     items: [
       { key: "sanctionReceived", label: "Sanctioned", icon: CheckCircle, sub: "Approved", accent: "green" },
-      { key: "disbursed", label: "Disbursed", icon: DollarSign, accent: "green", emphasized: true, dynamicSub: (v) => v > 0 ? "Great progress!" : "Pending" },
+      { key: "disbursed", label: "Disbursed", icon: Wallet, accent: "green", emphasized: true, dynamicSub: (v) => v > 0 ? "Great progress!" : "Pending" },
       { key: "pendingPayout", label: "Pending Payout", icon: Clock, format: "currency", sub: "Awaiting", accent: "amber" },
       { key: "paidPayout", label: "Payout Paid", icon: CreditCard, format: "currency", sub: "Received", accent: "green", emphasized: true },
     ],

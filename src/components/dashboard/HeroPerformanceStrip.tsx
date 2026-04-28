@@ -1,12 +1,8 @@
-import { Button } from "@/components/ui/button";
-import { Plus, Upload, DollarSign, Clock, AlertTriangle, Zap, Activity, CheckCircle2, Banknote, XCircle, Wallet, Hourglass, Info } from "lucide-react";
+import { Clock, AlertTriangle, Activity, CheckCircle2, Banknote, XCircle, Wallet, Hourglass, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import type { Tables } from "@/integrations/supabase/types";
 import type { KPIData } from "./KPICards";
-
-type AppUser = Tables<"users">;
 
 export interface LoanMetric {
   key: "active" | "sanctioned" | "disbursed";
@@ -22,20 +18,11 @@ export interface SecondaryLoanMetric {
   amount: number;
 }
 
-function getGreeting() {
-  const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 17) return "Good afternoon";
-  return "Good evening";
-}
-
 function formatINR(n: number) {
   return `₹${n.toLocaleString("en-IN")}`;
 }
 
 interface Props {
-  appUser: AppUser | null;
-  partnerName: string | null;
   kpiData: KPIData;
   loanMetrics: LoanMetric[];
   secondaryLoanMetrics?: SecondaryLoanMetric[];
@@ -54,20 +41,14 @@ const secondaryIconMap: Record<SecondaryLoanMetric["key"], React.ElementType> = 
   payout_pending: Hourglass,
 };
 
-export function HeroPerformanceStrip({ appUser, partnerName, kpiData, loanMetrics, secondaryLoanMetrics, loading }: Props) {
+export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetrics, loading }: Props) {
   const navigate = useNavigate();
-  const today = new Date().toLocaleDateString("en-IN", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
 
   const heroMetrics = [
     {
       label: "Total Earned",
       value: formatINR(kpiData.paidPayout),
-      icon: DollarSign,
+      icon: Wallet,
       onClick: () => navigate("/payouts"),
       tooltip: "Total commission accrued on disbursed leads (pending + approved + paid). Includes amounts not yet released to your bank.",
     },
@@ -116,49 +97,8 @@ export function HeroPerformanceStrip({ appUser, partnerName, kpiData, loanMetric
   return (
     <div className="bg-primary text-primary-foreground rounded-2xl shadow-xl overflow-hidden">
       <div className="p-6 sm:p-8 lg:p-10">
-        {/* Top row: Greeting + CTAs */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div className="space-y-2">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">
-              {getGreeting()}, {appUser?.full_name ?? "User"}
-            </h1>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              {partnerName && (
-                <span className="text-base font-medium opacity-95">{partnerName}</span>
-              )}
-              <span className="text-sm opacity-80">{today}</span>
-            </div>
-            <p className="text-sm opacity-75 mt-3">
-              Track leads, uploads, documents, and payouts in one place
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-3 shrink-0">
-            <Button
-              className="h-12 px-6 text-base font-semibold bg-primary-foreground text-primary hover:bg-primary-foreground/90"
-              onClick={() => navigate("/leads/quick")}
-            >
-              <Zap className="mr-2 h-5 w-5" /> Add Quick Lead
-            </Button>
-            <Button
-              variant="outline"
-              className="h-12 px-6 text-base font-semibold border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 bg-transparent"
-              onClick={() => navigate("/leads/new")}
-            >
-              <Plus className="mr-2 h-5 w-5" /> Add New Lead
-            </Button>
-            <Button
-              variant="outline"
-              className="h-12 px-6 text-base font-semibold border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 bg-transparent"
-              onClick={() => navigate("/bulk-upload")}
-            >
-              <Upload className="mr-2 h-5 w-5" /> Bulk Upload
-            </Button>
-          </div>
-        </div>
-
         {/* Hero Metrics — earnings/attention */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 mt-10">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
           {heroMetrics.map((m) => {
             const Icon = m.icon;
             return (
