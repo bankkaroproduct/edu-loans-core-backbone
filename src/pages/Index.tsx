@@ -262,6 +262,20 @@ export default function Dashboard() {
 
   const isFirstRun = !loading && leads.length === 0;
 
+  const drilldownData: DrilldownData = useMemo(
+    () => ({
+      leads,
+      payoutRecords,
+      docReqs,
+      sanctionedEverIds,
+      lenderNameById,
+      ruleLenderById,
+      lockedLenderByLeadId,
+      stageLabelByKey,
+    }),
+    [leads, payoutRecords, docReqs, sanctionedEverIds, lenderNameById, ruleLenderById, lockedLenderByLeadId, stageLabelByKey],
+  );
+
   return (
     <div className="space-y-6 max-w-screen-2xl mx-auto">
       <HeroPerformanceStrip
@@ -269,7 +283,10 @@ export default function Dashboard() {
         loanMetrics={loanMetrics}
         secondaryLoanMetrics={secondaryLoanMetrics}
         loading={loading}
+        onCardClick={setActiveCard}
       />
+
+      <HeroDrillPanel cardKey={activeCard} data={drilldownData} onClose={() => setActiveCard(null)} />
 
       <div className="space-y-6">
         {isFirstRun && <OnboardingEmptyState partnerName={partnerName} />}
