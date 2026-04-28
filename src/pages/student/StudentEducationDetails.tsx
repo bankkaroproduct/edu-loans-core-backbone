@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Lightbulb } from "lucide-react";
 import { useHighestQualificationOptions } from "@/hooks/useHighestQualificationOptions";
+import { buildIntakeSessionOptions, intakeSessionValue, parseIntakeSessionValue } from "@/lib/intakeSession";
 
 interface UniversityRow { id: string; university_name: string; country: string }
 interface CourseRow { id: string; course_name: string; course_category: string | null }
@@ -157,37 +158,26 @@ export default function StudentEducationDetails() {
                 helperText="Can't find your university? Choose 'Not available' to enter it manually."
               />
             </div>
-            <div className="space-y-1.5">
-              <Label>Intake Term</Label>
-              <Select value={formData.intake_term} onValueChange={v => updateField("intake_term", v)}>
-                <SelectTrigger><SelectValue placeholder="Select term" /></SelectTrigger>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>Intake Session</Label>
+              <Select
+                value={intakeSessionValue(formData.intake_term, formData.intake_year ? Number(formData.intake_year) : null)}
+                onValueChange={v => {
+                  const parsed = parseIntakeSessionValue(v);
+                  if (parsed) {
+                    updateField("intake_term", parsed.term);
+                    updateField("intake_year", String(parsed.year));
+                  }
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="Select intake session" /></SelectTrigger>
                 <SelectContent>
-                  {(() => {
-                    const currentYear = new Date().getFullYear();
-                    const future = intakes.filter(i => i.intake_year >= currentYear);
-                    return [...new Set(future.map(i => i.intake_term))].map(term => (
-                      <SelectItem key={term} value={term}>{term}</SelectItem>
-                    ));
-                  })()}
+                  {buildIntakeSessionOptions(intakes, { onlyFuture: true }).map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Intake Year</Label>
-              <Select value={formData.intake_year} onValueChange={v => updateField("intake_year", v)}>
-                <SelectTrigger><SelectValue placeholder="Select year" /></SelectTrigger>
-                <SelectContent>
-                  {(() => {
-                    const currentYear = new Date().getFullYear();
-                    const future = intakes.filter(i => i.intake_year >= currentYear);
-                    return [...new Set(future.map(i => i.intake_year.toString()))]
-                      .sort()
-                      .map(yr => (
-                        <SelectItem key={yr} value={yr}>{yr}</SelectItem>
-                      ));
-                  })()}
-                </SelectContent>
-              </Select>
+              <p className="text-[11px] text-muted-foreground">Combined Term + Year. Options come from the intake master.</p>
             </div>
           </div>
         </CardContent>

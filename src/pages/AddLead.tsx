@@ -33,6 +33,8 @@ import { LakhsInput } from "@/components/ui/lakhs-input";
 import { MasterCombobox, type MasterOption } from "@/components/ui/master-combobox";
 import { CollateralRadio, collateralBoolToState, collateralStateToBool, type CollateralState } from "@/components/shared/CollateralRadio";
 import { usePincodeLookup } from "@/hooks/usePincodeLookup";
+import { sortByPriority } from "@/lib/countryOrder";
+import { buildIntakeSessionOptions, intakeSessionValue, parseIntakeSessionValue } from "@/lib/intakeSession";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Country = Tables<"countries_master">;
@@ -811,10 +813,20 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   // Drop past intake years from the picker. We keep historical values flowing
   // through edit-mode hydration (the saved value still renders on Review), but
   // the dropdown should only offer current/future intakes for new selections.
-  const currentYear = new Date().getFullYear();
-  const futureIntakes = intakes.filter((i) => i.intake_year >= currentYear);
-  const intakeTerms = [...new Set(futureIntakes.map((i) => i.intake_term))];
-  const intakeYears = [...new Set(futureIntakes.map((i) => i.intake_year))].sort();
+  // Intake Session options come STRICTLY from intake_master (only future years).
+  // No invented (term, year) combinations — Winter only appears in years where
+  // it actually exists in the master.
+  const intakeSessionOptions = useMemo(
+    () => buildIntakeSessionOptions(intakes, { onlyFuture: true }),
+    [intakes],
+  );
+
+  // Country list with study-destination priority on top, then alphabetical.
+  // Uses the EXACT country_name values from countries_master.
+  const sortedCountries = useMemo(
+    () => sortByPriority(countries, (c) => c.country_name),
+    [countries],
+  );
 
 
 
@@ -1029,7 +1041,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   <Label>Country of Residence</Label>
                   <Select value={form.country_of_residence} onValueChange={(v) => set("country_of_residence", v)}>
                     <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
-                    <SelectContent>{countries.map((c) => <SelectItem key={c.id} value={c.country_name}>{c.country_name}</SelectItem>)}</SelectContent>
+                    <SelectContent>{sortedCountries.map((c) => <SelectItem key={c.id} value={c.country_name}>{c.country_name}</SelectItem>)}</SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">Captured later by the student portal if not set here.</p>
                 </div>
@@ -1071,7 +1083,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                       <CommandList>
                         <CommandEmpty>No countries match that search.</CommandEmpty>
                         <CommandGroup>
-                          {countries.map((c) => (
+                          {sortedCountries.map((c) => (
                             <CommandItem
                               key={c.id}
                               value={c.country_name}
@@ -1125,19 +1137,25 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   manualPlaceholder="Type the course name"
                 />
               </div>
-              <div className="space-y-2" data-field="intake_term">
-                <Label>Intake Term *</Label>
-                <Select value={form.intake_term} onValueChange={(v) => set("intake_term", v)}>
-                  <SelectTrigger><SelectValue placeholder="Select term" /></SelectTrigger>
-                  <SelectContent>{intakeTerms.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+              <div className="space-y-2 md:col-span-2" data-field="intake_term">
+                <Label>Intake Session *</Label>
+                <Select
+                  value={intakeSessionValue(form.intake_term, form.intake_year)}
+                  onValueChange={(v) => {
+                    const parsed = parseIntakeSessionValue(v);
+                    if (parsed) {
+                      setMany({ intake_term: parsed.term, intake_year: parsed.year });
+                    }
+                  }}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select intake session" /></SelectTrigger>
+                  <SelectContent>
+                    {intakeSessionOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
-              </div>
-              <div className="space-y-2" data-field="intake_year">
-                <Label>Intake Year *</Label>
-                <Select value={form.intake_year ? String(form.intake_year) : ""} onValueChange={(v) => set("intake_year", Number(v))}>
-                  <SelectTrigger><SelectValue placeholder="Select year" /></SelectTrigger>
-                  <SelectContent>{intakeYears.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
-                </Select>
+                <p className="text-[11px] text-muted-foreground">Combined Term + Year. Options come from the intake master.</p>
               </div>
               {/* Loan Amount intentionally moved to the Financial Info step in both modes. */}
             </CardContent>
