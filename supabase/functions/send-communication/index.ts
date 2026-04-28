@@ -10,12 +10,27 @@ const RESEND_GATEWAY = "https://connector-gateway.lovable.dev/resend";
 const TWILIO_GATEWAY = "https://connector-gateway.lovable.dev/twilio";
 const TWILIO_SANDBOX_FROM = "whatsapp:+14155238886";
 
+interface AttachmentManifestEntry {
+  document_id?: string;
+  file_name?: string;
+  storage_path?: string | null;
+  document_name?: string | null;
+}
+
 interface SendInput {
   template_key: string;
   recipient: string;
   lead_id?: string | null;
   mode: "mock" | "demo_live";
   variables?: Record<string, string | number | null | undefined>;
+  // --- Additive optional fields (used by the Admin "Send to Lender" flow) ---
+  // All are backwards-compatible. If absent, the function behaves exactly
+  // as before. None of these change lifecycle, partner, or BRE state.
+  cc?: string[];
+  subject_override?: string;
+  body_override?: string;
+  attachments_manifest?: AttachmentManifestEntry[];
+  recipient_label?: string;
 }
 
 function renderTemplate(text: string, vars: Record<string, unknown>): string {
