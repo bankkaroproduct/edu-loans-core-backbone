@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MoneyInput } from "@/components/ui/money-input";
+import { LakhsInput } from "@/components/ui/lakhs-input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Shield, FileText, CreditCard, IdCard, BookOpen, ScrollText, Info } from "lucide-react";
@@ -277,10 +278,10 @@ export default function StudentBasicDetails() {
             </div>
             <div className="space-y-1.5">
               <Label>Loan Amount Required</Label>
-              <MoneyInput
+              <LakhsInput
                 value={formData.loan_amount_required}
                 onChange={d => updateField("loan_amount_required", d)}
-                placeholder="e.g. 25,00,000"
+                placeholder="e.g. 25 or 12.5"
               />
             </div>
           </div>

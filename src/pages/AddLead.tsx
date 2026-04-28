@@ -29,6 +29,7 @@ import { normalizePhone, isValidIndianPhone } from "@/lib/phone";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { computeAdminDiff, getAdminFieldLabel } from "@/lib/adminEditableFields";
 import { MoneyInput } from "@/components/ui/money-input";
+import { LakhsInput } from "@/components/ui/lakhs-input";
 import { MasterCombobox, type MasterOption } from "@/components/ui/master-combobox";
 import { CollateralRadio, collateralBoolToState, collateralStateToBool, type CollateralState } from "@/components/shared/CollateralRadio";
 import { usePincodeLookup } from "@/hooks/usePincodeLookup";
