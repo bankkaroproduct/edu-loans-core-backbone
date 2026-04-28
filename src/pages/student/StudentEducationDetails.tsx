@@ -177,7 +177,6 @@ export default function StudentEducationDetails() {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-[11px] text-muted-foreground">Combined Term + Year. Options come from the intake master.</p>
             </div>
           </div>
         </CardContent>

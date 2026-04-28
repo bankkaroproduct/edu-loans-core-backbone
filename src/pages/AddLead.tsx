@@ -1155,7 +1155,6 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] text-muted-foreground">Combined Term + Year. Options come from the intake master.</p>
               </div>
               {/* Loan Amount intentionally moved to the Financial Info step in both modes. */}
             </CardContent>

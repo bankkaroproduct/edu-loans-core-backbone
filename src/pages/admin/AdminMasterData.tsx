@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { intakeSessionLabel } from "@/lib/intakeSession";
 import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { PageSkeleton } from "@/components/shared/PageSkeleton";
@@ -262,7 +263,7 @@ function MasterDataTable({ schema, bulkUploadEnabled }: { schema: MasterSchema; 
                       <TableRow key={row.id}>
                         {schema.columns.map((c) => (
                           <TableCell key={c.key}>
-                            {renderCell(row[c.key], c.render)}
+                            {renderCell(row[c.key], c.render, row)}
                           </TableCell>
                         ))}
                         <TableCell>
@@ -318,7 +319,7 @@ function MasterDataTable({ schema, bulkUploadEnabled }: { schema: MasterSchema; 
   );
 }
 
-function renderCell(val: any, render?: "badge-bool" | "tags" | "iso") {
+function renderCell(val: any, render?: "badge-bool" | "tags" | "iso" | "intake-quarter", row?: any) {
   if (render === "badge-bool") {
     return val ? (
       <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] px-1.5 py-0">Yes</Badge>
@@ -339,6 +340,10 @@ function renderCell(val: any, render?: "badge-bool" | "tags" | "iso") {
   }
   if (render === "iso") {
     return val ? <span className="font-mono text-xs uppercase">{val}</span> : <span className="text-muted-foreground text-xs">—</span>;
+  }
+  if (render === "intake-quarter") {
+    const label = intakeSessionLabel(row?.intake_term, row?.intake_year);
+    return label ? <span className="text-xs">{label}</span> : <span className="text-muted-foreground text-xs">—</span>;
   }
   if (val === null || val === undefined || val === "") return <span className="text-muted-foreground text-xs">—</span>;
   return String(val);

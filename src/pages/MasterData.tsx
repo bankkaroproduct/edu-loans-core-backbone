@@ -10,8 +10,9 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { PageSkeleton } from "@/components/shared/PageSkeleton";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { BookOpen, Search, Info } from "lucide-react";
+import { intakeSessionLabel } from "@/lib/intakeSession";
 
-type Column = { key: string; label: string };
+type Column = { key: string; label: string; compute?: (row: any) => string };
 
 interface MasterTableProps {
   table: string;
@@ -86,7 +87,7 @@ function MasterTable({ table, columns, searchKeys, orderBy, filterActive = true,
               {filtered.map((row) => (
                 <TableRow key={row.id}>
                   {columns.map((c) => {
-                    const val = row[c.key];
+                    const val = c.compute ? c.compute(row) : row[c.key];
                     if (typeof val === "boolean") {
                       return (
                         <TableCell key={c.key}>
@@ -238,8 +239,11 @@ export default function MasterData() {
               <MasterTable
                 table="intake_master"
                 columns={[
-                  { key: "intake_term", label: "Term" },
-                  { key: "intake_year", label: "Year" },
+                  {
+                    key: "intake_session",
+                    label: "Intake Session",
+                    compute: (row) => intakeSessionLabel(row.intake_term, row.intake_year),
+                  },
                 ]}
                 searchKeys={["intake_term", "intake_year"]}
                 orderBy={{ column: "sort_order", ascending: true }}

@@ -31,7 +31,7 @@ export interface MasterSchema {
   searchKeys: string[];
   searchPlaceholder: string;
   /** Columns shown in the list view (in order). */
-  columns: { key: string; label: string; render?: "badge-bool" | "tags" | "iso" }[];
+  columns: { key: string; label: string; render?: "badge-bool" | "tags" | "iso" | "intake-quarter" }[];
   fields: FieldSchema[];
   /** Soft-delete via `active_flag`. */
   hasActiveFlag: boolean;
@@ -144,8 +144,7 @@ export const MASTER_SCHEMAS: Record<string, MasterSchema> = {
     searchKeys: ["intake_term"],
     searchPlaceholder: "Search intakes…",
     columns: [
-      { key: "intake_term", label: "Term" },
-      { key: "intake_year", label: "Year" },
+      { key: "intake_session", label: "Intake Session", render: "intake-quarter" },
       { key: "sort_order", label: "Sort" },
     ],
     fields: [
