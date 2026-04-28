@@ -1452,7 +1452,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 />
               </div>
               <div>
-                <Badge variant="outline" className="mb-2">Academic Profile</Badge>
+                <Badge variant="outline" className="mb-2">Current Academic Profile</Badge>
                 <ReviewRow label="Highest Qualification" value={form.highest_qualification} nudgeStep="study" nudgeField="highest_qualification" />
                 <ReviewRow label="Highest Qualification Score" value={form.highest_qualification_score} />
                 <ReviewRow label="10th Score" value={form.tenth_score} nudgeStep="study" nudgeField="tenth_score" />
