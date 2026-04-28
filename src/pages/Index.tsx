@@ -7,6 +7,8 @@ import type { Tables } from "@/integrations/supabase/types";
 import { usePartnerContext } from "@/hooks/usePartnerContext";
 
 import { HeroPerformanceStrip, type LoanMetric, type SecondaryLoanMetric } from "@/components/dashboard/HeroPerformanceStrip";
+import { HeroDrillPanel } from "@/components/dashboard/HeroDrillPanel";
+import type { CardKey, DrilldownData } from "@/lib/dashboardDrilldowns";
 import type { KPIData } from "@/components/dashboard/KPICards";
 import { YourLeads } from "@/components/dashboard/YourLeads";
 import { DocumentSnapshot, type DocSummary } from "@/components/dashboard/DocumentSnapshot";
@@ -39,6 +41,11 @@ export default function Dashboard() {
    *  including those subsequently disbursed. Cumulative; partner-scoped via the
    *  inner-join on student_leads.partner_id. */
   const [sanctionedEverIds, setSanctionedEverIds] = useState<Set<string>>(new Set());
+  const [activeCard, setActiveCard] = useState<CardKey | null>(null);
+  const [lenderNameById, setLenderNameById] = useState<Map<string, string>>(new Map());
+  const [ruleLenderById, setRuleLenderById] = useState<Map<string, string | null>>(new Map());
+  const [lockedLenderByLeadId, setLockedLenderByLeadId] = useState<Map<string, string>>(new Map());
+  const [stageLabelByKey, setStageLabelByKey] = useState<Map<string, string>>(new Map());
 
   useEffect(() => {
     const fetchData = async () => {
@@ -100,6 +107,31 @@ export default function Dashboard() {
       } else {
         setSanctionedEverIds(new Set());
       }
+
+      // === Drilldown support fetches ===
+      // 1. Lenders master (RLS: any authenticated user can read).
+      // 2. partner_payout_rules (RLS: partners scoped to own org; admin sees all — scope explicitly).
+      // 3. lead_lender_matches with lock_status=true for accessible leads (intersected client-side).
+      // 4. lifecycle_stage_master labels.
+      let rulesQ = supabase.from("partner_payout_rules").select("id, lender_id");
+      if (effectivePartnerId) rulesQ = rulesQ.eq("partner_id", effectivePartnerId);
+
+      const [lendersRes, rulesRes, stagesRes, lockedRes] = await Promise.all([
+        supabase.from("lenders").select("id, lender_name"),
+        rulesQ,
+        supabase.from("lifecycle_stage_master").select("stage_key, stage_label"),
+        accessibleLeadIds.size > 0
+          ? supabase
+              .from("lead_lender_matches")
+              .select("lead_id, lender_id, lock_status")
+              .eq("lock_status", true)
+              .in("lead_id", Array.from(accessibleLeadIds))
+          : Promise.resolve({ data: [] as Array<{ lead_id: string; lender_id: string; lock_status: boolean }> }),
+      ]);
+      setLenderNameById(new Map((lendersRes.data ?? []).map((l) => [l.id, l.lender_name])));
+      setRuleLenderById(new Map((rulesRes.data ?? []).map((r) => [r.id, r.lender_id])));
+      setStageLabelByKey(new Map((stagesRes.data ?? []).map((s) => [s.stage_key, s.stage_label])));
+      setLockedLenderByLeadId(new Map((lockedRes.data ?? []).map((m) => [m.lead_id, m.lender_id])));
 
       if (partnerRes.data && "display_name" in partnerRes.data) {
         setPartnerName(partnerRes.data.display_name);
@@ -230,6 +262,20 @@ export default function Dashboard() {
 
   const isFirstRun = !loading && leads.length === 0;
 
+  const drilldownData: DrilldownData = useMemo(
+    () => ({
+      leads,
+      payoutRecords,
+      docReqs,
+      sanctionedEverIds,
+      lenderNameById,
+      ruleLenderById,
+      lockedLenderByLeadId,
+      stageLabelByKey,
+    }),
+    [leads, payoutRecords, docReqs, sanctionedEverIds, lenderNameById, ruleLenderById, lockedLenderByLeadId, stageLabelByKey],
+  );
+
   return (
     <div className="space-y-6 max-w-screen-2xl mx-auto">
       <HeroPerformanceStrip
@@ -237,7 +283,10 @@ export default function Dashboard() {
         loanMetrics={loanMetrics}
         secondaryLoanMetrics={secondaryLoanMetrics}
         loading={loading}
+        onCardClick={setActiveCard}
       />
+
+      <HeroDrillPanel cardKey={activeCard} data={drilldownData} onClose={() => setActiveCard(null)} />
 
       <div className="space-y-6">
         {isFirstRun && <OnboardingEmptyState partnerName={partnerName} />}
