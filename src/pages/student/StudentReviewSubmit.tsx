@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { Pencil, CheckCircle2, Sparkles, Shield, Info, Lock } from "lucide-react";
+import { intakeSessionLabel } from "@/lib/intakeSession";
 
 interface SummaryItem {
   label: string;
