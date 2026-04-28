@@ -41,6 +41,11 @@ export default function Dashboard() {
    *  including those subsequently disbursed. Cumulative; partner-scoped via the
    *  inner-join on student_leads.partner_id. */
   const [sanctionedEverIds, setSanctionedEverIds] = useState<Set<string>>(new Set());
+  const [activeCard, setActiveCard] = useState<CardKey | null>(null);
+  const [lenderNameById, setLenderNameById] = useState<Map<string, string>>(new Map());
+  const [ruleLenderById, setRuleLenderById] = useState<Map<string, string | null>>(new Map());
+  const [lockedLenderByLeadId, setLockedLenderByLeadId] = useState<Map<string, string>>(new Map());
+  const [stageLabelByKey, setStageLabelByKey] = useState<Map<string, string>>(new Map());
 
   useEffect(() => {
     const fetchData = async () => {
