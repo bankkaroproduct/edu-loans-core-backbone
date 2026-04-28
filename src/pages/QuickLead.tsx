@@ -16,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DuplicateWarningDialog } from "@/components/leads/DuplicateWarningDialog";
 import { LeadSuccessDialog } from "@/components/leads/LeadSuccessDialog";
 import { IndianPhoneInput } from "@/components/shared/IndianPhoneInput";
+import { IndianCityCombobox } from "@/components/shared/IndianCityCombobox";
 import { toast } from "sonner";
 import { ArrowLeft, Zap } from "lucide-react";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phone";
@@ -264,8 +265,12 @@ export default function QuickLead() {
               />
             </div>
             <div className="space-y-2">
-              <Label>City</Label>
-              <Input value={form.city} onChange={(e) => set("city", e.target.value)} placeholder="City" />
+              <Label>City / District</Label>
+              <IndianCityCombobox
+                value={form.city}
+                onChange={(v) => set("city", v)}
+                placeholder="Search city or district…"
+              />
             </div>
           </CardContent>
         </Card>
