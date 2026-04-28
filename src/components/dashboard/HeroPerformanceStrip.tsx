@@ -1,8 +1,8 @@
 import { Clock, AlertTriangle, Activity, CheckCircle2, Banknote, XCircle, Wallet, Hourglass, Info } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { KPIData } from "./KPICards";
+import type { CardKey } from "@/lib/dashboardDrilldowns";
 
 export interface LoanMetric {
   key: "active" | "sanctioned" | "disbursed";
@@ -27,6 +27,7 @@ interface Props {
   loanMetrics: LoanMetric[];
   secondaryLoanMetrics?: SecondaryLoanMetric[];
   loading: boolean;
+  onCardClick?: (key: CardKey) => void;
 }
 
 const loanIconMap: Record<LoanMetric["key"], React.ElementType> = {
@@ -41,29 +42,35 @@ const secondaryIconMap: Record<SecondaryLoanMetric["key"], React.ElementType> = 
   payout_pending: Hourglass,
 };
 
-export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetrics, loading }: Props) {
-  const navigate = useNavigate();
+export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetrics, loading, onCardClick }: Props) {
+  const open = (key: CardKey) => onCardClick?.(key);
 
-  const heroMetrics = [
+  const heroMetrics: Array<{
+    key: CardKey;
+    label: string;
+    value: string;
+    icon: React.ElementType;
+    tooltip: string;
+  }> = [
     {
+      key: "total_earned",
       label: "Total Earned",
       value: formatINR(kpiData.paidPayout),
       icon: Wallet,
-      onClick: () => navigate("/payouts"),
       tooltip: "Total commission accrued on disbursed leads (pending + approved + paid). Includes amounts not yet released to your bank.",
     },
     {
+      key: "pending_payout_amount",
       label: "Pending Payout Amount",
       value: formatINR(kpiData.pendingPayout),
       icon: Clock,
-      onClick: () => navigate("/payouts?status=pending"),
       tooltip: "Total ₹ value of payout records that are pending, triggered, or approved but not yet paid out.",
     },
     {
+      key: "needs_attention",
       label: "Needs Attention",
       value: kpiData.needsAttention.toString(),
       icon: AlertTriangle,
-      onClick: () => navigate("/leads?attention=true"),
       tooltip: "Leads on hold, with documents pending, awaiting reupload, query raised, pending info, in credit query, or flagged as duplicate. Click to filter the Leads page.",
     },
   ];
