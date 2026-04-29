@@ -79,7 +79,8 @@ export function MasterCombobox({
 
   let triggerLabel = placeholder;
   if (selected) triggerLabel = selected.hint ? `${selected.label} (${selected.hint})` : selected.label;
-  else if (isManual) triggerLabel = `"${manualValue.trim()}" (not in list)`;
+  else if (isManual) triggerLabel = manualValue.trim() ? `"${manualValue.trim()}" (not in list)` : placeholder;
+  else if (manualValue.trim()) triggerLabel = manualValue.trim();
 
   return (
     <div className="space-y-1.5">
