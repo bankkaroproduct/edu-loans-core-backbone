@@ -745,6 +745,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       coapplicant_name: form.coapplicant_name.trim() || null,
       coapplicant_relation: form.coapplicant_relation || null,
       coapplicant_mobile: form.coapplicant_mobile.trim() ? (normalizePhone(form.coapplicant_mobile) ?? form.coapplicant_mobile.trim()) : null,
+      coapplicant_email: form.coapplicant_email.trim() || null,
       coapplicant_income: form.coapplicant_income ? Number(form.coapplicant_income) : null,
       coapplicant_income_source: form.coapplicant_income_source || null,
       coapplicant_employment_type: form.coapplicant_employment_type || null,
