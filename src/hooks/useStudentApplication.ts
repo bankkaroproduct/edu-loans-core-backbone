@@ -39,6 +39,10 @@ export interface StudentFormData {
     twelfth?: string;
     graduation?: string;
     highest_qualification_score?: string;
+    // Extended (Student portal only — persisted in test_scores JSONB to avoid schema change):
+    coapplicant_age?: string;
+    coapplicant_cibil?: string;
+    work_experience_years?: string;
   };
   // Co-applicant
   coapplicant_name: string;
