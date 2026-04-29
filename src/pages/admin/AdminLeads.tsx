@@ -111,7 +111,7 @@ export default function AdminLeads() {
 
   const [filters, setFilters] = useState<AdminLeadFilterState>(initialFilters);
   const [searchInput, setSearchInput] = useState(initialFilters.search);
-  const [sortKey, setSortKey] = useState<SortKey>((searchParams.get("sort") as SortKey) ?? "updated_at");
+  const [sortKey, setSortKey] = useState<SortKey>((searchParams.get("sort") as SortKey) ?? "created_at");
   const [sortDir, setSortDir] = useState<SortDir>((searchParams.get("dir") as SortDir) ?? "desc");
   const [page, setPage] = useState(parseInt(searchParams.get("page") ?? "1", 10) || 1);
 
