@@ -143,13 +143,12 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   const [editLeadStage, setEditLeadStage] = useState<string | null>(null);
 
   // Guardrail: never allow activeStep to settle on a step that's not in the
-  // current mode's list. If partner mode lands on `financial` (e.g. via stale
-  // draft state), normalize it.
+  // current mode's list (e.g. stale `assign` after switching out of admin-edit).
   useEffect(() => {
     if (!stepIds.includes(activeStep)) {
-      setActiveStep(isAdminForm ? "financial" : "notes");
+      setActiveStep(stepIds[0]);
     }
-  }, [stepIds, activeStep, isAdminForm]);
+  }, [stepIds, activeStep]);
 
   const goToStep = useCallback(
     (target: StepId) => {
@@ -157,14 +156,10 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         setActiveStep(target);
         return;
       }
-      // Mode mismatch — normalize. Admin-only step requested in partner mode → notes.
-      if (target === "financial" && !isAdminForm) {
-        setActiveStep("notes");
-      } else {
-        setActiveStep(stepIds[0]);
-      }
+      // Unknown id for the current mode (e.g. `assign` outside admin-edit) → clamp to first step.
+      setActiveStep(stepIds[0]);
     },
-    [stepIds, isAdminForm],
+    [stepIds],
   );
 
   const [countries, setCountries] = useState<Country[]>([]);
