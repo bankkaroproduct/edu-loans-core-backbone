@@ -227,6 +227,11 @@ export function useStudentApplication() {
         twelfth: ts.twelfth?.toString() || prev.test_scores.twelfth || "",
         graduation: ts.graduation?.toString() || prev.test_scores.graduation || "",
         highest_qualification_score: ts.highest_qualification_score?.toString() || prev.test_scores.highest_qualification_score || "",
+        coapplicant_age: ts.coapplicant_age?.toString() || prev.test_scores.coapplicant_age || "",
+        coapplicant_cibil: ts.coapplicant_cibil?.toString() || prev.test_scores.coapplicant_cibil || "",
+        work_experience_years: ts.work_experience_years !== undefined && ts.work_experience_years !== null
+          ? ts.work_experience_years.toString()
+          : (prev.test_scores.work_experience_years || ""),
       },
       coapplicant_name: lead.coapplicant_name || prev.coapplicant_name,
       coapplicant_relation: lead.coapplicant_relation || prev.coapplicant_relation,
