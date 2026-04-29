@@ -34,19 +34,37 @@ export default function StudentCoapplicantDetails() {
   const collateralState = collateralBoolToState(formData.collateral_available);
 
   const validateCoapplicant = (): string | null => {
-    if (!formData.coapplicant_name?.trim()) return "Co-applicant full name is required";
-    if (!formData.coapplicant_relation?.trim()) return "Co-applicant relationship is required";
+    // 1. Name
+    if (!formData.coapplicant_name?.trim()) return "Co-applicant Name is required";
+    // 2. Age
+    const ageStr = String(formData.test_scores.coapplicant_age ?? "").trim();
+    if (!ageStr) return "Co-applicant Age is required";
+    const age = parseInt(ageStr, 10);
+    if (!Number.isFinite(age) || age < 18 || age > 100) return "Co-applicant Age must be between 18 and 100";
+    // 3. Relation
+    if (!formData.coapplicant_relation?.trim()) return "Co-applicant Relation is required";
+    // 4. Mobile
+    if (!formData.coapplicant_mobile?.trim()) return "Co-applicant Mobile is required";
+    if (!/^\d{10}$/.test(formData.coapplicant_mobile.trim())) return "Co-applicant Mobile must be a 10-digit number";
+    // 5. Email
+    if (!formData.coapplicant_email?.trim()) return "Co-applicant Email is required";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.coapplicant_email.trim())) return "Co-applicant Email format is invalid";
+    // 6. Employment Type
+    if (!formData.coapplicant_employment_type?.trim()) return "Employment Type is required";
+    // 7. Employer / Occupation
+    if (!formData.coapplicant_employer?.trim()) return "Employer / Occupation is required";
+    // 8. Monthly Income
     const income = parseFloat(formData.coapplicant_income);
-    if (!formData.coapplicant_income || isNaN(income) || income <= 0) {
-      return "Co-applicant monthly income is required and must be a positive number";
-    }
-    if (formData.coapplicant_mobile && formData.coapplicant_mobile.length !== 10) {
-      return "Co-applicant mobile must be a 10-digit number";
-    }
-    if (formData.coapplicant_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.coapplicant_email)) {
-      return "Co-applicant email format is invalid";
-    }
-    // Collateral notes are OPTIONAL even when state === "likely". No hard validation here.
+    if (!formData.coapplicant_income || isNaN(income) || income <= 0) return "Monthly Income is required and must be a positive number";
+    // 9. Existing EMI
+    if (formData.coapplicant_existing_emi === "" || formData.coapplicant_existing_emi == null) return "Existing EMI is required (enter 0 if none)";
+    const emi = parseFloat(String(formData.coapplicant_existing_emi));
+    if (isNaN(emi) || emi < 0) return "Existing EMI must be a non-negative number";
+    // 10. CIBIL Score
+    const cibilStr = String(formData.test_scores.coapplicant_cibil ?? "").trim();
+    if (!cibilStr) return "CIBIL Score is required";
+    const cibil = parseInt(cibilStr, 10);
+    if (!Number.isFinite(cibil) || cibil < 300 || cibil > 900) return "CIBIL Score must be between 300 and 900";
     return null;
   };
 
