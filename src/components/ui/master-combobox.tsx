@@ -143,7 +143,7 @@ export function MasterCombobox({
         </PopoverContent>
       </Popover>
 
-      {(isManual || (!selected && manualValue)) && (
+      {isManual && (
         <Input
           value={manualValue}
           onChange={(e) => onChangeManual(e.target.value)}
