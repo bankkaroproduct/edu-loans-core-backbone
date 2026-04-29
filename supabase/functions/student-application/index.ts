@@ -561,7 +561,34 @@ Deno.serve(async (req) => {
     // --- SAVE CO-APPLICANT ---
     if (action === "save_coapplicant") {
       if (!existingLeadId) return jsonResponse({ error: "No existing application found. Complete basic details first." }, 400);
-      const coFields = {
+
+      // Merge co-applicant extension fields (age, CIBIL) into existing test_scores
+      // JSONB without clobbering test/academic keys saved during education step.
+      const extensionRaw = (data?.test_scores_extension as Record<string, unknown>) || {};
+      let mergedTestScores: Record<string, unknown> | undefined = undefined;
+      if (extensionRaw && typeof extensionRaw === "object") {
+        const { data: existing, error: fetchErr } = await supabaseAdmin
+          .from("student_leads")
+          .select("test_scores")
+          .eq("id", existingLeadId)
+          .single();
+        if (fetchErr) return jsonResponse({ error: fetchErr.message }, 500);
+        const current = (existing?.test_scores as Record<string, unknown>) || {};
+        mergedTestScores = { ...current };
+        // Only set keys we explicitly handle here; preserve everything else.
+        for (const k of ["coapplicant_age", "coapplicant_cibil"]) {
+          if (k in extensionRaw) {
+            const v = (extensionRaw as any)[k];
+            if (v === null || v === "" || v === undefined) {
+              delete (mergedTestScores as any)[k];
+            } else {
+              (mergedTestScores as any)[k] = v;
+            }
+          }
+        }
+      }
+
+      const coFields: Record<string, unknown> = {
         coapplicant_name: data?.coapplicant_name as string || null,
         coapplicant_relation: data?.coapplicant_relation as string || null,
         coapplicant_mobile: data?.coapplicant_mobile as string || null,
@@ -574,6 +601,10 @@ Deno.serve(async (req) => {
         collateral_available: data?.collateral_available as boolean ?? null,
         collateral_notes: data?.collateral_notes as string || null,
       };
+      if (mergedTestScores !== undefined) {
+        coFields.test_scores = mergedTestScores;
+      }
+
       const { data: updated, error } = await supabaseAdmin
         .from("student_leads")
         .update(coFields)
