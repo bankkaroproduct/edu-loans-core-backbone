@@ -7,6 +7,12 @@ import {
   matchHighestQualification,
   fetchHighestQualificationOptions,
 } from "@/lib/highestQualificationOptions";
+import {
+  EMPLOYMENT_TYPE_OPTIONS,
+  matchEmploymentType,
+  fetchEmploymentTypeOptions,
+} from "@/lib/employmentTypeOptions";
+import { intakeSessionLabel } from "@/lib/intakeSession";
 
 type AppUser = Tables<"users">;
 
