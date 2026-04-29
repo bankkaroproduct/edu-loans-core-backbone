@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { evaluate } from "@/lib/bre/engine";
 import { loadActive } from "@/lib/bre/loader";
-import { buildBreProfileFromLead } from "@/lib/bre/leadProfile";
+import { buildBreProfileFromLeadAsync } from "@/lib/bre/leadProfile";
 import type { BreResult } from "@/lib/bre/types";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -36,7 +36,7 @@ export function AdminCalculateBreCard({ lead }: { lead: Lead }) {
     setRunning(true);
     setResult(null);
     try {
-      const { profile, missing: missingFields } = buildBreProfileFromLead(lead);
+      const { profile, missing: missingFields } = await buildBreProfileFromLeadAsync(lead);
       setMissing(missingFields);
 
       const { cfg, rules } = await loadActive();
