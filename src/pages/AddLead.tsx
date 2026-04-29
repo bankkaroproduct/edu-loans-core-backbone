@@ -1640,6 +1640,24 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 <ReviewRow label="12th Score" value={form.twelfth_score} nudgeStep="study" nudgeField="twelfth_score" />
                 <ReviewRow label="Graduation Score" value={form.graduation_score} />
                 {form.marks_gpa ? <ReviewRow label="Marks / GPA (legacy)" value={form.marks_gpa} /> : null}
+                {form.work_experience_years && (
+                  <ReviewRow
+                    label="Work Experience"
+                    value={formatWorkExperience(form.work_experience_years) || form.work_experience_years}
+                  />
+                )}
+                {(form.ielts || form.toefl || form.duolingo || form.gre || form.gmat) && (
+                  <ReviewRow
+                    label="Test Scores"
+                    value={[
+                      form.ielts && `IELTS: ${form.ielts}`,
+                      form.toefl && `TOEFL: ${form.toefl}`,
+                      form.duolingo && `Duolingo: ${form.duolingo}`,
+                      form.gre && `GRE: ${form.gre}`,
+                      form.gmat && `GMAT: ${form.gmat}`,
+                    ].filter(Boolean).join(" · ")}
+                  />
+                )}
               </div>
               {/* Financial Info — required group, rendered for both partner and admin modes */}
               <div>
