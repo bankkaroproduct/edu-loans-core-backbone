@@ -14,11 +14,11 @@ interface Props {
 
 function Field({ icon: Icon, label, value }: { icon: typeof User; label: string; value: string | null | undefined }) {
   return (
-    <div className="flex items-start gap-2">
+    <div className="flex items-start gap-2 min-w-0">
       <Icon className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
-        <p className="text-sm font-medium truncate">{value || "—"}</p>
+        <p className="text-sm font-medium break-words" title={value || undefined}>{value || "—"}</p>
       </div>
     </div>
   );
@@ -86,7 +86,7 @@ export function AdminPartnerCard({ partner, isStudentDirect }: Props) {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-2 pt-2 border-t">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t">
             <Field icon={User} label="Contact Person" value={partner.contact_person_name} />
             <Field icon={Mail} label="Email" value={partner.contact_person_email} />
             <Field icon={Phone} label="Phone" value={partner.contact_person_phone} />
