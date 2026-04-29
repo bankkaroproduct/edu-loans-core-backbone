@@ -120,7 +120,7 @@ export function InlineEditField({
         toast.error(`Failed to load ${label}`, { description: readErr.message });
         return;
       }
-      const current = ((row as Record<string, unknown> | null)?.[jsonbColumn] ?? {}) as Record<string, unknown>;
+      const current = ((row as unknown as Record<string, unknown> | null)?.[jsonbColumn] ?? {}) as Record<string, unknown>;
       const next = { ...(typeof current === "object" && current ? current : {}) };
       if (trimmed === "") {
         delete next[field];
