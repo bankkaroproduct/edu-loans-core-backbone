@@ -10,10 +10,23 @@ interface Props {
   studentName: string;
   isDraft: boolean;
   onClose: () => void;
+  /**
+   * When true, all post-save navigation buttons route to the admin
+   * surfaces (/admin/leads/<id>, /admin/leads, /admin/leads/new, /admin)
+   * instead of the partner ones. This ensures admins land back on the
+   * admin Lead Detail page after editing — which freshly fetches and
+   * therefore reflects the just-saved values.
+   */
+  isAdminContext?: boolean;
 }
 
-export function LeadSuccessDialog({ open, leadId, leadDisplayId, studentName, isDraft, onClose }: Props) {
+export function LeadSuccessDialog({ open, leadId, leadDisplayId, studentName, isDraft, onClose, isAdminContext = false }: Props) {
   const navigate = useNavigate();
+
+  const detailPath = (id: string) => (isAdminContext ? `/admin/leads/${id}` : `/leads/${id}`);
+  const listPath = isAdminContext ? "/admin/leads" : "/leads";
+  const newLeadPath = isAdminContext ? "/admin/leads/new" : "/leads/new";
+  const dashboardPath = isAdminContext ? "/admin" : "/";
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -41,16 +54,16 @@ export function LeadSuccessDialog({ open, leadId, leadDisplayId, studentName, is
         </DialogHeader>
         <DialogFooter className="flex-col gap-2 sm:flex-col">
           {leadId && (
-            <Button className="w-full" onClick={() => navigate(`/leads/${leadId}`)}>
+            <Button className="w-full" onClick={() => navigate(detailPath(leadId))}>
               Open Lead Detail
             </Button>
           )}
-          <Button className="w-full" variant={leadId ? "outline" : "default"} onClick={() => navigate("/leads")}>
+          <Button className="w-full" variant={leadId ? "outline" : "default"} onClick={() => navigate(listPath)}>
             View Submitted Leads
           </Button>
           <div className="flex gap-2 w-full">
-            <Button variant="outline" className="flex-1" onClick={() => navigate("/leads/new")}>Add Another Lead</Button>
-            <Button variant="outline" className="flex-1" onClick={() => navigate("/")}>Dashboard</Button>
+            <Button variant="outline" className="flex-1" onClick={() => navigate(newLeadPath)}>Add Another Lead</Button>
+            <Button variant="outline" className="flex-1" onClick={() => navigate(dashboardPath)}>Dashboard</Button>
           </div>
         </DialogFooter>
       </DialogContent>
