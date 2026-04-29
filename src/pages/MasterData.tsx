@@ -6,10 +6,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { PageSkeleton } from "@/components/shared/PageSkeleton";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { BookOpen, Search, Info } from "lucide-react";
+import { BookOpen, Search, Info, Download } from "lucide-react";
 import { intakeSessionLabel } from "@/lib/intakeSession";
 
 type Column = { key: string; label: string; compute?: (row: any) => string };
@@ -21,9 +22,39 @@ interface MasterTableProps {
   orderBy?: { column: string; ascending: boolean };
   filterActive?: boolean;
   searchPlaceholder?: string;
+  exportFileName?: string;
 }
 
-function MasterTable({ table, columns, searchKeys, orderBy, filterActive = true, searchPlaceholder }: MasterTableProps) {
+/** CSV-safe cell: escape quotes/commas/newlines per RFC 4180. */
+function csvCell(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  const s = typeof value === "boolean" ? (value ? "Yes" : "No") : String(value);
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function downloadCsv(filename: string, columns: Column[], rows: any[]) {
+  const header = columns.map((c) => csvCell(c.label)).join(",");
+  const body = rows
+    .map((row) =>
+      columns
+        .map((c) => csvCell(c.compute ? c.compute(row) : row[c.key]))
+        .join(","),
+    )
+    .join("\n");
+  const csv = `${header}\n${body}`;
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function MasterTable({ table, columns, searchKeys, orderBy, filterActive = true, searchPlaceholder, exportFileName }: MasterTableProps) {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -55,16 +86,29 @@ function MasterTable({ table, columns, searchKeys, orderBy, filterActive = true,
 
   if (loading) return <PageSkeleton variant="table" />;
 
+  const fileName = exportFileName ?? `${table}.csv`;
+
   return (
     <div className="space-y-3">
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder={searchPlaceholder ?? "Search…"}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
-        />
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="relative max-w-md flex-1 min-w-[220px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder={searchPlaceholder ?? "Search…"}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => downloadCsv(fileName, columns, filtered)}
+          disabled={filtered.length === 0}
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Export CSV
+        </Button>
       </div>
 
       {filtered.length === 0 ? (
@@ -115,13 +159,22 @@ function MasterTable({ table, columns, searchKeys, orderBy, filterActive = true,
   );
 }
 
+const VALID_TABS = [
+  "countries",
+  "universities",
+  "courses",
+  "intakes",
+  "qualifications",
+  "employment_types",
+  "documents",
+  "stages",
+];
+
 export default function MasterData() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState(
-    initialTab && ["countries", "universities", "courses", "intakes", "qualifications", "documents", "stages"].includes(initialTab)
-      ? initialTab
-      : "countries"
+    initialTab && VALID_TABS.includes(initialTab) ? initialTab : "countries"
   );
 
   useEffect(() => {
@@ -159,6 +212,7 @@ export default function MasterData() {
           <TabsTrigger value="courses">Courses</TabsTrigger>
           <TabsTrigger value="intakes">Intakes</TabsTrigger>
           <TabsTrigger value="qualifications">Highest Qualification</TabsTrigger>
+          <TabsTrigger value="employment_types">Employment Types</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="stages">Lifecycle Stages</TabsTrigger>
         </TabsList>
@@ -179,6 +233,7 @@ export default function MasterData() {
                 searchKeys={["country_name", "iso_code"]}
                 orderBy={{ column: "country_name", ascending: true }}
                 searchPlaceholder="Search countries…"
+                exportFileName="countries.csv"
               />
             </CardContent>
           </Card>
@@ -201,6 +256,7 @@ export default function MasterData() {
                 searchKeys={["university_name", "country"]}
                 orderBy={{ column: "university_name", ascending: true }}
                 searchPlaceholder="Search universities or countries…"
+                exportFileName="universities.csv"
               />
             </CardContent>
           </Card>
@@ -224,6 +280,7 @@ export default function MasterData() {
                 searchKeys={["course_name", "course_category"]}
                 orderBy={{ column: "course_name", ascending: true }}
                 searchPlaceholder="Search courses or categories…"
+                exportFileName="courses.csv"
               />
             </CardContent>
           </Card>
@@ -248,6 +305,7 @@ export default function MasterData() {
                 searchKeys={["intake_term", "intake_year"]}
                 orderBy={{ column: "sort_order", ascending: true }}
                 searchPlaceholder="Search intakes…"
+                exportFileName="intakes.csv"
               />
             </CardContent>
           </Card>
@@ -269,6 +327,29 @@ export default function MasterData() {
                 searchKeys={["qualification_label"]}
                 orderBy={{ column: "sort_order", ascending: true }}
                 searchPlaceholder="Search qualifications…"
+                exportFileName="highest_qualifications.csv"
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="employment_types">
+          <Card>
+            <CardHeader>
+              <CardTitle>Employment Types</CardTitle>
+              <CardDescription>Allowed values for the <code className="font-mono text-xs px-1 py-0.5 rounded bg-muted">coapplicant_employment_type</code> field used in lead creation and bulk upload.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <MasterTable
+                table="employment_type_master"
+                columns={[
+                  { key: "sort_order", label: "#" },
+                  { key: "employment_type_label", label: "Employment Type" },
+                ]}
+                searchKeys={["employment_type_label"]}
+                orderBy={{ column: "sort_order", ascending: true }}
+                searchPlaceholder="Search employment types…"
+                exportFileName="employment_types.csv"
               />
             </CardContent>
           </Card>
@@ -291,6 +372,7 @@ export default function MasterData() {
                 searchKeys={["document_name", "document_category", "document_code"]}
                 orderBy={{ column: "document_name", ascending: true }}
                 searchPlaceholder="Search documents…"
+                exportFileName="documents.csv"
               />
             </CardContent>
           </Card>
@@ -313,6 +395,7 @@ export default function MasterData() {
                 searchKeys={["stage_label", "stage_key"]}
                 orderBy={{ column: "sort_order", ascending: true }}
                 searchPlaceholder="Search stages…"
+                exportFileName="lifecycle_stages.csv"
               />
             </CardContent>
           </Card>
