@@ -624,21 +624,27 @@ export async function processBulkUpload(
         coapplicant_relation: row.coapplicant_relation ?? null,
         coapplicant_income: row.coapplicant_income ?? null,
         coapplicant_existing_emi: row.coapplicant_existing_emi ?? null,
+        coapplicant_employment_type: row.coapplicant_employment_type ?? null,
+        coapplicant_employer: row.coapplicant_employer ?? null,
         collateral_available: row.collateral_available ?? null,
         collateral_notes: row.collateral_notes ?? null,
-        // Academic — mirror Add Lead conventions:
-        //  - highest_qualification → text column (Add Lead behavior)
-        //  - highest_qualification_score → marks_gpa text column (Add Lead behavior)
-        //  - 10th / 12th / graduation scores + qualification score → test_scores jsonb
-        //    (matches Student portal academic capture shape so Lead Detail can read it)
+        // Academic + co-applicant extension — mirror Add Lead conventions:
+        //  - highest_qualification → text column
+        //  - highest_qualification_score → marks_gpa text column
+        //  - 10th/12th/graduation, work_experience_years, coapplicant_age,
+        //    coapplicant_cibil, and free-text test_scores raw_text → test_scores jsonb
         highest_qualification: row.highest_qualification ?? null,
         marks_gpa: row.highest_qualification_score != null ? String(row.highest_qualification_score) : null,
         test_scores: (() => {
-          const ts: Record<string, number> = {};
+          const ts: Record<string, number | string> = {};
           if (row.tenth_score != null) ts.tenth = row.tenth_score;
           if (row.twelfth_score != null) ts.twelfth = row.twelfth_score;
           if (row.graduation_score != null) ts.graduation = row.graduation_score;
           if (row.highest_qualification_score != null) ts.highest_qualification = row.highest_qualification_score;
+          if (row.work_experience != null) ts.work_experience_years = row.work_experience;
+          if (row.coapplicant_age != null) ts.coapplicant_age = row.coapplicant_age;
+          if (row.coapplicant_cibil != null) ts.coapplicant_cibil = row.coapplicant_cibil;
+          if (row.test_scores_raw) ts.raw_text = row.test_scores_raw;
           return Object.keys(ts).length > 0 ? ts : {};
         })() as any,
         current_stage: "submitted" as any,
