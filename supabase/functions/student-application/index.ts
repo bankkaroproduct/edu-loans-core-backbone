@@ -537,6 +537,22 @@ Deno.serve(async (req) => {
     // --- SAVE EDUCATION ---
     if (action === "save_education") {
       if (!existingLeadId) return jsonResponse({ error: "No existing application found. Complete basic details first." }, 400);
+      // Merge test_scores: preserve any keys saved on other steps (e.g. coapplicant_age,
+      // coapplicant_cibil saved during the Co-applicant step) by reading current then spreading.
+      const incomingScores = (data?.test_scores as Record<string, unknown>) || {};
+      const { data: existingEdu, error: fetchEduErr } = await supabaseAdmin
+        .from("student_leads")
+        .select("test_scores")
+        .eq("id", existingLeadId)
+        .single();
+      if (fetchEduErr) return jsonResponse({ error: fetchEduErr.message }, 500);
+      const currentEdu = (existingEdu?.test_scores as Record<string, unknown>) || {};
+      const preservedKeys = ["coapplicant_age", "coapplicant_cibil"];
+      const mergedEduScores: Record<string, unknown> = { ...incomingScores };
+      for (const k of preservedKeys) {
+        if (k in currentEdu && !(k in incomingScores)) mergedEduScores[k] = currentEdu[k];
+      }
+
       const eduFields: Record<string, unknown> = {
         highest_qualification: data?.highest_qualification as string || null,
         marks_gpa: data?.marks_gpa as string || null,
@@ -546,7 +562,7 @@ Deno.serve(async (req) => {
         university_id: (data?.university_id as string) || null,
         intake_term: data?.intake_term as string || "Fall",
         intake_year: data?.intake_year ? Number(data.intake_year) : new Date().getFullYear() + 1,
-        test_scores: data?.test_scores || {},
+        test_scores: mergedEduScores,
       };
       const { data: updated, error } = await supabaseAdmin
         .from("student_leads")
