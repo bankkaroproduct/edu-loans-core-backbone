@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -76,6 +76,7 @@ const initialState: State = {
 export default function AdminLeadDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [state, setState] = useState<State>(initialState);
 
   // Shared source of truth for the lead's document requirements + uploaded files,
@@ -144,7 +145,7 @@ export default function AdminLeadDetail() {
     }
   }, [id]);
 
-  useEffect(() => { loadAll(); }, [loadAll]);
+  useEffect(() => { loadAll(); }, [loadAll, location.key]);
 
   if (state.loading) {
     return (
