@@ -1688,6 +1688,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   nudgeStep="financial"
                   nudgeField="coapplicant_existing_emi"
                 />
+                {form.coapplicant_cibil && <ReviewRow label="CIBIL Score" value={form.coapplicant_cibil} />}
                 <ReviewRow label="Collateral" value={form.collateral_state === "likely" ? "Likely" : form.collateral_state === "unlikely" ? "Unlikely" : "Not sure"} />
                 {form.collateral_state === "likely" && form.collateral_notes && (
                   <ReviewRow label="Collateral Notes" value={form.collateral_notes} />
