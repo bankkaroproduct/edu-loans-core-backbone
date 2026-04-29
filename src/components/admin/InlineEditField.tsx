@@ -103,9 +103,42 @@ export function InlineEditField({
     const trimmed = draft.trim();
     const oldVal = localValue ?? null;
     const writeValue = parseValue ? parseValue(trimmed) : trimmed;
+
+    let updatePayload: Record<string, unknown>;
+    let auditOld: Record<string, unknown>;
+    let auditNew: Record<string, unknown>;
+
+    if (jsonbColumn) {
+      // Read existing JSONB, merge/delete the key, write whole object back
+      const { data: row, error: readErr } = await supabase
+        .from("student_leads")
+        .select(jsonbColumn)
+        .eq("id", leadId)
+        .maybeSingle();
+      if (readErr) {
+        setSaving(false);
+        toast.error(`Failed to load ${label}`, { description: readErr.message });
+        return;
+      }
+      const current = ((row as Record<string, unknown> | null)?.[jsonbColumn] ?? {}) as Record<string, unknown>;
+      const next = { ...(typeof current === "object" && current ? current : {}) };
+      if (trimmed === "") {
+        delete next[field];
+      } else {
+        next[field] = writeValue;
+      }
+      updatePayload = { [jsonbColumn]: next };
+      auditOld = { [jsonbColumn]: { [field]: current?.[field] ?? null } };
+      auditNew = { [jsonbColumn]: { [field]: trimmed === "" ? null : writeValue } };
+    } else {
+      updatePayload = { [field]: writeValue };
+      auditOld = { [field]: oldVal };
+      auditNew = { [field]: writeValue };
+    }
+
     const { error } = await supabase
       .from("student_leads")
-      .update({ [field]: writeValue } as never)
+      .update(updatePayload as never)
       .eq("id", leadId);
     if (error) {
       setSaving(false);
