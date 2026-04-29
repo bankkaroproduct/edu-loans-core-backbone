@@ -246,6 +246,53 @@ export default function StudentEducationDetails() {
         </p>
       </div>
 
+      {/* Work Experience — placed above Test Scores. Persists in test_scores.work_experience_years.
+          Single decimal digit only: "3" = 3 years, "3.2" = 3 years 2 months. Fresher stores 0. */}
+      <Card>
+        <CardContent className="p-5 sm:p-6">
+          <div className="mb-1 flex items-center gap-2">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Work Experience</h2>
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">Optional</span>
+          </div>
+          <p className="mb-4 text-xs text-muted-foreground">
+            Enter as years with one optional decimal for months. Example: <code>3</code> = 3 years; <code>3.2</code> = 3 years and 2 months.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Years of Experience</Label>
+              <Input
+                inputMode="decimal"
+                value={
+                  formData.test_scores.work_experience_years === "0"
+                    ? ""
+                    : (formData.test_scores.work_experience_years || "")
+                }
+                disabled={formData.test_scores.work_experience_years === "0"}
+                onChange={e => updateTestScore("work_experience_years", sanitizeWorkExpInput(e.target.value))}
+                placeholder="e.g. 3 or 3.2"
+              />
+              {formData.test_scores.work_experience_years &&
+               formData.test_scores.work_experience_years !== "0" && (
+                <p className="text-xs text-muted-foreground">
+                  {formatWorkExperience(formData.test_scores.work_experience_years) || "Enter a valid value"}
+                </p>
+              )}
+            </div>
+            <div className="flex items-end">
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox
+                  checked={formData.test_scores.work_experience_years === "0"}
+                  onCheckedChange={(v) => {
+                    updateTestScore("work_experience_years", v === true ? "0" : "");
+                  }}
+                />
+                <span>I'm a Fresher (no work experience)</span>
+              </label>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Test Scores */}
       <Card>
         <CardContent className="p-5 sm:p-6">
