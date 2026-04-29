@@ -34,19 +34,37 @@ export default function StudentCoapplicantDetails() {
   const collateralState = collateralBoolToState(formData.collateral_available);
 
   const validateCoapplicant = (): string | null => {
-    if (!formData.coapplicant_name?.trim()) return "Co-applicant full name is required";
-    if (!formData.coapplicant_relation?.trim()) return "Co-applicant relationship is required";
+    // 1. Name
+    if (!formData.coapplicant_name?.trim()) return "Co-applicant Name is required";
+    // 2. Age
+    const ageStr = String(formData.test_scores.coapplicant_age ?? "").trim();
+    if (!ageStr) return "Co-applicant Age is required";
+    const age = parseInt(ageStr, 10);
+    if (!Number.isFinite(age) || age < 18 || age > 100) return "Co-applicant Age must be between 18 and 100";
+    // 3. Relation
+    if (!formData.coapplicant_relation?.trim()) return "Co-applicant Relation is required";
+    // 4. Mobile
+    if (!formData.coapplicant_mobile?.trim()) return "Co-applicant Mobile is required";
+    if (!/^\d{10}$/.test(formData.coapplicant_mobile.trim())) return "Co-applicant Mobile must be a 10-digit number";
+    // 5. Email
+    if (!formData.coapplicant_email?.trim()) return "Co-applicant Email is required";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.coapplicant_email.trim())) return "Co-applicant Email format is invalid";
+    // 6. Employment Type
+    if (!formData.coapplicant_employment_type?.trim()) return "Employment Type is required";
+    // 7. Employer / Occupation
+    if (!formData.coapplicant_employer?.trim()) return "Employer / Occupation is required";
+    // 8. Monthly Income
     const income = parseFloat(formData.coapplicant_income);
-    if (!formData.coapplicant_income || isNaN(income) || income <= 0) {
-      return "Co-applicant monthly income is required and must be a positive number";
-    }
-    if (formData.coapplicant_mobile && formData.coapplicant_mobile.length !== 10) {
-      return "Co-applicant mobile must be a 10-digit number";
-    }
-    if (formData.coapplicant_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.coapplicant_email)) {
-      return "Co-applicant email format is invalid";
-    }
-    // Collateral notes are OPTIONAL even when state === "likely". No hard validation here.
+    if (!formData.coapplicant_income || isNaN(income) || income <= 0) return "Monthly Income is required and must be a positive number";
+    // 9. Existing EMI
+    if (formData.coapplicant_existing_emi === "" || formData.coapplicant_existing_emi == null) return "Existing EMI is required (enter 0 if none)";
+    const emi = parseFloat(String(formData.coapplicant_existing_emi));
+    if (isNaN(emi) || emi < 0) return "Existing EMI must be a non-negative number";
+    // 10. CIBIL Score
+    const cibilStr = String(formData.test_scores.coapplicant_cibil ?? "").trim();
+    if (!cibilStr) return "CIBIL Score is required";
+    const cibil = parseInt(cibilStr, 10);
+    if (!Number.isFinite(cibil) || cibil < 300 || cibil > 900) return "CIBIL Score must be between 300 and 900";
     return null;
   };
 
@@ -92,34 +110,39 @@ export default function StudentCoapplicantDetails() {
         <CardContent className="p-5 sm:p-6">
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Co-applicant Information</h2>
           <div className="grid gap-4 sm:grid-cols-2">
+            {/* 1. Name */}
             <div className="space-y-1.5">
-              <Label>Relationship to Student</Label>
-              <Select value={formData.coapplicant_relation} onValueChange={v => updateField("coapplicant_relation", v)}>
-                <SelectTrigger><SelectValue placeholder="Select relationship" /></SelectTrigger>
-                <SelectContent>{RELATIONSHIPS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Full Name</Label>
+              <Label>Full Name *</Label>
               <Input value={formData.coapplicant_name} onChange={e => updateField("coapplicant_name", e.target.value)} placeholder="Co-applicant's full name" />
               <p className="text-xs text-muted-foreground">Name as per Aadhaar Card / Passport</p>
             </div>
+            {/* 2. Age */}
             <div className="space-y-1.5">
-              <Label>Mobile Number</Label>
-              <Input value={formData.coapplicant_mobile} onChange={e => updateField("coapplicant_mobile", e.target.value.replace(/\D/g, "").slice(0, 10))} placeholder="10-digit mobile" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Email Address</Label>
-              <Input type="email" value={formData.coapplicant_email} onChange={e => updateField("coapplicant_email", e.target.value)} placeholder="email@example.com" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Co-applicant Age</Label>
+              <Label>Co-applicant Age *</Label>
               <Input
                 inputMode="numeric"
                 value={formData.test_scores.coapplicant_age || ""}
                 onChange={e => updateTestScore("coapplicant_age", e.target.value.replace(/\D/g, "").slice(0, 3))}
                 placeholder="e.g. 48"
               />
+            </div>
+            {/* 3. Relation */}
+            <div className="space-y-1.5">
+              <Label>Relationship to Student *</Label>
+              <Select value={formData.coapplicant_relation} onValueChange={v => updateField("coapplicant_relation", v)}>
+                <SelectTrigger><SelectValue placeholder="Select relationship" /></SelectTrigger>
+                <SelectContent>{RELATIONSHIPS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            {/* 4. Mobile */}
+            <div className="space-y-1.5">
+              <Label>Mobile Number *</Label>
+              <Input value={formData.coapplicant_mobile} onChange={e => updateField("coapplicant_mobile", e.target.value.replace(/\D/g, "").slice(0, 10))} placeholder="10-digit mobile" inputMode="numeric" />
+            </div>
+            {/* 5. Email */}
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>Email Address *</Label>
+              <Input type="email" value={formData.coapplicant_email} onChange={e => updateField("coapplicant_email", e.target.value)} placeholder="email@example.com" />
             </div>
           </div>
         </CardContent>
@@ -132,42 +155,47 @@ export default function StudentCoapplicantDetails() {
           <div className="grid gap-4 sm:grid-cols-2">
             {/* Income Source field removed from UI per scoped form-fix pass.
                 Existing `coapplicant_income_source` values in storage remain untouched. */}
+            {/* 6. Employment Type */}
             <div className="space-y-1.5">
-              <Label>Employment Type</Label>
+              <Label>Employment Type *</Label>
               <Select value={formData.coapplicant_employment_type} onValueChange={v => updateField("coapplicant_employment_type", v)}>
                 <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
                 <SelectContent>{EMPLOYMENT_TYPES.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent>
               </Select>
             </div>
+            {/* 7. Employer / Occupation */}
             <div className="space-y-1.5">
-              <Label>Employer / Occupation</Label>
+              <Label>Employer / Occupation *</Label>
               <Input value={formData.coapplicant_employer} onChange={e => updateField("coapplicant_employer", e.target.value)} placeholder="e.g. Tata Consultancy Services" />
             </div>
+            {/* 8. Monthly Income */}
             <div className="space-y-1.5">
-              <Label>Monthly Income (₹)</Label>
+              <Label>Monthly Income (₹) *</Label>
               <MoneyInput
                 value={formData.coapplicant_income}
                 onChange={d => updateField("coapplicant_income", d)}
                 placeholder="e.g. 80,000"
               />
             </div>
+            {/* 9. Existing EMI */}
             <div className="space-y-1.5">
-              <Label>Existing EMI (₹/month)</Label>
+              <Label>Existing EMI (₹/month) *</Label>
               <MoneyInput
                 value={formData.coapplicant_existing_emi}
                 onChange={d => updateField("coapplicant_existing_emi", d)}
-                placeholder="e.g. 15,000"
+                placeholder="Enter 0 if none"
               />
             </div>
-            <div className="space-y-1.5">
-              <Label>CIBIL Score</Label>
+            {/* 10. CIBIL Score */}
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>CIBIL Score *</Label>
               <Input
                 inputMode="numeric"
                 value={formData.test_scores.coapplicant_cibil || ""}
                 onChange={e => updateTestScore("coapplicant_cibil", e.target.value.replace(/\D/g, "").slice(0, 3))}
                 placeholder="e.g. 750"
               />
-              <p className="text-xs text-muted-foreground">Range 300–900. Optional but improves lender match accuracy.</p>
+              <p className="text-xs text-muted-foreground">Range 300–900. Required to improve lender match accuracy.</p>
             </div>
             <div className="sm:col-span-2">
               <CollateralRadio

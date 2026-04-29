@@ -482,26 +482,38 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       if (!form.loan_amount_required) return { message: "Approx loan amount is required", step: "financial", field: "loan_amount_required" };
       if (isNaN(Number(form.loan_amount_required)) || Number(form.loan_amount_required) <= 0)
         return { message: "Loan amount must be a positive number", step: "financial", field: "loan_amount_required" };
-      if (!form.coapplicant_name.trim()) return { message: "Co-applicant name is required", step: "financial", field: "coapplicant_name" };
-      if (!form.coapplicant_mobile.trim()) return { message: "Co-applicant mobile is required", step: "financial", field: "coapplicant_mobile" };
-      if (!isValidIndianPhone(form.coapplicant_mobile)) return { message: "Co-applicant mobile must be a valid 10-digit Indian number", step: "financial", field: "coapplicant_mobile" };
-      // NOTE: coapplicant_income_source removed from UI per scoped form-fix pass.
-      // Existing DB values are preserved on save; the field is no longer captured.
-      if (!form.coapplicant_employment_type) return { message: "Employment type is required", step: "financial", field: "coapplicant_employment_type" };
-      if (!form.coapplicant_employer.trim()) return { message: "Employer / occupation is required", step: "financial", field: "coapplicant_employer" };
-      if (!form.coapplicant_income || Number(form.coapplicant_income) <= 0)
-        return { message: "Monthly income is required", step: "financial", field: "coapplicant_income" };
-      if (form.coapplicant_existing_emi === "" || isNaN(Number(form.coapplicant_existing_emi)) || Number(form.coapplicant_existing_emi) < 0)
-        return { message: "Existing EMI is required (enter 0 if none)", step: "financial", field: "coapplicant_existing_emi" };
-      // Optional fields — validate format only when filled.
-      if (form.coapplicant_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.coapplicant_email.trim()))
-        return { message: "Co-applicant email format is invalid", step: "financial", field: "coapplicant_email" };
-      if (form.coapplicant_age.trim()) {
+      // Co-applicant — strict required field set (10 fields), order matches UI.
+      // 1. Name
+      if (!form.coapplicant_name.trim()) return { message: "Co-Applicant Name is required", step: "financial", field: "coapplicant_name" };
+      // 2. Age
+      if (!form.coapplicant_age.trim()) return { message: "Co-Applicant Age is required", step: "financial", field: "coapplicant_age" };
+      {
         const a = parseInt(form.coapplicant_age, 10);
         if (!Number.isFinite(a) || a < 18 || a > 100)
-          return { message: "Co-applicant age must be between 18 and 100", step: "financial", field: "coapplicant_age" };
+          return { message: "Co-Applicant Age must be between 18 and 100", step: "financial", field: "coapplicant_age" };
       }
-      if (form.coapplicant_cibil.trim()) {
+      // 3. Relation
+      if (!form.coapplicant_relation) return { message: "Co-Applicant Relation is required", step: "financial", field: "coapplicant_relation" };
+      // 4. Mobile
+      if (!form.coapplicant_mobile.trim()) return { message: "Co-Applicant Mobile is required", step: "financial", field: "coapplicant_mobile" };
+      if (!isValidIndianPhone(form.coapplicant_mobile)) return { message: "Co-Applicant Mobile must be a valid 10-digit Indian number", step: "financial", field: "coapplicant_mobile" };
+      // 5. Email
+      if (!form.coapplicant_email.trim()) return { message: "Co-Applicant Email is required", step: "financial", field: "coapplicant_email" };
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.coapplicant_email.trim()))
+        return { message: "Co-Applicant Email format is invalid", step: "financial", field: "coapplicant_email" };
+      // 6. Employment Type
+      if (!form.coapplicant_employment_type) return { message: "Employment Type is required", step: "financial", field: "coapplicant_employment_type" };
+      // 7. Employer / Occupation
+      if (!form.coapplicant_employer.trim()) return { message: "Employer / Occupation is required", step: "financial", field: "coapplicant_employer" };
+      // 8. Monthly Income
+      if (!form.coapplicant_income || Number(form.coapplicant_income) <= 0)
+        return { message: "Monthly Income is required", step: "financial", field: "coapplicant_income" };
+      // 9. Existing EMI
+      if (form.coapplicant_existing_emi === "" || isNaN(Number(form.coapplicant_existing_emi)) || Number(form.coapplicant_existing_emi) < 0)
+        return { message: "Existing EMI is required (enter 0 if none)", step: "financial", field: "coapplicant_existing_emi" };
+      // 10. CIBIL Score
+      if (!form.coapplicant_cibil.trim()) return { message: "CIBIL Score is required", step: "financial", field: "coapplicant_cibil" };
+      {
         const c = parseInt(form.coapplicant_cibil, 10);
         if (!Number.isFinite(c) || c < 300 || c > 900)
           return { message: "CIBIL Score must be between 300 and 900", step: "financial", field: "coapplicant_cibil" };
@@ -1388,11 +1400,35 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 <LakhsInput value={form.loan_amount_required} onChange={(d) => set("loan_amount_required", d)} placeholder="e.g. 25 or 12.5" />
                 <p className="text-xs text-muted-foreground">Rough expectation — exact figure can be refined later by ops.</p>
               </div>
+              {/* 1. Name */}
               <div className="space-y-2" data-field="coapplicant_name">
                 <Label>Co-Applicant Name *</Label>
                 <Input value={form.coapplicant_name} onChange={(e) => set("coapplicant_name", e.target.value)} placeholder="Full name" />
                 <p className="text-xs text-muted-foreground">Name as per Aadhaar and Passport</p>
               </div>
+              {/* 2. Age */}
+              <div className="space-y-2" data-field="coapplicant_age">
+                <Label>Co-Applicant Age *</Label>
+                <Input
+                  inputMode="numeric"
+                  value={form.coapplicant_age}
+                  onChange={(e) => set("coapplicant_age", e.target.value.replace(/\D/g, "").slice(0, 3))}
+                  placeholder="e.g. 48"
+                />
+              </div>
+              {/* 3. Relation */}
+              <div className="space-y-2" data-field="coapplicant_relation">
+                <Label>Co-Applicant Relation *</Label>
+                <Select value={form.coapplicant_relation} onValueChange={(v) => set("coapplicant_relation", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select relation" /></SelectTrigger>
+                  <SelectContent>
+                    {CO_APPLICANT_RELATIONS.map((r) => (
+                      <SelectItem key={r} value={r}>{r}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* 4. Mobile */}
               <div className="space-y-2" data-field="coapplicant_mobile">
                 <Label>Co-Applicant Mobile *</Label>
                 <Input
@@ -1403,8 +1439,9 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 />
                 <p className="text-xs text-muted-foreground">Number as per Aadhaar and Passport</p>
               </div>
-              <div className="space-y-2" data-field="coapplicant_email">
-                <Label>Co-Applicant Email</Label>
+              {/* 5. Email */}
+              <div className="space-y-2 md:col-span-2" data-field="coapplicant_email">
+                <Label>Co-Applicant Email *</Label>
                 <Input
                   type="email"
                   value={form.coapplicant_email}
@@ -1412,29 +1449,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   placeholder="email@example.com"
                 />
               </div>
-              <div className="space-y-2" data-field="coapplicant_age">
-                <Label>Co-Applicant Age</Label>
-                <Input
-                  inputMode="numeric"
-                  value={form.coapplicant_age}
-                  onChange={(e) => set("coapplicant_age", e.target.value.replace(/\D/g, "").slice(0, 3))}
-                  placeholder="e.g. 48"
-                />
-              </div>
-              <div className="space-y-2" data-field="coapplicant_relation">
-                <Label>Co-Applicant Relation</Label>
-                <Select value={form.coapplicant_relation} onValueChange={(v) => set("coapplicant_relation", v)}>
-                  <SelectTrigger><SelectValue placeholder="Select relation" /></SelectTrigger>
-                  <SelectContent>
-                    {CO_APPLICANT_RELATIONS.map((r) => (
-                      <SelectItem key={r} value={r}>{r}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {/* Income Source field removed from UI per scoped form-fix pass.
-                  Existing DB values are preserved on save (form state still hydrates +
-                  writes the value back) so legacy records are not wiped. */}
+              {/* 6. Employment Type */}
               <div className="space-y-2" data-field="coapplicant_employment_type">
                 <Label>Employment Type *</Label>
                 <Select value={form.coapplicant_employment_type} onValueChange={(v) => set("coapplicant_employment_type", v)}>
@@ -1446,27 +1461,31 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   </SelectContent>
                 </Select>
               </div>
+              {/* 7. Employer / Occupation */}
               <div className="space-y-2" data-field="coapplicant_employer">
                 <Label>Employer / Occupation *</Label>
                 <Input value={form.coapplicant_employer} onChange={(e) => set("coapplicant_employer", e.target.value)} placeholder="Company / occupation" />
               </div>
+              {/* 8. Monthly Income */}
               <div className="space-y-2" data-field="coapplicant_income">
                 <Label>Monthly Income (₹) *</Label>
                 <MoneyInput value={form.coapplicant_income} onChange={(d) => set("coapplicant_income", d)} placeholder="e.g. 1,25,000" />
               </div>
+              {/* 9. Existing EMI */}
               <div className="space-y-2" data-field="coapplicant_existing_emi">
                 <Label>Existing EMI (₹) *</Label>
                 <MoneyInput value={form.coapplicant_existing_emi} onChange={(d) => set("coapplicant_existing_emi", d)} placeholder="Enter 0 if none" />
               </div>
-              <div className="space-y-2" data-field="coapplicant_cibil">
-                <Label>CIBIL Score</Label>
+              {/* 10. CIBIL Score */}
+              <div className="space-y-2 md:col-span-2" data-field="coapplicant_cibil">
+                <Label>CIBIL Score *</Label>
                 <Input
                   inputMode="numeric"
                   value={form.coapplicant_cibil}
                   onChange={(e) => set("coapplicant_cibil", e.target.value.replace(/\D/g, "").slice(0, 3))}
                   placeholder="e.g. 750"
                 />
-                <p className="text-xs text-muted-foreground">Range 300–900. Optional but improves lender match accuracy.</p>
+                <p className="text-xs text-muted-foreground">Range 300–900. Required to improve lender match accuracy.</p>
               </div>
               <div className="md:col-span-2">
                 <CollateralRadio
@@ -1668,12 +1687,13 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   nudgeStep="financial"
                   nudgeField="loan_amount_required"
                 />
+                {/* Canonical co-applicant order: Name, Age, Relation, Mobile, Email,
+                    Employment Type, Employer, Income, Existing EMI, CIBIL. */}
                 <ReviewRow label="Co-Applicant Name" value={form.coapplicant_name} nudgeStep="financial" nudgeField="coapplicant_name" />
+                <ReviewRow label="Age" value={form.coapplicant_age} nudgeStep="financial" nudgeField="coapplicant_age" />
+                <ReviewRow label="Relation" value={form.coapplicant_relation} nudgeStep="financial" nudgeField="coapplicant_relation" />
                 <ReviewRow label="Mobile Number" value={form.coapplicant_mobile} nudgeStep="financial" nudgeField="coapplicant_mobile" />
-                {form.coapplicant_email && <ReviewRow label="Email" value={form.coapplicant_email} />}
-                {form.coapplicant_age && <ReviewRow label="Age" value={form.coapplicant_age} />}
-                <ReviewRow label="Relation" value={form.coapplicant_relation} />
-                {/* Income Source review row removed — field no longer captured in UI. */}
+                <ReviewRow label="Email" value={form.coapplicant_email} nudgeStep="financial" nudgeField="coapplicant_email" />
                 <ReviewRow label="Employment Type" value={form.coapplicant_employment_type} nudgeStep="financial" nudgeField="coapplicant_employment_type" />
                 <ReviewRow label="Employer / Occupation" value={form.coapplicant_employer} nudgeStep="financial" nudgeField="coapplicant_employer" />
                 <ReviewRow
@@ -1688,7 +1708,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   nudgeStep="financial"
                   nudgeField="coapplicant_existing_emi"
                 />
-                {form.coapplicant_cibil && <ReviewRow label="CIBIL Score" value={form.coapplicant_cibil} />}
+                <ReviewRow label="CIBIL Score" value={form.coapplicant_cibil} nudgeStep="financial" nudgeField="coapplicant_cibil" />
                 <ReviewRow label="Collateral" value={form.collateral_state === "likely" ? "Likely" : form.collateral_state === "unlikely" ? "Unlikely" : "Not sure"} />
                 {form.collateral_state === "likely" && form.collateral_notes && (
                   <ReviewRow label="Collateral Notes" value={form.collateral_notes} />

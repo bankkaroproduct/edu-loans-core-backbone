@@ -137,12 +137,12 @@ export default function StudentReviewSubmit() {
         readOnly={isReadOnly}
         items={[
           { label: "Name", value: formData.coapplicant_name },
-          { label: "Relationship", value: formData.coapplicant_relation },
           { label: "Age", value: formData.test_scores.coapplicant_age ? String(formData.test_scores.coapplicant_age) : null },
+          { label: "Relation", value: formData.coapplicant_relation },
           { label: "Mobile", value: formData.coapplicant_mobile },
           { label: "Email", value: formData.coapplicant_email },
-          { label: "Employment", value: formData.coapplicant_employment_type },
-          { label: "Employer", value: formData.coapplicant_employer },
+          { label: "Employment Type", value: formData.coapplicant_employment_type },
+          { label: "Employer / Occupation", value: formData.coapplicant_employer },
           { label: "Monthly Income", value: formData.coapplicant_income ? `₹${Number(formData.coapplicant_income).toLocaleString("en-IN")}` : null },
           { label: "Existing EMI", value: formData.coapplicant_existing_emi ? `₹${Number(formData.coapplicant_existing_emi).toLocaleString("en-IN")}/mo` : null },
           { label: "CIBIL Score", value: formData.test_scores.coapplicant_cibil ? String(formData.test_scores.coapplicant_cibil) : null },
