@@ -26,6 +26,13 @@ interface Props {
   options?: { value: string; label: string }[];
   /** When provided, transforms the draft string before save (e.g. "true" -> true for boolean columns). */
   parseValue?: (raw: string) => unknown;
+  /**
+   * When provided, the write merges the parsed value into the named JSONB column at `field` key,
+   * preserving sibling keys. The DB column to merge into is given here (e.g. "test_scores").
+   * In this mode, `field` becomes the JSON key (not a top-level column).
+   * Empty/blank trimmed string deletes the key from the JSONB.
+   */
+  jsonbColumn?: string;
 }
 
 /**
@@ -51,6 +58,7 @@ export function InlineEditField({
   className,
   options,
   parseValue,
+  jsonbColumn,
 }: Props) {
   const { appUser } = useAuth();
   const { isAdmin } = useRoleAccess();
@@ -95,9 +103,42 @@ export function InlineEditField({
     const trimmed = draft.trim();
     const oldVal = localValue ?? null;
     const writeValue = parseValue ? parseValue(trimmed) : trimmed;
+
+    let updatePayload: Record<string, unknown>;
+    let auditOld: Record<string, unknown>;
+    let auditNew: Record<string, unknown>;
+
+    if (jsonbColumn) {
+      // Read existing JSONB, merge/delete the key, write whole object back
+      const { data: row, error: readErr } = await supabase
+        .from("student_leads")
+        .select(jsonbColumn)
+        .eq("id", leadId)
+        .maybeSingle();
+      if (readErr) {
+        setSaving(false);
+        toast.error(`Failed to load ${label}`, { description: readErr.message });
+        return;
+      }
+      const current = ((row as unknown as Record<string, unknown> | null)?.[jsonbColumn] ?? {}) as Record<string, unknown>;
+      const next = { ...(typeof current === "object" && current ? current : {}) };
+      if (trimmed === "") {
+        delete next[field];
+      } else {
+        next[field] = writeValue;
+      }
+      updatePayload = { [jsonbColumn]: next };
+      auditOld = { [jsonbColumn]: { [field]: current?.[field] ?? null } };
+      auditNew = { [jsonbColumn]: { [field]: trimmed === "" ? null : writeValue } };
+    } else {
+      updatePayload = { [field]: writeValue };
+      auditOld = { [field]: oldVal };
+      auditNew = { [field]: writeValue };
+    }
+
     const { error } = await supabase
       .from("student_leads")
-      .update({ [field]: writeValue } as never)
+      .update(updatePayload as never)
       .eq("id", leadId);
     if (error) {
       setSaving(false);
@@ -112,9 +153,9 @@ export function InlineEditField({
         action_type: "admin_direct_edit",
         actor_user_id: appUser.id,
         actor_role: appUser.role,
-        old_value: { [field]: oldVal } as never,
-        new_value: { [field]: writeValue } as never,
-        meta: { field_count: 1, source: "admin_inline_edit", field } as never,
+        old_value: auditOld as never,
+        new_value: auditNew as never,
+        meta: { field_count: 1, source: "admin_inline_edit", field, jsonb_column: jsonbColumn ?? null } as never,
       } as never);
     } catch (e) {
       console.warn("[InlineEditField] audit log insert failed", e);

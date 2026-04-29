@@ -18,40 +18,37 @@ const AUTHENTICITY_LABEL: Record<string, { label: string; tone: "default" | "sec
   fraudulent: { label: "Fraudulent", tone: "destructive" },
 };
 
+interface EditableConfig {
+  leadId: string;
+  field: string;
+  jsonbColumn?: string;
+  inputType?: string;
+  options?: { value: string; label: string }[];
+  parseValue?: (raw: string) => unknown;
+  formatDisplay?: (v: string) => string;
+}
+
 function Field({
   label,
   value,
   editable,
-  /** Neutral non-editable fallback for derived/metadata fields. Never shows action-like nudge text. */
   readOnlyFallback = "—",
 }: {
   label: string;
   value: string | null | undefined;
-  editable?: {
-    leadId: string;
-    field: string;
-    inputType?: string;
-    options?: { value: string; label: string }[];
-    parseValue?: (raw: string) => unknown;
-    formatDisplay?: (v: string) => string;
-  };
+  editable?: EditableConfig;
   readOnlyFallback?: string;
 }) {
   const hasValue = value !== null && value !== undefined && value !== "";
   return (
     <div className="min-w-0">
       <span className="text-muted-foreground text-xs">{label}</span>
-      <p
-        className={
-          hasValue
-            ? "text-sm font-medium break-words"
-            : "text-sm text-muted-foreground/70"
-        }
-      >
+      <p className={hasValue ? "text-sm font-medium break-words" : "text-sm text-muted-foreground/70"}>
         {editable ? (
           <InlineEditField
             leadId={editable.leadId}
             field={editable.field}
+            jsonbColumn={editable.jsonbColumn}
             label={label}
             value={value ?? null}
             inputType={editable.inputType}
@@ -77,15 +74,43 @@ interface Props {
 
 export function LeadProfileSection({ lead, submittedByName }: Props) {
   const { isAdmin } = useRoleAccess();
+  const ts = (lead.test_scores ?? {}) as Record<string, unknown>;
+
   const ed = (
     field: string,
-    extras?: {
-      inputType?: string;
-      options?: { value: string; label: string }[];
-      parseValue?: (raw: string) => unknown;
-      formatDisplay?: (v: string) => string;
-    },
-  ) => (isAdmin ? { leadId: lead.id, field, ...extras } : undefined);
+    extras?: Omit<EditableConfig, "leadId" | "field">,
+  ): EditableConfig | undefined =>
+    isAdmin ? { leadId: lead.id, field, ...extras } : undefined;
+
+  // JSONB-backed editable: merges into test_scores without clobbering siblings.
+  const edTS = (
+    key: string,
+    extras?: Omit<EditableConfig, "leadId" | "field" | "jsonbColumn">,
+  ): EditableConfig | undefined =>
+    isAdmin ? { leadId: lead.id, field: key, jsonbColumn: "test_scores", ...extras } : undefined;
+
+  const tsStr = (k: string): string | null => {
+    const v = ts[k];
+    return v === null || v === undefined || v === "" ? null : String(v);
+  };
+
+  // Source-agnostic Highest Qualification Score:
+  // Some sources write to top-level marks_gpa; others write to test_scores.highest_qualification_score.
+  const hqScore =
+    (lead.marks_gpa && String(lead.marks_gpa).trim() !== "" ? String(lead.marks_gpa) : null) ??
+    tsStr("highest_qualification_score");
+  // Edit target: prefer the column the value lives on. If neither is set, default to marks_gpa.
+  const hqEditable = (() => {
+    const hasMarks = lead.marks_gpa && String(lead.marks_gpa).trim() !== "";
+    const hasTS = tsStr("highest_qualification_score") !== null;
+    if (hasTS && !hasMarks) return edTS("highest_qualification_score");
+    return ed("marks_gpa");
+  })();
+
+  const numericParse = (raw: string) => {
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : raw;
+  };
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
@@ -101,6 +126,22 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
             <Field label="First Name" value={lead.student_first_name} editable={ed("student_first_name")} />
             <Field label="Last Name" value={lead.student_last_name} editable={ed("student_last_name")} />
             <Field label="Full Name" value={lead.student_full_name} editable={ed("student_full_name")} />
+            <Field
+              label="Date of Birth"
+              value={(lead as Lead & { student_dob?: string | null }).student_dob ?? null}
+              editable={ed("student_dob", { inputType: "date" })}
+            />
+            <Field
+              label="Gender"
+              value={(lead as Lead & { student_gender?: string | null }).student_gender ?? null}
+              editable={ed("student_gender", {
+                options: [
+                  { value: "male", label: "Male" },
+                  { value: "female", label: "Female" },
+                  { value: "other", label: "Other" },
+                ],
+              })}
+            />
             <Field label="Mobile" value={lead.student_phone} editable={ed("student_phone")} />
             <Field label="Email" value={lead.student_email} editable={ed("student_email", { inputType: "email" })} />
             <Field label="WhatsApp" value={lead.student_whatsapp} editable={ed("student_whatsapp")} />
@@ -131,13 +172,7 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
             <Field
               label="Intake Year"
               value={lead.intake_year ? String(lead.intake_year) : null}
-              editable={ed("intake_year", {
-                inputType: "number",
-                parseValue: (raw) => {
-                  const n = Number(raw);
-                  return Number.isFinite(n) ? n : raw;
-                },
-              })}
+              editable={ed("intake_year", { inputType: "number", parseValue: numericParse })}
             />
             <Field
               label="Loan Amount"
@@ -145,27 +180,27 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
               editable={ed("loan_amount_required", {
                 inputType: "number",
                 formatDisplay: (v) => `₹${Number(v).toLocaleString()}`,
-                parseValue: (raw) => {
-                  const n = Number(raw);
-                  return Number.isFinite(n) ? n : raw;
-                },
+                parseValue: numericParse,
               })}
             />
             <Field label="Highest Qualification" value={lead.highest_qualification} editable={ed("highest_qualification")} />
-            <Field label="Highest Qualification Score" value={lead.marks_gpa} editable={ed("marks_gpa")} />
-            {(() => {
-              const ts = (lead.test_scores ?? {}) as Record<string, unknown>;
-              const tenth = ts.tenth != null ? String(ts.tenth) : null;
-              const twelfth = ts.twelfth != null ? String(ts.twelfth) : null;
-              const grad = ts.graduation != null ? String(ts.graduation) : null;
-              return (
-                <>
-                  <Field label="10th Score" value={tenth} />
-                  <Field label="12th Score" value={twelfth} />
-                  <Field label="Graduation Score" value={grad} />
-                </>
-              );
-            })()}
+            <Field label="Highest Qualification Score" value={hqScore} editable={hqEditable} />
+            <Field
+              label="Work Experience (years)"
+              value={tsStr("work_experience_years")}
+              editable={edTS("work_experience_years")}
+            />
+            <Field label="10th Score" value={tsStr("tenth")} editable={edTS("tenth")} />
+            <Field label="12th Score" value={tsStr("twelfth")} editable={edTS("twelfth")} />
+            <Field label="Graduation Score" value={tsStr("graduation")} editable={edTS("graduation")} />
+            <Field label="IELTS" value={tsStr("ielts")} editable={edTS("ielts")} />
+            <Field label="TOEFL" value={tsStr("toefl")} editable={edTS("toefl")} />
+            <Field label="PTE" value={tsStr("pte")} editable={edTS("pte")} />
+            <Field label="Duolingo" value={tsStr("duolingo")} editable={edTS("duolingo")} />
+            <Field label="GRE" value={tsStr("gre")} editable={edTS("gre")} />
+            <Field label="GMAT" value={tsStr("gmat")} editable={edTS("gmat")} />
+            <Field label="SAT" value={tsStr("sat")} editable={edTS("sat")} />
+            <Field label="Other Test Scores" value={tsStr("raw_text")} editable={edTS("raw_text")} />
           </div>
         </CardContent>
       </Card>
@@ -181,16 +216,44 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
           <div className="grid grid-cols-2 gap-3">
             <Field label="Co-Applicant" value={lead.coapplicant_name} editable={ed("coapplicant_name")} />
             <Field label="Relation" value={lead.coapplicant_relation} editable={ed("coapplicant_relation")} />
+            <Field label="Co-Applicant Mobile" value={lead.coapplicant_mobile} editable={ed("coapplicant_mobile")} />
+            <Field
+              label="Co-Applicant Email"
+              value={lead.coapplicant_email}
+              editable={ed("coapplicant_email", { inputType: "email" })}
+            />
+            <Field
+              label="Co-Applicant Age"
+              value={tsStr("coapplicant_age")}
+              editable={edTS("coapplicant_age", { inputType: "number", parseValue: numericParse })}
+            />
+            <Field
+              label="Co-Applicant CIBIL"
+              value={tsStr("coapplicant_cibil")}
+              editable={edTS("coapplicant_cibil", { inputType: "number", parseValue: numericParse })}
+            />
+            <Field
+              label="Co-Applicant Employment Type"
+              value={lead.coapplicant_employment_type}
+              editable={ed("coapplicant_employment_type")}
+            />
+            <Field
+              label="Co-Applicant Employer / Occupation"
+              value={lead.coapplicant_employer}
+              editable={ed("coapplicant_employer")}
+            />
+            <Field
+              label="Co-Applicant Income Source"
+              value={lead.coapplicant_income_source}
+              editable={ed("coapplicant_income_source")}
+            />
             <Field
               label="Co-Applicant Income"
               value={lead.coapplicant_income ? String(lead.coapplicant_income) : null}
               editable={ed("coapplicant_income", {
                 inputType: "number",
                 formatDisplay: (v) => `₹${Number(v).toLocaleString()}`,
-                parseValue: (raw) => {
-                  const n = Number(raw);
-                  return Number.isFinite(n) ? n : raw;
-                },
+                parseValue: numericParse,
               })}
             />
             <Field
@@ -199,10 +262,7 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
               editable={ed("coapplicant_existing_emi", {
                 inputType: "number",
                 formatDisplay: (v) => `₹${Number(v).toLocaleString()}`,
-                parseValue: (raw) => {
-                  const n = Number(raw);
-                  return Number.isFinite(n) ? n : raw;
-                },
+                parseValue: numericParse,
               })}
             />
             <Field
@@ -228,7 +288,7 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
         </CardContent>
       </Card>
 
-      {/* Source / Creation Context */}
+      {/* Source / Creation Context — system-only, untouched */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
@@ -237,8 +297,8 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Source Type" value={lead.source_type} editable={ed("source_type")} />
-            <Field label="Source Subtype" value={lead.source_sub_type} editable={ed("source_sub_type")} />
+            <Field label="Source Type" value={lead.source_type} />
+            <Field label="Source Subtype" value={lead.source_sub_type} />
             <Field label="Submitted By" value={submittedByName} readOnlyFallback="Not captured" />
             <Field label="Created At" value={new Date(lead.created_at).toLocaleString()} readOnlyFallback="—" />
             <Field label="Last Updated" value={new Date(lead.updated_at).toLocaleString()} readOnlyFallback="—" />
