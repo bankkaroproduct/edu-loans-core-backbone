@@ -31,8 +31,8 @@ globalThis.__SHIMMED_SUPABASE__ = sb;
 // indirectly by importing the sync mapper and adding the tier ourselves.
 
 // Use the sync mapper (no DB) and then patch university_tier in.
-import { buildBreProfileFromLead } from "/dev-server/src/lib/bre/leadProfile.ts";
-import { evaluate } from "/dev-server/src/lib/bre/engine.ts";
+import { buildBreProfileFromLead } from "../src/lib/bre/leadProfile";
+import { evaluate } from "../src/lib/bre/engine";
 
 function rankingBucketToTier(bucket: string | null | undefined): string | null {
   if (!bucket) return null;
