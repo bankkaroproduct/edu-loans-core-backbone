@@ -10,6 +10,12 @@
  */
 import { createClient } from "@supabase/supabase-js";
 
+// Shim browser globals so importing src/integrations/supabase/client.ts doesn't crash.
+(globalThis as any).localStorage = (globalThis as any).localStorage ?? {
+  getItem: () => null, setItem: () => {}, removeItem: () => {}, clear: () => {}, key: () => null, length: 0,
+};
+(globalThis as any).window = (globalThis as any).window ?? { location: { origin: "http://localhost" } };
+
 // We import the real engine + mapper helpers from project sources.
 // Mapper depends on `@/integrations/supabase/client`, so we shim it.
 import path from "path";
