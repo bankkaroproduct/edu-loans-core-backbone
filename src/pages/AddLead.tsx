@@ -1304,6 +1304,72 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
             </CardContent>
           </Card>
 
+          {/* Work Experience — placed above Test Scores. Persists in test_scores.work_experience_years.
+              Single decimal digit only: "3" = 3 years, "3.2" = 3 years 2 months. Fresher stores 0.
+              Reuses Student helpers (sanitizeWorkExpInput / formatWorkExperience / isValidWorkExp). */}
+          <Card className="mt-4">
+            <CardHeader><CardTitle className="text-lg">Work Experience</CardTitle></CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2" data-field="work_experience_years">
+                <Label>Total Work Experience (years)</Label>
+                <Input
+                  inputMode="decimal"
+                  value={
+                    form.work_experience_years === "0"
+                      ? ""
+                      : (form.work_experience_years || "")
+                  }
+                  disabled={form.work_experience_years === "0"}
+                  onChange={(e) => set("work_experience_years", sanitizeWorkExpInput(e.target.value))}
+                  placeholder="e.g. 3 or 3.2 (3 years 2 months)"
+                />
+                {form.work_experience_years && form.work_experience_years !== "0" && (
+                  <p className="text-xs text-muted-foreground">
+                    {formatWorkExperience(form.work_experience_years) || "Enter a valid value"}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2 flex items-end">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <Checkbox
+                    checked={form.work_experience_years === "0"}
+                    onCheckedChange={(v) => {
+                      set("work_experience_years", v === true ? "0" : "");
+                    }}
+                  />
+                  <span>I'm a Fresher (no work experience)</span>
+                </label>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Standardized Test Scores — aligned with Student portal keys
+              (ielts/toefl/duolingo/gre/gmat). All optional. Persists in test_scores JSONB. */}
+          <Card className="mt-4">
+            <CardHeader><CardTitle className="text-lg">Test Scores</CardTitle></CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-2">
+              {([
+                { key: "ielts", label: "IELTS", placeholder: "e.g. 7.5" },
+                { key: "toefl", label: "TOEFL", placeholder: "e.g. 105" },
+                { key: "duolingo", label: "Duolingo", placeholder: "e.g. 120" },
+                { key: "gre", label: "GRE", placeholder: "e.g. 320" },
+                { key: "gmat", label: "GMAT", placeholder: "e.g. 700" },
+              ] as const).map((t) => (
+                <div key={t.key} className="space-y-2" data-field={t.key}>
+                  <Label>{t.label}</Label>
+                  <Input
+                    value={(form as any)[t.key] || ""}
+                    onChange={(e) => set(t.key as any, e.target.value)}
+                    placeholder={t.placeholder}
+                  />
+                </div>
+              ))}
+              <div className="md:col-span-2">
+                <p className="text-xs text-muted-foreground">All test scores are optional — fill any that apply.</p>
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="flex justify-between mt-4">
             <Button variant="outline" onClick={() => goToStep("student")}>← Student Details</Button>
             <Button onClick={() => goNextFrom("study", studyNextTarget)}>
