@@ -91,7 +91,7 @@ function sameCountryName(a: string | null | undefined, b: string | null | undefi
 interface AddLeadProps {
   hideOwnHeader?: boolean;
   containerClassName?: string;
-  /** When true, render the admin 5-step structure with a dedicated Financial Info step. */
+  /** When true, render the admin step structure (adds Assign step in edit mode). */
   adminMode?: boolean;
 }
 
@@ -115,7 +115,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   const isAdminContext = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
   const isAdminForm = adminMode || isAdmin || isAdminContext;
 
-  // Mode-aware step list. Partner = 4 steps. Admin add = 5 steps. Admin edit = 6 steps (+ Assign).
+  // Mode-aware step list. Partner = 5 steps. Admin add = 5 steps. Admin edit = 6 steps (+ Assign).
   const steps = useMemo(() => {
     const list = isAdminForm ? (isEditMode ? ADMIN_EDIT_STEPS : ADMIN_STEPS) : PARTNER_STEPS;
     return list.map((id) => STEP_DEFS[id]);
@@ -143,13 +143,12 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   const [editLeadStage, setEditLeadStage] = useState<string | null>(null);
 
   // Guardrail: never allow activeStep to settle on a step that's not in the
-  // current mode's list. If partner mode lands on `financial` (e.g. via stale
-  // draft state), normalize it.
+  // current mode's list (e.g. stale `assign` after switching out of admin-edit).
   useEffect(() => {
     if (!stepIds.includes(activeStep)) {
-      setActiveStep(isAdminForm ? "financial" : "notes");
+      setActiveStep(stepIds[0]);
     }
-  }, [stepIds, activeStep, isAdminForm]);
+  }, [stepIds, activeStep]);
 
   const goToStep = useCallback(
     (target: StepId) => {
@@ -157,14 +156,10 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         setActiveStep(target);
         return;
       }
-      // Mode mismatch — normalize. Admin-only step requested in partner mode → notes.
-      if (target === "financial" && !isAdminForm) {
-        setActiveStep("notes");
-      } else {
-        setActiveStep(stepIds[0]);
-      }
+      // Unknown id for the current mode (e.g. `assign` outside admin-edit) → clamp to first step.
+      setActiveStep(stepIds[0]);
     },
-    [stepIds, isAdminForm],
+    [stepIds],
   );
 
   const [countries, setCountries] = useState<Country[]>([]);
@@ -892,8 +887,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   const backTarget = isAdminContext ? "/admin/leads" : "/leads";
 
   // Mode-aware navigation targets
-  const studyNextTarget: StepId = isAdminForm ? "financial" : "notes";
-  const notesBackTarget: StepId = isAdminForm ? "financial" : "study";
+  const studyNextTarget: StepId = "financial";
+  const notesBackTarget: StepId = "financial";
   const showAssignStep = isAdminForm && isEditMode;
   const notesNextTarget: StepId = showAssignStep ? "assign" : "review";
   const reviewBackTarget: StepId = showAssignStep ? "assign" : "notes";
@@ -1238,7 +1233,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
           <div className="flex justify-between mt-4">
             <Button variant="outline" onClick={() => goToStep("student")}>← Student Details</Button>
             <Button onClick={() => goNextFrom("study", studyNextTarget)}>
-              Next: {studyNextTarget === "financial" ? "Financial Info" : "Notes"} →
+              Next: Financial Info →
             </Button>
           </div>
         </TabsContent>
