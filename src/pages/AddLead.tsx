@@ -1392,6 +1392,16 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 <Label>Existing EMI (₹) *</Label>
                 <MoneyInput value={form.coapplicant_existing_emi} onChange={(d) => set("coapplicant_existing_emi", d)} placeholder="Enter 0 if none" />
               </div>
+              <div className="space-y-2" data-field="coapplicant_cibil">
+                <Label>CIBIL Score</Label>
+                <Input
+                  inputMode="numeric"
+                  value={form.coapplicant_cibil}
+                  onChange={(e) => set("coapplicant_cibil", e.target.value.replace(/\D/g, "").slice(0, 3))}
+                  placeholder="e.g. 750"
+                />
+                <p className="text-xs text-muted-foreground">Range 300–900. Optional but improves lender match accuracy.</p>
+              </div>
               <div className="md:col-span-2">
                 <CollateralRadio
                   state={form.collateral_state}
