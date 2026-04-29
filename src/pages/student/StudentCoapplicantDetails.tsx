@@ -155,42 +155,47 @@ export default function StudentCoapplicantDetails() {
           <div className="grid gap-4 sm:grid-cols-2">
             {/* Income Source field removed from UI per scoped form-fix pass.
                 Existing `coapplicant_income_source` values in storage remain untouched. */}
+            {/* 6. Employment Type */}
             <div className="space-y-1.5">
-              <Label>Employment Type</Label>
+              <Label>Employment Type *</Label>
               <Select value={formData.coapplicant_employment_type} onValueChange={v => updateField("coapplicant_employment_type", v)}>
                 <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
                 <SelectContent>{EMPLOYMENT_TYPES.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent>
               </Select>
             </div>
+            {/* 7. Employer / Occupation */}
             <div className="space-y-1.5">
-              <Label>Employer / Occupation</Label>
+              <Label>Employer / Occupation *</Label>
               <Input value={formData.coapplicant_employer} onChange={e => updateField("coapplicant_employer", e.target.value)} placeholder="e.g. Tata Consultancy Services" />
             </div>
+            {/* 8. Monthly Income */}
             <div className="space-y-1.5">
-              <Label>Monthly Income (₹)</Label>
+              <Label>Monthly Income (₹) *</Label>
               <MoneyInput
                 value={formData.coapplicant_income}
                 onChange={d => updateField("coapplicant_income", d)}
                 placeholder="e.g. 80,000"
               />
             </div>
+            {/* 9. Existing EMI */}
             <div className="space-y-1.5">
-              <Label>Existing EMI (₹/month)</Label>
+              <Label>Existing EMI (₹/month) *</Label>
               <MoneyInput
                 value={formData.coapplicant_existing_emi}
                 onChange={d => updateField("coapplicant_existing_emi", d)}
-                placeholder="e.g. 15,000"
+                placeholder="Enter 0 if none"
               />
             </div>
-            <div className="space-y-1.5">
-              <Label>CIBIL Score</Label>
+            {/* 10. CIBIL Score */}
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>CIBIL Score *</Label>
               <Input
                 inputMode="numeric"
                 value={formData.test_scores.coapplicant_cibil || ""}
                 onChange={e => updateTestScore("coapplicant_cibil", e.target.value.replace(/\D/g, "").slice(0, 3))}
                 placeholder="e.g. 750"
               />
-              <p className="text-xs text-muted-foreground">Range 300–900. Optional but improves lender match accuracy.</p>
+              <p className="text-xs text-muted-foreground">Range 300–900. Required to improve lender match accuracy.</p>
             </div>
             <div className="sm:col-span-2">
               <CollateralRadio
