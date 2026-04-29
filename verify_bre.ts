@@ -1,8 +1,8 @@
 // Inline E2E verification — replicates the mapper without touching the browser client.
+(globalThis as any).localStorage = { getItem: () => null, setItem: () => {}, removeItem: () => {} };
 import { createClient } from "@supabase/supabase-js";
 import { evaluate } from "./src/lib/bre/engine";
 
-globalThis.localStorage = { getItem: () => null, setItem: () => {}, removeItem: () => {} } as any;
 
 const sb = createClient(process.env.VITE_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
   auth: { persistSession: false },
