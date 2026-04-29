@@ -126,7 +126,7 @@ export default function Leads() {
   const [batchLeadIds, setBatchLeadIds] = useState<string[] | null>(null);
   const [dateFrom, setDateFrom] = useState<Date | undefined>(paramDateFrom ? new Date(paramDateFrom) : undefined);
   const [dateTo, setDateTo] = useState<Date | undefined>(paramDateTo ? new Date(paramDateTo) : undefined);
-  const [sortKey, setSortKey] = useState<SortKey>("updated_at");
+  const [sortKey, setSortKey] = useState<SortKey>("created_at");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [page, setPage] = useState(paramPage);
   const [showAdvanced, setShowAdvanced] = useState(false);
