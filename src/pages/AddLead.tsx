@@ -1687,12 +1687,13 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   nudgeStep="financial"
                   nudgeField="loan_amount_required"
                 />
+                {/* Canonical co-applicant order: Name, Age, Relation, Mobile, Email,
+                    Employment Type, Employer, Income, Existing EMI, CIBIL. */}
                 <ReviewRow label="Co-Applicant Name" value={form.coapplicant_name} nudgeStep="financial" nudgeField="coapplicant_name" />
+                <ReviewRow label="Age" value={form.coapplicant_age} nudgeStep="financial" nudgeField="coapplicant_age" />
+                <ReviewRow label="Relation" value={form.coapplicant_relation} nudgeStep="financial" nudgeField="coapplicant_relation" />
                 <ReviewRow label="Mobile Number" value={form.coapplicant_mobile} nudgeStep="financial" nudgeField="coapplicant_mobile" />
-                {form.coapplicant_email && <ReviewRow label="Email" value={form.coapplicant_email} />}
-                {form.coapplicant_age && <ReviewRow label="Age" value={form.coapplicant_age} />}
-                <ReviewRow label="Relation" value={form.coapplicant_relation} />
-                {/* Income Source review row removed — field no longer captured in UI. */}
+                <ReviewRow label="Email" value={form.coapplicant_email} nudgeStep="financial" nudgeField="coapplicant_email" />
                 <ReviewRow label="Employment Type" value={form.coapplicant_employment_type} nudgeStep="financial" nudgeField="coapplicant_employment_type" />
                 <ReviewRow label="Employer / Occupation" value={form.coapplicant_employer} nudgeStep="financial" nudgeField="coapplicant_employer" />
                 <ReviewRow
@@ -1707,7 +1708,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   nudgeStep="financial"
                   nudgeField="coapplicant_existing_emi"
                 />
-                {form.coapplicant_cibil && <ReviewRow label="CIBIL Score" value={form.coapplicant_cibil} />}
+                <ReviewRow label="CIBIL Score" value={form.coapplicant_cibil} nudgeStep="financial" nudgeField="coapplicant_cibil" />
                 <ReviewRow label="Collateral" value={form.collateral_state === "likely" ? "Likely" : form.collateral_state === "unlikely" ? "Unlikely" : "Not sure"} />
                 {form.collateral_state === "likely" && form.collateral_notes && (
                   <ReviewRow label="Collateral Notes" value={form.collateral_notes} />
