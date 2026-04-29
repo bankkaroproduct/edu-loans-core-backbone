@@ -139,7 +139,16 @@ const LEAD_IDS = ["EL-PL-000061", "EL-PL-000115", "EL-PL-000116", "EL-PL-000119"
     console.log(`  gateReason:               ${gateReason}`);
     console.log(`  eligible_lenders:         ${eligibleCount} / ${rules.length}`);
     console.log(`  projected_rate lenders:   ${rateLenders}`);
-    if (evalError) console.log(`  evalError: ${evalError}`);
+    // Diagnostic: top knockout reasons across lenders
+    try {
+      const result = evaluate(profile as any, cfg as any, rules as any);
+      const reasons: Record<string, number> = {};
+      for (const l of result.eligible_lenders) {
+        if (!l.eligible) for (const r of (l.rejection_reasons ?? [])) reasons[r] = (reasons[r] ?? 0) + 1;
+      }
+      const top = Object.entries(reasons).sort((a, b) => b[1] - a[1]).slice(0, 5);
+      if (top.length) console.log(`  knockout reasons:         ${top.map(([k, v]) => `${k}×${v}`).join(", ")}`);
+    } catch {}
   }
   console.log("\n" + "=".repeat(120));
 })().catch((e) => { console.error(e); process.exit(1); });
