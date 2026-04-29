@@ -105,6 +105,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   const { effectivePartnerId, effectiveUserId, isPartnerInactive, isEffectivePartnerInactive } = usePartnerContext();
   const { duplicates, checking, checkDuplicates } = useDuplicateCheck();
   const { options: QUALIFICATIONS } = useHighestQualificationOptions();
+  const { options: EMPLOYMENT_TYPE_OPTIONS } = useEmploymentTypeOptions();
   const [submitting, setSubmitting] = useState(false);
   const [hydrating, setHydrating] = useState(Boolean(hydrateId));
 
