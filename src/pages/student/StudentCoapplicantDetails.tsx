@@ -158,6 +158,15 @@ export default function StudentCoapplicantDetails() {
                 onChange={d => updateField("coapplicant_existing_emi", d)}
                 placeholder="e.g. 15,000"
               />
+            <div className="space-y-1.5">
+              <Label>CIBIL Score</Label>
+              <Input
+                inputMode="numeric"
+                value={formData.test_scores.coapplicant_cibil || ""}
+                onChange={e => updateTestScore("coapplicant_cibil", e.target.value.replace(/\D/g, "").slice(0, 3))}
+                placeholder="e.g. 750"
+              />
+              <p className="text-xs text-muted-foreground">Range 300–900. Optional but improves lender match accuracy.</p>
             </div>
             <div className="sm:col-span-2">
               <CollateralRadio
