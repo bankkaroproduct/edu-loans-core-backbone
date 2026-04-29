@@ -145,7 +145,7 @@ export default function AdminLeadDetail() {
     }
   }, [id]);
 
-  useEffect(() => { loadAll(); }, [loadAll]);
+  useEffect(() => { loadAll(); }, [loadAll, location.key]);
 
   if (state.loading) {
     return (
