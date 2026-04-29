@@ -214,6 +214,17 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     twelfth_score: "",
     graduation_score: "",
     highest_qualification_score: "",
+    // Co-applicant extension (mirrors Student portal — persisted in test_scores JSONB)
+    coapplicant_email: "",
+    coapplicant_age: "",          // numeric string in UI; persisted as number
+    coapplicant_cibil: "",        // numeric string in UI; persisted as number
+    work_experience_years: "",    // Student shorthand: "3" or "3.2"; "0" = Fresher
+    // Standardized test scores (aligned with Student portal keys)
+    ielts: "",
+    toefl: "",
+    duolingo: "",
+    gre: "",
+    gmat: "",
   });
 
   useEffect(() => {
