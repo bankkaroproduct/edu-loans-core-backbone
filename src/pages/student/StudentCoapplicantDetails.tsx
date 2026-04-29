@@ -112,6 +112,15 @@ export default function StudentCoapplicantDetails() {
               <Label>Email Address</Label>
               <Input type="email" value={formData.coapplicant_email} onChange={e => updateField("coapplicant_email", e.target.value)} placeholder="email@example.com" />
             </div>
+            <div className="space-y-1.5">
+              <Label>Co-applicant Age</Label>
+              <Input
+                inputMode="numeric"
+                value={formData.test_scores.coapplicant_age || ""}
+                onChange={e => updateTestScore("coapplicant_age", e.target.value.replace(/\D/g, "").slice(0, 3))}
+                placeholder="e.g. 48"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
