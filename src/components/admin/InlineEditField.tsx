@@ -153,9 +153,9 @@ export function InlineEditField({
         action_type: "admin_direct_edit",
         actor_user_id: appUser.id,
         actor_role: appUser.role,
-        old_value: { [field]: oldVal } as never,
-        new_value: { [field]: writeValue } as never,
-        meta: { field_count: 1, source: "admin_inline_edit", field } as never,
+        old_value: auditOld as never,
+        new_value: auditNew as never,
+        meta: { field_count: 1, source: "admin_inline_edit", field, jsonb_column: jsonbColumn ?? null } as never,
       } as never);
     } catch (e) {
       console.warn("[InlineEditField] audit log insert failed", e);
