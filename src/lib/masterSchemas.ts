@@ -226,6 +226,24 @@ export const MASTER_SCHEMAS: Record<string, MasterSchema> = {
     defaultSort: { column: "sort_order", ascending: true },
     addLabel: "Add qualification",
   },
+  employment_types: {
+    key: "employment_types",
+    label: "Employment Types",
+    table: "employment_type_master",
+    searchKeys: ["employment_type_label"],
+    searchPlaceholder: "Search employment types…",
+    columns: [
+      { key: "sort_order", label: "#" },
+      { key: "employment_type_label", label: "Employment Type" },
+    ],
+    fields: [
+      { key: "employment_type_label", label: "Employment type", type: "text", required: true, placeholder: "e.g. Salaried" },
+      { key: "sort_order", label: "Sort order", type: "number", hint: "Lower numbers appear first in dropdowns" },
+    ],
+    hasActiveFlag: true,
+    defaultSort: { column: "sort_order", ascending: true },
+    addLabel: "Add employment type",
+  },
   statuses: {
     key: "statuses",
     label: "Lifecycle Statuses",
