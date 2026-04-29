@@ -62,13 +62,9 @@ const CO_APPLICANT_RELATIONS = [
   "Father", "Mother", "Spouse", "Guardian", "Brother", "Sister", "Uncle", "Other",
 ];
 
-const EMPLOYMENT_TYPE_OPTIONS = [
-  "Salaried",
-  "Self-employed",
-  "Business owner",
-  "Retired",
-  "Other",
-];
+// Employment-type options come from `employment_type_master` (admin-managed)
+// with a hard-coded fallback. See `useEmploymentTypeOptions`.
+import { useEmploymentTypeOptions } from "@/hooks/useEmploymentTypeOptions";
 
 // Highest-qualification options come from the master table (admin-managed) with
 // a hard-coded fallback. See `useHighestQualificationOptions`.
@@ -109,6 +105,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   const { effectivePartnerId, effectiveUserId, isPartnerInactive, isEffectivePartnerInactive } = usePartnerContext();
   const { duplicates, checking, checkDuplicates } = useDuplicateCheck();
   const { options: QUALIFICATIONS } = useHighestQualificationOptions();
+  const { options: EMPLOYMENT_TYPE_OPTIONS } = useEmploymentTypeOptions();
   const [submitting, setSubmitting] = useState(false);
   const [hydrating, setHydrating] = useState(Boolean(hydrateId));
 
