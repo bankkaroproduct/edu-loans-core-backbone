@@ -62,13 +62,9 @@ const CO_APPLICANT_RELATIONS = [
   "Father", "Mother", "Spouse", "Guardian", "Brother", "Sister", "Uncle", "Other",
 ];
 
-const EMPLOYMENT_TYPE_OPTIONS = [
-  "Salaried",
-  "Self-employed",
-  "Business owner",
-  "Retired",
-  "Other",
-];
+// Employment-type options come from `employment_type_master` (admin-managed)
+// with a hard-coded fallback. See `useEmploymentTypeOptions`.
+import { useEmploymentTypeOptions } from "@/hooks/useEmploymentTypeOptions";
 
 // Highest-qualification options come from the master table (admin-managed) with
 // a hard-coded fallback. See `useHighestQualificationOptions`.
