@@ -1767,6 +1767,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         leadDisplayId={createdLeadDisplayId}
         studentName={fullName}
         isDraft={isDraftSuccess}
+        isAdminContext={isAdminContext}
         onClose={() => navigate(isAdminContext ? "/admin/leads" : "/leads")}
       />
     </div>
