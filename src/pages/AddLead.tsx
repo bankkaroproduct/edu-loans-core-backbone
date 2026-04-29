@@ -1337,6 +1337,24 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 />
                 <p className="text-xs text-muted-foreground">Number as per Aadhaar and Passport</p>
               </div>
+              <div className="space-y-2" data-field="coapplicant_email">
+                <Label>Co-Applicant Email</Label>
+                <Input
+                  type="email"
+                  value={form.coapplicant_email}
+                  onChange={(e) => set("coapplicant_email", e.target.value)}
+                  placeholder="email@example.com"
+                />
+              </div>
+              <div className="space-y-2" data-field="coapplicant_age">
+                <Label>Co-Applicant Age</Label>
+                <Input
+                  inputMode="numeric"
+                  value={form.coapplicant_age}
+                  onChange={(e) => set("coapplicant_age", e.target.value.replace(/\D/g, "").slice(0, 3))}
+                  placeholder="e.g. 48"
+                />
+              </div>
               <div className="space-y-2" data-field="coapplicant_relation">
                 <Label>Co-Applicant Relation</Label>
                 <Select value={form.coapplicant_relation} onValueChange={(v) => set("coapplicant_relation", v)}>
