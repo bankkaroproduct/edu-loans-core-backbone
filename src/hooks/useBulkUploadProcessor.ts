@@ -37,11 +37,17 @@ export interface ParsedRow {
   graduation_score?: number;
   highest_qualification?: string;
   highest_qualification_score?: number;
+  work_experience?: number;
+  test_scores_raw?: string;
   loan_amount_required?: number;
   coapplicant_name?: string;
   coapplicant_relation?: string;
+  coapplicant_age?: number;
+  coapplicant_employment_type?: string;
+  coapplicant_employer?: string;
   coapplicant_income?: number;
   coapplicant_existing_emi?: number;
+  coapplicant_cibil?: number;
   collateral_available?: boolean;
   collateral_notes?: string;
   source_sub_type?: string;
@@ -64,41 +70,48 @@ export type ProcessingStage = "idle" | "parsing" | "validating" | "processing" |
 /** Required-fields contract — unchanged business rules. */
 const REQUIRED_HEADERS = [
   "student_first_name", "student_last_name", "student_phone",
-  "intended_study_country", "intake_term", "intake_year",
+  "intended_study_country", "intake_session",
   "course_name", "loan_amount_required",
 ];
 
 /**
- * Final canonical header order — used everywhere (Partner + Admin):
+ * Final canonical 32-column header order — used everywhere (Partner + Admin):
  * - Downloaded template
- * - Parser strict-template check (rejects outdated templates missing the 6 new headers)
+ * - Parser strict-template check (rejects outdated templates missing new headers)
  * - UI column reference
  *
- * The 6 new fields (academic scores + EMI) are required IN THE TEMPLATE
- * (so old templates are cleanly rejected) but VALUES inside them stay optional.
+ * `intake_session` is a SINGLE composite column in quarter-format
+ * (e.g. "Apr-Jun-2026") — internally decomposed into `intake_term` + `intake_year`
+ * for storage. Old `intake_term` / `intake_year` columns are NO LONGER accepted.
  */
 const ALL_HEADERS = [
   "student_first_name", "student_last_name", "student_phone", "student_email",
   "student_whatsapp", "city", "state", "country_of_residence",
-  "intended_study_country", "intake_term", "intake_year", "course_name",
+  "intended_study_country", "intake_session", "course_name",
   "university_name",
   "10th_score", "12th_score", "graduation_score",
   "highest_qualification", "highest_qualification_score",
+  "work_experience", "test_scores",
   "loan_amount_required",
-  "coapplicant_name", "coapplicant_relation", "coapplicant_income",
-  "coapplicant_existing_emi",
+  "coapplicant_name", "coapplicant_relation",
+  "coapplicant_age", "coapplicant_employment_type", "coapplicant_employer",
+  "coapplicant_income", "coapplicant_existing_emi", "coapplicant_cibil",
   "collateral_available", "collateral_notes", "source_sub_type", "partner_remark",
 ];
 
-/** Headers introduced in the new template — used to detect outdated uploads. */
+/** Headers introduced in the newest template — used to detect outdated uploads. */
 const NEW_TEMPLATE_HEADERS = [
+  "intake_session",
   "10th_score", "12th_score", "graduation_score",
   "highest_qualification", "highest_qualification_score",
-  "coapplicant_existing_emi",
+  "work_experience", "test_scores",
+  "coapplicant_age", "coapplicant_employment_type", "coapplicant_employer",
+  "coapplicant_existing_emi", "coapplicant_cibil",
 ];
 
 /** Static fallback if the master fetch fails — keeps validation deterministic. */
 const FALLBACK_QUALIFICATIONS = HIGHEST_QUALIFICATION_OPTIONS;
+const FALLBACK_EMPLOYMENT_TYPES = EMPLOYMENT_TYPE_OPTIONS;
 
 export function getTemplateCSV(): string {
   return ALL_HEADERS.join(",") + "\n";
