@@ -60,14 +60,21 @@ export function MasterCombobox({
 }: MasterComboboxProps) {
   const [open, setOpen] = React.useState(false);
   // Local flag set when the user picks "Not available in list" so the manual
-  // input becomes visible immediately, even before any text is typed.
+  // input becomes visible immediately. The manual input is shown ONLY when
+  // this flag is true — never inferred from manualValue, since some callers
+  // store the chosen master label in manualValue (e.g. Course Name).
   const [manualOpened, setManualOpened] = React.useState(false);
-  const isManual = !selectedId && (manualOpened || manualValue.trim().length > 0);
+  const isManual = !selectedId && manualOpened;
   const selected = options.find((o) => o.id === selectedId) ?? null;
 
-  // Reset local manual flag whenever a master option is chosen.
+  // Reset local manual flag and clear stray manual text whenever a master
+  // option is chosen via selectedId (covers callers that track an id).
   React.useEffect(() => {
-    if (selectedId) setManualOpened(false);
+    if (selectedId) {
+      if (manualOpened) onChangeManual("");
+      setManualOpened(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
 
   let triggerLabel = placeholder;
