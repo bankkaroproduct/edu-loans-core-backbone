@@ -110,34 +110,39 @@ export default function StudentCoapplicantDetails() {
         <CardContent className="p-5 sm:p-6">
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Co-applicant Information</h2>
           <div className="grid gap-4 sm:grid-cols-2">
+            {/* 1. Name */}
             <div className="space-y-1.5">
-              <Label>Relationship to Student</Label>
-              <Select value={formData.coapplicant_relation} onValueChange={v => updateField("coapplicant_relation", v)}>
-                <SelectTrigger><SelectValue placeholder="Select relationship" /></SelectTrigger>
-                <SelectContent>{RELATIONSHIPS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Full Name</Label>
+              <Label>Full Name *</Label>
               <Input value={formData.coapplicant_name} onChange={e => updateField("coapplicant_name", e.target.value)} placeholder="Co-applicant's full name" />
               <p className="text-xs text-muted-foreground">Name as per Aadhaar Card / Passport</p>
             </div>
+            {/* 2. Age */}
             <div className="space-y-1.5">
-              <Label>Mobile Number</Label>
-              <Input value={formData.coapplicant_mobile} onChange={e => updateField("coapplicant_mobile", e.target.value.replace(/\D/g, "").slice(0, 10))} placeholder="10-digit mobile" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Email Address</Label>
-              <Input type="email" value={formData.coapplicant_email} onChange={e => updateField("coapplicant_email", e.target.value)} placeholder="email@example.com" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Co-applicant Age</Label>
+              <Label>Co-applicant Age *</Label>
               <Input
                 inputMode="numeric"
                 value={formData.test_scores.coapplicant_age || ""}
                 onChange={e => updateTestScore("coapplicant_age", e.target.value.replace(/\D/g, "").slice(0, 3))}
                 placeholder="e.g. 48"
               />
+            </div>
+            {/* 3. Relation */}
+            <div className="space-y-1.5">
+              <Label>Relationship to Student *</Label>
+              <Select value={formData.coapplicant_relation} onValueChange={v => updateField("coapplicant_relation", v)}>
+                <SelectTrigger><SelectValue placeholder="Select relationship" /></SelectTrigger>
+                <SelectContent>{RELATIONSHIPS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            {/* 4. Mobile */}
+            <div className="space-y-1.5">
+              <Label>Mobile Number *</Label>
+              <Input value={formData.coapplicant_mobile} onChange={e => updateField("coapplicant_mobile", e.target.value.replace(/\D/g, "").slice(0, 10))} placeholder="10-digit mobile" inputMode="numeric" />
+            </div>
+            {/* 5. Email */}
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>Email Address *</Label>
+              <Input type="email" value={formData.coapplicant_email} onChange={e => updateField("coapplicant_email", e.target.value)} placeholder="email@example.com" />
             </div>
           </div>
         </CardContent>
