@@ -328,6 +328,18 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         twelfth_score: ((data as any).test_scores?.twelfth ?? "").toString(),
         graduation_score: ((data as any).test_scores?.graduation ?? "").toString(),
         highest_qualification_score: ((data as any).test_scores?.highest_qualification_score ?? "").toString(),
+        coapplicant_email: (data as any).coapplicant_email ?? "",
+        coapplicant_age: ((data as any).test_scores?.coapplicant_age ?? "").toString(),
+        coapplicant_cibil: ((data as any).test_scores?.coapplicant_cibil ?? "").toString(),
+        work_experience_years: (() => {
+          const v = (data as any).test_scores?.work_experience_years;
+          return v === undefined || v === null ? "" : v.toString();
+        })(),
+        ielts: ((data as any).test_scores?.ielts ?? "").toString(),
+        toefl: ((data as any).test_scores?.toefl ?? "").toString(),
+        duolingo: ((data as any).test_scores?.duolingo ?? "").toString(),
+        gre: ((data as any).test_scores?.gre ?? "").toString(),
+        gmat: ((data as any).test_scores?.gmat ?? "").toString(),
       });
       setOriginalLead(data as unknown as Record<string, unknown>);
       setEditLeadStage(data.current_stage ?? null);
