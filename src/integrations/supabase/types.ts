@@ -508,6 +508,33 @@ export type Database = {
         }
         Relationships: []
       }
+      employment_type_master: {
+        Row: {
+          active_flag: boolean
+          created_at: string
+          employment_type_label: string
+          id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active_flag?: boolean
+          created_at?: string
+          employment_type_label: string
+          id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active_flag?: boolean
+          created_at?: string
+          employment_type_label?: string
+          id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       highest_qualification_master: {
         Row: {
           active_flag: boolean

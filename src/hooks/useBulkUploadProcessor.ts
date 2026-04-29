@@ -7,6 +7,12 @@ import {
   matchHighestQualification,
   fetchHighestQualificationOptions,
 } from "@/lib/highestQualificationOptions";
+import {
+  EMPLOYMENT_TYPE_OPTIONS,
+  matchEmploymentType,
+  fetchEmploymentTypeOptions,
+} from "@/lib/employmentTypeOptions";
+import { intakeSessionLabel } from "@/lib/intakeSession";
 
 type AppUser = Tables<"users">;
 
@@ -31,11 +37,17 @@ export interface ParsedRow {
   graduation_score?: number;
   highest_qualification?: string;
   highest_qualification_score?: number;
+  work_experience?: number;
+  test_scores_raw?: string;
   loan_amount_required?: number;
   coapplicant_name?: string;
   coapplicant_relation?: string;
+  coapplicant_age?: number;
+  coapplicant_employment_type?: string;
+  coapplicant_employer?: string;
   coapplicant_income?: number;
   coapplicant_existing_emi?: number;
+  coapplicant_cibil?: number;
   collateral_available?: boolean;
   collateral_notes?: string;
   source_sub_type?: string;
@@ -58,41 +70,48 @@ export type ProcessingStage = "idle" | "parsing" | "validating" | "processing" |
 /** Required-fields contract — unchanged business rules. */
 const REQUIRED_HEADERS = [
   "student_first_name", "student_last_name", "student_phone",
-  "intended_study_country", "intake_term", "intake_year",
+  "intended_study_country", "intake_session",
   "course_name", "loan_amount_required",
 ];
 
 /**
- * Final canonical header order — used everywhere (Partner + Admin):
+ * Final canonical 32-column header order — used everywhere (Partner + Admin):
  * - Downloaded template
- * - Parser strict-template check (rejects outdated templates missing the 6 new headers)
+ * - Parser strict-template check (rejects outdated templates missing new headers)
  * - UI column reference
  *
- * The 6 new fields (academic scores + EMI) are required IN THE TEMPLATE
- * (so old templates are cleanly rejected) but VALUES inside them stay optional.
+ * `intake_session` is a SINGLE composite column in quarter-format
+ * (e.g. "Apr-Jun-2026") — internally decomposed into `intake_term` + `intake_year`
+ * for storage. Old `intake_term` / `intake_year` columns are NO LONGER accepted.
  */
 const ALL_HEADERS = [
   "student_first_name", "student_last_name", "student_phone", "student_email",
   "student_whatsapp", "city", "state", "country_of_residence",
-  "intended_study_country", "intake_term", "intake_year", "course_name",
+  "intended_study_country", "intake_session", "course_name",
   "university_name",
   "10th_score", "12th_score", "graduation_score",
   "highest_qualification", "highest_qualification_score",
+  "work_experience", "test_scores",
   "loan_amount_required",
-  "coapplicant_name", "coapplicant_relation", "coapplicant_income",
-  "coapplicant_existing_emi",
+  "coapplicant_name", "coapplicant_relation",
+  "coapplicant_age", "coapplicant_employment_type", "coapplicant_employer",
+  "coapplicant_income", "coapplicant_existing_emi", "coapplicant_cibil",
   "collateral_available", "collateral_notes", "source_sub_type", "partner_remark",
 ];
 
-/** Headers introduced in the new template — used to detect outdated uploads. */
+/** Headers introduced in the newest template — used to detect outdated uploads. */
 const NEW_TEMPLATE_HEADERS = [
+  "intake_session",
   "10th_score", "12th_score", "graduation_score",
   "highest_qualification", "highest_qualification_score",
-  "coapplicant_existing_emi",
+  "work_experience", "test_scores",
+  "coapplicant_age", "coapplicant_employment_type", "coapplicant_employer",
+  "coapplicant_existing_emi", "coapplicant_cibil",
 ];
 
 /** Static fallback if the master fetch fails — keeps validation deterministic. */
 const FALLBACK_QUALIFICATIONS = HIGHEST_QUALIFICATION_OPTIONS;
+const FALLBACK_EMPLOYMENT_TYPES = EMPLOYMENT_TYPE_OPTIONS;
 
 export function getTemplateCSV(): string {
   return ALL_HEADERS.join(",") + "\n";
@@ -202,33 +221,48 @@ function normBool(val: string): boolean | null {
 
 interface MasterData {
   countries: string[];
-  intakeTerms: string[];
-  intakeYears: number[];
+  /** Map: lower-case quarter-format label (e.g. "apr-jun-2026") → { term, year } */
+  intakeSessionMap: Map<string, { term: string; year: number }>;
+  /** Pretty-printed list of allowed intake_session values (chronological). */
+  intakeSessionLabels: string[];
   universityMap: Map<string, string>; // lowercase name -> id
   qualifications: readonly string[];
+  employmentTypes: readonly string[];
 }
 
 async function loadMasterData(): Promise<MasterData> {
-  const [cRes, iRes, uRes, qOpts] = await Promise.all([
+  const [cRes, iRes, uRes, qOpts, eOpts] = await Promise.all([
     supabase.from("countries_master").select("country_name").eq("active_flag", true),
-    supabase.from("intake_master").select("intake_term,intake_year").eq("active_flag", true),
+    supabase.from("intake_master").select("intake_term,intake_year,sort_order").eq("active_flag", true).order("sort_order", { ascending: true }),
     supabase.from("universities_master").select("id,university_name").eq("active_flag", true),
     fetchHighestQualificationOptions(),
+    fetchEmploymentTypeOptions(),
   ]);
 
   const countries = (cRes.data ?? []).map((c) => c.country_name.toLowerCase());
-  const intakeTerms = [...new Set((iRes.data ?? []).map((i) => i.intake_term.toLowerCase()))];
-  const intakeYears = [...new Set((iRes.data ?? []).map((i) => i.intake_year))];
+
+  const intakeSessionMap = new Map<string, { term: string; year: number }>();
+  const intakeSessionLabels: string[] = [];
+  for (const r of iRes.data ?? []) {
+    const label = intakeSessionLabel(r.intake_term, r.intake_year); // "Apr-Jun-2026"
+    if (!label) continue;
+    const key = label.toLowerCase();
+    if (!intakeSessionMap.has(key)) {
+      intakeSessionMap.set(key, { term: r.intake_term, year: r.intake_year });
+      intakeSessionLabels.push(label);
+    }
+  }
+
   const universityMap = new Map<string, string>();
   (uRes.data ?? []).forEach((u) => universityMap.set(u.university_name.toLowerCase(), u.id));
   const qualifications = qOpts.length > 0 ? qOpts : FALLBACK_QUALIFICATIONS;
+  const employmentTypes = eOpts.length > 0 ? eOpts : [...FALLBACK_EMPLOYMENT_TYPES];
 
-  return { countries, intakeTerms, intakeYears, universityMap, qualifications };
+  return { countries, intakeSessionMap, intakeSessionLabels, universityMap, qualifications, employmentTypes };
 }
 
 function validateRow(row: Record<string, string>, master: MasterData): { parsed: ParsedRow; errors: string[] } {
   const errors: string[] = [];
-  const rowNumber = 0; // set by caller
 
   const val = (key: string) => (row[key] ?? "").trim();
   const firstName = val("student_first_name");
@@ -236,19 +270,24 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
   const phone = val("student_phone");
   const email = val("student_email");
   const country = val("intended_study_country");
-  const intakeTerm = val("intake_term");
-  const intakeYearStr = val("intake_year");
+  const intakeSessionStr = val("intake_session");
   const courseName = val("course_name");
   const loanStr = val("loan_amount_required");
   const collateralStr = val("collateral_available");
   const collateralNotes = val("collateral_notes");
   const coapplicantIncomeStr = val("coapplicant_income");
   const coapplicantEmiStr = val("coapplicant_existing_emi");
+  const coapplicantAgeStr = val("coapplicant_age");
+  const coapplicantCibilStr = val("coapplicant_cibil");
+  const coapplicantEmployer = val("coapplicant_employer");
+  const coapplicantEmploymentTypeRaw = val("coapplicant_employment_type");
   const tenthStr = val("10th_score");
   const twelfthStr = val("12th_score");
   const gradStr = val("graduation_score");
   const qualification = val("highest_qualification");
   const qualificationScoreStr = val("highest_qualification_score");
+  const workExpStr = val("work_experience");
+  const testScoresRaw = val("test_scores");
 
   if (!firstName) errors.push("student_first_name is required");
   if (!lastName) errors.push("student_last_name is required");
@@ -257,14 +296,24 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push("Invalid email format");
   if (!country) errors.push("intended_study_country is required");
   else if (!master.countries.includes(country.toLowerCase())) errors.push(`Country "${country}" not found in master data`);
-  if (!intakeTerm) errors.push("intake_term is required");
-  else if (!master.intakeTerms.includes(intakeTerm.toLowerCase())) errors.push(`Intake term "${intakeTerm}" not found in master data`);
 
-  const intakeYear = parseInt(intakeYearStr, 10);
-  const currentYear = new Date().getFullYear();
-  if (!intakeYearStr) errors.push("intake_year is required");
-  else if (isNaN(intakeYear) || intakeYear < 2020 || intakeYear > 2035) errors.push("intake_year must be a valid year (2020-2035)");
-  else if (intakeYear < currentYear) errors.push(`intake_year ${intakeYear} is in the past — only ${currentYear} or later is accepted`);
+  // intake_session: composite quarter-format value, e.g. "Apr-Jun-2026".
+  // Internally decomposed into intake_term + intake_year for storage.
+  let intakeTerm: string | undefined;
+  let intakeYear: number | undefined;
+  if (!intakeSessionStr) {
+    errors.push("intake_session is required");
+  } else {
+    const hit = master.intakeSessionMap.get(intakeSessionStr.toLowerCase());
+    if (!hit) {
+      errors.push(
+        `intake_session "${intakeSessionStr}" not found. Allowed values include: ${master.intakeSessionLabels.slice(0, 6).join(", ")}${master.intakeSessionLabels.length > 6 ? ", …" : ""}`,
+      );
+    } else {
+      intakeTerm = hit.term;
+      intakeYear = hit.year;
+    }
+  }
 
   if (!courseName) errors.push("course_name is required");
   if (!loanStr) errors.push("loan_amount_required is required");
@@ -284,19 +333,23 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
     if (isNaN(coapplicantIncome)) errors.push("coapplicant_income must be numeric");
   }
 
-  // ─── New academic + EMI fields (all optional values, validated when present) ───
-  const parseNumeric = (s: string, label: string): number | undefined => {
+  // ─── Numeric helpers ───
+  const parseNumeric = (s: string, label: string, opts: { min?: number; max?: number } = {}): number | undefined => {
     if (!s) return undefined;
     const n = parseFloat(s.replace(/,/g, ""));
     if (isNaN(n)) { errors.push(`${label} must be numeric (got "${s}")`); return undefined; }
-    if (n < 0) { errors.push(`${label} must be ≥ 0`); return undefined; }
+    if (opts.min !== undefined && n < opts.min) { errors.push(`${label} must be ≥ ${opts.min}`); return undefined; }
+    if (opts.max !== undefined && n > opts.max) { errors.push(`${label} must be ≤ ${opts.max}`); return undefined; }
     return n;
   };
-  const tenth = parseNumeric(tenthStr, "10th_score");
-  const twelfth = parseNumeric(twelfthStr, "12th_score");
-  const grad = parseNumeric(gradStr, "graduation_score");
-  const qualScore = parseNumeric(qualificationScoreStr, "highest_qualification_score");
-  const coapplicantEmi = parseNumeric(coapplicantEmiStr, "coapplicant_existing_emi");
+  const tenth = parseNumeric(tenthStr, "10th_score", { min: 0 });
+  const twelfth = parseNumeric(twelfthStr, "12th_score", { min: 0 });
+  const grad = parseNumeric(gradStr, "graduation_score", { min: 0 });
+  const qualScore = parseNumeric(qualificationScoreStr, "highest_qualification_score", { min: 0 });
+  const coapplicantEmi = parseNumeric(coapplicantEmiStr, "coapplicant_existing_emi", { min: 0 });
+  const coapplicantAge = parseNumeric(coapplicantAgeStr, "coapplicant_age", { min: 18, max: 100 });
+  const coapplicantCibil = parseNumeric(coapplicantCibilStr, "coapplicant_cibil", { min: 300, max: 900 });
+  const workExp = parseNumeric(workExpStr, "work_experience", { min: 0, max: 60 });
 
   let qualificationNormalized: string | undefined;
   if (qualification) {
@@ -305,6 +358,16 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
       errors.push(`highest_qualification must be one of: ${master.qualifications.join(" | ")}`);
     } else {
       qualificationNormalized = match;
+    }
+  }
+
+  let employmentTypeNormalized: string | undefined;
+  if (coapplicantEmploymentTypeRaw) {
+    const match = matchEmploymentType(coapplicantEmploymentTypeRaw, master.employmentTypes);
+    if (!match) {
+      errors.push(`coapplicant_employment_type must be one of: ${master.employmentTypes.join(" | ")}`);
+    } else {
+      employmentTypeNormalized = match;
     }
   }
 
@@ -323,7 +386,7 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
     country_of_residence: val("country_of_residence") || undefined,
     intended_study_country: country,
     intake_term: intakeTerm,
-    intake_year: isNaN(intakeYear) ? undefined : intakeYear,
+    intake_year: intakeYear,
     course_name: courseName,
     university_name: universityRaw || undefined,
     tenth_score: tenth,
@@ -331,11 +394,17 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
     graduation_score: grad,
     highest_qualification: qualificationNormalized,
     highest_qualification_score: qualScore,
+    work_experience: workExp,
+    test_scores_raw: testScoresRaw || undefined,
     loan_amount_required: isNaN(loanAmount) ? undefined : loanAmount,
     coapplicant_name: val("coapplicant_name") || undefined,
     coapplicant_relation: val("coapplicant_relation") || undefined,
+    coapplicant_age: coapplicantAge,
+    coapplicant_employment_type: employmentTypeNormalized,
+    coapplicant_employer: coapplicantEmployer || undefined,
     coapplicant_income: coapplicantIncome,
     coapplicant_existing_emi: coapplicantEmi,
+    coapplicant_cibil: coapplicantCibil,
     collateral_available: collateralAvailable ?? undefined,
     collateral_notes: collateralNotes || undefined,
     source_sub_type: val("source_sub_type") || undefined,
@@ -555,21 +624,27 @@ export async function processBulkUpload(
         coapplicant_relation: row.coapplicant_relation ?? null,
         coapplicant_income: row.coapplicant_income ?? null,
         coapplicant_existing_emi: row.coapplicant_existing_emi ?? null,
+        coapplicant_employment_type: row.coapplicant_employment_type ?? null,
+        coapplicant_employer: row.coapplicant_employer ?? null,
         collateral_available: row.collateral_available ?? null,
         collateral_notes: row.collateral_notes ?? null,
-        // Academic — mirror Add Lead conventions:
-        //  - highest_qualification → text column (Add Lead behavior)
-        //  - highest_qualification_score → marks_gpa text column (Add Lead behavior)
-        //  - 10th / 12th / graduation scores + qualification score → test_scores jsonb
-        //    (matches Student portal academic capture shape so Lead Detail can read it)
+        // Academic + co-applicant extension — mirror Add Lead conventions:
+        //  - highest_qualification → text column
+        //  - highest_qualification_score → marks_gpa text column
+        //  - 10th/12th/graduation, work_experience_years, coapplicant_age,
+        //    coapplicant_cibil, and free-text test_scores raw_text → test_scores jsonb
         highest_qualification: row.highest_qualification ?? null,
         marks_gpa: row.highest_qualification_score != null ? String(row.highest_qualification_score) : null,
         test_scores: (() => {
-          const ts: Record<string, number> = {};
+          const ts: Record<string, number | string> = {};
           if (row.tenth_score != null) ts.tenth = row.tenth_score;
           if (row.twelfth_score != null) ts.twelfth = row.twelfth_score;
           if (row.graduation_score != null) ts.graduation = row.graduation_score;
           if (row.highest_qualification_score != null) ts.highest_qualification = row.highest_qualification_score;
+          if (row.work_experience != null) ts.work_experience_years = row.work_experience;
+          if (row.coapplicant_age != null) ts.coapplicant_age = row.coapplicant_age;
+          if (row.coapplicant_cibil != null) ts.coapplicant_cibil = row.coapplicant_cibil;
+          if (row.test_scores_raw) ts.raw_text = row.test_scores_raw;
           return Object.keys(ts).length > 0 ? ts : {};
         })() as any,
         current_stage: "submitted" as any,
