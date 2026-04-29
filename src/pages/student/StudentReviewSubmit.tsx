@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { Pencil, CheckCircle2, Sparkles, Shield, Info, Lock } from "lucide-react";
 import { intakeSessionLabel } from "@/lib/intakeSession";
+import { formatWorkExperience } from "@/lib/workExperience";
 
 interface SummaryItem {
   label: string;
