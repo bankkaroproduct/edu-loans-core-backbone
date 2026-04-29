@@ -111,6 +111,10 @@ export function MasterCombobox({
                     key={opt.id}
                     value={`${opt.label} ${opt.hint ?? ""}`}
                     onSelect={() => {
+                      // Explicitly close the manual mode BEFORE notifying parent,
+                      // so callers that don't track a selectedId (e.g. Course Name)
+                      // still hide the free-text input on transition.
+                      setManualOpened(false);
                       onSelectMaster(opt);
                       setOpen(false);
                     }}
