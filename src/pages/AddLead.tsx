@@ -648,32 +648,73 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   /**
    * Build the merged test_scores JSONB to write back to student_leads.
    *
-   * Critical: this MUST preserve any existing keys we don't manage in this
-   * form (e.g. IELTS / TOEFL / Duolingo / GRE / GMAT entered via the student
-   * portal) so the AddLead/Admin edit surface never wipes them out.
+   * Storage parity with the Student portal (see useStudentApplication.ts):
+   *   - Numeric values are stored as numbers when the trimmed input matches the
+   *     student-portal regex /^[\d.+-]+$/ AND parses to a finite number.
+   *   - Otherwise the raw trimmed string is preserved (e.g. "85%").
+   *   - Empty inputs are omitted (we never write empty strings).
+   *   - Existing keys we don't manage here are preserved (e.g. SAT/PTE if ever
+   *     present from a future source) so AddLead never silently wipes them.
    *
-   * Numeric scores are stored as numbers when parseable; otherwise as the raw
-   * trimmed string. Empty inputs are omitted (we never write empty strings).
+   * Special handling:
+   *   - coapplicant_age, coapplicant_cibil → forced numeric via parseInt
+   *     (matches Student `save_coapplicant` extension contract).
+   *   - work_experience_years → uses Student parseFloat path; "0" persists as
+   *     the number 0 (Fresher).
    */
   const buildMergedTestScores = useCallback(() => {
     const existing = (originalLead?.test_scores && typeof originalLead.test_scores === "object")
       ? { ...(originalLead.test_scores as Record<string, unknown>) }
       : {};
+    // Generic Student-style coercion (numeric-when-parseable, string otherwise).
     const setOrDelete = (key: string, raw: string) => {
-      const trimmed = raw.trim();
+      const trimmed = (raw ?? "").toString().trim();
       if (!trimmed) {
         delete existing[key];
         return;
       }
-      const num = Number(trimmed);
-      existing[key] = Number.isFinite(num) && trimmed !== "" && !isNaN(num) ? num : trimmed;
+      const num = parseFloat(trimmed);
+      existing[key] = Number.isFinite(num) && !isNaN(num) && /^[\d.+-]+$/.test(trimmed) ? num : trimmed;
     };
+    // Strict integer coercion (mirrors Student `save_coapplicant`).
+    const setIntOrDelete = (key: string, raw: string) => {
+      const trimmed = (raw ?? "").toString().trim();
+      if (!trimmed) {
+        delete existing[key];
+        return;
+      }
+      const n = parseInt(trimmed, 10);
+      if (Number.isFinite(n)) existing[key] = n;
+      else delete existing[key];
+    };
+
+    // Academic
     setOrDelete("tenth", form.tenth_score);
     setOrDelete("twelfth", form.twelfth_score);
     setOrDelete("graduation", form.graduation_score);
     setOrDelete("highest_qualification_score", form.highest_qualification_score);
+
+    // Standardized test scores (aligned with Student portal: ielts/toefl/duolingo/gre/gmat)
+    setOrDelete("ielts", form.ielts);
+    setOrDelete("toefl", form.toefl);
+    setOrDelete("duolingo", form.duolingo);
+    setOrDelete("gre", form.gre);
+    setOrDelete("gmat", form.gmat);
+
+    // Co-applicant extension (Student parity: numeric)
+    setIntOrDelete("coapplicant_age", form.coapplicant_age);
+    setIntOrDelete("coapplicant_cibil", form.coapplicant_cibil);
+
+    // Work experience: same shorthand & coercion as Student. "0" → number 0 (Fresher).
+    setOrDelete("work_experience_years", form.work_experience_years);
+
     return existing;
-  }, [originalLead, form.tenth_score, form.twelfth_score, form.graduation_score, form.highest_qualification_score]);
+  }, [
+    originalLead,
+    form.tenth_score, form.twelfth_score, form.graduation_score, form.highest_qualification_score,
+    form.ielts, form.toefl, form.duolingo, form.gre, form.gmat,
+    form.coapplicant_age, form.coapplicant_cibil, form.work_experience_years,
+  ]);
 
   const createLead = async (asDraft: boolean, hasDuplicateWarning: boolean) => {
     setSubmitting(true);
