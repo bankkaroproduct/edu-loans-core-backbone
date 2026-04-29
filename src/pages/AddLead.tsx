@@ -887,8 +887,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   const backTarget = isAdminContext ? "/admin/leads" : "/leads";
 
   // Mode-aware navigation targets
-  const studyNextTarget: StepId = isAdminForm ? "financial" : "notes";
-  const notesBackTarget: StepId = isAdminForm ? "financial" : "study";
+  const studyNextTarget: StepId = "financial";
+  const notesBackTarget: StepId = "financial";
   const showAssignStep = isAdminForm && isEditMode;
   const notesNextTarget: StepId = showAssignStep ? "assign" : "review";
   const reviewBackTarget: StepId = showAssignStep ? "assign" : "notes";
