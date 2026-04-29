@@ -1388,11 +1388,35 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 <LakhsInput value={form.loan_amount_required} onChange={(d) => set("loan_amount_required", d)} placeholder="e.g. 25 or 12.5" />
                 <p className="text-xs text-muted-foreground">Rough expectation — exact figure can be refined later by ops.</p>
               </div>
+              {/* 1. Name */}
               <div className="space-y-2" data-field="coapplicant_name">
                 <Label>Co-Applicant Name *</Label>
                 <Input value={form.coapplicant_name} onChange={(e) => set("coapplicant_name", e.target.value)} placeholder="Full name" />
                 <p className="text-xs text-muted-foreground">Name as per Aadhaar and Passport</p>
               </div>
+              {/* 2. Age */}
+              <div className="space-y-2" data-field="coapplicant_age">
+                <Label>Co-Applicant Age *</Label>
+                <Input
+                  inputMode="numeric"
+                  value={form.coapplicant_age}
+                  onChange={(e) => set("coapplicant_age", e.target.value.replace(/\D/g, "").slice(0, 3))}
+                  placeholder="e.g. 48"
+                />
+              </div>
+              {/* 3. Relation */}
+              <div className="space-y-2" data-field="coapplicant_relation">
+                <Label>Co-Applicant Relation *</Label>
+                <Select value={form.coapplicant_relation} onValueChange={(v) => set("coapplicant_relation", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select relation" /></SelectTrigger>
+                  <SelectContent>
+                    {CO_APPLICANT_RELATIONS.map((r) => (
+                      <SelectItem key={r} value={r}>{r}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* 4. Mobile */}
               <div className="space-y-2" data-field="coapplicant_mobile">
                 <Label>Co-Applicant Mobile *</Label>
                 <Input
@@ -1403,8 +1427,9 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 />
                 <p className="text-xs text-muted-foreground">Number as per Aadhaar and Passport</p>
               </div>
-              <div className="space-y-2" data-field="coapplicant_email">
-                <Label>Co-Applicant Email</Label>
+              {/* 5. Email */}
+              <div className="space-y-2 md:col-span-2" data-field="coapplicant_email">
+                <Label>Co-Applicant Email *</Label>
                 <Input
                   type="email"
                   value={form.coapplicant_email}
@@ -1412,29 +1437,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   placeholder="email@example.com"
                 />
               </div>
-              <div className="space-y-2" data-field="coapplicant_age">
-                <Label>Co-Applicant Age</Label>
-                <Input
-                  inputMode="numeric"
-                  value={form.coapplicant_age}
-                  onChange={(e) => set("coapplicant_age", e.target.value.replace(/\D/g, "").slice(0, 3))}
-                  placeholder="e.g. 48"
-                />
-              </div>
-              <div className="space-y-2" data-field="coapplicant_relation">
-                <Label>Co-Applicant Relation</Label>
-                <Select value={form.coapplicant_relation} onValueChange={(v) => set("coapplicant_relation", v)}>
-                  <SelectTrigger><SelectValue placeholder="Select relation" /></SelectTrigger>
-                  <SelectContent>
-                    {CO_APPLICANT_RELATIONS.map((r) => (
-                      <SelectItem key={r} value={r}>{r}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {/* Income Source field removed from UI per scoped form-fix pass.
-                  Existing DB values are preserved on save (form state still hydrates +
-                  writes the value back) so legacy records are not wiped. */}
+              {/* 6. Employment Type */}
               <div className="space-y-2" data-field="coapplicant_employment_type">
                 <Label>Employment Type *</Label>
                 <Select value={form.coapplicant_employment_type} onValueChange={(v) => set("coapplicant_employment_type", v)}>
@@ -1446,27 +1449,31 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   </SelectContent>
                 </Select>
               </div>
+              {/* 7. Employer / Occupation */}
               <div className="space-y-2" data-field="coapplicant_employer">
                 <Label>Employer / Occupation *</Label>
                 <Input value={form.coapplicant_employer} onChange={(e) => set("coapplicant_employer", e.target.value)} placeholder="Company / occupation" />
               </div>
+              {/* 8. Monthly Income */}
               <div className="space-y-2" data-field="coapplicant_income">
                 <Label>Monthly Income (₹) *</Label>
                 <MoneyInput value={form.coapplicant_income} onChange={(d) => set("coapplicant_income", d)} placeholder="e.g. 1,25,000" />
               </div>
+              {/* 9. Existing EMI */}
               <div className="space-y-2" data-field="coapplicant_existing_emi">
                 <Label>Existing EMI (₹) *</Label>
                 <MoneyInput value={form.coapplicant_existing_emi} onChange={(d) => set("coapplicant_existing_emi", d)} placeholder="Enter 0 if none" />
               </div>
-              <div className="space-y-2" data-field="coapplicant_cibil">
-                <Label>CIBIL Score</Label>
+              {/* 10. CIBIL Score */}
+              <div className="space-y-2 md:col-span-2" data-field="coapplicant_cibil">
+                <Label>CIBIL Score *</Label>
                 <Input
                   inputMode="numeric"
                   value={form.coapplicant_cibil}
                   onChange={(e) => set("coapplicant_cibil", e.target.value.replace(/\D/g, "").slice(0, 3))}
                   placeholder="e.g. 750"
                 />
-                <p className="text-xs text-muted-foreground">Range 300–900. Optional but improves lender match accuracy.</p>
+                <p className="text-xs text-muted-foreground">Range 300–900. Required to improve lender match accuracy.</p>
               </div>
               <div className="md:col-span-2">
                 <CollateralRadio
