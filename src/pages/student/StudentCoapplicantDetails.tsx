@@ -18,7 +18,7 @@ const EMPLOYMENT_TYPES = ["Salaried", "Self-employed", "Business Owner", "Profes
 export default function StudentCoapplicantDetails() {
   const navigate = useNavigate();
   const { isVerified } = useStudentAuth();
-  const { formData, updateField, saveStep, saving } = useStudentApplication();
+  const { formData, updateField, updateTestScore, saveStep, saving } = useStudentApplication();
 
   useEffect(() => {
     if (!isVerified) { navigate("/student/login"); return; }
