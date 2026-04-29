@@ -19,7 +19,7 @@ export async function fetchEmploymentTypeOptions(): Promise<string[]> {
     .eq("active_flag", true)
     .order("sort_order", { ascending: true });
   if (error || !data || data.length === 0) return [...EMPLOYMENT_TYPE_OPTIONS];
-  return (data as Array<{ employment_type_label: string }>).map((r) => r.employment_type_label);
+  return (data as unknown as Array<{ employment_type_label: string }>).map((r) => r.employment_type_label);
 }
 
 /** Case-insensitive match against allowed options; returns canonical casing or null. */
