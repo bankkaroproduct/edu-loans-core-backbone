@@ -26,6 +26,13 @@ interface Props {
   options?: { value: string; label: string }[];
   /** When provided, transforms the draft string before save (e.g. "true" -> true for boolean columns). */
   parseValue?: (raw: string) => unknown;
+  /**
+   * When provided, the write merges the parsed value into the named JSONB column at `field` key,
+   * preserving sibling keys. The DB column to merge into is given here (e.g. "test_scores").
+   * In this mode, `field` becomes the JSON key (not a top-level column).
+   * Empty/blank trimmed string deletes the key from the JSONB.
+   */
+  jsonbColumn?: string;
 }
 
 /**
