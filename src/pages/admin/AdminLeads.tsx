@@ -175,7 +175,7 @@ export default function AdminLeads() {
     if (filters.intake !== "all") p.set("intake", filters.intake);
     if (filters.loanType !== "all") p.set("loantype", filters.loanType);
     if (filters.staleOnly) p.set("stale", "1");
-    if (sortKey !== "updated_at") p.set("sort", sortKey);
+    if (sortKey !== "created_at") p.set("sort", sortKey);
     if (sortDir !== "desc") p.set("dir", sortDir);
     if (page > 1) p.set("page", String(page));
     setSearchParams(p, { replace: true });
