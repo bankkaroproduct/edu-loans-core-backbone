@@ -13,6 +13,8 @@ import { toast } from "@/hooks/use-toast";
 import { Lightbulb } from "lucide-react";
 import { useHighestQualificationOptions } from "@/hooks/useHighestQualificationOptions";
 import { buildIntakeSessionOptions, intakeSessionValue, parseIntakeSessionValue } from "@/lib/intakeSession";
+import { sanitizeWorkExpInput, formatWorkExperience } from "@/lib/workExperience";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface UniversityRow { id: string; university_name: string; country: string }
 interface CourseRow { id: string; course_name: string; course_category: string | null }
