@@ -76,6 +76,7 @@ const initialState: State = {
 export default function AdminLeadDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [state, setState] = useState<State>(initialState);
 
   // Shared source of truth for the lead's document requirements + uploaded files,
