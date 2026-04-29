@@ -32,6 +32,7 @@ import { MoneyInput } from "@/components/ui/money-input";
 import { LakhsInput } from "@/components/ui/lakhs-input";
 import { MasterCombobox, type MasterOption } from "@/components/ui/master-combobox";
 import { CollateralRadio, collateralBoolToState, collateralStateToBool, type CollateralState } from "@/components/shared/CollateralRadio";
+import { sanitizeWorkExpInput, formatWorkExperience, isValidWorkExp } from "@/lib/workExperience";
 import { usePincodeLookup } from "@/hooks/usePincodeLookup";
 import { sortByPriority } from "@/lib/countryOrder";
 import { buildIntakeSessionOptions, intakeSessionValue, parseIntakeSessionValue } from "@/lib/intakeSession";
@@ -214,6 +215,17 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     twelfth_score: "",
     graduation_score: "",
     highest_qualification_score: "",
+    // Co-applicant extension (mirrors Student portal — persisted in test_scores JSONB)
+    coapplicant_email: "",
+    coapplicant_age: "",          // numeric string in UI; persisted as number
+    coapplicant_cibil: "",        // numeric string in UI; persisted as number
+    work_experience_years: "",    // Student shorthand: "3" or "3.2"; "0" = Fresher
+    // Standardized test scores (aligned with Student portal keys)
+    ielts: "",
+    toefl: "",
+    duolingo: "",
+    gre: "",
+    gmat: "",
   });
 
   useEffect(() => {
@@ -317,6 +329,18 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         twelfth_score: ((data as any).test_scores?.twelfth ?? "").toString(),
         graduation_score: ((data as any).test_scores?.graduation ?? "").toString(),
         highest_qualification_score: ((data as any).test_scores?.highest_qualification_score ?? "").toString(),
+        coapplicant_email: (data as any).coapplicant_email ?? "",
+        coapplicant_age: ((data as any).test_scores?.coapplicant_age ?? "").toString(),
+        coapplicant_cibil: ((data as any).test_scores?.coapplicant_cibil ?? "").toString(),
+        work_experience_years: (() => {
+          const v = (data as any).test_scores?.work_experience_years;
+          return v === undefined || v === null ? "" : v.toString();
+        })(),
+        ielts: ((data as any).test_scores?.ielts ?? "").toString(),
+        toefl: ((data as any).test_scores?.toefl ?? "").toString(),
+        duolingo: ((data as any).test_scores?.duolingo ?? "").toString(),
+        gre: ((data as any).test_scores?.gre ?? "").toString(),
+        gmat: ((data as any).test_scores?.gmat ?? "").toString(),
       });
       setOriginalLead(data as unknown as Record<string, unknown>);
       setEditLeadStage(data.current_stage ?? null);
@@ -469,6 +493,21 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         return { message: "Monthly income is required", step: "financial", field: "coapplicant_income" };
       if (form.coapplicant_existing_emi === "" || isNaN(Number(form.coapplicant_existing_emi)) || Number(form.coapplicant_existing_emi) < 0)
         return { message: "Existing EMI is required (enter 0 if none)", step: "financial", field: "coapplicant_existing_emi" };
+      // Optional fields — validate format only when filled.
+      if (form.coapplicant_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.coapplicant_email.trim()))
+        return { message: "Co-applicant email format is invalid", step: "financial", field: "coapplicant_email" };
+      if (form.coapplicant_age.trim()) {
+        const a = parseInt(form.coapplicant_age, 10);
+        if (!Number.isFinite(a) || a < 18 || a > 100)
+          return { message: "Co-applicant age must be between 18 and 100", step: "financial", field: "coapplicant_age" };
+      }
+      if (form.coapplicant_cibil.trim()) {
+        const c = parseInt(form.coapplicant_cibil, 10);
+        if (!Number.isFinite(c) || c < 300 || c > 900)
+          return { message: "CIBIL Score must be between 300 and 900", step: "financial", field: "coapplicant_cibil" };
+      }
+      if (form.work_experience_years.trim() && !isValidWorkExp(form.work_experience_years))
+        return { message: "Work experience must be a number with at most one decimal (e.g. 3 or 3.2)", step: "study", field: "work_experience_years" };
     }
 
     if (!effectivePartnerId) return { message: "No partner organization found for your account. Admins can use 'Test as Partner' in the sidebar.", step: stepIds[0] };
@@ -577,14 +616,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       coapplicant_name: form.coapplicant_name.trim() || null,
       coapplicant_relation: form.coapplicant_relation || null,
       coapplicant_mobile: form.coapplicant_mobile.trim() ? (normalizePhone(form.coapplicant_mobile) ?? form.coapplicant_mobile.trim()) : null,
-      coapplicant_income: form.coapplicant_income ? Number(form.coapplicant_income) : null,
-      coapplicant_income_source: form.coapplicant_income_source || null,
-      coapplicant_employment_type: form.coapplicant_employment_type || null,
-      coapplicant_employer: form.coapplicant_employer.trim() || null,
-      coapplicant_existing_emi: form.coapplicant_existing_emi !== "" ? Number(form.coapplicant_existing_emi) : null,
-      collateral_available: collateralStateToBool(form.collateral_state),
-      collateral_notes: form.collateral_state === "likely" ? (form.collateral_notes.trim() || null) : null,
-      highest_qualification: form.highest_qualification || null,
+      coapplicant_email: form.coapplicant_email.trim() || null,
       marks_gpa: form.marks_gpa.trim() || null,
       partner_id: partnerIdAssignment || null,
     };
@@ -625,32 +657,73 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   /**
    * Build the merged test_scores JSONB to write back to student_leads.
    *
-   * Critical: this MUST preserve any existing keys we don't manage in this
-   * form (e.g. IELTS / TOEFL / Duolingo / GRE / GMAT entered via the student
-   * portal) so the AddLead/Admin edit surface never wipes them out.
+   * Storage parity with the Student portal (see useStudentApplication.ts):
+   *   - Numeric values are stored as numbers when the trimmed input matches the
+   *     student-portal regex /^[\d.+-]+$/ AND parses to a finite number.
+   *   - Otherwise the raw trimmed string is preserved (e.g. "85%").
+   *   - Empty inputs are omitted (we never write empty strings).
+   *   - Existing keys we don't manage here are preserved (e.g. SAT/PTE if ever
+   *     present from a future source) so AddLead never silently wipes them.
    *
-   * Numeric scores are stored as numbers when parseable; otherwise as the raw
-   * trimmed string. Empty inputs are omitted (we never write empty strings).
+   * Special handling:
+   *   - coapplicant_age, coapplicant_cibil → forced numeric via parseInt
+   *     (matches Student `save_coapplicant` extension contract).
+   *   - work_experience_years → uses Student parseFloat path; "0" persists as
+   *     the number 0 (Fresher).
    */
   const buildMergedTestScores = useCallback(() => {
     const existing = (originalLead?.test_scores && typeof originalLead.test_scores === "object")
       ? { ...(originalLead.test_scores as Record<string, unknown>) }
       : {};
+    // Generic Student-style coercion (numeric-when-parseable, string otherwise).
     const setOrDelete = (key: string, raw: string) => {
-      const trimmed = raw.trim();
+      const trimmed = (raw ?? "").toString().trim();
       if (!trimmed) {
         delete existing[key];
         return;
       }
-      const num = Number(trimmed);
-      existing[key] = Number.isFinite(num) && trimmed !== "" && !isNaN(num) ? num : trimmed;
+      const num = parseFloat(trimmed);
+      existing[key] = Number.isFinite(num) && !isNaN(num) && /^[\d.+-]+$/.test(trimmed) ? num : trimmed;
     };
+    // Strict integer coercion (mirrors Student `save_coapplicant`).
+    const setIntOrDelete = (key: string, raw: string) => {
+      const trimmed = (raw ?? "").toString().trim();
+      if (!trimmed) {
+        delete existing[key];
+        return;
+      }
+      const n = parseInt(trimmed, 10);
+      if (Number.isFinite(n)) existing[key] = n;
+      else delete existing[key];
+    };
+
+    // Academic
     setOrDelete("tenth", form.tenth_score);
     setOrDelete("twelfth", form.twelfth_score);
     setOrDelete("graduation", form.graduation_score);
     setOrDelete("highest_qualification_score", form.highest_qualification_score);
+
+    // Standardized test scores (aligned with Student portal: ielts/toefl/duolingo/gre/gmat)
+    setOrDelete("ielts", form.ielts);
+    setOrDelete("toefl", form.toefl);
+    setOrDelete("duolingo", form.duolingo);
+    setOrDelete("gre", form.gre);
+    setOrDelete("gmat", form.gmat);
+
+    // Co-applicant extension (Student parity: numeric)
+    setIntOrDelete("coapplicant_age", form.coapplicant_age);
+    setIntOrDelete("coapplicant_cibil", form.coapplicant_cibil);
+
+    // Work experience: same shorthand & coercion as Student. "0" → number 0 (Fresher).
+    setOrDelete("work_experience_years", form.work_experience_years);
+
     return existing;
-  }, [originalLead, form.tenth_score, form.twelfth_score, form.graduation_score, form.highest_qualification_score]);
+  }, [
+    originalLead,
+    form.tenth_score, form.twelfth_score, form.graduation_score, form.highest_qualification_score,
+    form.ielts, form.toefl, form.duolingo, form.gre, form.gmat,
+    form.coapplicant_age, form.coapplicant_cibil, form.work_experience_years,
+  ]);
 
   const createLead = async (asDraft: boolean, hasDuplicateWarning: boolean) => {
     setSubmitting(true);
@@ -688,6 +761,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       coapplicant_name: form.coapplicant_name.trim() || null,
       coapplicant_relation: form.coapplicant_relation || null,
       coapplicant_mobile: form.coapplicant_mobile.trim() ? (normalizePhone(form.coapplicant_mobile) ?? form.coapplicant_mobile.trim()) : null,
+      coapplicant_email: form.coapplicant_email.trim() || null,
       coapplicant_income: form.coapplicant_income ? Number(form.coapplicant_income) : null,
       coapplicant_income_source: form.coapplicant_income_source || null,
       coapplicant_employment_type: form.coapplicant_employment_type || null,
@@ -1230,6 +1304,72 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
             </CardContent>
           </Card>
 
+          {/* Work Experience — placed above Test Scores. Persists in test_scores.work_experience_years.
+              Single decimal digit only: "3" = 3 years, "3.2" = 3 years 2 months. Fresher stores 0.
+              Reuses Student helpers (sanitizeWorkExpInput / formatWorkExperience / isValidWorkExp). */}
+          <Card className="mt-4">
+            <CardHeader><CardTitle className="text-lg">Work Experience</CardTitle></CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2" data-field="work_experience_years">
+                <Label>Total Work Experience (years)</Label>
+                <Input
+                  inputMode="decimal"
+                  value={
+                    form.work_experience_years === "0"
+                      ? ""
+                      : (form.work_experience_years || "")
+                  }
+                  disabled={form.work_experience_years === "0"}
+                  onChange={(e) => set("work_experience_years", sanitizeWorkExpInput(e.target.value))}
+                  placeholder="e.g. 3 or 3.2 (3 years 2 months)"
+                />
+                {form.work_experience_years && form.work_experience_years !== "0" && (
+                  <p className="text-xs text-muted-foreground">
+                    {formatWorkExperience(form.work_experience_years) || "Enter a valid value"}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2 flex items-end">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <Checkbox
+                    checked={form.work_experience_years === "0"}
+                    onCheckedChange={(v) => {
+                      set("work_experience_years", v === true ? "0" : "");
+                    }}
+                  />
+                  <span>I'm a Fresher (no work experience)</span>
+                </label>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Standardized Test Scores — aligned with Student portal keys
+              (ielts/toefl/duolingo/gre/gmat). All optional. Persists in test_scores JSONB. */}
+          <Card className="mt-4">
+            <CardHeader><CardTitle className="text-lg">Test Scores</CardTitle></CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-2">
+              {([
+                { key: "ielts", label: "IELTS", placeholder: "e.g. 7.5" },
+                { key: "toefl", label: "TOEFL", placeholder: "e.g. 105" },
+                { key: "duolingo", label: "Duolingo", placeholder: "e.g. 120" },
+                { key: "gre", label: "GRE", placeholder: "e.g. 320" },
+                { key: "gmat", label: "GMAT", placeholder: "e.g. 700" },
+              ] as const).map((t) => (
+                <div key={t.key} className="space-y-2" data-field={t.key}>
+                  <Label>{t.label}</Label>
+                  <Input
+                    value={(form as any)[t.key] || ""}
+                    onChange={(e) => set(t.key as any, e.target.value)}
+                    placeholder={t.placeholder}
+                  />
+                </div>
+              ))}
+              <div className="md:col-span-2">
+                <p className="text-xs text-muted-foreground">All test scores are optional — fill any that apply.</p>
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="flex justify-between mt-4">
             <Button variant="outline" onClick={() => goToStep("student")}>← Student Details</Button>
             <Button onClick={() => goNextFrom("study", studyNextTarget)}>
@@ -1262,6 +1402,24 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   inputMode="numeric"
                 />
                 <p className="text-xs text-muted-foreground">Number as per Aadhaar and Passport</p>
+              </div>
+              <div className="space-y-2" data-field="coapplicant_email">
+                <Label>Co-Applicant Email</Label>
+                <Input
+                  type="email"
+                  value={form.coapplicant_email}
+                  onChange={(e) => set("coapplicant_email", e.target.value)}
+                  placeholder="email@example.com"
+                />
+              </div>
+              <div className="space-y-2" data-field="coapplicant_age">
+                <Label>Co-Applicant Age</Label>
+                <Input
+                  inputMode="numeric"
+                  value={form.coapplicant_age}
+                  onChange={(e) => set("coapplicant_age", e.target.value.replace(/\D/g, "").slice(0, 3))}
+                  placeholder="e.g. 48"
+                />
               </div>
               <div className="space-y-2" data-field="coapplicant_relation">
                 <Label>Co-Applicant Relation</Label>
@@ -1299,6 +1457,16 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               <div className="space-y-2" data-field="coapplicant_existing_emi">
                 <Label>Existing EMI (₹) *</Label>
                 <MoneyInput value={form.coapplicant_existing_emi} onChange={(d) => set("coapplicant_existing_emi", d)} placeholder="Enter 0 if none" />
+              </div>
+              <div className="space-y-2" data-field="coapplicant_cibil">
+                <Label>CIBIL Score</Label>
+                <Input
+                  inputMode="numeric"
+                  value={form.coapplicant_cibil}
+                  onChange={(e) => set("coapplicant_cibil", e.target.value.replace(/\D/g, "").slice(0, 3))}
+                  placeholder="e.g. 750"
+                />
+                <p className="text-xs text-muted-foreground">Range 300–900. Optional but improves lender match accuracy.</p>
               </div>
               <div className="md:col-span-2">
                 <CollateralRadio
@@ -1472,6 +1640,24 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 <ReviewRow label="12th Score" value={form.twelfth_score} nudgeStep="study" nudgeField="twelfth_score" />
                 <ReviewRow label="Graduation Score" value={form.graduation_score} />
                 {form.marks_gpa ? <ReviewRow label="Marks / GPA (legacy)" value={form.marks_gpa} /> : null}
+                {form.work_experience_years && (
+                  <ReviewRow
+                    label="Work Experience"
+                    value={formatWorkExperience(form.work_experience_years) || form.work_experience_years}
+                  />
+                )}
+                {(form.ielts || form.toefl || form.duolingo || form.gre || form.gmat) && (
+                  <ReviewRow
+                    label="Test Scores"
+                    value={[
+                      form.ielts && `IELTS: ${form.ielts}`,
+                      form.toefl && `TOEFL: ${form.toefl}`,
+                      form.duolingo && `Duolingo: ${form.duolingo}`,
+                      form.gre && `GRE: ${form.gre}`,
+                      form.gmat && `GMAT: ${form.gmat}`,
+                    ].filter(Boolean).join(" · ")}
+                  />
+                )}
               </div>
               {/* Financial Info — required group, rendered for both partner and admin modes */}
               <div>
@@ -1484,6 +1670,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 />
                 <ReviewRow label="Co-Applicant Name" value={form.coapplicant_name} nudgeStep="financial" nudgeField="coapplicant_name" />
                 <ReviewRow label="Mobile Number" value={form.coapplicant_mobile} nudgeStep="financial" nudgeField="coapplicant_mobile" />
+                {form.coapplicant_email && <ReviewRow label="Email" value={form.coapplicant_email} />}
+                {form.coapplicant_age && <ReviewRow label="Age" value={form.coapplicant_age} />}
                 <ReviewRow label="Relation" value={form.coapplicant_relation} />
                 {/* Income Source review row removed — field no longer captured in UI. */}
                 <ReviewRow label="Employment Type" value={form.coapplicant_employment_type} nudgeStep="financial" nudgeField="coapplicant_employment_type" />
@@ -1500,6 +1688,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   nudgeStep="financial"
                   nudgeField="coapplicant_existing_emi"
                 />
+                {form.coapplicant_cibil && <ReviewRow label="CIBIL Score" value={form.coapplicant_cibil} />}
                 <ReviewRow label="Collateral" value={form.collateral_state === "likely" ? "Likely" : form.collateral_state === "unlikely" ? "Unlikely" : "Not sure"} />
                 {form.collateral_state === "likely" && form.collateral_notes && (
                   <ReviewRow label="Collateral Notes" value={form.collateral_notes} />
