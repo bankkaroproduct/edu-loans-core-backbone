@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/tooltip";
 import { evaluate } from "@/lib/bre/engine";
 import { loadActive } from "@/lib/bre/loader";
-import { buildBreProfileFromLead } from "@/lib/bre/leadProfile";
+import { buildBreProfileFromLeadAsync } from "@/lib/bre/leadProfile";
 import type { Tables } from "@/integrations/supabase/types";
 
 /**
@@ -96,7 +96,7 @@ export function AdminLenderRecommendations({ leadId }: { leadId: string }) {
 
       // Gate 1: profile basis — use the same `missing` list the BRE Calculate
       // card surfaces. If any required field is missing, hide the block.
-      const { profile, missing } = buildBreProfileFromLead(lead);
+      const { profile, missing } = await buildBreProfileFromLeadAsync(lead);
       if (missing.length > 0) {
         setGateReason("profile");
         setRows([]);
