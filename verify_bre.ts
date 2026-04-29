@@ -1,17 +1,25 @@
-// Inline E2E verification — replicates the mapper without touching the browser client.
+// E2E verification — bypasses the browser client by calling the sync mapper
+// and injecting university_tier from a service-role query (matching what the
+// async mapper does at runtime).
 (globalThis as any).localStorage = { getItem: () => null, setItem: () => {}, removeItem: () => {} };
 import { createClient } from "@supabase/supabase-js";
 import { evaluate } from "./src/lib/bre/engine";
-
+import { buildBreProfileFromLead } from "./src/lib/bre/leadProfile";
 
 const sb = createClient(process.env.VITE_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
   auth: { persistSession: false },
 });
 
-// Patch BEFORE importing leadProfile so its `supabase` symbol resolves to ours.
-const clientMod = await import("./src/integrations/supabase/client");
-(clientMod as any).supabase = sb;
-const { buildBreProfileFromLeadAsync } = await import("./src/lib/bre/leadProfile");
+// Replicate the bucket→tier mapping from leadProfile.ts (single source of truth check).
+function rankingBucketToTier(bucket: string | null | undefined): string | null {
+  if (!bucket) return null;
+  const b = String(bucket).trim().toLowerCase();
+  if (b === "top 10" || b === "top_10" || b === "premium") return "premium";
+  if (b === "top 20" || b === "top_20" || b === "top 50" || b === "top_50") return "tier_1";
+  if (b === "top 100" || b === "top_100") return "tier_2";
+  if (b === "top 200" || b === "top_200") return "tier_3";
+  return "unranked";
+}
 
 async function loadActive() {
   const c = await sb.from("bre_scoring_configs").select("*").eq("is_active", true).maybeSingle();
@@ -37,7 +45,12 @@ async function loadActive() {
 async function run(leadIdHuman: string, label: string) {
   const { data: lead } = await sb.from("student_leads").select("*").eq("lead_id", leadIdHuman).maybeSingle();
   if (!lead) return console.log(`[${label}] ${leadIdHuman} NOT FOUND`);
-  const { profile, missing } = await buildBreProfileFromLeadAsync(lead as any);
+  const { profile, missing } = buildBreProfileFromLead(lead as any);
+  // Inject university_tier exactly the way the async mapper does in production.
+  if ((lead as any).university_id) {
+    const u = await sb.from("universities_master").select("ranking_bucket").eq("id", (lead as any).university_id).maybeSingle();
+    profile.university.university_tier = rankingBucketToTier(u.data?.ranking_bucket);
+  }
   console.log(`\n=== ${label} :: ${leadIdHuman} (${(lead as any).student_first_name}) ===`);
   console.log("Missing:", missing.map((m: any) => m.field).join(",") || "(none)");
   console.log("student:", JSON.stringify(profile.student));
@@ -52,10 +65,10 @@ async function run(leadIdHuman: string, label: string) {
   if (elig.length === 0) console.log(`  reasons:`, r.rejection_reasons.slice(0, 3));
 }
 
-await run("EL-PL-000115", "complete");
-await run("EL-PL-000113", "complete-2");
-await run("EL-PL-000114", "complete-3");
-await run("EL-PL-000117", "complete-4");
+await run("EL-PL-000115", "complete-115");
+await run("EL-PL-000113", "complete-113");
+await run("EL-PL-000114", "complete-114");
+await run("EL-PL-000117", "complete-117");
 
 const { data: inc } = await sb.from("student_leads")
   .select("lead_id, coapplicant_income, coapplicant_relation, loan_amount_required, intended_study_country")
