@@ -61,7 +61,7 @@ export interface LeadQueueFilters {
 export const defaultQueueFilters: LeadQueueFilters = {
   source: "all",
   stage: "all",
-  sortBy: "updated_at",
+  sortBy: "created_at",
   sortDir: "desc",
 };
 
