@@ -158,6 +158,7 @@ export default function StudentCoapplicantDetails() {
                 onChange={d => updateField("coapplicant_existing_emi", d)}
                 placeholder="e.g. 15,000"
               />
+            </div>
             <div className="space-y-1.5">
               <Label>CIBIL Score</Label>
               <Input
