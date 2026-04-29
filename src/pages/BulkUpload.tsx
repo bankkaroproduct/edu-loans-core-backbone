@@ -46,14 +46,13 @@ const rowStatusConfig = {
 
 const fmt = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-/* ─── Template field reference (final canonical order) ─── */
+/* ─── Template field reference (final canonical 32-column order) ─── */
 const REQUIRED_COLS = [
   { name: "student_first_name", example: "Rahul" },
   { name: "student_last_name", example: "Sharma" },
   { name: "student_phone", example: "+919876543210" },
   { name: "intended_study_country", example: "United States" },
-  { name: "intake_term", example: "Fall" },
-  { name: "intake_year", example: "2025" },
+  { name: "intake_session", example: "Apr-Jun-2026" },
   { name: "course_name", example: "MS Computer Science" },
   { name: "loan_amount_required", example: "2500000" },
 ];
@@ -70,10 +69,16 @@ const OPTIONAL_COLS = [
   { name: "graduation_score", example: "8.5" },
   { name: "highest_qualification", example: "Bachelor's Degree" },
   { name: "highest_qualification_score", example: "8.5" },
+  { name: "work_experience", example: "3" },
+  { name: "test_scores", example: "GRE 320, IELTS 7.5" },
   { name: "coapplicant_name", example: "Suresh Sharma" },
   { name: "coapplicant_relation", example: "Father" },
+  { name: "coapplicant_age", example: "48" },
+  { name: "coapplicant_employment_type", example: "Salaried" },
+  { name: "coapplicant_employer", example: "Tata Consultancy Services" },
   { name: "coapplicant_income", example: "1200000" },
   { name: "coapplicant_existing_emi", example: "15000" },
+  { name: "coapplicant_cibil", example: "780" },
   { name: "collateral_available", example: "yes" },
   { name: "collateral_notes", example: "Flat in Mumbai" },
   { name: "source_sub_type", example: "referral" },
