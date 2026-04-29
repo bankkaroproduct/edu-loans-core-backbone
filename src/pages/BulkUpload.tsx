@@ -532,14 +532,22 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
                                 <span>{c.example} <em>(numeric, ≥ 0)</em></span>
                               ) : c.name === "10th_score" || c.name === "12th_score" || c.name === "graduation_score" || c.name === "highest_qualification_score" ? (
                                 <span>{c.example} <em>(numeric score, ≥ 0)</em></span>
+                              ) : c.name === "work_experience" ? (
+                                <span>{c.example} <em>(years, 0–60; use 0 for fresher)</em></span>
+                              ) : c.name === "test_scores" ? (
+                                <span>e.g. <strong>GRE 320, IELTS 7.5</strong> or <strong>TOEFL 105, GMAT 680</strong> <em>(free-text — stored as raw notes; structured scores are not overwritten)</em></span>
+                              ) : c.name === "coapplicant_age" ? (
+                                <span>{c.example} <em>(18–100)</em></span>
+                              ) : c.name === "coapplicant_cibil" ? (
+                                <span>{c.example} <em>(CIBIL score, 300–900)</em></span>
+                              ) : c.name === "coapplicant_employment_type" ? (
+                                <span>{c.example} <em>(must match Master Data — Employment Types)</em></span>
                               ) : c.name === "highest_qualification" ? (
                                 <span>{c.example} <em>(must be one of: {qualificationOptions.join(", ")})</em></span>
                               ) : c.name === "intended_study_country" ? (
                                 <span>{c.example} <em>(must match countries master)</em></span>
-                              ) : c.name === "intake_term" ? (
-                                <span>{c.example} <em>(must match intake master, e.g. Fall, Spring, Summer)</em></span>
-                              ) : c.name === "intake_year" ? (
-                                <span>{c.example} <em>(2020–2035)</em></span>
+                              ) : c.name === "intake_session" ? (
+                                <span>{c.example} <em>(quarter format — Jan-Mar-YYYY / Apr-Jun-YYYY / Jul-Sep-YYYY / Oct-Dec-YYYY; must match an active intake)</em></span>
                               ) : c.example}
                             </TableCell>
                           </TableRow>
@@ -551,6 +559,7 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
                     <strong>Note:</strong> Do not add partner_id, source_type, or created_by columns — these are derived automatically.
                     University and course values are matched against master data when possible; unmatched values are stored as-is.
                     If <strong>collateral_available = yes</strong>, then <strong>collateral_notes</strong> is required.
+                    The <strong>test_scores</strong> column is free-text raw notes (e.g. "GRE 320, IELTS 7.5") and is stored separately under <code className="font-mono text-[10px]">test_scores.raw_text</code> — it never overwrites structured score fields.
                   </p>
                 </CollapsibleContent>
               </Collapsible>
