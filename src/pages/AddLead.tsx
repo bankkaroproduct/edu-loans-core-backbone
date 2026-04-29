@@ -493,6 +493,21 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         return { message: "Monthly income is required", step: "financial", field: "coapplicant_income" };
       if (form.coapplicant_existing_emi === "" || isNaN(Number(form.coapplicant_existing_emi)) || Number(form.coapplicant_existing_emi) < 0)
         return { message: "Existing EMI is required (enter 0 if none)", step: "financial", field: "coapplicant_existing_emi" };
+      // Optional fields — validate format only when filled.
+      if (form.coapplicant_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.coapplicant_email.trim()))
+        return { message: "Co-applicant email format is invalid", step: "financial", field: "coapplicant_email" };
+      if (form.coapplicant_age.trim()) {
+        const a = parseInt(form.coapplicant_age, 10);
+        if (!Number.isFinite(a) || a < 18 || a > 100)
+          return { message: "Co-applicant age must be between 18 and 100", step: "financial", field: "coapplicant_age" };
+      }
+      if (form.coapplicant_cibil.trim()) {
+        const c = parseInt(form.coapplicant_cibil, 10);
+        if (!Number.isFinite(c) || c < 300 || c > 900)
+          return { message: "CIBIL Score must be between 300 and 900", step: "financial", field: "coapplicant_cibil" };
+      }
+      if (form.work_experience_years.trim() && !isValidWorkExp(form.work_experience_years))
+        return { message: "Work experience must be a number with at most one decimal (e.g. 3 or 3.2)", step: "study", field: "work_experience_years" };
     }
 
     if (!effectivePartnerId) return { message: "No partner organization found for your account. Admins can use 'Test as Partner' in the sidebar.", step: stepIds[0] };
