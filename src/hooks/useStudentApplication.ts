@@ -39,6 +39,10 @@ export interface StudentFormData {
     twelfth?: string;
     graduation?: string;
     highest_qualification_score?: string;
+    // Extended (Student portal only — persisted in test_scores JSONB to avoid schema change):
+    coapplicant_age?: string;
+    coapplicant_cibil?: string;
+    work_experience_years?: string;
   };
   // Co-applicant
   coapplicant_name: string;
@@ -223,6 +227,11 @@ export function useStudentApplication() {
         twelfth: ts.twelfth?.toString() || prev.test_scores.twelfth || "",
         graduation: ts.graduation?.toString() || prev.test_scores.graduation || "",
         highest_qualification_score: ts.highest_qualification_score?.toString() || prev.test_scores.highest_qualification_score || "",
+        coapplicant_age: ts.coapplicant_age?.toString() || prev.test_scores.coapplicant_age || "",
+        coapplicant_cibil: ts.coapplicant_cibil?.toString() || prev.test_scores.coapplicant_cibil || "",
+        work_experience_years: ts.work_experience_years !== undefined && ts.work_experience_years !== null
+          ? ts.work_experience_years.toString()
+          : (prev.test_scores.work_experience_years || ""),
       },
       coapplicant_name: lead.coapplicant_name || prev.coapplicant_name,
       coapplicant_relation: lead.coapplicant_relation || prev.coapplicant_relation,
@@ -282,6 +291,7 @@ export function useStudentApplication() {
           twelfth: formData.test_scores.twelfth,
           graduation: formData.test_scores.graduation,
           highest_qualification_score: formData.test_scores.highest_qualification_score,
+          work_experience_years: formData.test_scores.work_experience_years,
         };
         const scores: Record<string, number | string> = {};
         for (const [k, raw] of Object.entries(scoresStr)) {
@@ -304,6 +314,21 @@ export function useStudentApplication() {
           test_scores: scores,
         };
       } else if (action === "save_coapplicant") {
+        // Co-applicant Age + CIBIL persist from THIS step (not Education).
+        // We send them as `test_scores_extension` so the edge function can merge
+        // them into the existing test_scores JSONB without clobbering academic/test keys.
+        const ext: Record<string, number | string> = {};
+        const ageRaw = (formData.test_scores.coapplicant_age ?? "").toString().trim();
+        if (ageRaw) {
+          const n = parseInt(ageRaw, 10);
+          if (Number.isFinite(n)) ext.coapplicant_age = n;
+        }
+        const cibilRaw = (formData.test_scores.coapplicant_cibil ?? "").toString().trim();
+        if (cibilRaw) {
+          const n = parseInt(cibilRaw, 10);
+          if (Number.isFinite(n)) ext.coapplicant_cibil = n;
+        }
+
         payload = {
           coapplicant_name: formData.coapplicant_name || null,
           coapplicant_relation: formData.coapplicant_relation || null,
@@ -316,6 +341,7 @@ export function useStudentApplication() {
           coapplicant_existing_emi: formData.coapplicant_existing_emi || null,
           collateral_available: formData.collateral_available,
           collateral_notes: formData.collateral_notes || null,
+          test_scores_extension: ext,
         };
       }
 

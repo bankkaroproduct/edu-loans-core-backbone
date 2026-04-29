@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { Pencil, CheckCircle2, Sparkles, Shield, Info, Lock } from "lucide-react";
 import { intakeSessionLabel } from "@/lib/intakeSession";
+import { formatWorkExperience } from "@/lib/workExperience";
 
 interface SummaryItem {
   label: string;
@@ -124,6 +125,7 @@ export default function StudentReviewSubmit() {
           { label: "Course", value: formData.course_name },
           { label: "University", value: formData.university_name_raw },
           { label: "Intake", value: formData.intake_term && formData.intake_year ? intakeSessionLabel(formData.intake_term, Number(formData.intake_year)) : null },
+          { label: "Work Experience", value: formatWorkExperience(formData.test_scores.work_experience_years) },
           { label: "Test Scores", value: scoreDisplay },
         ]}
       />
@@ -136,12 +138,14 @@ export default function StudentReviewSubmit() {
         items={[
           { label: "Name", value: formData.coapplicant_name },
           { label: "Relationship", value: formData.coapplicant_relation },
+          { label: "Age", value: formData.test_scores.coapplicant_age ? String(formData.test_scores.coapplicant_age) : null },
           { label: "Mobile", value: formData.coapplicant_mobile },
           { label: "Email", value: formData.coapplicant_email },
           { label: "Employment", value: formData.coapplicant_employment_type },
           { label: "Employer", value: formData.coapplicant_employer },
           { label: "Monthly Income", value: formData.coapplicant_income ? `₹${Number(formData.coapplicant_income).toLocaleString("en-IN")}` : null },
           { label: "Existing EMI", value: formData.coapplicant_existing_emi ? `₹${Number(formData.coapplicant_existing_emi).toLocaleString("en-IN")}/mo` : null },
+          { label: "CIBIL Score", value: formData.test_scores.coapplicant_cibil ? String(formData.test_scores.coapplicant_cibil) : null },
           { label: "Collateral", value: formData.collateral_available ? `Yes — ${formData.collateral_notes || "Details not specified"}` : formData.collateral_available === false ? "No" : null },
         ]}
       />

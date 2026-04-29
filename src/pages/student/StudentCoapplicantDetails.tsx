@@ -18,7 +18,7 @@ const EMPLOYMENT_TYPES = ["Salaried", "Self-employed", "Business Owner", "Profes
 export default function StudentCoapplicantDetails() {
   const navigate = useNavigate();
   const { isVerified } = useStudentAuth();
-  const { formData, updateField, saveStep, saving } = useStudentApplication();
+  const { formData, updateField, updateTestScore, saveStep, saving } = useStudentApplication();
 
   useEffect(() => {
     if (!isVerified) { navigate("/student/login"); return; }
@@ -112,6 +112,15 @@ export default function StudentCoapplicantDetails() {
               <Label>Email Address</Label>
               <Input type="email" value={formData.coapplicant_email} onChange={e => updateField("coapplicant_email", e.target.value)} placeholder="email@example.com" />
             </div>
+            <div className="space-y-1.5">
+              <Label>Co-applicant Age</Label>
+              <Input
+                inputMode="numeric"
+                value={formData.test_scores.coapplicant_age || ""}
+                onChange={e => updateTestScore("coapplicant_age", e.target.value.replace(/\D/g, "").slice(0, 3))}
+                placeholder="e.g. 48"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -149,6 +158,16 @@ export default function StudentCoapplicantDetails() {
                 onChange={d => updateField("coapplicant_existing_emi", d)}
                 placeholder="e.g. 15,000"
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label>CIBIL Score</Label>
+              <Input
+                inputMode="numeric"
+                value={formData.test_scores.coapplicant_cibil || ""}
+                onChange={e => updateTestScore("coapplicant_cibil", e.target.value.replace(/\D/g, "").slice(0, 3))}
+                placeholder="e.g. 750"
+              />
+              <p className="text-xs text-muted-foreground">Range 300–900. Optional but improves lender match accuracy.</p>
             </div>
             <div className="sm:col-span-2">
               <CollateralRadio
