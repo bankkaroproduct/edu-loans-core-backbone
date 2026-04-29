@@ -91,7 +91,7 @@ function sameCountryName(a: string | null | undefined, b: string | null | undefi
 interface AddLeadProps {
   hideOwnHeader?: boolean;
   containerClassName?: string;
-  /** When true, render the admin 5-step structure with a dedicated Financial Info step. */
+  /** When true, render the admin step structure (adds Assign step in edit mode). */
   adminMode?: boolean;
 }
 
