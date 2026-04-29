@@ -12,9 +12,6 @@ const LEAD_ID = 'c0a302ef-17d7-4d4e-8a66-fcd580ed37f8'; // EL-PL-000115
 // Use simple inline copies of the engine + mapping (logically identical to src/lib/bre/*).
 // They must exactly mirror behavior; we re-import via tsx instead.
 
-import { register } from 'node:module';
-register('tsx/esm', import.meta.url);
-
 const engine = await import('/dev-server/src/lib/bre/engine.ts');
 const mapper = await import('/dev-server/src/lib/bre/leadProfile.ts');
 
