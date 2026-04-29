@@ -1670,6 +1670,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 />
                 <ReviewRow label="Co-Applicant Name" value={form.coapplicant_name} nudgeStep="financial" nudgeField="coapplicant_name" />
                 <ReviewRow label="Mobile Number" value={form.coapplicant_mobile} nudgeStep="financial" nudgeField="coapplicant_mobile" />
+                {form.coapplicant_email && <ReviewRow label="Email" value={form.coapplicant_email} />}
+                {form.coapplicant_age && <ReviewRow label="Age" value={form.coapplicant_age} />}
                 <ReviewRow label="Relation" value={form.coapplicant_relation} />
                 {/* Income Source review row removed — field no longer captured in UI. */}
                 <ReviewRow label="Employment Type" value={form.coapplicant_employment_type} nudgeStep="financial" nudgeField="coapplicant_employment_type" />
