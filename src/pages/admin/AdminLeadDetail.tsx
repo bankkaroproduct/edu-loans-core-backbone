@@ -218,37 +218,26 @@ export default function AdminLeadDetail() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <LeadDetailHeader
+      <AdminLeadHeader
         lead={lead}
         submittedByName={submittedByName}
         isDraft={isDraft}
         backTo="/admin/leads"
         backLabel="Back to Lead Queue"
-        hideActions
       />
 
-      {/* Admin direct-action toolbar — Edit is always enabled, including terminal stages */}
-      <div className="flex items-center justify-between gap-3 flex-wrap border rounded-md px-4 py-2 bg-muted/30">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-muted-foreground">Authenticity</span>
-          <LeadAuthenticityEditor
-            leadId={lead.id}
-            current={(lead as unknown as { lead_authenticity?: string }).lead_authenticity}
-            fraudFlag={lead.fraud_flag}
-            onChanged={loadAll}
-          />
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button size="sm" onClick={() => navigate(`/admin/leads/new?edit=${lead.id}`)}>
-            <Edit className="h-4 w-4 mr-1" /> Edit Lead
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => navigate(`/admin/leads/${lead.id}/documents`)}>
-            <FileText className="h-4 w-4 mr-1" /> Documents
-          </Button>
-        </div>
+      {/* Admin authenticity toolbar — Edit/Documents now live inside AdminLeadHeader */}
+      <div className="flex items-center gap-3 flex-wrap border rounded-md px-4 py-2 bg-muted/30">
+        <span className="text-xs text-muted-foreground">Authenticity</span>
+        <LeadAuthenticityEditor
+          leadId={lead.id}
+          current={(lead as unknown as { lead_authenticity?: string }).lead_authenticity}
+          fraudFlag={lead.fraud_flag}
+          onChanged={loadAll}
+        />
       </div>
 
-      <LeadSummaryStrip lead={lead} />
+      <AdminLeadSummaryStrip lead={lead} />
 
       {/* Student PTR / Partner Source profile — promoted to the top of Admin Lead
           Detail so the originating partner / student-direct context is always
@@ -257,8 +246,8 @@ export default function AdminLeadDetail() {
 
       <div className="space-y-3">
         <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold pt-2">Lifecycle</h2>
-        <LeadLifecycleProgress lead={lead} />
-        <LeadDuplicateContext lead={lead} />
+        <AdminLeadLifecycleProgress lead={lead} />
+        <AdminLeadDuplicateContext lead={lead} />
         <AdminEditRequestPanel leadId={lead.id} onChanged={loadAll} />
       </div>
 
@@ -272,7 +261,7 @@ export default function AdminLeadDetail() {
             Diagnostic and assignment tools — manual changes do not auto-update lifecycle.
           </p>
         </div>
-        <LeadTimeline history={history} notes={notes} audits={audits} actorNames={actorNames} />
+        <AdminLeadTimeline history={history} notes={notes} audits={audits} actorNames={actorNames} />
         <AdminLenderRecommendations leadId={lead.id} />
         <AdminCalculateBreCard lead={lead} />
         <AdminAssignLenderCard leadId={lead.id} />
@@ -280,7 +269,7 @@ export default function AdminLeadDetail() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-          <LeadProfileSection lead={lead} submittedByName={submittedByName} onSaved={loadAll} />
+          <AdminLeadProfileSection lead={lead} submittedByName={submittedByName} onSaved={loadAll} />
 
           <AdminLeadDocumentsView
             leadId={lead.id}
@@ -309,6 +298,8 @@ export default function AdminLeadDetail() {
             hasSanctionInHistory={hasSanctionInHistory}
             onChanged={loadAll}
           />
+
+          <AdminLeadPayoutSnapshot payouts={payouts} leadId={lead.id} />
 
           <LeadPayoutSnapshot payouts={payouts} leadId={lead.id} />
         </div>
