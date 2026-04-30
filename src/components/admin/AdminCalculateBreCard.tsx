@@ -675,7 +675,7 @@ function ResolutionNotes({ resolution }: { resolution: BuildProfileResolution | 
   const um = resolution.university_match;
   const cl = resolution.course_level_derivation;
 
-  const items: { label: string; tone: "ok" | "warn" | "muted"; text: React.ReactNode }[] = [];
+  const items: { label: string; tone: "ok" | "warn" | "muted"; text: import("react").ReactNode }[] = [];
 
   if (um && "kind" in um) {
     if (um.kind === "fuzzy") {
