@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { StageBadge, StatusBadge } from "@/components/dashboard/StageBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { StatCard } from "@/components/shared/StatCard";
+
 import { AdminLeadFilters, type AdminLeadFilterState } from "@/components/admin/AdminLeadFilters";
 import { applyBusinessFilters as applySharedBusinessFilters } from "@/lib/leadBusinessFilters";
 import {
