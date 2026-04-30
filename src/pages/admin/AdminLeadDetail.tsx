@@ -226,10 +226,10 @@ export default function AdminLeadDetail() {
         hideActions
       />
 
-      {/* Admin direct-action row — Edit is always enabled, including terminal stages */}
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex items-center gap-2">
-          <span className="text-xs uppercase tracking-wide text-muted-foreground">Authenticity:</span>
+      {/* Admin direct-action toolbar — Edit is always enabled, including terminal stages */}
+      <div className="flex items-center justify-between gap-3 flex-wrap border rounded-md px-4 py-2 bg-muted/30">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-muted-foreground">Authenticity</span>
           <LeadAuthenticityEditor
             leadId={lead.id}
             current={(lead as unknown as { lead_authenticity?: string }).lead_authenticity}
@@ -237,12 +237,12 @@ export default function AdminLeadDetail() {
             onChanged={loadAll}
           />
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => navigate(`/admin/leads/${lead.id}/documents`)}>
-            <FileText className="h-4 w-4 mr-1" /> Documents
-          </Button>
+        <div className="flex items-center gap-2 flex-wrap">
           <Button size="sm" onClick={() => navigate(`/admin/leads/new?edit=${lead.id}`)}>
             <Edit className="h-4 w-4 mr-1" /> Edit Lead
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => navigate(`/admin/leads/${lead.id}/documents`)}>
+            <FileText className="h-4 w-4 mr-1" /> Documents
           </Button>
         </div>
       </div>
