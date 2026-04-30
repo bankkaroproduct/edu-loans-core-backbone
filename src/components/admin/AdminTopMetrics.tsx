@@ -39,8 +39,9 @@ export function AdminTopMetrics({ data, loading, error, onRetry, activeLendersCo
     n === null || n === undefined ? "—" : n.toLocaleString("en-IN");
 
   return (
-    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
       <StatCard
+        size="lg"
         label="Action needed today"
         value={data?.pendingAdminActions}
         sub={data ? `Requests: ${fmt(data.requestsPendingApproval)} • Docs: ${fmt(data.documentsPendingReview)}` : undefined}
@@ -49,13 +50,16 @@ export function AdminTopMetrics({ data, loading, error, onRetry, activeLendersCo
         loading={loading}
       />
       <StatCard
+        size="lg"
         label="Active pipeline"
         value={data?.totalLeads}
         sub={data ? `Sent to lender: ${fmt(data.sentToLender)} • Sanctioned: ${fmt(data.sanctionReceived)}` : undefined}
         icon={TrendingUp}
+        tone="primary"
         loading={loading}
       />
       <StatCard
+        size="lg"
         label="Closed"
         value={data?.disbursed}
         sub="Disbursed (lifetime)"
@@ -64,6 +68,7 @@ export function AdminTopMetrics({ data, loading, error, onRetry, activeLendersCo
         loading={loading}
       />
       <StatCard
+        size="lg"
         label="Partners"
         value={data?.activePartners}
         sub={
