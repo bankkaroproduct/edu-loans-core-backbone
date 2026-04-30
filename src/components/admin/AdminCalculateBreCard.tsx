@@ -620,7 +620,10 @@ function LenderOptionsList({
         )}
       </div>
       <ol className="space-y-1.5">
-        {eligibleLenders.slice(0, 8).map((l) => (
+        {[...eligibleLenders]
+          .sort((a, b) => (a.rank ?? Number.POSITIVE_INFINITY) - (b.rank ?? Number.POSITIVE_INFINITY))
+          .slice(0, 8)
+          .map((l) => (
           <li
             key={l.lender_id}
             className="flex items-center justify-between gap-2 rounded-md border border-border/60 px-2.5 py-2 text-xs"
