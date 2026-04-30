@@ -183,9 +183,9 @@ export function InlineEditField({
 
   if (editing) {
     return (
-      <span className={`inline-flex flex-col gap-1.5 ${className ?? ""}`}>
+      <span className={`flex flex-col gap-1.5 w-full min-w-0 ${className ?? ""}`}>
         {options && options.length > 0 ? (
-          <span className="inline-flex items-center gap-1">
+          <span className="flex flex-wrap items-center gap-1">
             {options.map((opt) => (
               <Button
                 key={opt.value}
@@ -207,7 +207,7 @@ export function InlineEditField({
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder={placeholder ?? label}
-            className="h-7 text-sm"
+            className="h-7 text-sm w-full"
             disabled={saving}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
@@ -220,7 +220,7 @@ export function InlineEditField({
           />
         )}
         {!confirming ? (
-          <span className="inline-flex items-center gap-1">
+          <span className="flex flex-wrap items-center gap-1">
             <Button size="sm" className="h-6 px-2 text-[11px]" onClick={askConfirm} disabled={saving}>
               Save
             </Button>
@@ -229,7 +229,7 @@ export function InlineEditField({
             </Button>
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1.5 rounded border bg-muted/40 p-1.5">
+          <span className="flex flex-wrap items-center gap-1.5 rounded border bg-muted/40 p-1.5 w-full">
             <span className="text-[11px]">Save this information?</span>
             <Button size="sm" className="h-6 px-2 text-[11px]" onClick={save} disabled={saving}>
               {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
