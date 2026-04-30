@@ -504,7 +504,7 @@ export default function AdminLeads() {
           )}
 
           {/* Quick filter chips */}
-          <div className="flex flex-wrap gap-2 pt-1 border-t border-border/60 pt-3">
+          <div className="flex flex-wrap gap-2 pt-3 border-t border-border/60">
             {quickChips.map((c) => {
               const Icon = c.icon;
               return (
