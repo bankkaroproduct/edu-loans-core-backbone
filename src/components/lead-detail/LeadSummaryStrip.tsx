@@ -39,7 +39,7 @@ function Cell({
   return (
     <div className="min-w-0">
       <p className="text-xs text-muted-foreground truncate">{label}</p>
-      <div className="text-sm font-medium truncate">{children}</div>
+      <div className="text-sm font-medium min-w-0">{children}</div>
     </div>
   );
 }
