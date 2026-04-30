@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 export type StatCardTone = "default" | "primary" | "amber" | "emerald" | "destructive";
+export type StatCardSize = "default" | "lg";
 
 interface StatCardProps {
   label: string;
@@ -25,6 +26,12 @@ interface StatCardProps {
   /** Optional in-app link wrapping the card. */
   to?: string;
   className?: string;
+  /**
+   * Visual density. `default` is the original compact style used everywhere.
+   * `lg` is a premium tile (larger padding, bigger numerals, rounded-xl) —
+   * opt-in only, used by the Admin Console dashboard. Backwards compatible.
+   */
+  size?: StatCardSize;
 }
 
 const TONE_STYLES: Record<StatCardTone, { bg: string; fg: string }> = {
@@ -57,41 +64,64 @@ export function StatCard({
   loading,
   to,
   className,
+  size = "default",
 }: StatCardProps) {
   const t = TONE_STYLES[tone];
   const showSkeleton = loading || value === null || value === undefined;
+  const isLg = size === "lg";
 
   const inner = (
     <Card
       className={cn(
-        "p-4 h-full",
+        isLg
+          ? "p-5 h-full rounded-xl border-border/70 shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
+          : "p-4 h-full",
         to && "transition-colors hover:border-primary/40",
         className,
       )}
     >
-      <div className="flex items-start justify-between gap-3 h-full">
-        <div className="space-y-1.5 min-w-0 flex-1">
-          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide leading-tight">
+      <div className={cn("flex items-start justify-between h-full", isLg ? "gap-4" : "gap-3")}>
+        <div className={cn("min-w-0 flex-1", isLg ? "space-y-2" : "space-y-1.5")}>
+          <p
+            className={cn(
+              "font-medium text-muted-foreground uppercase leading-tight",
+              isLg ? "text-[11px] tracking-[0.12em]" : "text-[11px] tracking-wide",
+            )}
+          >
             {label}
           </p>
           {showSkeleton ? (
-            <Skeleton className="h-7 w-16" />
+            <Skeleton className={isLg ? "h-9 w-20" : "h-7 w-16"} />
           ) : (
-            <p className="text-2xl font-semibold tabular-nums leading-none text-foreground">
+            <p
+              className={cn(
+                "font-semibold tabular-nums leading-none text-foreground",
+                isLg ? "text-3xl" : "text-2xl",
+              )}
+            >
               {fmt(value)}
             </p>
           )}
           {sub !== undefined && sub !== null && sub !== "" && (
             <p
-              className="text-[11px] text-muted-foreground leading-snug line-clamp-2"
+              className={cn(
+                "text-muted-foreground leading-snug line-clamp-2",
+                isLg ? "text-xs" : "text-[11px]",
+              )}
               title={typeof sub === "string" ? sub : undefined}
             >
               {sub}
             </p>
           )}
         </div>
-        <div className={cn("rounded-md p-2 shrink-0", t.bg)}>
-          <Icon className={cn("h-4 w-4", t.fg)} />
+        <div
+          className={cn(
+            "shrink-0 flex items-center justify-center",
+            isLg ? "rounded-xl h-10 w-10" : "rounded-md p-2",
+            t.bg,
+          )}
+        >
+          <Icon className={cn(isLg ? "h-5 w-5" : "h-4 w-4", t.fg)} />
         </div>
       </div>
     </Card>

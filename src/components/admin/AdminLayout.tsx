@@ -11,20 +11,22 @@ import { Shield } from "lucide-react";
  */
 export function AdminLayout({ children }: { children: ReactNode }) {
   return (
-    <SidebarProvider style={{ "--sidebar-width": "220px" } as CSSProperties}>
-      <div className="min-h-screen flex w-full bg-background">
+    <SidebarProvider style={{ "--sidebar-width": "224px" } as CSSProperties}>
+      <div className="min-h-screen flex w-full bg-muted/30">
         <AdminSidebar />
-        <div className="flex-1 flex flex-col">
-          <header className="h-12 flex items-center gap-3 border-b border-primary/10 bg-primary/5 px-4">
+        <div className="flex-1 flex flex-col min-w-0">
+          <header className="h-14 flex items-center gap-3 border-b border-border/60 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 sticky top-0 z-20">
             <SidebarTrigger />
-            <div className="flex items-center gap-1.5">
-              <Shield className="h-4 w-4 text-primary" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+            <div className="flex items-center gap-2">
+              <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10">
+                <Shield className="h-3.5 w-3.5 text-primary" />
+              </div>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-foreground/80">
                 Admin Console
               </span>
             </div>
           </header>
-          <main className="flex-1 px-6 py-6">{children}</main>
+          <main className="flex-1 px-6 py-7">{children}</main>
         </div>
       </div>
     </SidebarProvider>
