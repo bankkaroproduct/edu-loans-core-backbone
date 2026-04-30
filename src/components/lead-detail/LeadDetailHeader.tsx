@@ -75,26 +75,31 @@ export function LeadDetailHeader({ lead, submittedByName, isDraft, backTo = "/le
       </div>
 
       <div className="flex flex-col lg:flex-row lg:items-start gap-4">
-        <div className="flex-1 space-y-2">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold text-foreground break-words">
+        <div className="flex-1 min-w-0 space-y-1.5">
+          <div className="flex items-baseline gap-3 flex-wrap">
+            <h1 className="text-2xl font-bold text-foreground break-words leading-tight">
               {lead.student_full_name ?? `${lead.student_first_name} ${lead.student_last_name ?? ""}`.trim()}
             </h1>
-            {lead.lead_id && (
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {lead.lead_id ? (
               <Badge
                 variant="outline"
-                className="group font-mono text-xs cursor-pointer hover:bg-muted transition-colors gap-1"
+                className="group font-mono text-[11px] cursor-pointer hover:bg-muted transition-colors gap-1 py-0"
                 onClick={copyLeadId}
                 title="Copy Lead ID for support / escalations"
               >
                 {lead.lead_id}
                 <Copy className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />
               </Badge>
+            ) : (
+              <Badge variant="outline" className="text-[11px] py-0">Draft</Badge>
             )}
-            {!lead.lead_id && <Badge variant="outline" className="text-xs">Draft</Badge>}
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-x-2 gap-y-1.5 flex-wrap">
+            {/* State group */}
             <StageBadge stage={lead.current_stage} />
             <StatusBadge status={lead.current_status} />
             {needsAttention && (
@@ -103,21 +108,28 @@ export function LeadDetailHeader({ lead, submittedByName, isDraft, backTo = "/le
             {lead.duplicate_flag && (
               <Badge variant="outline" className="text-xs border-orange-300 text-orange-700 bg-orange-50">Duplicate</Badge>
             )}
+            {/* Separator between state and provenance groups */}
+            <span aria-hidden className="hidden sm:inline-block w-px h-4 bg-border mx-1" />
+            {/* Provenance group */}
             <Badge variant="secondary" className="text-xs">{getOriginLabel(lead)}</Badge>
           </div>
 
-          {/* Compact timestamp row directly under status badges (Reading A) */}
-          <div className="flex items-center gap-x-3 gap-y-1 text-xs text-muted-foreground flex-wrap">
-            <span>Submitted on: {new Date(lead.created_at).toLocaleString()}</span>
+          {/* Single compact metadata line: Submitted · Updated · by Name */}
+          <div className="flex items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground flex-wrap">
+            <span title={new Date(lead.created_at).toLocaleString()}>
+              Submitted {formatShortDate(lead.created_at)}
+            </span>
             <span aria-hidden>·</span>
-            <span>Updated: {new Date(lead.updated_at).toLocaleString()}</span>
+            <span title={new Date(lead.updated_at).toLocaleString()}>
+              Updated {formatRelative(lead.updated_at)}
+            </span>
+            {submittedByName && (
+              <>
+                <span aria-hidden>·</span>
+                <span>by {submittedByName}</span>
+              </>
+            )}
           </div>
-
-          {submittedByName && (
-            <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
-              <span>Submitted by: {submittedByName}</span>
-            </div>
-          )}
         </div>
 
         {!hideActions && (
