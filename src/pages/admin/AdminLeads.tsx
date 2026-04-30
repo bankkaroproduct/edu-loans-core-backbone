@@ -434,7 +434,7 @@ export default function AdminLeads() {
     <div className="space-y-6 max-w-screen-2xl mx-auto">
       <PageHeader
         title="Lead Queue"
-        description="Cross-partner lead inbox — student & partner leads in one place."
+        description="Review, prioritize, assign, and manage education-loan leads across all sources."
         count={healthCounts.total}
         lastUpdated={lastRefreshedAt}
       >
@@ -443,23 +443,57 @@ export default function AdminLeads() {
         </Button>
       </PageHeader>
 
-      {/* Queue Health Strip — filter-aware counts */}
-      <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
-        {[
-          { label: "Total in queue", value: healthCounts.total, color: "text-primary" },
-          { label: "Pending review", value: healthCounts.pendingReview, color: "text-amber-700" },
-          { label: "Sent to Lender", value: healthCounts.withLender, color: "text-primary" },
-          { label: "Sanction Received", value: healthCounts.sanction, color: "text-emerald-700" },
-        ].map((m) => (
-          <Card key={m.label} className="p-3">
-            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">{m.label}</p>
-            <p className={`text-xl font-bold tabular-nums mt-0.5 ${m.color}`}>{m.value.toLocaleString("en-IN")}</p>
-          </Card>
-        ))}
+      {/* Pipeline Summary Cards — filter-aware counts */}
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          label="Total in queue"
+          value={loading ? null : healthCounts.total}
+          sub="Matching current filters"
+          icon={Layers}
+          tone="default"
+          loading={loading}
+        />
+        <StatCard
+          label="Pending review"
+          value={loading ? null : healthCounts.pendingReview}
+          sub="New · Awaiting verification · Pending info"
+          icon={AlertCircle}
+          tone="amber"
+          loading={loading}
+        />
+        <StatCard
+          label="Sent to Lender"
+          value={loading ? null : healthCounts.withLender}
+          sub="Awaiting lender decision"
+          icon={Send}
+          tone="primary"
+          loading={loading}
+        />
+        <StatCard
+          label="Sanction Received"
+          value={loading ? null : healthCounts.sanction}
+          sub="Sanction in hand"
+          icon={BadgeCheck}
+          tone="emerald"
+          loading={loading}
+        />
       </div>
 
-      <Card>
-        <CardContent className="p-4 space-y-4">
+      {/* Control Bar — search + filters + quick chips */}
+      <Card className="overflow-hidden">
+        <CardContent className="p-4 sm:p-5 space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              <span>Filters</span>
+              {activeFilterCount > 0 && (
+                <Badge variant="secondary" className="text-[10px] h-5 px-1.5 tabular-nums">
+                  {activeFilterCount} active
+                </Badge>
+              )}
+            </div>
+          </div>
+
           {!mastersLoaded ? (
             <div className="space-y-2">
               <Skeleton className="h-9 w-full" />
@@ -479,45 +513,72 @@ export default function AdminLeads() {
           )}
 
           {/* Quick filter chips */}
-          <div className="flex flex-wrap gap-2">
-            {quickChips.map((c) => (
-              <button
-                key={c.label}
-                type="button"
-                onClick={c.apply}
-                className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                  c.active
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-background hover:bg-muted text-foreground"
-                }`}
-              >
-                {c.label}
-              </button>
-            ))}
+          <div className="flex flex-wrap gap-2 pt-1 border-t border-border/60 pt-3">
+            {quickChips.map((c) => {
+              const Icon = c.icon;
+              return (
+                <button
+                  key={c.label}
+                  type="button"
+                  onClick={c.apply}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
+                    c.active
+                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                      : "border-border bg-background hover:bg-muted hover:border-muted-foreground/30 text-foreground"
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {c.label}
+                </button>
+              );
+            })}
           </div>
+        </CardContent>
+      </Card>
 
-          {/* Result summary */}
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>
-              {loading ? "Loading…" : error ? "—" : `${totalCount} lead${totalCount === 1 ? "" : "s"} matching filters`}
-            </span>
-            <span>Page {page} of {totalPages}</span>
-          </div>
+      {/* Result summary strip */}
+      <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+        <span className="tabular-nums">
+          {loading ? "Loading…" : error ? "—" : (
+            <>
+              <span className="font-medium text-foreground">{totalCount.toLocaleString("en-IN")}</span>
+              {" "}lead{totalCount === 1 ? "" : "s"} matching filters
+            </>
+          )}
+        </span>
+        <span className="tabular-nums">Page {page} of {totalPages}</span>
+      </div>
 
-          {/* Table / states */}
+      {/* Table card */}
+      <Card className="overflow-hidden">
+        <CardContent className="p-0">
+          {/* Loading skeleton — table-shaped */}
           {loading && (
-            <div className="space-y-2">
-              {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+            <div className="divide-y divide-border">
+              <div className="flex items-center gap-4 px-4 py-3 bg-muted/40">
+                {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-3 w-20" />)}
+              </div>
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="flex items-center gap-4 px-4 py-3.5">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-24 ml-auto" />
+                  <Skeleton className="h-5 w-16" />
+                </div>
+              ))}
             </div>
           )}
 
+          {/* Error state */}
           {!loading && error && (
-            <div className="flex items-center justify-between gap-4 py-6 px-4 border border-destructive/30 bg-destructive/5 rounded-md">
-              <div className="flex items-center gap-2 text-destructive">
-                <AlertCircle className="h-5 w-5" />
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 border-l-4 border-l-destructive bg-destructive/5">
+              <div className="flex items-start gap-3 text-destructive">
+                <AlertCircle className="h-5 w-5 mt-0.5 shrink-0" />
                 <div>
-                  <p className="font-medium text-sm">Failed to load lead queue</p>
-                  <p className="text-xs text-muted-foreground">{error}</p>
+                  <p className="font-semibold text-sm">Failed to load lead queue</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{error}</p>
                 </div>
               </div>
               <Button variant="outline" size="sm" onClick={() => fetchPage()}>
@@ -526,95 +587,115 @@ export default function AdminLeads() {
             </div>
           )}
 
+          {/* Empty state */}
           {!loading && !error && rows.length === 0 && (
-            <EmptyState icon={Inbox} title="No leads match" description="Adjust filters or clear search to see leads here." />
+            <EmptyState
+              icon={Inbox}
+              title="No leads match your filters"
+              description="Try adjusting filters or search terms above to see leads."
+            />
           )}
 
+          {/* Table */}
           {!loading && !error && rows.length > 0 && (
-            <div className="rounded-md border overflow-hidden">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Lead ID</TableHead>
-                      <TableHead>Student</TableHead>
-                      <TableHead>Source</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Country</TableHead>
-                      <TableHead>Course</TableHead>
-                      <TableHead className="text-right">
-                        <button type="button" onClick={() => toggleSort("loan_amount_required")} className="inline-flex items-center gap-1 hover:text-foreground">
-                          Loan {sortIcon("loan_amount_required")}
-                        </button>
-                      </TableHead>
-                      <TableHead>Stage</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>
-                        <button type="button" onClick={() => toggleSort("updated_at")} className="inline-flex items-center gap-1 hover:text-foreground">
-                          Updated {sortIcon("updated_at")}
-                        </button>
-                      </TableHead>
-                      <TableHead className="text-right w-[60px]">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {rows.map((r) => (
-                      <TableRow
-                        key={r.id}
-                        data-clickable="true"
-                        onClick={() => navigate(`/admin/leads/${r.id}`)}
-                      >
-                        <TableCell className="font-mono text-xs">{r.lead_id ?? "—"}</TableCell>
-                        <TableCell className="font-medium">{studentName(r)}</TableCell>
-                        <TableCell>
-                          {r.source_type === "student_direct" ? (
-                            <Badge variant="outline" className="text-[10px]">Student Portal</Badge>
-                          ) : (
-                            <span className="text-muted-foreground">{r.partner_display_name ? `Partner: ${r.partner_display_name}` : "Partner Lead"}</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground tabular-nums">{r.student_phone}</TableCell>
-                        <TableCell>{r.intended_study_country || "—"}</TableCell>
-                        <TableCell className="max-w-[180px] truncate" title={r.course_name}>{r.course_name || "—"}</TableCell>
-                        <TableCell className="text-right tabular-nums">{fmtAmount(r.loan_amount_required)}</TableCell>
-                        <TableCell><StageBadge stage={r.current_stage} /></TableCell>
-                        <TableCell><StatusBadge status={r.current_status} /></TableCell>
-                        <TableCell className="text-muted-foreground whitespace-nowrap">
-                          {formatDistanceToNow(new Date(r.updated_at), { addSuffix: true })}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                            title="Edit lead"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/admin/leads/new?edit=${r.id}`);
-                            }}
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/40 hover:bg-muted/40">
+                    <TableHead>Lead ID</TableHead>
+                    <TableHead>Student</TableHead>
+                    <TableHead>Source</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>Country</TableHead>
+                    <TableHead>Course</TableHead>
+                    <TableHead className="text-right">
+                      <button type="button" onClick={() => toggleSort("loan_amount_required")} className="inline-flex items-center gap-1 hover:text-foreground">
+                        Loan {sortIcon("loan_amount_required")}
+                      </button>
+                    </TableHead>
+                    <TableHead>Stage</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>
+                      <button type="button" onClick={() => toggleSort("updated_at")} className="inline-flex items-center gap-1 hover:text-foreground">
+                        Updated {sortIcon("updated_at")}
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-right w-[60px]">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((r) => (
+                    <TableRow
+                      key={r.id}
+                      data-clickable="true"
+                      onClick={() => navigate(`/admin/leads/${r.id}`)}
+                      className="group"
+                    >
+                      <TableCell className="font-mono text-xs text-muted-foreground">{r.lead_id ?? "—"}</TableCell>
+                      <TableCell className="font-medium text-foreground">{studentName(r)}</TableCell>
+                      <TableCell>
+                        {r.source_type === "student_direct" ? (
+                          <Badge variant="outline" className="text-[10px] font-medium">Student Portal</Badge>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] font-medium max-w-[200px] truncate inline-block"
+                            title={r.partner_display_name ? `Partner: ${r.partner_display_name}` : "Partner Lead"}
                           >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                            {r.partner_display_name ? `Partner · ${r.partner_display_name}` : "Partner Lead"}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground tabular-nums text-xs">{r.student_phone}</TableCell>
+                      <TableCell className="text-sm">{r.intended_study_country || "—"}</TableCell>
+                      <TableCell className="max-w-[180px] truncate text-sm" title={r.course_name}>{r.course_name || "—"}</TableCell>
+                      <TableCell className="text-right tabular-nums font-medium text-foreground">
+                        {r.loan_amount_required === null || r.loan_amount_required === undefined ? (
+                          <span className="text-muted-foreground font-normal">—</span>
+                        ) : (
+                          <>
+                            <span className="text-muted-foreground font-normal mr-0.5">₹</span>
+                            {Number(r.loan_amount_required).toLocaleString("en-IN")}
+                          </>
+                        )}
+                      </TableCell>
+                      <TableCell><StageBadge stage={r.current_stage} /></TableCell>
+                      <TableCell><StatusBadge status={r.current_status} /></TableCell>
+                      <TableCell className="text-muted-foreground whitespace-nowrap text-xs">
+                        {formatDistanceToNow(new Date(r.updated_at), { addSuffix: true })}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground opacity-60 group-hover:opacity-100 transition-opacity"
+                          title="Edit lead"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/admin/leads/new?edit=${r.id}`);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
 
           {/* Pagination */}
           {!loading && !error && totalCount > 0 && (
-            <div className="flex items-center justify-between pt-2">
-              <span className="text-xs text-muted-foreground">
-                Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, totalCount)} of {totalCount}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 border-t bg-muted/20">
+              <span className="text-xs text-muted-foreground tabular-nums">
+                Showing <span className="font-medium text-foreground">{(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, totalCount)}</span> of <span className="font-medium text-foreground">{totalCount.toLocaleString("en-IN")}</span>
               </span>
               <div className="flex items-center gap-1">
                 <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
                   <ChevronLeft className="h-3.5 w-3.5" />
                 </Button>
-                <span className="text-xs px-2">Page {page} / {totalPages}</span>
+                <span className="text-xs px-3 tabular-nums">Page {page} / {totalPages}</span>
                 <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
                   <ChevronRight className="h-3.5 w-3.5" />
                 </Button>
