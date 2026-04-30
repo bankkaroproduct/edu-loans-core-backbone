@@ -135,6 +135,7 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
               label="Date of Birth"
               value={(lead as Lead & { student_dob?: string | null }).student_dob ?? null}
               editable={ed("student_dob", { inputType: "date" })}
+              onSaved={onSaved}
             />
             <Field
               label="Gender"
@@ -146,6 +147,7 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
                   { value: "other", label: "Other" },
                 ],
               })}
+              onSaved={onSaved}
             />
             <Field label="Mobile" value={lead.student_phone} editable={ed("student_phone")}  onSaved={onSaved} />
             <Field label="Email" value={lead.student_email} editable={ed("student_email", { inputType: "email" })}  onSaved={onSaved} />
@@ -178,6 +180,7 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
               label="Intake Year"
               value={lead.intake_year ? String(lead.intake_year) : null}
               editable={ed("intake_year", { inputType: "number", parseValue: numericParse })}
+              onSaved={onSaved}
             />
             <Field
               label="Loan Amount"
@@ -187,6 +190,7 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
                 formatDisplay: (v) => formatINR(v),
                 parseValue: numericParse,
               })}
+              onSaved={onSaved}
             />
             <Field label="Highest Qualification" value={lead.highest_qualification} editable={ed("highest_qualification")}  onSaved={onSaved} />
             <Field label="Highest Qualification Score" value={hqScore} editable={hqEditable}  onSaved={onSaved} />
@@ -194,6 +198,7 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
               label="Work Experience (years)"
               value={tsStr("work_experience_years")}
               editable={edTS("work_experience_years")}
+              onSaved={onSaved}
             />
             <Field label="10th Score" value={tsStr("tenth")} editable={edTS("tenth")}  onSaved={onSaved} />
             <Field label="12th Score" value={tsStr("twelfth")} editable={edTS("twelfth")}  onSaved={onSaved} />
@@ -226,31 +231,37 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
               label="Co-Applicant Email"
               value={lead.coapplicant_email}
               editable={ed("coapplicant_email", { inputType: "email" })}
+              onSaved={onSaved}
             />
             <Field
               label="Co-Applicant Age"
               value={tsStr("coapplicant_age")}
               editable={edTS("coapplicant_age", { inputType: "number", parseValue: numericParse })}
+              onSaved={onSaved}
             />
             <Field
               label="Co-Applicant CIBIL"
               value={tsStr("coapplicant_cibil")}
               editable={edTS("coapplicant_cibil", { inputType: "number", parseValue: numericParse })}
+              onSaved={onSaved}
             />
             <Field
               label="Co-Applicant Employment Type"
               value={lead.coapplicant_employment_type}
               editable={ed("coapplicant_employment_type")}
+              onSaved={onSaved}
             />
             <Field
               label="Co-Applicant Employer / Occupation"
               value={lead.coapplicant_employer}
               editable={ed("coapplicant_employer")}
+              onSaved={onSaved}
             />
             <Field
               label="Co-Applicant Income Source"
               value={lead.coapplicant_income_source}
               editable={ed("coapplicant_income_source")}
+              onSaved={onSaved}
             />
             <Field
               label="Co-Applicant Income"
@@ -260,6 +271,7 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
                 formatDisplay: (v) => formatINR(v),
                 parseValue: numericParse,
               })}
+              onSaved={onSaved}
             />
             <Field
               label="Co-Applicant Existing EMI"
@@ -269,6 +281,7 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
                 formatDisplay: (v) => formatINR(v),
                 parseValue: numericParse,
               })}
+              onSaved={onSaved}
             />
             <Field
               label="Collateral"
@@ -287,6 +300,7 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
                 parseValue: (raw) => raw === "true",
                 formatDisplay: (v) => (v === "true" ? "Yes" : "No"),
               })}
+              onSaved={onSaved}
             />
             <Field label="Collateral Notes" value={lead.collateral_notes} editable={ed("collateral_notes")}  onSaved={onSaved} />
           </div>
