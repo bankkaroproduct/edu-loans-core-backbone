@@ -9,10 +9,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { StageBadge, StatusBadge } from "@/components/dashboard/StageBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { AdminLeadFilters, defaultAdminLeadFilters, type AdminLeadFilterState } from "@/components/admin/AdminLeadFilters";
+import { StatCard } from "@/components/shared/StatCard";
+import { AdminLeadFilters, type AdminLeadFilterState } from "@/components/admin/AdminLeadFilters";
 import { applyBusinessFilters as applySharedBusinessFilters } from "@/lib/leadBusinessFilters";
 import {
-  AlertCircle, ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Inbox, RefreshCw, Pencil,
+  AlertCircle, ArrowDown, ArrowUp, ArrowUpDown, BadgeCheck, ChevronLeft, ChevronRight,
+  Clock, FileSearch, Inbox, Layers, Pencil, RefreshCw, Send, SlidersHorizontal,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Database } from "@/integrations/supabase/types";
