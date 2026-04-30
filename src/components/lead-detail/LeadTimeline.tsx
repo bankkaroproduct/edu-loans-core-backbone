@@ -35,7 +35,7 @@ interface TimelineEvent {
   actionType?: string;
 }
 
-const AUDIT_VISIBLE_LIMIT = 8;
+const AUDIT_VISIBLE_LIMIT = 6;
 
 function buildEvents(history: History[], notes: Note[], audits: AuditLog[], actorNameMap: Record<string, string>): { major: TimelineEvent[]; auditChips: TimelineEvent[] } {
   const major: TimelineEvent[] = [];
@@ -189,7 +189,10 @@ export function LeadTimeline({ history, notes, audits = [], actorNames = {} }: P
       </CardHeader>
       <CardContent>
         {!hasAnything ? (
-          <p className="text-sm text-muted-foreground text-center py-6">No lifecycle events recorded yet.</p>
+          <div className="flex flex-col items-center justify-center py-8 gap-2 text-muted-foreground">
+            <Clock className="h-6 w-6 opacity-40" />
+            <p className="text-sm">No lifecycle events recorded yet.</p>
+          </div>
         ) : (
           <div className="space-y-5">
             {/* Compact audit chips (granular edits / doc actions / edit-requests) */}
@@ -199,14 +202,14 @@ export function LeadTimeline({ history, notes, audits = [], actorNames = {} }: P
                   <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
                     Recent changes ({auditChips.length})
                   </p>
-                  {hasMoreChips && (
+                  {auditChips.length > 0 && (
                     <Button
                       variant="ghost"
                       size="sm"
                       className="h-6 text-xs"
                       onClick={() => setAuditDialogOpen(true)}
                     >
-                      View all {auditChips.length} changes
+                      View all {auditChips.length} {auditChips.length === 1 ? "change" : "changes"}
                     </Button>
                   )}
                 </div>
@@ -247,12 +250,12 @@ export function LeadTimeline({ history, notes, audits = [], actorNames = {} }: P
                   return (
                     <div key={evt.id} className="relative pl-6 pb-6 last:pb-0">
                       {idx < major.length - 1 && (
-                        <div className="absolute left-[7px] top-3 w-0.5 h-full bg-border" />
+                        <div className="absolute left-[7px] top-3 w-0.5 h-[calc(100%-12px)] bg-border" />
                       )}
                       <div className={`absolute left-0 top-1.5 w-[15px] h-[15px] rounded-full border-2 bg-background ${isAuth ? "border-amber-500" : "border-primary"}`} />
 
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex items-center gap-2 flex-wrap text-[10px] text-muted-foreground">
                           <Badge
                             variant={evt.noteType === "internal" || isAuth ? "secondary" : "outline"}
                             className={`text-[10px] ${isAuth ? "bg-amber-100 text-amber-800 border-amber-200" : ""}`}
@@ -270,9 +273,10 @@ export function LeadTimeline({ history, notes, audits = [], actorNames = {} }: P
                                       ? "Partner Note"
                                       : "Note"}
                           </Badge>
-                          <span className="text-[10px] text-muted-foreground">{evt.actor}</span>
-                          <span className="text-[10px] text-muted-foreground">
-                            {new Date(evt.timestamp).toLocaleString()}
+                          <span>{evt.actor}</span>
+                          <span aria-hidden>·</span>
+                          <span title={new Date(evt.timestamp).toLocaleString()}>
+                            {relativeTime(evt.timestamp)}
                           </span>
                         </div>
 
