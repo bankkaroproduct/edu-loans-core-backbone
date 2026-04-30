@@ -221,7 +221,7 @@ export function AdminCalculateBreCard({ lead }: { lead: Lead }) {
           <Accordion type="single" collapsible>
             <AccordionItem value="breakdown" className="border rounded-md px-3">
               <AccordionTrigger className="text-xs font-medium py-2.5 hover:no-underline">
-                View detailed BRE breakdown
+                View detailed BRE breakdown ({result.buckets.student.trace.length + result.buckets.university.trace.length + result.buckets.coapplicant.trace.length} parameters)
               </AccordionTrigger>
               <AccordionContent className="pb-3">
                 <div className="space-y-4">
