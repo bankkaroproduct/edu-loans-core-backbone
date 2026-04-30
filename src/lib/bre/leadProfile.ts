@@ -416,6 +416,7 @@ export interface BuildProfileResolution {
     | { kind: "no_match"; raw: string }
     | { kind: "none" };
   course_level_derivation?: { source: "course_name"; raw: string; derived: string } | { kind: "none" };
+  english_proficiency?: EnglishProficiencyResolution;
 }
 
 export interface BuildProfileResult {
