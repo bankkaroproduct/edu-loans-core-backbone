@@ -34,11 +34,13 @@ function Field({
   value,
   editable,
   readOnlyFallback = "—",
+  onSaved,
 }: {
   label: string;
   value: string | null | undefined;
   editable?: EditableConfig;
   readOnlyFallback?: string;
+  onSaved?: () => void;
 }) {
   const hasValue = value !== null && value !== undefined && value !== "";
   return (
@@ -57,6 +59,7 @@ function Field({
             parseValue={editable.parseValue}
             formatDisplay={editable.formatDisplay}
             allowEditExisting
+            onSaved={onSaved ? () => onSaved() : undefined}
           />
         ) : hasValue ? (
           value
@@ -71,9 +74,10 @@ function Field({
 interface Props {
   lead: Lead;
   submittedByName: string | null;
+  onSaved?: () => void;
 }
 
-export function LeadProfileSection({ lead, submittedByName }: Props) {
+export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
   const { isAdmin } = useRoleAccess();
   const ts = (lead.test_scores ?? {}) as Record<string, unknown>;
 
@@ -124,13 +128,14 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="First Name" value={lead.student_first_name} editable={ed("student_first_name")} />
-            <Field label="Last Name" value={lead.student_last_name} editable={ed("student_last_name")} />
-            <Field label="Full Name" value={lead.student_full_name} editable={ed("student_full_name")} />
+            <Field label="First Name" value={lead.student_first_name} editable={ed("student_first_name")}  onSaved={onSaved} />
+            <Field label="Last Name" value={lead.student_last_name} editable={ed("student_last_name")}  onSaved={onSaved} />
+            <Field label="Full Name" value={lead.student_full_name} editable={ed("student_full_name")}  onSaved={onSaved} />
             <Field
               label="Date of Birth"
               value={(lead as Lead & { student_dob?: string | null }).student_dob ?? null}
               editable={ed("student_dob", { inputType: "date" })}
+              onSaved={onSaved}
             />
             <Field
               label="Gender"
@@ -142,16 +147,17 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
                   { value: "other", label: "Other" },
                 ],
               })}
+              onSaved={onSaved}
             />
-            <Field label="Mobile" value={lead.student_phone} editable={ed("student_phone")} />
-            <Field label="Email" value={lead.student_email} editable={ed("student_email", { inputType: "email" })} />
-            <Field label="WhatsApp" value={lead.student_whatsapp} editable={ed("student_whatsapp")} />
-            <Field label="Pincode" value={lead.pincode} editable={ed("pincode")} />
-            <Field label="City" value={lead.city} editable={ed("city")} />
-            <Field label="District" value={lead.district ?? null} editable={ed("district")} />
-            <Field label="State" value={lead.state} editable={ed("state")} />
-            <Field label="Tier" value={lead.tier ?? null} editable={ed("tier")} />
-            <Field label="Country" value={lead.country_of_residence} editable={ed("country_of_residence")} />
+            <Field label="Mobile" value={lead.student_phone} editable={ed("student_phone")}  onSaved={onSaved} />
+            <Field label="Email" value={lead.student_email} editable={ed("student_email", { inputType: "email" })}  onSaved={onSaved} />
+            <Field label="WhatsApp" value={lead.student_whatsapp} editable={ed("student_whatsapp")}  onSaved={onSaved} />
+            <Field label="Pincode" value={lead.pincode} editable={ed("pincode")}  onSaved={onSaved} />
+            <Field label="City" value={lead.city} editable={ed("city")}  onSaved={onSaved} />
+            <Field label="District" value={lead.district ?? null} editable={ed("district")}  onSaved={onSaved} />
+            <Field label="State" value={lead.state} editable={ed("state")}  onSaved={onSaved} />
+            <Field label="Tier" value={lead.tier ?? null} editable={ed("tier")}  onSaved={onSaved} />
+            <Field label="Country" value={lead.country_of_residence} editable={ed("country_of_residence")}  onSaved={onSaved} />
           </div>
         </CardContent>
       </Card>
@@ -165,15 +171,16 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Study Country" value={lead.intended_study_country} editable={ed("intended_study_country")} />
-            <Field label="University" value={lead.university_name_raw} editable={ed("university_name_raw")} />
-            <Field label="Course" value={lead.course_name} editable={ed("course_name")} />
-            <Field label="Course Category" value={lead.course_category} editable={ed("course_category")} />
-            <Field label="Intake Term" value={lead.intake_term} editable={ed("intake_term")} />
+            <Field label="Study Country" value={lead.intended_study_country} editable={ed("intended_study_country")}  onSaved={onSaved} />
+            <Field label="University" value={lead.university_name_raw} editable={ed("university_name_raw")}  onSaved={onSaved} />
+            <Field label="Course" value={lead.course_name} editable={ed("course_name")}  onSaved={onSaved} />
+            <Field label="Course Category" value={lead.course_category} editable={ed("course_category")}  onSaved={onSaved} />
+            <Field label="Intake Term" value={lead.intake_term} editable={ed("intake_term")}  onSaved={onSaved} />
             <Field
               label="Intake Year"
               value={lead.intake_year ? String(lead.intake_year) : null}
               editable={ed("intake_year", { inputType: "number", parseValue: numericParse })}
+              onSaved={onSaved}
             />
             <Field
               label="Loan Amount"
@@ -183,25 +190,27 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
                 formatDisplay: (v) => formatINR(v),
                 parseValue: numericParse,
               })}
+              onSaved={onSaved}
             />
-            <Field label="Highest Qualification" value={lead.highest_qualification} editable={ed("highest_qualification")} />
-            <Field label="Highest Qualification Score" value={hqScore} editable={hqEditable} />
+            <Field label="Highest Qualification" value={lead.highest_qualification} editable={ed("highest_qualification")}  onSaved={onSaved} />
+            <Field label="Highest Qualification Score" value={hqScore} editable={hqEditable}  onSaved={onSaved} />
             <Field
               label="Work Experience (years)"
               value={tsStr("work_experience_years")}
               editable={edTS("work_experience_years")}
+              onSaved={onSaved}
             />
-            <Field label="10th Score" value={tsStr("tenth")} editable={edTS("tenth")} />
-            <Field label="12th Score" value={tsStr("twelfth")} editable={edTS("twelfth")} />
-            <Field label="Graduation Score" value={tsStr("graduation")} editable={edTS("graduation")} />
-            <Field label="IELTS" value={tsStr("ielts")} editable={edTS("ielts")} />
-            <Field label="TOEFL" value={tsStr("toefl")} editable={edTS("toefl")} />
-            <Field label="PTE" value={tsStr("pte")} editable={edTS("pte")} />
-            <Field label="Duolingo" value={tsStr("duolingo")} editable={edTS("duolingo")} />
-            <Field label="GRE" value={tsStr("gre")} editable={edTS("gre")} />
-            <Field label="GMAT" value={tsStr("gmat")} editable={edTS("gmat")} />
-            <Field label="SAT" value={tsStr("sat")} editable={edTS("sat")} />
-            <Field label="Other Test Scores" value={tsStr("raw_text")} editable={edTS("raw_text")} />
+            <Field label="10th Score" value={tsStr("tenth")} editable={edTS("tenth")}  onSaved={onSaved} />
+            <Field label="12th Score" value={tsStr("twelfth")} editable={edTS("twelfth")}  onSaved={onSaved} />
+            <Field label="Graduation Score" value={tsStr("graduation")} editable={edTS("graduation")}  onSaved={onSaved} />
+            <Field label="IELTS" value={tsStr("ielts")} editable={edTS("ielts")}  onSaved={onSaved} />
+            <Field label="TOEFL" value={tsStr("toefl")} editable={edTS("toefl")}  onSaved={onSaved} />
+            <Field label="PTE" value={tsStr("pte")} editable={edTS("pte")}  onSaved={onSaved} />
+            <Field label="Duolingo" value={tsStr("duolingo")} editable={edTS("duolingo")}  onSaved={onSaved} />
+            <Field label="GRE" value={tsStr("gre")} editable={edTS("gre")}  onSaved={onSaved} />
+            <Field label="GMAT" value={tsStr("gmat")} editable={edTS("gmat")}  onSaved={onSaved} />
+            <Field label="SAT" value={tsStr("sat")} editable={edTS("sat")}  onSaved={onSaved} />
+            <Field label="Other Test Scores" value={tsStr("raw_text")} editable={edTS("raw_text")}  onSaved={onSaved} />
           </div>
         </CardContent>
       </Card>
@@ -215,38 +224,44 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Co-Applicant" value={lead.coapplicant_name} editable={ed("coapplicant_name")} />
-            <Field label="Relation" value={lead.coapplicant_relation} editable={ed("coapplicant_relation")} />
-            <Field label="Co-Applicant Mobile" value={lead.coapplicant_mobile} editable={ed("coapplicant_mobile")} />
+            <Field label="Co-Applicant" value={lead.coapplicant_name} editable={ed("coapplicant_name")}  onSaved={onSaved} />
+            <Field label="Relation" value={lead.coapplicant_relation} editable={ed("coapplicant_relation")}  onSaved={onSaved} />
+            <Field label="Co-Applicant Mobile" value={lead.coapplicant_mobile} editable={ed("coapplicant_mobile")}  onSaved={onSaved} />
             <Field
               label="Co-Applicant Email"
               value={lead.coapplicant_email}
               editable={ed("coapplicant_email", { inputType: "email" })}
+              onSaved={onSaved}
             />
             <Field
               label="Co-Applicant Age"
               value={tsStr("coapplicant_age")}
               editable={edTS("coapplicant_age", { inputType: "number", parseValue: numericParse })}
+              onSaved={onSaved}
             />
             <Field
               label="Co-Applicant CIBIL"
               value={tsStr("coapplicant_cibil")}
               editable={edTS("coapplicant_cibil", { inputType: "number", parseValue: numericParse })}
+              onSaved={onSaved}
             />
             <Field
               label="Co-Applicant Employment Type"
               value={lead.coapplicant_employment_type}
               editable={ed("coapplicant_employment_type")}
+              onSaved={onSaved}
             />
             <Field
               label="Co-Applicant Employer / Occupation"
               value={lead.coapplicant_employer}
               editable={ed("coapplicant_employer")}
+              onSaved={onSaved}
             />
             <Field
               label="Co-Applicant Income Source"
               value={lead.coapplicant_income_source}
               editable={ed("coapplicant_income_source")}
+              onSaved={onSaved}
             />
             <Field
               label="Co-Applicant Income"
@@ -256,6 +271,7 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
                 formatDisplay: (v) => formatINR(v),
                 parseValue: numericParse,
               })}
+              onSaved={onSaved}
             />
             <Field
               label="Co-Applicant Existing EMI"
@@ -265,6 +281,7 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
                 formatDisplay: (v) => formatINR(v),
                 parseValue: numericParse,
               })}
+              onSaved={onSaved}
             />
             <Field
               label="Collateral"
@@ -283,8 +300,9 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
                 parseValue: (raw) => raw === "true",
                 formatDisplay: (v) => (v === "true" ? "Yes" : "No"),
               })}
+              onSaved={onSaved}
             />
-            <Field label="Collateral Notes" value={lead.collateral_notes} editable={ed("collateral_notes")} />
+            <Field label="Collateral Notes" value={lead.collateral_notes} editable={ed("collateral_notes")}  onSaved={onSaved} />
           </div>
         </CardContent>
       </Card>
