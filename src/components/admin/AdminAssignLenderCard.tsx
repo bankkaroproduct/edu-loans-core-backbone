@@ -155,8 +155,8 @@ export function AdminAssignLenderCard({ leadId }: { leadId: string }) {
   };
 
   return (
-    <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-      <div className="flex items-center justify-between">
+    <div className="rounded-lg border border-border bg-card p-4 space-y-4">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <Lock className="h-4 w-4" /> Assigned Lender
         </h3>
@@ -174,59 +174,74 @@ export function AdminAssignLenderCard({ leadId }: { leadId: string }) {
       ) : (
         <>
           {current ? (
-            <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-sm">
-              <div className="font-medium text-foreground">{current.lenderName}</div>
-              <div className="text-xs text-muted-foreground font-mono">{current.lenderCode}</div>
+            <div className="rounded-md border border-border/60 bg-primary/5 ring-1 ring-primary/20 px-3 py-2 text-sm">
+              <div className="flex items-center gap-1.5 font-medium text-foreground">
+                <Check className="h-3.5 w-3.5 text-primary shrink-0" />
+                <span className="truncate" title={current.lenderName}>{current.lenderName}</span>
+              </div>
+              <div className="text-xs text-muted-foreground font-mono mt-0.5">{current.lenderCode}</div>
             </div>
           ) : (
-            <p className="text-xs text-muted-foreground">
-              No lender assigned. Pick one below to lock it for this lead.
-            </p>
+            <div className="flex items-start gap-2.5 rounded-md border border-dashed border-border/60 px-3 py-3">
+              <Lock className="h-4 w-4 text-muted-foreground/70 shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <div className="text-sm font-medium text-foreground">No lender assigned yet</div>
+                <p className="text-xs text-muted-foreground">
+                  Choose a lender below to lock it for this lead.
+                </p>
+              </div>
+            </div>
           )}
 
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Select value={selected} onValueChange={setSelected} disabled={saving}>
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Choose a lender to assign" />
-              </SelectTrigger>
-              <SelectContent>
-                {lenders.map((l) => (
-                  <SelectItem key={l.id} value={l.id}>
-                    {l.lender_name} <span className="text-muted-foreground">({l.lender_code})</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={saving || !selected || selected === current?.lenderId}
-            >
-              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : current ? "Reassign" : "Assign"}
-            </Button>
-            {current && (
-              <Button size="sm" variant="outline" onClick={handleClear} disabled={saving}>
-                Clear
+          <div className={cn(current && "border-t border-border/40 pt-3")}>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <Select value={selected} onValueChange={setSelected} disabled={saving}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder={current ? "Reassign to another lender" : "Choose a lender to assign"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {lenders.map((l) => (
+                    <SelectItem key={l.id} value={l.id}>
+                      {l.lender_name} <span className="text-muted-foreground">({l.lender_code})</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                size="sm"
+                onClick={handleSave}
+                disabled={saving || !selected || selected === current?.lenderId}
+              >
+                {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : current ? "Reassign" : "Assign"}
               </Button>
-            )}
+              {current && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="sm:ml-auto text-muted-foreground hover:text-foreground"
+                  onClick={handleClear}
+                  disabled={saving}
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-2">
+              Manual assignment is independent of BRE recommendations and persists across refresh.
+            </p>
           </div>
-          <p className="text-[11px] text-muted-foreground">
-            Manual assignment is independent of BRE recommendations and persists across refresh.
-          </p>
 
           {current && (
-            <div className="pt-2 border-t border-border/40">
+            <div className="pt-3 border-t border-border">
               <Button
                 variant="outline"
                 size="sm"
                 className="w-full"
                 onClick={() => navigate(`/admin/leads/${leadId}/send-to-lender`)}
+                title="Opens a prefilled compose screen. Does not change lifecycle stage."
               >
                 <Send className="h-3.5 w-3.5 mr-1.5" /> Send to Lender
               </Button>
-              <p className="text-[10px] text-muted-foreground mt-1.5">
-                Opens a prefilled compose screen. Does not change lifecycle stage.
-              </p>
             </div>
           )}
         </>
