@@ -66,6 +66,7 @@ export function AdminCalculateBreCard({ lead }: { lead: Lead }) {
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<BreResult | null>(null);
   const [missing, setMissing] = useState<{ field: string; label: string }[]>([]);
+  const [resolution, setResolution] = useState<BuildProfileResolution | null>(null);
   const [scoringVersion, setScoringVersion] = useState<number | null>(null);
   const [bucketThreshold, setBucketThreshold] = useState<number | null>(null);
 
@@ -73,8 +74,9 @@ export function AdminCalculateBreCard({ lead }: { lead: Lead }) {
     setRunning(true);
     setResult(null);
     try {
-      const { profile, missing: missingFields } = await buildBreProfileFromLeadAsync(lead);
+      const { profile, missing: missingFields, resolution: res } = await buildBreProfileFromLeadAsync(lead);
       setMissing(missingFields);
+      setResolution(res ?? null);
 
       const { cfg, rules } = await loadActive();
       const r = evaluate(profile, cfg, rules);
