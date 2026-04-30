@@ -145,6 +145,55 @@ function rankingBucketToTier(bucket: string | null | undefined): string | null {
   return "unranked";
 }
 
+// Normalize "high" / "medium" / "low" to a stable enum value matching the
+// active scoring config band keys. Returns null when input is missing/invalid.
+function normalizeEmployabilityOutlook(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const v = String(raw).trim().toLowerCase();
+  if (v === "high" || v === "medium" || v === "low") return v;
+  return null;
+}
+
+// Derive course_level from a free-text course name. Mirrors the active scoring
+// config enum: masters / phd / bachelors / diploma. Returns null when nothing
+// matches — engine then scores the band as 0 (honest default).
+function deriveCourseLevelFromName(name: string | null | undefined): string | null {
+  if (!name) return null;
+  const n = name.toLowerCase();
+  // PhD / doctorate
+  if (/\b(phd|ph\.d\.?|doctor(ate|al)?)\b/.test(n)) return "phd";
+  // Diploma / certificate
+  if (/\b(diploma|pg ?diploma|pgdm|certificate)\b/.test(n)) return "diploma";
+  // Masters: MBA/MS/MSc/MA/MTech/ME/MCom/LLM/MPhil/Master(s)
+  if (
+    /\b(mba|executive mba|emba|m\.?s\.?c?|m\.?a\.?|m\.?tech|m\.?e\.?|m\.?com|llm|m\.?phil|masters?|master of)\b/.test(
+      n,
+    )
+  ) {
+    return "masters";
+  }
+  // Bachelors: B.Tech/BE/BBA/BSc/BA/BCom/LLB/Bachelor(s)
+  if (
+    /\b(b\.?tech|b\.?e\.?|bba|b\.?sc|b\.?a\.?|b\.?com|llb|bachelors?|bachelor of|undergrad(uate)?)\b/.test(
+      n,
+    )
+  ) {
+    return "bachelors";
+  }
+  return null;
+}
+
+// Lightweight normalizer for fuzzy-matching free-text university names against
+// universities_master rows. Lowercases, strips punctuation, collapses spaces.
+function normalizeUniversityName(s: string | null | undefined): string {
+  if (!s) return "";
+  return String(s)
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 // ---------- helpers ----------
 
 function toIso(name: string | null | undefined): string {
