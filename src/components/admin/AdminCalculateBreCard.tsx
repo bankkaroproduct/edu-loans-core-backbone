@@ -168,6 +168,9 @@ export function AdminCalculateBreCard({ lead }: { lead: Lead }) {
             </div>
           )}
 
+          {/* ---------- Resolution notes (fuzzy match / derived fields) ---------- */}
+          <ResolutionNotes resolution={resolution} />
+
           {/* ---------- BRE Eligibility Scorecard ---------- */}
           <div>
             <div className="text-xs font-medium text-foreground mb-1.5">
