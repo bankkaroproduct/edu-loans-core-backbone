@@ -254,7 +254,7 @@ export default function AdminLeadDetail() {
           visible above the fold. Single source of truth — not duplicated lower. */}
       <AdminPartnerCard partner={partner} isStudentDirect={isStudentDirect} />
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold pt-2">Lifecycle</h2>
         <LeadLifecycleProgress lead={lead} />
         <LeadDuplicateContext lead={lead} />
