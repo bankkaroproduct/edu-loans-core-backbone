@@ -135,8 +135,16 @@ function deriveCourseCategoryFromName(name: string | null | undefined): string |
 }
 
 // universities_master.ranking_bucket → engine university_tier.
-function rankingBucketToTier(bucket: string | null | undefined): string | null {
-  if (!bucket) return null;
+//
+// `matched` indicates a university row was confidently resolved (by id or
+// fuzzy name match). When matched but the ranking_bucket is NULL/empty, we
+// honestly map to "unranked" (the scoring config has a band for that). When
+// not matched, we return null so the engine treats it as missing (band → 0).
+function rankingBucketToTier(
+  bucket: string | null | undefined,
+  matched = false,
+): string | null {
+  if (!bucket) return matched ? "unranked" : null;
   const b = String(bucket).trim().toLowerCase();
   if (b === "top 10" || b === "top_10" || b === "premium") return "premium";
   if (b === "top 20" || b === "top_20" || b === "top 50" || b === "top_50") return "tier_1";
