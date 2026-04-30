@@ -4,6 +4,7 @@ import { User, GraduationCap, Wallet, FolderInput, ShieldCheck } from "lucide-re
 import type { Tables } from "@/integrations/supabase/types";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { InlineEditField } from "@/components/admin/InlineEditField";
+import { formatINR } from "@/lib/formatCurrency";
 
 type Lead = Tables<"student_leads"> & {
   district?: string | null;
@@ -179,7 +180,7 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
               value={lead.loan_amount_required ? String(lead.loan_amount_required) : null}
               editable={ed("loan_amount_required", {
                 inputType: "number",
-                formatDisplay: (v) => `₹${Number(v).toLocaleString()}`,
+                formatDisplay: (v) => formatINR(v),
                 parseValue: numericParse,
               })}
             />
@@ -252,7 +253,7 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
               value={lead.coapplicant_income ? String(lead.coapplicant_income) : null}
               editable={ed("coapplicant_income", {
                 inputType: "number",
-                formatDisplay: (v) => `₹${Number(v).toLocaleString()}`,
+                formatDisplay: (v) => formatINR(v),
                 parseValue: numericParse,
               })}
             />
@@ -261,7 +262,7 @@ export function LeadProfileSection({ lead, submittedByName }: Props) {
               value={lead.coapplicant_existing_emi != null ? String(lead.coapplicant_existing_emi) : null}
               editable={ed("coapplicant_existing_emi", {
                 inputType: "number",
-                formatDisplay: (v) => `₹${Number(v).toLocaleString()}`,
+                formatDisplay: (v) => formatINR(v),
                 parseValue: numericParse,
               })}
             />
