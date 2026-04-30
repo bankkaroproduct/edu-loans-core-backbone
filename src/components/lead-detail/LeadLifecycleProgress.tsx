@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { StageBadge, StatusBadge, formatStageLabel } from "@/components/dashboard/StageBadge";
+import { formatStageLabel } from "@/components/dashboard/StageBadge";
 import { Activity, AlertTriangle, CheckCircle, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
@@ -54,61 +54,79 @@ export function LeadLifecycleProgress({ lead }: Props) {
           <Activity className="h-4 w-4 text-primary" /> Lifecycle Progress
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Progress steps — uniform-width columns + flex connectors keep dots and labels symmetrical */}
-        <div className="overflow-x-auto pb-2">
-          <div className="flex items-start min-w-max">
-            {STAGE_ORDER.map((stage, idx) => {
-              const isPast = currentIdx >= 0 && idx < currentIdx;
-              const isCurrent = idx === currentIdx;
-              const isLast = idx === STAGE_ORDER.length - 1;
-              return (
-                <div key={stage} className="flex items-start">
-                  {/* Step column: fixed width keeps every dot at the exact same horizontal cell */}
-                  <div className="flex flex-col items-center w-20 shrink-0">
-                    {/* Dot row — fixed height so connectors line up to the dot center */}
-                    <div className="h-4 flex items-center justify-center">
-                      <div
-                        className={cn(
-                          "rounded-full border-2 transition-colors",
-                          isCurrent
-                            ? "w-4 h-4 bg-primary border-primary ring-2 ring-primary/30"
-                            : "w-3 h-3",
-                          isPast && "bg-primary border-primary",
-                          !isPast && !isCurrent && "bg-muted border-border",
-                        )}
-                      />
-                    </div>
-                    {/* Label box — uniform footprint regardless of label length */}
-                    <span
-                      className={cn(
-                        "text-[10px] mt-2 text-center leading-tight px-1 line-clamp-2 h-7",
-                        isCurrent
-                          ? "font-semibold text-foreground"
-                          : "text-muted-foreground",
-                      )}
-                    >
-                      {formatStageLabel(stage)}
-                    </span>
-                  </div>
-                  {/* Connector — vertically aligned to dot center via matching h-4 row */}
-                  {!isLast && (
-                    <div className="h-4 flex items-center w-6 shrink-0">
-                      <div
-                        className={cn(
-                          "h-0.5 w-full",
-                          isPast ? "bg-primary" : "bg-border",
-                        )}
-                      />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+      <CardContent className="space-y-5">
+        {/* Terminal-stage banner — visual clarity that the linear journey ended */}
+        {isTerminal && (
+          <div className="flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2">
+            <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
+            <span className="text-sm font-medium text-destructive">
+              Lead exited at: {formatStageLabel(lead.current_stage)}
+            </span>
           </div>
+        )}
+
+        {/* Progress steps — uniform-width columns + flex connectors keep dots and labels symmetrical.
+            Wrapped in a relative container with a right-edge fade to hint at horizontal scrollability. */}
+        <div className="relative">
+          <div className={cn("overflow-x-auto pb-3", isTerminal && "opacity-50")}>
+            <div className="flex items-start min-w-max">
+              {STAGE_ORDER.map((stage, idx) => {
+                const isPast = currentIdx >= 0 && idx < currentIdx;
+                const isCurrent = idx === currentIdx;
+                const isLast = idx === STAGE_ORDER.length - 1;
+                return (
+                  <div key={stage} className="flex items-start">
+                    {/* Step column: fixed width keeps every dot at the exact same horizontal cell */}
+                    <div className="flex flex-col items-center w-16 shrink-0">
+                      {/* Dot row — fixed height so connectors line up to the dot center */}
+                      <div className="h-5 flex items-center justify-center">
+                        <div
+                          className={cn(
+                            "rounded-full border-2 transition-colors",
+                            isCurrent
+                              ? "w-4 h-4 bg-primary border-primary ring-2 ring-primary/40 ring-offset-2 ring-offset-card"
+                              : "w-3 h-3",
+                            isPast && "bg-primary border-primary",
+                            !isPast && !isCurrent && "bg-muted border-border",
+                          )}
+                        />
+                      </div>
+                      {/* Label box — uniform footprint regardless of label length */}
+                      <span
+                        className={cn(
+                          "text-[11px] mt-2 text-center leading-snug px-1 line-clamp-2 h-8",
+                          isCurrent
+                            ? "font-semibold text-primary"
+                            : "text-muted-foreground",
+                        )}
+                      >
+                        {formatStageLabel(stage)}
+                      </span>
+                    </div>
+                    {/* Connector — vertically aligned to dot center via matching h-5 row */}
+                    {!isLast && (
+                      <div className="h-5 flex items-center w-8 shrink-0">
+                        <div
+                          className={cn(
+                            "h-0.5 w-full",
+                            isPast ? "bg-primary" : "bg-border",
+                          )}
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          {/* Right-edge scroll fade — pure visual hint, no behavior change */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-card to-transparent"
+          />
         </div>
 
-        {/* Current state summary */}
+        {/* Current state summary — duplicate badge chips removed; header above is canonical */}
         <div className={cn(
           "rounded-lg p-4 border",
           isTerminal ? "bg-destructive/5 border-destructive/20" :
@@ -126,10 +144,9 @@ export function LeadLifecycleProgress({ lead }: Props) {
               <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
             )}
             <div className="space-y-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <StageBadge stage={lead.current_stage} />
-                <StatusBadge status={lead.current_status} />
-              </div>
+              <p className="text-sm font-semibold text-foreground">
+                Current: {formatStageLabel(lead.current_stage)} · {formatStageLabel(lead.current_status)}
+              </p>
               {lead.status_reason && (
                 <p className="text-sm text-foreground break-words">{lead.status_reason}</p>
               )}
