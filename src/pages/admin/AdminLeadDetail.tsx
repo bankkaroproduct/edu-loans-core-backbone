@@ -254,14 +254,18 @@ export default function AdminLeadDetail() {
           visible above the fold. Single source of truth — not duplicated lower. */}
       <AdminPartnerCard partner={partner} isStudentDirect={isStudentDirect} />
 
-      <LeadLifecycleProgress lead={lead} />
-      <LeadDuplicateContext lead={lead} />
-      <AdminEditRequestPanel leadId={lead.id} onChanged={loadAll} />
+      <div className="space-y-2">
+        <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold pt-2">Lifecycle</h2>
+        <LeadLifecycleProgress lead={lead} />
+        <LeadDuplicateContext lead={lead} />
+        <AdminEditRequestPanel leadId={lead.id} onChanged={loadAll} />
+      </div>
 
       {/* Lifecycle + lender workflow cluster — full-width, hoisted above the
           two-column grid so the visual order is always:
           Lifecycle Timeline → Lender Recommendations → Calculate BRE → Assign Lender. */}
       <div className="space-y-6">
+        <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold pt-2">Lender Workflow</h2>
         <LeadTimeline history={history} notes={notes} audits={audits} actorNames={actorNames} />
         <AdminLenderRecommendations leadId={lead.id} />
         <AdminCalculateBreCard lead={lead} />
