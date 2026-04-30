@@ -551,7 +551,7 @@ function buildProfileCore(
     numFromTestScores(ts, "gre") ??
     numFromTestScores(ts, "gmat_percentile");
   const workExp = workExpToYears((ts as Record<string, unknown> | null)?.work_experience_years);
-  const englishProficiency = deriveEnglishProficiency(ts);
+  const englishProficiency = englishResult.value;
 
   // ---- co-applicant bucket ----
   const coIncomeMonthly = lead.coapplicant_income != null ? Number(lead.coapplicant_income) : null;
