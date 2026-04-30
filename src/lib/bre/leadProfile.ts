@@ -527,11 +527,13 @@ function buildProfileCore(
 
   // Course level: derived from course_name when not explicitly captured on the lead.
   const derivedCourseLevel = deriveCourseLevelFromName(lead.course_name);
+  const englishResult = deriveEnglishProficiency(lead.test_scores as unknown);
   const finalResolution: BuildProfileResolution = {
     ...(resolution ?? {}),
     course_level_derivation: derivedCourseLevel
       ? { source: "course_name", raw: lead.course_name ?? "", derived: derivedCourseLevel }
       : { kind: "none" },
+    english_proficiency: englishResult.resolution,
   };
 
   const collateralRoute: BreProfileInput["collateral_route"] =
