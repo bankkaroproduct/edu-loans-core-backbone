@@ -303,9 +303,26 @@ export interface BuildProfileMissing {
   label: string;
 }
 
+/**
+ * Optional metadata describing how derived/resolved values were obtained.
+ * Surfaced by the Admin "Run BRE" trace so reviewers can see exactly why a
+ * field was scored a certain way (e.g. fuzzy university match, course-level
+ * heuristic). Empty/undefined fields mean "no resolution applied".
+ */
+export interface BuildProfileResolution {
+  university_match?:
+    | { kind: "by_id"; master_name: string; ranking_bucket: string | null; employability_outlook: string | null }
+    | { kind: "fuzzy"; raw: string; master_name: string; ranking_bucket: string | null; employability_outlook: string | null }
+    | { kind: "ambiguous"; raw: string; candidates: string[] }
+    | { kind: "no_match"; raw: string }
+    | { kind: "none" };
+  course_level_derivation?: { source: "course_name"; raw: string; derived: string } | { kind: "none" };
+}
+
 export interface BuildProfileResult {
   profile: BreProfileInput;
   missing: BuildProfileMissing[];
+  resolution?: BuildProfileResolution;
 }
 
 // ---------- core mapping (sync) ----------
@@ -315,25 +332,80 @@ export interface BuildProfileResult {
  * variant when lender recommendations / live BRE evaluation are needed.
  */
 export function buildBreProfileFromLead(lead: Lead): BuildProfileResult {
-  return buildProfileCore(lead, null);
+  return buildProfileCore(lead, { universityTier: null, employabilityOutlook: null }, undefined);
 }
 
 /**
  * Async mapper — resolves university tier from `universities_master.ranking_bucket`
- * when `lead.university_id` is present. All other normalization is identical
- * to the sync variant.
+ * AND `employability_outlook` when `lead.university_id` is present. When
+ * `university_id` is null but `university_name_raw` exists, attempts a single-
+ * confident fuzzy match (country-scoped, normalized) and uses the matched row.
+ * All other normalization is identical to the sync variant.
  */
 export async function buildBreProfileFromLeadAsync(lead: Lead): Promise<BuildProfileResult> {
   let universityTier: string | null = null;
+  let employabilityOutlook: string | null = null;
+  const resolution: BuildProfileResolution = { university_match: { kind: "none" } };
+
   if (lead.university_id) {
     const { data } = await supabase
       .from("universities_master")
-      .select("ranking_bucket")
+      .select("university_name, ranking_bucket, employability_outlook")
       .eq("id", lead.university_id)
       .maybeSingle();
     universityTier = rankingBucketToTier(data?.ranking_bucket ?? null);
+    employabilityOutlook = normalizeEmployabilityOutlook(data?.employability_outlook ?? null);
+    if (data) {
+      resolution.university_match = {
+        kind: "by_id",
+        master_name: data.university_name,
+        ranking_bucket: data.ranking_bucket ?? null,
+        employability_outlook: data.employability_outlook ?? null,
+      };
+    }
+  } else if (lead.university_name_raw && lead.intended_study_country) {
+    // Country-scoped fuzzy match. We require exactly one normalized hit to
+    // resolve; ambiguous or zero hits are flagged in the trace and leave the
+    // engine to score university_tier as 0 (honest default).
+    const normRaw = normalizeUniversityName(lead.university_name_raw);
+    if (normRaw) {
+      const { data: rows } = await supabase
+        .from("universities_master")
+        .select("id, university_name, university_name_normalized, country, ranking_bucket, employability_outlook, aliases")
+        .eq("active_flag", true)
+        .ilike("country", lead.intended_study_country);
+
+      const candidates = (rows ?? []).filter((r) => {
+        const candNames = [r.university_name, r.university_name_normalized, ...(r.aliases ?? [])]
+          .filter(Boolean)
+          .map((s) => normalizeUniversityName(s as string));
+        return candNames.some((n) => n === normRaw || n.includes(normRaw) || normRaw.includes(n));
+      });
+
+      if (candidates.length === 1) {
+        const c = candidates[0];
+        universityTier = rankingBucketToTier(c.ranking_bucket ?? null);
+        employabilityOutlook = normalizeEmployabilityOutlook(c.employability_outlook ?? null);
+        resolution.university_match = {
+          kind: "fuzzy",
+          raw: lead.university_name_raw,
+          master_name: c.university_name,
+          ranking_bucket: c.ranking_bucket ?? null,
+          employability_outlook: c.employability_outlook ?? null,
+        };
+      } else if (candidates.length > 1) {
+        resolution.university_match = {
+          kind: "ambiguous",
+          raw: lead.university_name_raw,
+          candidates: candidates.slice(0, 5).map((c) => c.university_name),
+        };
+      } else {
+        resolution.university_match = { kind: "no_match", raw: lead.university_name_raw };
+      }
+    }
   }
-  return buildProfileCore(lead, universityTier);
+
+  return buildProfileCore(lead, { universityTier, employabilityOutlook }, resolution);
 }
 
 function buildProfileCore(lead: Lead, universityTier: string | null): BuildProfileResult {
