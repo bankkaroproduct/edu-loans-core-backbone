@@ -101,7 +101,7 @@ async function loadActive() {
       if (!profile.course_level && !profile.course_category) courseLevelMissing.push(lead.lead_id);
 
       // English proficiency source
-      const er = resolution?.english_resolution;
+      const er = resolution?.english_proficiency;
       if (er?.source === "named") englishNamed++;
       else if (er?.source === "other_test_scores") englishOtherFallback.push({ lead_id: lead.lead_id, raw: er.raw, ielts_eq: er.ielts_equivalent ?? null, detected: er.detected_exam ?? "?" });
       else if (er?.source === "other_test_scores_unparseable") englishOtherUnparseable.push({ lead_id: lead.lead_id, raw: er.raw });
@@ -119,16 +119,16 @@ async function loadActive() {
     const eligible = result.eligible_lenders.filter((l: any) => l.eligible).length;
     if (eligible > 0) anyEligible++;
 
-    bucketSum.S += result.student_score;
-    bucketSum.U += result.university_score;
-    bucketSum.C += result.coapplicant_score;
+    bucketSum.S += result.buckets.student.total;
+    bucketSum.U += result.buckets.university.total;
+    bucketSum.C += result.buckets.coapplicant.total;
     bucketCount++;
 
-    const buckets = [result.student_score, result.university_score, result.coapplicant_score];
+    const buckets = [result.buckets.student.total, result.buckets.university.total, result.buckets.coapplicant.total];
     const allPass = buckets.every((b: number) => b >= cfg.bucket_threshold);
     if (allPass) allBucketsPass++;
     if (eligible > 0 && !allPass) {
-      suspicious.push(`${lead.lead_id}: ${eligible} eligible lender(s) but bucket(s) below threshold (S=${result.student_score} U=${result.university_score} C=${result.coapplicant_score} thr=${cfg.bucket_threshold})`);
+      suspicious.push(`${lead.lead_id}: ${eligible} eligible lender(s) but bucket(s) below threshold (S=${result.buckets.student.total} U=${result.buckets.university.total} C=${result.buckets.coapplicant.total} thr=${cfg.bucket_threshold})`);
     }
   }
 
