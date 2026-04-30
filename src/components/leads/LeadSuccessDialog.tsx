@@ -54,7 +54,20 @@ export function LeadSuccessDialog({ open, leadId, leadDisplayId, studentName, is
         </DialogHeader>
         <DialogFooter className="flex-col gap-2 sm:flex-col">
           {leadId && (
-            <Button className="w-full" onClick={() => navigate(detailPath(leadId))}>
+            <Button
+              className="w-full"
+              onClick={() => {
+                const path = detailPath(leadId);
+                if (isAdminContext) {
+                  // Hard reload guarantees fresh fetch of just-saved values
+                  // on the admin Lead Detail surface, regardless of any
+                  // stale in-memory cache or router state.
+                  window.location.href = path;
+                } else {
+                  navigate(path);
+                }
+              }}
+            >
               Open Lead Detail
             </Button>
           )}
