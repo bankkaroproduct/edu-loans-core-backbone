@@ -14,13 +14,21 @@ interface Props {
  * Read-only / non-admin cell. For admin we always render InlineEditField (which
  * itself shows a clickable "Please provide details" nudge when value is missing).
  */
-function ReadOnlyCell({ label, value }: { label: string; value: string | null | undefined }) {
+function ReadOnlyCell({
+  label,
+  value,
+  emphasis = false,
+}: {
+  label: string;
+  value: string | null | undefined;
+  emphasis?: boolean;
+}) {
   const hasValue = value !== null && value !== undefined && value !== "";
   return (
     <p
       className={
         hasValue
-          ? "text-sm font-medium truncate"
+          ? `${emphasis ? "text-base font-semibold tabular-nums text-foreground" : "text-sm font-medium"} truncate`
           : "text-sm italic text-muted-foreground/70 truncate"
       }
       title={hasValue ? String(value) : "Please provide details"}
@@ -33,14 +41,18 @@ function ReadOnlyCell({ label, value }: { label: string; value: string | null | 
 function Cell({
   label,
   children,
+  emphasis = false,
 }: {
   label: string;
   children: React.ReactNode;
+  emphasis?: boolean;
 }) {
   return (
-    <div className="min-w-0">
-      <p className="text-xs text-muted-foreground truncate">{label}</p>
-      <div className="text-sm font-medium min-w-0">{children}</div>
+    <div className="min-w-0" title={label}>
+      <p className="text-[11px] uppercase tracking-wide text-muted-foreground truncate">{label}</p>
+      <div className={`${emphasis ? "text-base font-semibold tabular-nums text-foreground" : "text-sm font-medium"} min-w-0 mt-0.5`}>
+        {children}
+      </div>
     </div>
   );
 }
@@ -73,7 +85,7 @@ export function LeadSummaryStrip({ lead }: Props) {
   return (
     <Card>
       <CardContent className="py-4 px-6">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 2xl:grid-cols-8 gap-x-6 gap-y-4">
           <Cell label="Study Destination">
             {editable("intended_study_country", lead.intended_study_country, "Study Destination")}
           </Cell>
@@ -115,7 +127,7 @@ export function LeadSummaryStrip({ lead }: Props) {
             {editable("course_name", lead.course_name, "Course")}
           </Cell>
 
-          <Cell label="Loan Amount">
+          <Cell label="Loan Amount" emphasis>
             {editable("loan_amount_required", lead.loan_amount_required ? String(lead.loan_amount_required) : null, "Loan Amount", {
               inputType: "number",
               formatDisplay: (v) => formatINR(v),
