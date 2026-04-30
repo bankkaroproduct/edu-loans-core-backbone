@@ -408,7 +408,11 @@ export async function buildBreProfileFromLeadAsync(lead: Lead): Promise<BuildPro
   return buildProfileCore(lead, { universityTier, employabilityOutlook }, resolution);
 }
 
-function buildProfileCore(lead: Lead, universityTier: string | null): BuildProfileResult {
+function buildProfileCore(
+  lead: Lead,
+  resolved: { universityTier: string | null; employabilityOutlook: string | null },
+  resolution: BuildProfileResolution | undefined,
+): BuildProfileResult {
   const missing: BuildProfileMissing[] = [];
 
   // ---- loan request context ----
@@ -420,6 +424,15 @@ function buildProfileCore(lead: Lead, universityTier: string | null): BuildProfi
   if (!loanAmount || loanAmount <= 0) missing.push({ field: "loan_amount_required", label: "Loan amount" });
 
   const courseCategory = normCourseCategory(lead.course_category, lead.course_name);
+
+  // Course level: derived from course_name when not explicitly captured on the lead.
+  const derivedCourseLevel = deriveCourseLevelFromName(lead.course_name);
+  const finalResolution: BuildProfileResolution = {
+    ...(resolution ?? {}),
+    course_level_derivation: derivedCourseLevel
+      ? { source: "course_name", raw: lead.course_name ?? "", derived: derivedCourseLevel }
+      : { kind: "none" },
+  };
 
   const collateralRoute: BreProfileInput["collateral_route"] =
     lead.collateral_available === true ? "either" : lead.collateral_available === false ? "unsecured" : "either";
@@ -465,7 +478,7 @@ function buildProfileCore(lead: Lead, universityTier: string | null): BuildProfi
     loan_amount: loanAmount,
     destination_country: destinationIso,
     course_category: courseCategory ?? undefined,
-    course_level: undefined,
+    course_level: derivedCourseLevel ?? undefined,
     collateral_route: collateralRoute,
     state: lead.state ?? undefined,
     student: {
@@ -477,10 +490,11 @@ function buildProfileCore(lead: Lead, universityTier: string | null): BuildProfi
       english_proficiency: englishProficiency,
     },
     university: {
-      university_tier: universityTier,
+      university_tier: resolved.universityTier,
       country_tier: countryTier,
       course_category: courseCategory ?? null,
-      course_level: null,
+      course_level: derivedCourseLevel,
+      employability_outlook: resolved.employabilityOutlook,
     },
     coapplicant: {
       relationship: normRelationship(lead.coapplicant_relation),
@@ -493,5 +507,5 @@ function buildProfileCore(lead: Lead, universityTier: string | null): BuildProfi
     },
   };
 
-  return { profile, missing };
+  return { profile, missing, resolution: finalResolution };
 }
