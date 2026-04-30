@@ -368,26 +368,31 @@ export default function AdminLeads() {
   const quickChips = [
     {
       label: "Pending review",
+      icon: AlertCircle,
       active: filters.status !== "all" && ["new", "awaiting_verification", "pending_info"].includes(filters.status),
       apply: () => { setFilters({ ...filters, status: "awaiting_verification" as StatusEnum, stage: "all" }); setPage(1); },
     },
     {
       label: "Docs to verify",
+      icon: FileSearch,
       active: filters.stage === "documents_under_review",
       apply: () => { setFilters({ ...filters, stage: "documents_under_review" as StageEnum, status: "all" }); setPage(1); },
     },
     {
       label: "Sent to Lender",
+      icon: Send,
       active: filters.stage === "sent_to_lender",
       apply: () => { setFilters({ ...filters, stage: "sent_to_lender" as StageEnum, status: "all" }); setPage(1); },
     },
     {
       label: "Sanction Received",
+      icon: BadgeCheck,
       active: filters.stage === "sanction_received",
       apply: () => { setFilters({ ...filters, stage: "sanction_received" as StageEnum, status: "all" }); setPage(1); },
     },
     {
       label: "Stale > 48h",
+      icon: Clock,
       active: filters.staleOnly,
       apply: () => {
         // Toggle the dedicated stale flag (real updated_at logic, terminal/blocked excluded).
@@ -403,6 +408,27 @@ export default function AdminLeads() {
       },
     },
   ];
+
+  // Active filter count (visual-only derivation from existing filters state)
+  const activeFilterCount = useMemo(() => {
+    let n = 0;
+    if (filters.search) n++;
+    if (filters.source !== "all") n++;
+    if (filters.stage !== "all") n++;
+    if (filters.status !== "all") n++;
+    if (filters.country !== "all") n++;
+    if (filters.partnerId !== "all") n++;
+    if (filters.dateFrom) n++;
+    if (filters.dateTo) n++;
+    if (filters.type !== "all") n++;
+    if (filters.entryMode !== "all") n++;
+    if (filters.region !== "all") n++;
+    if (filters.loanRange !== "all") n++;
+    if (filters.intake !== "all") n++;
+    if (filters.loanType !== "all") n++;
+    if (filters.staleOnly) n++;
+    return n;
+  }, [filters]);
 
   return (
     <div className="space-y-6 max-w-screen-2xl mx-auto">
