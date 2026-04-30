@@ -71,15 +71,15 @@ export function AdminLeadQueue({ data, loading, error, onRetry, filters, onFilte
       : "border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary";
 
   return (
-    <Card className="p-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+    <Card className="rounded-xl border-border/70 shadow-[0_1px_2px_rgba(15,23,42,0.04)] overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-6 pt-5 pb-4 border-b border-border/60">
         <div>
-          <h3 className="text-base font-semibold">Lead Queue</h3>
+          <h3 className="text-base font-semibold tracking-tight">Lead Queue</h3>
           <p className="text-xs text-muted-foreground mt-0.5">Latest 10 leads across all sources</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Select value={filters.source} onValueChange={(v) => onFiltersChange({ ...filters, source: v as any })}>
-            <SelectTrigger className="w-[160px] h-8 text-xs">
+            <SelectTrigger className="w-[150px] h-8 text-xs">
               <SelectValue placeholder="Source" />
             </SelectTrigger>
             <SelectContent>
@@ -89,7 +89,7 @@ export function AdminLeadQueue({ data, loading, error, onRetry, filters, onFilte
             </SelectContent>
           </Select>
           <Select value={filters.stage} onValueChange={(v) => onFiltersChange({ ...filters, stage: v as any })}>
-            <SelectTrigger className="w-[180px] h-8 text-xs">
+            <SelectTrigger className="w-[170px] h-8 text-xs">
               <SelectValue placeholder="Stage" />
             </SelectTrigger>
             <SelectContent className="max-h-[300px]">
@@ -104,7 +104,7 @@ export function AdminLeadQueue({ data, loading, error, onRetry, filters, onFilte
 
       {/* Quick chips */}
       {chips.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex flex-wrap gap-2 px-6 pt-4">
           {chips.map((c) => (
             <button
               key={c.label}
@@ -113,7 +113,7 @@ export function AdminLeadQueue({ data, loading, error, onRetry, filters, onFilte
               className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${chipToneClass(c.tone)}`}
             >
               <span>{c.label}</span>
-              <span className="rounded-full bg-background/60 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums">
+              <span className="rounded-full bg-background/70 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums">
                 {c.count.toLocaleString("en-IN")}
               </span>
             </button>
@@ -121,78 +121,80 @@ export function AdminLeadQueue({ data, loading, error, onRetry, filters, onFilte
         </div>
       )}
 
-      {loading && (
-        <div className="space-y-2">
-          {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
-        </div>
-      )}
-
-      {error && !loading && (
-        <div className="flex items-center justify-between gap-4 py-4">
-          <div className="flex items-center gap-2 text-destructive">
-            <AlertCircle className="h-5 w-5" />
-            <div>
-              <p className="font-medium text-sm">Lead queue failed to load</p>
-              <p className="text-xs text-muted-foreground">{error}</p>
-            </div>
+      <div className="px-6 py-4">
+        {loading && (
+          <div className="space-y-2">
+            {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
           </div>
-          <Button variant="outline" size="sm" onClick={onRetry}>
-            <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Retry
-          </Button>
-        </div>
-      )}
+        )}
 
-      {!loading && !error && data.length === 0 && (
-        <EmptyState icon={Inbox} title="No leads match" description="Adjust filters to see leads here." />
-      )}
+        {error && !loading && (
+          <div className="flex items-center justify-between gap-4 py-4">
+            <div className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              <div>
+                <p className="font-medium text-sm">Lead queue failed to load</p>
+                <p className="text-xs text-muted-foreground">{error}</p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={onRetry}>
+              <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Retry
+            </Button>
+          </div>
+        )}
 
-      {!loading && !error && data.length > 0 && (
-        <div className="overflow-x-auto -mx-6 px-6">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-xs text-muted-foreground">
-                <th className="pb-2 pr-4 font-medium">Lead ID</th>
-                <th className="pb-2 pr-4 font-medium">Student</th>
-                <th className="pb-2 pr-4 font-medium">Source</th>
-                <th className="pb-2 pr-4 font-medium">Stage</th>
-                <th className="pb-2 pr-4 font-medium">Status</th>
-                <th className="pb-2 pr-4 font-medium">
-                  <button
-                    type="button"
-                    onClick={() => toggleSort("updated_at")}
-                    className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
-                  >
-                    Updated {sortIcon("updated_at")}
-                  </button>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((row) => (
-                <tr
-                  key={row.id}
-                  onClick={() => navigate(`/admin/leads/${row.id}`)}
-                  className="border-b last:border-b-0 hover:bg-muted/50 cursor-pointer transition-colors"
-                >
-                  <td className="py-2.5 pr-4 font-mono text-xs">{row.lead_id ?? "—"}</td>
-                  <td className="py-2.5 pr-4">
-                    {row.student_full_name ?? `${row.student_first_name}${row.student_last_name ? " " + row.student_last_name : ""}`}
-                  </td>
-                  <td className="py-2.5 pr-4 text-xs text-muted-foreground">{sourceLabel(row)}</td>
-                  <td className="py-2.5 pr-4"><StageBadge stage={row.current_stage} /></td>
-                  <td className="py-2.5 pr-4"><StatusBadge status={row.current_status} /></td>
-                  <td className="py-2.5 pr-4 text-xs text-muted-foreground whitespace-nowrap">
-                    {formatDistanceToNow(new Date(row.updated_at), { addSuffix: true })}
-                  </td>
+        {!loading && !error && data.length === 0 && (
+          <EmptyState icon={Inbox} title="No leads match" description="Adjust filters to see leads here." />
+        )}
+
+        {!loading && !error && data.length > 0 && (
+          <div className="overflow-x-auto -mx-6 px-6">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border/60 text-left text-[11px] uppercase tracking-wide text-muted-foreground bg-muted/40">
+                  <th className="py-2 pr-4 pl-1 font-medium">Lead ID</th>
+                  <th className="py-2 pr-4 font-medium">Student</th>
+                  <th className="py-2 pr-4 font-medium">Source</th>
+                  <th className="py-2 pr-4 font-medium">Stage</th>
+                  <th className="py-2 pr-4 font-medium">Status</th>
+                  <th className="py-2 pr-4 font-medium">
+                    <button
+                      type="button"
+                      onClick={() => toggleSort("updated_at")}
+                      className="inline-flex items-center gap-1 hover:text-foreground transition-colors uppercase tracking-wide"
+                    >
+                      Updated {sortIcon("updated_at")}
+                    </button>
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody>
+                {data.map((row) => (
+                  <tr
+                    key={row.id}
+                    onClick={() => navigate(`/admin/leads/${row.id}`)}
+                    className="border-b border-border/50 last:border-b-0 hover:bg-muted/40 cursor-pointer transition-colors"
+                  >
+                    <td className="py-3 pr-4 pl-1 font-mono text-xs text-foreground/80">{row.lead_id ?? "—"}</td>
+                    <td className="py-3 pr-4 font-medium text-foreground">
+                      {row.student_full_name ?? `${row.student_first_name}${row.student_last_name ? " " + row.student_last_name : ""}`}
+                    </td>
+                    <td className="py-3 pr-4 text-xs text-muted-foreground">{sourceLabel(row)}</td>
+                    <td className="py-3 pr-4"><StageBadge stage={row.current_stage} /></td>
+                    <td className="py-3 pr-4"><StatusBadge status={row.current_status} /></td>
+                    <td className="py-3 pr-4 text-xs text-muted-foreground whitespace-nowrap">
+                      {formatDistanceToNow(new Date(row.updated_at), { addSuffix: true })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
-      <div className="mt-4 flex justify-end">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/admin/leads")} className="text-xs">
+      <div className="px-6 py-3 border-t border-border/60 bg-muted/20 flex justify-end">
+        <Button variant="ghost" size="sm" onClick={() => navigate("/admin/leads")} className="text-xs h-7">
           View all leads →
         </Button>
       </div>

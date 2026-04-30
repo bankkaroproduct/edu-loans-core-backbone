@@ -32,18 +32,18 @@ export default function AdminDashboard() {
   }, [lastRefreshedAt]);
 
   return (
-    <div className="space-y-6 max-w-screen-2xl mx-auto">
+    <div className="space-y-7 max-w-screen-2xl mx-auto">
       <PageHeader
         title="Admin Dashboard"
         description="Operations overview · partner pipeline at a glance"
         lastUpdated={lastRefreshedAt}
       >
         {appUser?.role && (
-          <Badge variant="outline" className="text-[10px]">
+          <Badge variant="outline" className="text-[10px] rounded-full bg-primary/10 text-primary border-primary/30">
             {appUser.role.replace(/_/g, " ").toUpperCase()}
           </Badge>
         )}
-        <Button variant="outline" size="sm" onClick={refreshAll}>
+        <Button variant="outline" size="sm" onClick={refreshAll} className="border-border/70">
           <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Refresh
         </Button>
       </PageHeader>

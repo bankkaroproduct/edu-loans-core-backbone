@@ -57,13 +57,13 @@ const commsItems = [
 // `border-l-2 border-transparent` on the base keeps row width identical so
 // active/inactive items don't shift horizontally.
 const navBaseClass =
-  "flex items-center gap-3 w-full px-2 py-1.5 rounded-md text-sm border-l-2 border-transparent hover:bg-sidebar-accent/50";
+  "flex items-center gap-3 w-full px-2.5 py-2 rounded-lg text-sm border-l-2 border-transparent text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground transition-colors";
 const navActiveClass =
-  "bg-sidebar-accent text-sidebar-accent-foreground font-medium border-l-2 border-primary";
+  "bg-primary/10 text-primary font-medium border-l-2 border-primary hover:bg-primary/15";
 
 // Section labels: text-xs uppercase tracking-wider, muted, with vertical rhythm.
 const sectionLabelClass =
-  "text-xs uppercase tracking-wider text-sidebar-foreground/60 mt-4 mb-1";
+  "text-[10px] uppercase tracking-[0.14em] text-sidebar-foreground/55 mt-3 mb-1.5 font-semibold";
 
 export function AdminSidebar() {
   const { state } = useSidebar();
@@ -239,10 +239,10 @@ export function AdminSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className="border-t border-sidebar-border/60">
         <div className="p-2 space-y-2">
           {!collapsed && appUser && (
-            <div className="px-2 space-y-0.5">
+            <div className="px-2 py-2 rounded-lg bg-sidebar-accent/40 border border-sidebar-border/50 space-y-0.5">
               {/* Line 1: name + role pill on one line */}
               <div className="flex items-center gap-2 min-w-0">
                 <p className="text-sm font-medium text-sidebar-foreground truncate flex-1 min-w-0">
@@ -250,7 +250,7 @@ export function AdminSidebar() {
                 </p>
                 <Badge
                   variant="outline"
-                  className="text-[9px] px-1.5 py-0 bg-primary/10 text-primary border-primary/30 shrink-0"
+                  className="text-[9px] px-1.5 py-0 bg-primary/10 text-primary border-primary/30 shrink-0 rounded-full"
                 >
                   {appUser.role.replace(/_/g, " ").toUpperCase()}
                 </Badge>
