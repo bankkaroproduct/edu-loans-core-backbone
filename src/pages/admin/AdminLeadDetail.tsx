@@ -301,7 +301,6 @@ export default function AdminLeadDetail() {
 
           <AdminLeadPayoutSnapshot payouts={payouts} leadId={lead.id} />
 
-          <LeadPayoutSnapshot payouts={payouts} leadId={lead.id} />
         </div>
       </div>
     </div>
