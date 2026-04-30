@@ -76,10 +76,6 @@ function studentName(r: AdminLeadRow): string {
     "—";
 }
 
-function fmtAmount(n: number | null): string {
-  if (n === null || n === undefined) return "—";
-  return `₹${Number(n).toLocaleString("en-IN")}`;
-}
 
 export default function AdminLeads() {
   const navigate = useNavigate();
