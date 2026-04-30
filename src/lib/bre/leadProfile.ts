@@ -264,44 +264,135 @@ function workExpToYears(raw: unknown): number | null {
   return Math.round((years + months / 12) * 100) / 100;
 }
 
+// IELTS-equivalent concordance helpers (kept pure so they can be reused by
+// the raw_text fallback below without duplicating thresholds).
+function toeflToIelts(toefl: number): number {
+  if (toefl >= 110) return 8;
+  if (toefl >= 102) return 7.5;
+  if (toefl >= 94) return 7;
+  if (toefl >= 79) return 6.5;
+  if (toefl >= 60) return 6;
+  return 5;
+}
+function duolingoToIelts(duolingo: number): number {
+  if (duolingo >= 140) return 8;
+  if (duolingo >= 125) return 7.5;
+  if (duolingo >= 115) return 7;
+  if (duolingo >= 105) return 6.5;
+  if (duolingo >= 95) return 6;
+  return 5;
+}
+function pteToIelts(pte: number): number {
+  if (pte >= 85) return 8;
+  if (pte >= 76) return 7.5;
+  if (pte >= 66) return 7;
+  if (pte >= 58) return 6.5;
+  if (pte >= 50) return 6;
+  return 5;
+}
+
+export type EnglishProficiencyResolution =
+  | { source: "ielts" | "toefl" | "duolingo" | "pte"; value: number }
+  | {
+      source: "other_test_scores";
+      raw: string;
+      detected_exam: "ielts" | "toefl" | "duolingo" | "pte" | "generic";
+      ielts_equivalent: number;
+    }
+  | { source: "other_test_scores_unparseable"; raw: string }
+  | { source: "none" };
+
 /**
  * Map IELTS / TOEFL iBT / Duolingo / PTE → IELTS-equivalent band score (0–9)
- * using the standard concordance. Honest, lossy normalization only — returns
- * null when the test_scores blob has no recognised key.
+ * using the standard concordance. Falls back to `test_scores.raw_text`
+ * ("Other Test Scores") only when no named test is present:
+ *   • exam keyword + number  → use that exam's concordance
+ *   • bare number 0–9 only   → treat as generic IELTS-equivalent
+ *   • anything else          → flag as unparseable (not scored, surfaced in trace)
+ *
+ * Honest, lossy normalization — returns { source: "none" } when nothing usable.
  */
-function deriveEnglishProficiency(ts: unknown): number | null {
-  if (!ts || typeof ts !== "object") return null;
+function deriveEnglishProficiency(ts: unknown): {
+  value: number | null;
+  resolution: EnglishProficiencyResolution;
+} {
+  if (!ts || typeof ts !== "object") return { value: null, resolution: { source: "none" } };
   const obj = ts as Record<string, unknown>;
+
+  // ---- Named tests (existing precedence preserved) ----
   const ielts = Number(obj.ielts ?? obj.ielts_overall);
-  if (Number.isFinite(ielts) && ielts > 0) return ielts;
+  if (Number.isFinite(ielts) && ielts > 0) {
+    return { value: ielts, resolution: { source: "ielts", value: ielts } };
+  }
   const toefl = Number(obj.toefl ?? obj.toefl_ibt);
   if (Number.isFinite(toefl) && toefl > 0) {
-    if (toefl >= 110) return 8;
-    if (toefl >= 102) return 7.5;
-    if (toefl >= 94) return 7;
-    if (toefl >= 79) return 6.5;
-    if (toefl >= 60) return 6;
-    return 5;
+    const v = toeflToIelts(toefl);
+    return { value: v, resolution: { source: "toefl", value: v } };
   }
   const duolingo = Number(obj.duolingo);
   if (Number.isFinite(duolingo) && duolingo > 0) {
-    if (duolingo >= 140) return 8;
-    if (duolingo >= 125) return 7.5;
-    if (duolingo >= 115) return 7;
-    if (duolingo >= 105) return 6.5;
-    if (duolingo >= 95) return 6;
-    return 5;
+    const v = duolingoToIelts(duolingo);
+    return { value: v, resolution: { source: "duolingo", value: v } };
   }
   const pte = Number(obj.pte);
   if (Number.isFinite(pte) && pte > 0) {
-    if (pte >= 85) return 8;
-    if (pte >= 76) return 7.5;
-    if (pte >= 66) return 7;
-    if (pte >= 58) return 6.5;
-    if (pte >= 50) return 6;
-    return 5;
+    const v = pteToIelts(pte);
+    return { value: v, resolution: { source: "pte", value: v } };
   }
-  return null;
+
+  // ---- Fallback: raw_text ("Other Test Scores") ----
+  const rawAny = obj.raw_text;
+  if (rawAny == null || rawAny === "") return { value: null, resolution: { source: "none" } };
+  const raw = String(rawAny).trim();
+  if (!raw) return { value: null, resolution: { source: "none" } };
+
+  const lower = raw.toLowerCase();
+  const numMatch = lower.match(/(\d+(?:\.\d+)?)/);
+  const num = numMatch ? Number(numMatch[1]) : NaN;
+  const hasNum = Number.isFinite(num);
+
+  // Exam keyword + number
+  if (/\bielts\b/.test(lower) && hasNum) {
+    return {
+      value: num,
+      resolution: { source: "other_test_scores", raw, detected_exam: "ielts", ielts_equivalent: num },
+    };
+  }
+  if (/\btoefl\b/.test(lower) && hasNum) {
+    const v = toeflToIelts(num);
+    return {
+      value: v,
+      resolution: { source: "other_test_scores", raw, detected_exam: "toefl", ielts_equivalent: v },
+    };
+  }
+  if (/\bduolingo\b/.test(lower) && hasNum) {
+    const v = duolingoToIelts(num);
+    return {
+      value: v,
+      resolution: { source: "other_test_scores", raw, detected_exam: "duolingo", ielts_equivalent: v },
+    };
+  }
+  if (/\bpte\b/.test(lower) && hasNum) {
+    const v = pteToIelts(num);
+    return {
+      value: v,
+      resolution: { source: "other_test_scores", raw, detected_exam: "pte", ielts_equivalent: v },
+    };
+  }
+
+  // Bare number, no exam keyword. Accept only if the entire trimmed string is
+  // a single numeric token AND value lies in IELTS-equivalent range 0–9.
+  const isCleanNumeric = /^\d+(?:\.\d+)?$/.test(raw);
+  if (isCleanNumeric && hasNum && num >= 0 && num <= 9) {
+    return {
+      value: num,
+      resolution: { source: "other_test_scores", raw, detected_exam: "generic", ielts_equivalent: num },
+    };
+  }
+
+  // Number outside 0–9 with no keyword, or any non-numeric content with no
+  // recognised exam keyword → do not guess.
+  return { value: null, resolution: { source: "other_test_scores_unparseable", raw } };
 }
 
 // ---------- public types ----------
@@ -325,6 +416,7 @@ export interface BuildProfileResolution {
     | { kind: "no_match"; raw: string }
     | { kind: "none" };
   course_level_derivation?: { source: "course_name"; raw: string; derived: string } | { kind: "none" };
+  english_proficiency?: EnglishProficiencyResolution;
 }
 
 export interface BuildProfileResult {
@@ -435,11 +527,13 @@ function buildProfileCore(
 
   // Course level: derived from course_name when not explicitly captured on the lead.
   const derivedCourseLevel = deriveCourseLevelFromName(lead.course_name);
+  const englishResult = deriveEnglishProficiency(lead.test_scores as unknown);
   const finalResolution: BuildProfileResolution = {
     ...(resolution ?? {}),
     course_level_derivation: derivedCourseLevel
       ? { source: "course_name", raw: lead.course_name ?? "", derived: derivedCourseLevel }
       : { kind: "none" },
+    english_proficiency: englishResult.resolution,
   };
 
   const collateralRoute: BreProfileInput["collateral_route"] =
@@ -457,7 +551,7 @@ function buildProfileCore(
     numFromTestScores(ts, "gre") ??
     numFromTestScores(ts, "gmat_percentile");
   const workExp = workExpToYears((ts as Record<string, unknown> | null)?.work_experience_years);
-  const englishProficiency = deriveEnglishProficiency(ts);
+  const englishProficiency = englishResult.value;
 
   // ---- co-applicant bucket ----
   const coIncomeMonthly = lead.coapplicant_income != null ? Number(lead.coapplicant_income) : null;

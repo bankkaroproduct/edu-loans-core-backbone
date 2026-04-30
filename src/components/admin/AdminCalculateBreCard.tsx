@@ -734,6 +734,36 @@ function ResolutionNotes({ resolution }: { resolution: BuildProfileResolution | 
     });
   }
 
+  const ep = resolution.english_proficiency;
+  if (ep && ep.source === "other_test_scores") {
+    items.push({
+      label:
+        ep.detected_exam === "generic"
+          ? `English proficiency derived from Other Test Scores: ${ep.ielts_equivalent}`
+          : "English proficiency derived from Other Test Scores",
+      tone: "ok",
+      text:
+        ep.detected_exam === "generic" ? (
+          <>
+            <span className="italic">"{ep.raw}"</span> → IELTS-equivalent{" "}
+            <span className="font-mono">{ep.ielts_equivalent}</span>
+          </>
+        ) : (
+          <>
+            <span className="italic">"{ep.raw}"</span> → detected{" "}
+            <span className="font-mono">{ep.detected_exam.toUpperCase()}</span> · IELTS-equivalent{" "}
+            <span className="font-mono">{ep.ielts_equivalent}</span>
+          </>
+        ),
+    });
+  } else if (ep && ep.source === "other_test_scores_unparseable") {
+    items.push({
+      label: "Other Test Scores present but exam type not specified — needs review",
+      tone: "warn",
+      text: <span className="italic">"{ep.raw}"</span>,
+    });
+  }
+
   if (items.length === 0) return null;
 
   return (
