@@ -64,11 +64,6 @@ function sanitizeSearch(s: string): string {
   return s.trim().replace(/[(),"]/g, "").slice(0, 100);
 }
 
-function sourceLabel(row: AdminLeadRow): string {
-  if (row.source_type === "student_direct") return "Student Portal";
-  if (row.partner_display_name) return `Partner: ${row.partner_display_name}`;
-  return "Partner Lead";
-}
 
 function studentName(r: AdminLeadRow): string {
   return r.student_full_name?.trim() ||
