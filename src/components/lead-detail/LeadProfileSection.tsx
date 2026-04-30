@@ -34,11 +34,13 @@ function Field({
   value,
   editable,
   readOnlyFallback = "—",
+  onSaved,
 }: {
   label: string;
   value: string | null | undefined;
   editable?: EditableConfig;
   readOnlyFallback?: string;
+  onSaved?: () => void;
 }) {
   const hasValue = value !== null && value !== undefined && value !== "";
   return (
@@ -57,6 +59,7 @@ function Field({
             parseValue={editable.parseValue}
             formatDisplay={editable.formatDisplay}
             allowEditExisting
+            onSaved={onSaved ? () => onSaved() : undefined}
           />
         ) : hasValue ? (
           value
@@ -71,9 +74,10 @@ function Field({
 interface Props {
   lead: Lead;
   submittedByName: string | null;
+  onSaved?: () => void;
 }
 
-export function LeadProfileSection({ lead, submittedByName }: Props) {
+export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
   const { isAdmin } = useRoleAccess();
   const ts = (lead.test_scores ?? {}) as Record<string, unknown>;
 
