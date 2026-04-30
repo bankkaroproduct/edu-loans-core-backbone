@@ -264,8 +264,13 @@ export default function AdminLeadDetail() {
       {/* Lifecycle + lender workflow cluster — full-width, hoisted above the
           two-column grid so the visual order is always:
           Lifecycle Timeline → Lender Recommendations → Calculate BRE → Assign Lender. */}
-      <div className="space-y-6">
-        <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold pt-2">Lender Workflow</h2>
+      <div className="space-y-6 mt-2">
+        <div className="space-y-1">
+          <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Lender Workflow</h2>
+          <p className="text-xs text-muted-foreground">
+            Diagnostic and assignment tools — manual changes do not auto-update lifecycle.
+          </p>
+        </div>
         <LeadTimeline history={history} notes={notes} audits={audits} actorNames={actorNames} />
         <AdminLenderRecommendations leadId={lead.id} />
         <AdminCalculateBreCard lead={lead} />

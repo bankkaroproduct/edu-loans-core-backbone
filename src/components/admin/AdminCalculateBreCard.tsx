@@ -119,10 +119,10 @@ export function AdminCalculateBreCard({ lead }: { lead: Lead }) {
   }, [result]);
 
   return (
-    <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-      <div className="flex items-center justify-between">
+    <div className="rounded-lg border border-border bg-card p-4 space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <Calculator className="h-4 w-4" /> Run BRE
+          <Calculator className="h-4 w-4" /> BRE Diagnostic
         </h3>
         <Button size="sm" onClick={handleRun} disabled={running}>
           {running ? (
@@ -134,10 +134,12 @@ export function AdminCalculateBreCard({ lead }: { lead: Lead }) {
         </Button>
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        Scores Student / University / Co-applicant buckets first. Lender options shown only if all
-        buckets clear the active threshold. Read-only — does not change the assigned lender.
-      </p>
+      {!result && (
+        <p className="text-xs text-muted-foreground">
+          Scores Student / University / Co-applicant buckets first. Lender options shown only if all
+          buckets clear the active threshold. Read-only — does not change the assigned lender.
+        </p>
+      )}
 
       {result && derived && (
         <div className="space-y-4 pt-2">
@@ -219,7 +221,7 @@ export function AdminCalculateBreCard({ lead }: { lead: Lead }) {
           <Accordion type="single" collapsible>
             <AccordionItem value="breakdown" className="border rounded-md px-3">
               <AccordionTrigger className="text-xs font-medium py-2.5 hover:no-underline">
-                View detailed BRE breakdown
+                View detailed BRE breakdown ({result.buckets.student.trace.length + result.buckets.university.trace.length + result.buckets.coapplicant.trace.length} parameters)
               </AccordionTrigger>
               <AccordionContent className="pb-3">
                 <div className="space-y-4">
@@ -629,8 +631,13 @@ function LenderOptionsList({
             className="flex items-center justify-between gap-2 rounded-md border border-border/60 px-2.5 py-2 text-xs"
           >
             <div className="flex items-center gap-2 min-w-0">
-              <span className="font-mono text-muted-foreground">#{l.rank ?? "—"}</span>
-              <span className="font-medium text-foreground truncate">{l.lender_name}</span>
+              <span
+                className="inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded bg-muted px-1.5 text-[11px] font-mono font-semibold text-foreground"
+                aria-label={`Rank ${l.rank ?? "unranked"}`}
+              >
+                {l.rank != null ? `#${l.rank}` : "—"}
+              </span>
+              <span className="font-medium text-foreground truncate" title={l.lender_name}>{l.lender_name}</span>
               <FitBadge badge={l.badge} />
               {l.product_type && (
                 <Badge variant="outline" className="text-[10px] px-1 py-0">

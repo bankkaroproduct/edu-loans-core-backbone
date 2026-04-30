@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Sparkles, Loader2, Info } from "lucide-react";
+import { Sparkles, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -158,6 +158,15 @@ export function AdminLenderRecommendations({ leadId }: { leadId: string }) {
     };
   }, [leadId]);
 
+  const emptyCopy =
+    gateReason === "profile"
+      ? "Complete the lead profile to evaluate lender fit."
+      : gateReason === "documents"
+      ? "Upload at least one document to evaluate lender fit."
+      : gateReason === "no_rate"
+      ? "No active lender currently produces an indicative rate for this profile."
+      : "Upload documents and complete the profile to assess lender fit and indicative rate.";
+
   return (
     <div className="rounded-lg border border-border bg-card p-4 space-y-3">
       <div className="flex items-center justify-between">
@@ -165,75 +174,27 @@ export function AdminLenderRecommendations({ leadId }: { leadId: string }) {
           Lender Recommendations
         </h3>
         {!loading && rows.length > 0 && (
-          <span className="text-xs text-muted-foreground">{rows.length} eligible</span>
+          <span className="text-xs text-muted-foreground">
+            {rows.length} {rows.length === 1 ? "lender" : "lenders"}
+          </span>
         )}
       </div>
 
       {loading ? (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Loading recommendations…
+        <div className="space-y-2" aria-busy="true" aria-label="Loading recommendations">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-12 rounded-md bg-muted/40 animate-pulse" />
+          ))}
         </div>
       ) : rows.length === 0 ? (
         <div className="flex items-start gap-2 text-sm text-muted-foreground py-2">
           <Info className="h-4 w-4 mt-0.5 shrink-0" />
-          <p>
-            Upload documents and complete the profile to assess lender fit and
-            indicative rate.
-          </p>
+          <p>{emptyCopy}</p>
         </div>
       ) : (
         <ol className="space-y-2">
           {rows.map((r) => (
-            <li
-              key={r.key}
-              className="flex items-start justify-between gap-3 rounded-md border border-border/60 px-3 py-2"
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-mono text-muted-foreground">
-                    #{r.rank ?? "—"}
-                  </span>
-                  <span className="text-sm font-medium text-foreground truncate">
-                    {r.lenderName}
-                  </span>
-                  <Badge variant="outline" className="text-[10px] font-mono">
-                    {r.projectedRate}%
-                  </Badge>
-                  {r.isPremiere && (
-                    <TooltipProvider delayDuration={150}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Badge
-                            variant="outline"
-                            className="border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 gap-1 px-1.5 py-0 text-[10px] font-medium uppercase tracking-wide"
-                          >
-                            <Sparkles className="h-3 w-3" />
-                            Premiere
-                          </Badge>
-                        </TooltipTrigger>
-                        <TooltipContent side="top">
-                          This lender has premium consideration for this institution.
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
-                  {r.fitCategory && (
-                    <Badge variant="secondary" className="text-[10px]">
-                      {r.fitCategory.replace("_", " ")}
-                    </Badge>
-                  )}
-                  {r.isLocked && (
-                    <Badge variant="outline" className="text-[10px]">
-                      locked
-                    </Badge>
-                  )}
-                </div>
-                {r.reason && (
-                  <p className="text-xs text-muted-foreground mt-1">{r.reason}</p>
-                )}
-              </div>
-            </li>
+            <RecommendationRow key={r.key} row={r} />
           ))}
         </ol>
       )}
@@ -242,5 +203,76 @@ export function AdminLenderRecommendations({ leadId }: { leadId: string }) {
           subtle prompt above is the agreed UX for all gated states. */}
       <span className="hidden" data-gate-reason={gateReason ?? "ok"} />
     </div>
+  );
+}
+
+function RecommendationRow({ row: r }: { row: DisplayRow }) {
+  const [expanded, setExpanded] = useState(false);
+  const reasonIsLong = (r.reason?.length ?? 0) > 140;
+
+  return (
+    <li className="flex items-start justify-between gap-3 rounded-md border border-border/60 px-3 py-2">
+      <div className="flex-1 min-w-0 space-y-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span
+            className="inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded bg-muted px-1.5 text-[11px] font-mono font-semibold text-foreground"
+            aria-label={`Rank ${r.rank ?? "unranked"}`}
+          >
+            {r.rank != null ? `#${r.rank}` : "—"}
+          </span>
+          <span className="text-sm font-medium text-foreground truncate" title={r.lenderName}>
+            {r.lenderName}
+          </span>
+          {r.isPremiere && (
+            <TooltipProvider delayDuration={150}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge
+                    variant="outline"
+                    className="border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 gap-1 px-1.5 py-0 text-[10px] font-medium uppercase tracking-wide"
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    Premiere
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  This lender has premium consideration for this institution.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          {r.fitCategory && (
+            <Badge variant="secondary" className="text-[10px]">
+              {r.fitCategory.replace("_", " ")}
+            </Badge>
+          )}
+          {r.isLocked && (
+            <Badge variant="outline" className="text-[10px]">
+              locked
+            </Badge>
+          )}
+        </div>
+        {r.reason && (
+          <div className="text-xs text-muted-foreground">
+            <p className={expanded ? "" : "line-clamp-2"}>{r.reason}</p>
+            {reasonIsLong && (
+              <button
+                type="button"
+                onClick={() => setExpanded((v) => !v)}
+                className="mt-0.5 text-[11px] font-medium text-primary hover:underline"
+              >
+                {expanded ? "Show less" : "Show more"}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+      <div className="shrink-0 text-right">
+        <div className="text-sm font-semibold tabular-nums text-foreground">
+          {r.projectedRate}%
+        </div>
+        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">rate</div>
+      </div>
+    </li>
   );
 }
