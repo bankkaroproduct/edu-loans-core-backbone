@@ -119,10 +119,10 @@ export function AdminCalculateBreCard({ lead }: { lead: Lead }) {
   }, [result]);
 
   return (
-    <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-      <div className="flex items-center justify-between">
+    <div className="rounded-lg border border-border bg-card p-4 space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <Calculator className="h-4 w-4" /> Run BRE
+          <Calculator className="h-4 w-4" /> BRE Diagnostic
         </h3>
         <Button size="sm" onClick={handleRun} disabled={running}>
           {running ? (
@@ -134,10 +134,12 @@ export function AdminCalculateBreCard({ lead }: { lead: Lead }) {
         </Button>
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        Scores Student / University / Co-applicant buckets first. Lender options shown only if all
-        buckets clear the active threshold. Read-only — does not change the assigned lender.
-      </p>
+      {!result && (
+        <p className="text-xs text-muted-foreground">
+          Scores Student / University / Co-applicant buckets first. Lender options shown only if all
+          buckets clear the active threshold. Read-only — does not change the assigned lender.
+        </p>
+      )}
 
       {result && derived && (
         <div className="space-y-4 pt-2">
