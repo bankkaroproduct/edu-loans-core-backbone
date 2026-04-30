@@ -361,7 +361,7 @@ export async function buildBreProfileFromLeadAsync(lead: Lead): Promise<BuildPro
       .select("university_name, ranking_bucket, employability_outlook")
       .eq("id", lead.university_id)
       .maybeSingle();
-    universityTier = rankingBucketToTier(data?.ranking_bucket ?? null);
+    universityTier = rankingBucketToTier(data?.ranking_bucket ?? null, !!data);
     employabilityOutlook = normalizeEmployabilityOutlook(data?.employability_outlook ?? null);
     if (data) {
       resolution.university_match = {
@@ -392,7 +392,7 @@ export async function buildBreProfileFromLeadAsync(lead: Lead): Promise<BuildPro
 
       if (candidates.length === 1) {
         const c = candidates[0];
-        universityTier = rankingBucketToTier(c.ranking_bucket ?? null);
+        universityTier = rankingBucketToTier(c.ranking_bucket ?? null, true);
         employabilityOutlook = normalizeEmployabilityOutlook(c.employability_outlook ?? null);
         resolution.university_match = {
           kind: "fuzzy",
