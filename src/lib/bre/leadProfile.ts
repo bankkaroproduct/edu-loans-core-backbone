@@ -145,6 +145,55 @@ function rankingBucketToTier(bucket: string | null | undefined): string | null {
   return "unranked";
 }
 
+// Normalize "high" / "medium" / "low" to a stable enum value matching the
+// active scoring config band keys. Returns null when input is missing/invalid.
+function normalizeEmployabilityOutlook(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const v = String(raw).trim().toLowerCase();
+  if (v === "high" || v === "medium" || v === "low") return v;
+  return null;
+}
+
+// Derive course_level from a free-text course name. Mirrors the active scoring
+// config enum: masters / phd / bachelors / diploma. Returns null when nothing
+// matches — engine then scores the band as 0 (honest default).
+function deriveCourseLevelFromName(name: string | null | undefined): string | null {
+  if (!name) return null;
+  const n = name.toLowerCase();
+  // PhD / doctorate
+  if (/\b(phd|ph\.d\.?|doctor(ate|al)?)\b/.test(n)) return "phd";
+  // Diploma / certificate
+  if (/\b(diploma|pg ?diploma|pgdm|certificate)\b/.test(n)) return "diploma";
+  // Masters: MBA/MS/MSc/MA/MTech/ME/MCom/LLM/MPhil/Master(s)
+  if (
+    /\b(mba|executive mba|emba|m\.?s\.?c?|m\.?a\.?|m\.?tech|m\.?e\.?|m\.?com|llm|m\.?phil|masters?|master of)\b/.test(
+      n,
+    )
+  ) {
+    return "masters";
+  }
+  // Bachelors: B.Tech/BE/BBA/BSc/BA/BCom/LLB/Bachelor(s)
+  if (
+    /\b(b\.?tech|b\.?e\.?|bba|b\.?sc|b\.?a\.?|b\.?com|llb|bachelors?|bachelor of|undergrad(uate)?)\b/.test(
+      n,
+    )
+  ) {
+    return "bachelors";
+  }
+  return null;
+}
+
+// Lightweight normalizer for fuzzy-matching free-text university names against
+// universities_master rows. Lowercases, strips punctuation, collapses spaces.
+function normalizeUniversityName(s: string | null | undefined): string {
+  if (!s) return "";
+  return String(s)
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 // ---------- helpers ----------
 
 function toIso(name: string | null | undefined): string {
@@ -254,9 +303,26 @@ export interface BuildProfileMissing {
   label: string;
 }
 
+/**
+ * Optional metadata describing how derived/resolved values were obtained.
+ * Surfaced by the Admin "Run BRE" trace so reviewers can see exactly why a
+ * field was scored a certain way (e.g. fuzzy university match, course-level
+ * heuristic). Empty/undefined fields mean "no resolution applied".
+ */
+export interface BuildProfileResolution {
+  university_match?:
+    | { kind: "by_id"; master_name: string; ranking_bucket: string | null; employability_outlook: string | null }
+    | { kind: "fuzzy"; raw: string; master_name: string; ranking_bucket: string | null; employability_outlook: string | null }
+    | { kind: "ambiguous"; raw: string; candidates: string[] }
+    | { kind: "no_match"; raw: string }
+    | { kind: "none" };
+  course_level_derivation?: { source: "course_name"; raw: string; derived: string } | { kind: "none" };
+}
+
 export interface BuildProfileResult {
   profile: BreProfileInput;
   missing: BuildProfileMissing[];
+  resolution?: BuildProfileResolution;
 }
 
 // ---------- core mapping (sync) ----------
@@ -266,28 +332,87 @@ export interface BuildProfileResult {
  * variant when lender recommendations / live BRE evaluation are needed.
  */
 export function buildBreProfileFromLead(lead: Lead): BuildProfileResult {
-  return buildProfileCore(lead, null);
+  return buildProfileCore(lead, { universityTier: null, employabilityOutlook: null }, undefined);
 }
 
 /**
  * Async mapper — resolves university tier from `universities_master.ranking_bucket`
- * when `lead.university_id` is present. All other normalization is identical
- * to the sync variant.
+ * AND `employability_outlook` when `lead.university_id` is present. When
+ * `university_id` is null but `university_name_raw` exists, attempts a single-
+ * confident fuzzy match (country-scoped, normalized) and uses the matched row.
+ * All other normalization is identical to the sync variant.
  */
 export async function buildBreProfileFromLeadAsync(lead: Lead): Promise<BuildProfileResult> {
   let universityTier: string | null = null;
+  let employabilityOutlook: string | null = null;
+  const resolution: BuildProfileResolution = { university_match: { kind: "none" } };
+
   if (lead.university_id) {
     const { data } = await supabase
       .from("universities_master")
-      .select("ranking_bucket")
+      .select("university_name, ranking_bucket, employability_outlook")
       .eq("id", lead.university_id)
       .maybeSingle();
     universityTier = rankingBucketToTier(data?.ranking_bucket ?? null);
+    employabilityOutlook = normalizeEmployabilityOutlook(data?.employability_outlook ?? null);
+    if (data) {
+      resolution.university_match = {
+        kind: "by_id",
+        master_name: data.university_name,
+        ranking_bucket: data.ranking_bucket ?? null,
+        employability_outlook: data.employability_outlook ?? null,
+      };
+    }
+  } else if (lead.university_name_raw && lead.intended_study_country) {
+    // Country-scoped fuzzy match. We require exactly one normalized hit to
+    // resolve; ambiguous or zero hits are flagged in the trace and leave the
+    // engine to score university_tier as 0 (honest default).
+    const normRaw = normalizeUniversityName(lead.university_name_raw);
+    if (normRaw) {
+      const { data: rows } = await supabase
+        .from("universities_master")
+        .select("id, university_name, university_name_normalized, country, ranking_bucket, employability_outlook, aliases")
+        .eq("active_flag", true)
+        .ilike("country", lead.intended_study_country);
+
+      const candidates = (rows ?? []).filter((r) => {
+        const candNames = [r.university_name, r.university_name_normalized, ...(r.aliases ?? [])]
+          .filter(Boolean)
+          .map((s) => normalizeUniversityName(s as string));
+        return candNames.some((n) => n === normRaw || n.includes(normRaw) || normRaw.includes(n));
+      });
+
+      if (candidates.length === 1) {
+        const c = candidates[0];
+        universityTier = rankingBucketToTier(c.ranking_bucket ?? null);
+        employabilityOutlook = normalizeEmployabilityOutlook(c.employability_outlook ?? null);
+        resolution.university_match = {
+          kind: "fuzzy",
+          raw: lead.university_name_raw,
+          master_name: c.university_name,
+          ranking_bucket: c.ranking_bucket ?? null,
+          employability_outlook: c.employability_outlook ?? null,
+        };
+      } else if (candidates.length > 1) {
+        resolution.university_match = {
+          kind: "ambiguous",
+          raw: lead.university_name_raw,
+          candidates: candidates.slice(0, 5).map((c) => c.university_name),
+        };
+      } else {
+        resolution.university_match = { kind: "no_match", raw: lead.university_name_raw };
+      }
+    }
   }
-  return buildProfileCore(lead, universityTier);
+
+  return buildProfileCore(lead, { universityTier, employabilityOutlook }, resolution);
 }
 
-function buildProfileCore(lead: Lead, universityTier: string | null): BuildProfileResult {
+function buildProfileCore(
+  lead: Lead,
+  resolved: { universityTier: string | null; employabilityOutlook: string | null },
+  resolution: BuildProfileResolution | undefined,
+): BuildProfileResult {
   const missing: BuildProfileMissing[] = [];
 
   // ---- loan request context ----
@@ -299,6 +424,15 @@ function buildProfileCore(lead: Lead, universityTier: string | null): BuildProfi
   if (!loanAmount || loanAmount <= 0) missing.push({ field: "loan_amount_required", label: "Loan amount" });
 
   const courseCategory = normCourseCategory(lead.course_category, lead.course_name);
+
+  // Course level: derived from course_name when not explicitly captured on the lead.
+  const derivedCourseLevel = deriveCourseLevelFromName(lead.course_name);
+  const finalResolution: BuildProfileResolution = {
+    ...(resolution ?? {}),
+    course_level_derivation: derivedCourseLevel
+      ? { source: "course_name", raw: lead.course_name ?? "", derived: derivedCourseLevel }
+      : { kind: "none" },
+  };
 
   const collateralRoute: BreProfileInput["collateral_route"] =
     lead.collateral_available === true ? "either" : lead.collateral_available === false ? "unsecured" : "either";
@@ -344,7 +478,7 @@ function buildProfileCore(lead: Lead, universityTier: string | null): BuildProfi
     loan_amount: loanAmount,
     destination_country: destinationIso,
     course_category: courseCategory ?? undefined,
-    course_level: undefined,
+    course_level: derivedCourseLevel ?? undefined,
     collateral_route: collateralRoute,
     state: lead.state ?? undefined,
     student: {
@@ -356,10 +490,11 @@ function buildProfileCore(lead: Lead, universityTier: string | null): BuildProfi
       english_proficiency: englishProficiency,
     },
     university: {
-      university_tier: universityTier,
+      university_tier: resolved.universityTier,
       country_tier: countryTier,
       course_category: courseCategory ?? null,
-      course_level: null,
+      course_level: derivedCourseLevel,
+      employability_outlook: resolved.employabilityOutlook,
     },
     coapplicant: {
       relationship: normRelationship(lead.coapplicant_relation),
@@ -372,5 +507,5 @@ function buildProfileCore(lead: Lead, universityTier: string | null): BuildProfi
     },
   };
 
-  return { profile, missing };
+  return { profile, missing, resolution: finalResolution };
 }

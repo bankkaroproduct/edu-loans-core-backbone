@@ -31,7 +31,7 @@ import {
 import { toast } from "sonner";
 import { evaluate } from "@/lib/bre/engine";
 import { loadActive } from "@/lib/bre/loader";
-import { buildBreProfileFromLeadAsync } from "@/lib/bre/leadProfile";
+import { buildBreProfileFromLeadAsync, type BuildProfileResolution } from "@/lib/bre/leadProfile";
 import type { BreResult, BucketKey, ParameterTrace } from "@/lib/bre/types";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -66,6 +66,7 @@ export function AdminCalculateBreCard({ lead }: { lead: Lead }) {
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<BreResult | null>(null);
   const [missing, setMissing] = useState<{ field: string; label: string }[]>([]);
+  const [resolution, setResolution] = useState<BuildProfileResolution | null>(null);
   const [scoringVersion, setScoringVersion] = useState<number | null>(null);
   const [bucketThreshold, setBucketThreshold] = useState<number | null>(null);
 
@@ -73,8 +74,9 @@ export function AdminCalculateBreCard({ lead }: { lead: Lead }) {
     setRunning(true);
     setResult(null);
     try {
-      const { profile, missing: missingFields } = await buildBreProfileFromLeadAsync(lead);
+      const { profile, missing: missingFields, resolution: res } = await buildBreProfileFromLeadAsync(lead);
       setMissing(missingFields);
+      setResolution(res ?? null);
 
       const { cfg, rules } = await loadActive();
       const r = evaluate(profile, cfg, rules);
@@ -165,6 +167,9 @@ export function AdminCalculateBreCard({ lead }: { lead: Lead }) {
               </div>
             </div>
           )}
+
+          {/* ---------- Resolution notes (fuzzy match / derived fields) ---------- */}
+          <ResolutionNotes resolution={resolution} />
 
           {/* ---------- BRE Eligibility Scorecard ---------- */}
           <div>
@@ -663,4 +668,95 @@ function FitBadge({ badge }: { badge: BreResult["eligible_lenders"][number]["bad
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+function ResolutionNotes({ resolution }: { resolution: BuildProfileResolution | null }) {
+  if (!resolution) return null;
+  const um = resolution.university_match;
+  const cl = resolution.course_level_derivation;
+
+  const items: { label: string; tone: "ok" | "warn" | "muted"; text: import("react").ReactNode }[] = [];
+
+  if (um && "kind" in um) {
+    if (um.kind === "fuzzy") {
+      items.push({
+        label: "University matched from raw name",
+        tone: "ok",
+        text: (
+          <>
+            <span className="italic">"{um.raw}"</span> → <span className="font-medium">{um.master_name}</span>
+            {" · "}ranking_bucket: <span className="font-mono">{um.ranking_bucket ?? "Unranked"}</span>
+            {" · "}employability_outlook: <span className="font-mono">{um.employability_outlook ?? "—"}</span>
+          </>
+        ),
+      });
+    } else if (um.kind === "by_id") {
+      items.push({
+        label: "University resolved from master",
+        tone: "ok",
+        text: (
+          <>
+            <span className="font-medium">{um.master_name}</span>
+            {" · "}ranking_bucket: <span className="font-mono">{um.ranking_bucket ?? "Unranked"}</span>
+            {" · "}employability_outlook: <span className="font-mono">{um.employability_outlook ?? "—"}</span>
+          </>
+        ),
+      });
+    } else if (um.kind === "ambiguous") {
+      items.push({
+        label: "University name ambiguous — manual review",
+        tone: "warn",
+        text: (
+          <>
+            <span className="italic">"{um.raw}"</span> matched {um.candidates.length} candidates:{" "}
+            {um.candidates.join(", ")}
+          </>
+        ),
+      });
+    } else if (um.kind === "no_match") {
+      items.push({
+        label: "University not found in master",
+        tone: "warn",
+        text: <span className="italic">"{um.raw}"</span>,
+      });
+    }
+  }
+
+  if (cl && "source" in cl) {
+    items.push({
+      label: "Course level derived from course name",
+      tone: "ok",
+      text: (
+        <>
+          <span className="italic">"{cl.raw}"</span> → <span className="font-mono">{cl.derived}</span>
+        </>
+      ),
+    });
+  }
+
+  if (items.length === 0) return null;
+
+  return (
+    <div className="rounded-md border border-border bg-muted/20 p-2.5 text-xs space-y-1.5">
+      <div className="font-medium text-foreground flex items-center gap-1.5">
+        <Info className="h-3.5 w-3.5" /> Resolution notes
+      </div>
+      <ul className="space-y-1">
+        {items.map((it, i) => (
+          <li key={i} className="text-muted-foreground">
+            <span
+              className={
+                it.tone === "warn"
+                  ? "text-amber-700 dark:text-amber-300 font-medium"
+                  : "text-foreground font-medium"
+              }
+            >
+              {it.label}:
+            </span>{" "}
+            {it.text}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
