@@ -1770,6 +1770,7 @@ export type Database = {
           country: string
           country_normalized: string | null
           created_at: string
+          employability_outlook: string | null
           grade: string | null
           grade_source: string
           id: string
@@ -1786,6 +1787,7 @@ export type Database = {
           country: string
           country_normalized?: string | null
           created_at?: string
+          employability_outlook?: string | null
           grade?: string | null
           grade_source?: string
           id?: string
@@ -1802,6 +1804,7 @@ export type Database = {
           country?: string
           country_normalized?: string | null
           created_at?: string
+          employability_outlook?: string | null
           grade?: string | null
           grade_source?: string
           id?: string
