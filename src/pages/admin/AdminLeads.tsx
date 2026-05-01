@@ -651,6 +651,11 @@ export default function AdminLeads() {
                     <TableHead>Stage</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>
+                      <button type="button" onClick={() => toggleSort("created_at")} className="inline-flex items-center gap-1 hover:text-foreground">
+                        Created {sortIcon("created_at")}
+                      </button>
+                    </TableHead>
+                    <TableHead>
                       <button type="button" onClick={() => toggleSort("updated_at")} className="inline-flex items-center gap-1 hover:text-foreground">
                         Updated {sortIcon("updated_at")}
                       </button>
@@ -706,6 +711,9 @@ export default function AdminLeads() {
                         </TableCell>
                         <TableCell className="py-3.5"><StageBadge stage={r.current_stage} /></TableCell>
                         <TableCell className="py-3.5"><StatusBadge status={r.current_status} /></TableCell>
+                        <TableCell className="py-3.5 text-muted-foreground whitespace-nowrap text-xs">
+                          {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
+                        </TableCell>
                         <TableCell className="py-3.5 text-muted-foreground whitespace-nowrap text-xs">
                           {formatDistanceToNow(new Date(r.updated_at), { addSuffix: true })}
                         </TableCell>
