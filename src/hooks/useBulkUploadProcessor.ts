@@ -76,15 +76,19 @@ export type ProcessingStage = "idle" | "parsing" | "validating" | "processing" |
 /** Required-fields contract — unchanged business rules. */
 const REQUIRED_HEADERS = [
   "student_first_name", "student_last_name", "student_phone",
+  "pincode",
   "intended_study_country", "intake_session",
   "course_name", "loan_amount_required",
 ];
 
 /**
- * Final canonical 32-column header order — used everywhere (Partner + Admin):
+ * Final canonical 30-column header order — used everywhere (Partner + Admin):
  * - Downloaded template
  * - Parser strict-template check (rejects outdated templates missing new headers)
  * - UI column reference
+ *
+ * `pincode` is mandatory; city/state/district/tier/country_of_residence are
+ * derived server-side from `pincode_master` and are NOT upload columns.
  *
  * `intake_session` is a SINGLE composite column in quarter-format
  * (e.g. "Apr-Jun-2026") — internally decomposed into `intake_term` + `intake_year`
@@ -92,7 +96,8 @@ const REQUIRED_HEADERS = [
  */
 const ALL_HEADERS = [
   "student_first_name", "student_last_name", "student_phone", "student_email",
-  "student_whatsapp", "city", "state", "country_of_residence",
+  "student_whatsapp",
+  "pincode",
   "intended_study_country", "intake_session", "course_name",
   "university_name",
   "10th_score", "12th_score", "graduation_score",
@@ -107,6 +112,7 @@ const ALL_HEADERS = [
 
 /** Headers introduced in the newest template — used to detect outdated uploads. */
 const NEW_TEMPLATE_HEADERS = [
+  "pincode",
   "intake_session",
   "10th_score", "12th_score", "graduation_score",
   "highest_qualification", "highest_qualification_score",
