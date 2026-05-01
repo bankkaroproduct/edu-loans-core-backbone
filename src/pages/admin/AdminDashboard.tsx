@@ -4,11 +4,15 @@ import { Badge } from "@/components/ui/badge";
 import { RefreshCw } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
-import { AdminTopMetrics } from "@/components/admin/AdminTopMetrics";
+import { AdminTopMetrics, type AdminMetricKey } from "@/components/admin/AdminTopMetrics";
 import { AdminLeadQueue } from "@/components/admin/AdminLeadQueue";
 import { AdminRequestsSnapshot } from "@/components/admin/AdminRequestsSnapshot";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
+import { ActionNeededDrillDown } from "@/components/admin/drilldowns/ActionNeededDrillDown";
+import { ActivePipelineDrillDown } from "@/components/admin/drilldowns/ActivePipelineDrillDown";
+import { ClosedDrillDown } from "@/components/admin/drilldowns/ClosedDrillDown";
+import { PartnersDrillDown } from "@/components/admin/drilldowns/PartnersDrillDown";
 
 export default function AdminDashboard() {
   const { appUser } = useAuth();
@@ -18,6 +22,7 @@ export default function AdminDashboard() {
     lastRefreshedAt, refreshAll,
   } = useAdminDashboard();
   const [activeLendersCount, setActiveLendersCount] = useState<number | undefined>(undefined);
+  const [drilldown, setDrilldown] = useState<AdminMetricKey | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -30,6 +35,8 @@ export default function AdminDashboard() {
     })();
     return () => { cancelled = true; };
   }, [lastRefreshedAt]);
+
+  const closeDrill = (open: boolean) => { if (!open) setDrilldown(null); };
 
   return (
     <div className="space-y-7 max-w-screen-2xl mx-auto">
@@ -54,6 +61,7 @@ export default function AdminDashboard() {
         error={metrics.error}
         onRetry={refreshAll}
         activeLendersCount={activeLendersCount}
+        onCardClick={(k) => setDrilldown(k)}
       />
 
       <div className="grid gap-5 lg:grid-cols-3">
@@ -73,6 +81,31 @@ export default function AdminDashboard() {
           <AdminRequestsSnapshot />
         </div>
       </div>
+
+      {/* Drill-down drawers (read-only) */}
+      <ActionNeededDrillDown
+        open={drilldown === "action"}
+        onOpenChange={closeDrill}
+        totalCount={metrics.data?.pendingAdminActions ?? 0}
+        requestsCount={metrics.data?.requestsPendingApproval ?? 0}
+        documentsCount={metrics.data?.documentsPendingReview ?? 0}
+      />
+      <ActivePipelineDrillDown
+        open={drilldown === "pipeline"}
+        onOpenChange={closeDrill}
+        totalCount={metrics.data?.totalLeads ?? 0}
+        pipelineStages={pipeline.data}
+      />
+      <ClosedDrillDown
+        open={drilldown === "closed"}
+        onOpenChange={closeDrill}
+        totalCount={metrics.data?.disbursed ?? 0}
+      />
+      <PartnersDrillDown
+        open={drilldown === "partners"}
+        onOpenChange={closeDrill}
+        totalCount={metrics.data?.activePartners ?? 0}
+      />
     </div>
   );
 }
