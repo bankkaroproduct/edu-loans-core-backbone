@@ -50,14 +50,15 @@ function Field({
 }) {
   const hasValue = value !== null && value !== undefined && value !== "";
   return (
-    <div className="min-w-0 space-y-0.5">
+    <div className="min-w-0 space-y-0.5 overflow-hidden">
       <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
         {label}
       </span>
       <p
+        style={{ overflowWrap: "anywhere", wordBreak: "break-word" }}
         className={
           hasValue
-            ? "text-sm font-medium text-foreground break-words"
+            ? "text-sm font-medium text-foreground break-words min-w-0"
             : "text-sm text-muted-foreground/70"
         }
       >
