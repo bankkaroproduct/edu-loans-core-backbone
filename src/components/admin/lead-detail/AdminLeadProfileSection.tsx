@@ -162,7 +162,13 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
           <Field
             label="Date of Birth"
             value={(lead as Lead & { student_dob?: string | null }).student_dob ?? null}
-            editable={ed("student_dob", { inputType: "date" })}
+            editable={ed("student_dob", {
+              inputType: "date",
+              formatDisplay: (v) => {
+                const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v);
+                return m ? `${m[3]}-${m[2]}-${m[1]}` : v;
+              },
+            })}
             onSaved={onSaved}
           />
           <Field
