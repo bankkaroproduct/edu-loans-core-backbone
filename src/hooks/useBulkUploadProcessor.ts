@@ -281,6 +281,7 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
   const lastName = val("student_last_name");
   const phone = val("student_phone");
   const email = val("student_email");
+  const pincodeRaw = val("pincode");
   const country = val("intended_study_country");
   const intakeSessionStr = val("intake_session");
   const courseName = val("course_name");
@@ -306,6 +307,17 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
   if (!phone) errors.push("student_phone is required");
   else if (!/^\+?[\d\s\-()]{7,15}$/.test(phone)) errors.push("Invalid phone format");
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push("Invalid email format");
+
+  // Pincode: required, must be exactly 6 numeric digits.
+  let pincodeValid: string | undefined;
+  if (!pincodeRaw) {
+    errors.push("Pincode is required.");
+  } else if (!/^\d{6}$/.test(pincodeRaw)) {
+    errors.push("Pincode must be a valid 6-digit number.");
+  } else {
+    pincodeValid = pincodeRaw;
+  }
+
   if (!country) errors.push("intended_study_country is required");
   else if (!master.countries.includes(country.toLowerCase())) errors.push(`Country "${country}" not found in master data`);
 
