@@ -24,8 +24,12 @@ export interface ParsedRow {
   student_phone?: string;
   student_email?: string;
   student_whatsapp?: string;
+  /** Required 6-digit Indian pincode. Master lookup fills city/state/district/tier. */
+  pincode?: string;
   city?: string;
   state?: string;
+  district?: string;
+  tier?: string;
   country_of_residence?: string;
   intended_study_country?: string;
   intake_term?: string;
