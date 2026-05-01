@@ -36,7 +36,12 @@ export const DOCUMENT_RULES: Record<string, DocRule> = {
     tier: "strict",
   },
   AADHAAR: {
-    keywords: ["aadhaar", "aadhar", "unique identification", "government of india", "uidai", "father", "year of birth"],
+    keywords: [
+      "aadhaar", "aadhar", "unique identification", "government of india", "uidai",
+      "father", "year of birth",
+      // Additive Aadhaar-only marker variants (scanned / e-Aadhaar / mAadhaar / Hindi):
+      "आधार", "भारत सरकार", "vid", "enrolment", "enrolment no", "e-aadhaar", "maadhaar", "masked aadhaar",
+    ],
     regexes: [/\b\d{4}\s?\d{4}\s?\d{4}\b/],
     requiredKeywordHits: 1,
     nameSubject: "student",
