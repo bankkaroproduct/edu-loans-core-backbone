@@ -1,6 +1,6 @@
 import {
   Shield, Inbox, Banknote, Users, LogOut,
-  ClipboardCheck, Database, FilePlus, Upload, FileSpreadsheet,
+  Database, FilePlus, Upload, FileSpreadsheet,
   SlidersHorizontal, History, ScrollText, Calculator, FlaskConical,
   MessageSquare, FileText, Star,
 } from "lucide-react";
