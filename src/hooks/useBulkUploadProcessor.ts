@@ -405,9 +405,9 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
     student_phone: phone,
     student_email: email || undefined,
     student_whatsapp: val("student_whatsapp") || undefined,
-    city: val("city") || undefined,
-    state: val("state") || undefined,
-    country_of_residence: val("country_of_residence") || undefined,
+    pincode: pincodeValid,
+    // city/state/district/tier/country_of_residence are derived server-side
+    // from pincode_master in processBulkUpload — no upload columns for these.
     intended_study_country: country,
     intake_term: intakeTerm,
     intake_year: intakeYear,
