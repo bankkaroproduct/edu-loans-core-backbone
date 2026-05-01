@@ -676,6 +676,7 @@ export async function processBulkUpload(
     // Create the lead
     
     const universityId = row.university_name ? master.universityMap.get(row.university_name.toLowerCase()) ?? null : null;
+    const loc = resolvePincode(row.pincode);
 
     const { data: leadData, error: leadError } = await supabase
       .from("student_leads")
@@ -690,9 +691,12 @@ export async function processBulkUpload(
         student_phone: row.student_phone!,
         student_email: row.student_email ?? null,
         student_whatsapp: row.student_whatsapp ?? null,
-        city: row.city ?? null,
-        state: row.state ?? null,
-        country_of_residence: row.country_of_residence ?? null,
+        pincode: row.pincode ?? null,
+        city: loc.city,
+        state: loc.state,
+        district: loc.district,
+        tier: loc.tier,
+        country_of_residence: loc.country_of_residence,
         intended_study_country: row.intended_study_country!,
         intake_term: row.intake_term!,
         intake_year: row.intake_year!,
