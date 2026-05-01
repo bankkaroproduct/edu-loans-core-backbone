@@ -1,6 +1,6 @@
 import {
   Shield, Inbox, Banknote, Users, LogOut,
-  ClipboardCheck, Database, FilePlus, Upload, FileSpreadsheet,
+  Database, FilePlus, Upload, FileSpreadsheet,
   SlidersHorizontal, History, ScrollText, Calculator, FlaskConical,
   MessageSquare, FileText, Star,
 } from "lucide-react";
@@ -15,14 +15,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useAdminPendingRequests } from "@/hooks/useAdminPendingRequests";
+
 import { AdminPartnerSwitcher } from "@/components/AdminPartnerSwitcher";
 
 const adminItems = [
   { title: "Admin Dashboard", url: "/admin", icon: Shield, end: true },
   { title: "Lead Queue", url: "/admin/leads", icon: Inbox },
   { title: "Reports", url: "/admin/reports", icon: FileSpreadsheet },
-  { title: "Requests & Approvals", url: "/admin/requests", icon: ClipboardCheck, badgeKey: "pendingRequests" as const },
 ];
 
 const leadOpsItems = [
@@ -70,7 +69,7 @@ export function AdminSidebar() {
   const collapsed = state === "collapsed";
   const { appUser, signOut } = useAuth();
   const navigate = useNavigate();
-  const { count: pendingRequests } = useAdminPendingRequests();
+  
 
   const breAccess = canAccessBre(appUser?.role, normalizeBrePermission(appUser?.bre_permission));
 
@@ -93,36 +92,21 @@ export function AdminSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {adminItems.map((item) => {
-                const showBadge = item.badgeKey === "pendingRequests" && pendingRequests > 0;
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <NavLink
-                        to={item.url}
-                        end={item.end}
-                        className={navBaseClass}
-                        activeClassName={navActiveClass}
-                      >
-                        <item.icon className="h-4 w-4 shrink-0" />
-                        {!collapsed && (
-                          <span className="flex items-center justify-between w-full gap-2">
-                            <span className="truncate">{item.title}</span>
-                            {showBadge && (
-                              <Badge
-                                variant="secondary"
-                                className="h-4 px-1.5 text-[10px] font-medium bg-amber-100 text-amber-900 border border-amber-200"
-                              >
-                                {pendingRequests > 99 ? "99+" : pendingRequests}
-                              </Badge>
-                            )}
-                          </span>
-                        )}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
+              {adminItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      end={item.end}
+                      className={navBaseClass}
+                      activeClassName={navActiveClass}
+                    >
+                      <item.icon className="h-4 w-4 shrink-0" />
+                      {!collapsed && <span className="truncate">{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
