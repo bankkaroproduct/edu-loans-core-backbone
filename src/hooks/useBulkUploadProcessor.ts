@@ -542,6 +542,62 @@ export async function processBulkUpload(
   const validParsed = validatedRows.filter((v) => v.errors.length === 0).map((v) => v.parsed);
   const intraFileDups = detectIntraFileDuplicates(validParsed);
 
+  // 3b. Bulk pincode_master lookup (one query for all unique pincodes).
+  // Failures here are non-blocking — rows fall through to "not found" warning path.
+  const pincodeMap = new Map<string, { district: string | null; state: string | null; tier: string | null; has_conflict: boolean }>();
+  const uniquePincodes = Array.from(
+    new Set(validParsed.map((r) => r.pincode).filter((p): p is string => !!p))
+  );
+  if (uniquePincodes.length > 0) {
+    const { data: pmData } = await supabase
+      .from("pincode_master")
+      .select("pincode,district,state,tier,has_conflict")
+      .in("pincode", uniquePincodes);
+    for (const r of pmData ?? []) {
+      pincodeMap.set(r.pincode, {
+        district: r.district ?? null,
+        state: r.state ?? null,
+        tier: r.tier ?? null,
+        has_conflict: !!r.has_conflict,
+      });
+    }
+  }
+
+  /**
+   * Resolve pincode → location fields + warning per the approved rules.
+   * Caller has already validated that `pincode` is a 6-digit numeric string.
+   */
+  const resolvePincode = (pincode: string | undefined): {
+    city: string | null;
+    state: string | null;
+    district: string | null;
+    tier: string | null;
+    country_of_residence: string | null;
+    warning: string | null;
+  } => {
+    if (!pincode) {
+      return { city: null, state: null, district: null, tier: null, country_of_residence: null, warning: null };
+    }
+    const hit = pincodeMap.get(pincode);
+    if (!hit) {
+      return {
+        city: null, state: null, district: null, tier: null,
+        country_of_residence: "India",
+        warning: "Pincode not found in master. City/state could not be auto-filled. Admin review required.",
+      };
+    }
+    return {
+      city: hit.district ?? null, // pincode_master has no city; district fills city.
+      state: hit.state,
+      district: hit.district,
+      tier: hit.tier,
+      country_of_residence: "India",
+      warning: hit.has_conflict
+        ? "Pincode maps to multiple locations — please verify city/state."
+        : null,
+    };
+  };
+
   // 4. Create batch record
   const { data: batchData, error: batchError } = await supabase
     .from("bulk_upload_batches")
