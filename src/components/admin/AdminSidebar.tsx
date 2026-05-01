@@ -92,36 +92,21 @@ export function AdminSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {adminItems.map((item) => {
-                const showBadge = item.badgeKey === "pendingRequests" && pendingRequests > 0;
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <NavLink
-                        to={item.url}
-                        end={item.end}
-                        className={navBaseClass}
-                        activeClassName={navActiveClass}
-                      >
-                        <item.icon className="h-4 w-4 shrink-0" />
-                        {!collapsed && (
-                          <span className="flex items-center justify-between w-full gap-2">
-                            <span className="truncate">{item.title}</span>
-                            {showBadge && (
-                              <Badge
-                                variant="secondary"
-                                className="h-4 px-1.5 text-[10px] font-medium bg-amber-100 text-amber-900 border border-amber-200"
-                              >
-                                {pendingRequests > 99 ? "99+" : pendingRequests}
-                              </Badge>
-                            )}
-                          </span>
-                        )}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
+              {adminItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      end={item.end}
+                      className={navBaseClass}
+                      activeClassName={navActiveClass}
+                    >
+                      <item.icon className="h-4 w-4 shrink-0" />
+                      {!collapsed && <span className="truncate">{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
