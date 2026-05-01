@@ -193,7 +193,7 @@ export function AdminLeadTimeline({ history, notes, audits = [], actorNames = {}
           <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10">
             <Clock className="h-3.5 w-3.5 text-primary" />
           </span>
-          Recent Timeline
+          Lifecycle Timeline
         </CardTitle>
         {major.length > 0 && (
           <span className="text-[11px] text-muted-foreground">
@@ -254,27 +254,17 @@ export function AdminLeadTimeline({ history, notes, audits = [], actorNames = {}
             )}
 
             {major.length > 0 && (
-              <div className="space-y-0">
-                {major.map((evt, idx) => {
+              <div className="space-y-2">
+                {major.map((evt) => {
                   const isAuth = evt.type === "authenticity_change";
                   return (
-                    <div key={evt.id} className="relative pl-7 pb-6 last:pb-0">
-                      {idx < major.length - 1 && (
-                        <div className="absolute left-[9px] top-3.5 w-px h-[calc(100%-14px)] bg-border" />
-                      )}
-                      <div
-                        className={`absolute left-0 top-1.5 w-[18px] h-[18px] rounded-full border-2 bg-card flex items-center justify-center ${
-                          isAuth ? "border-amber-500" : "border-primary"
-                        }`}
-                      >
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${
-                            isAuth ? "bg-amber-500" : "bg-primary"
-                          }`}
-                        />
-                      </div>
-
-                      <div className="space-y-1">
+                    <div
+                      key={evt.id}
+                      className={`rounded-md border bg-card p-3 min-w-0 ${
+                        isAuth ? "border-l-2 border-l-amber-500 border-border/60" : "border-border/60"
+                      }`}
+                    >
+                      <div className="space-y-1.5 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <Badge
                             variant={evt.noteType === "internal" || isAuth ? "secondary" : "outline"}
@@ -295,10 +285,10 @@ export function AdminLeadTimeline({ history, notes, audits = [], actorNames = {}
                               ? "Partner Note"
                               : "Note"}
                           </Badge>
-                          <span className="text-[11px] text-foreground/80 font-medium">{evt.actor}</span>
+                          <span className="text-[11px] text-foreground/80 font-medium truncate">{evt.actor}</span>
                           <span aria-hidden className="text-muted-foreground">·</span>
                           <span
-                            className="text-[11px] text-muted-foreground"
+                            className="text-[11px] text-muted-foreground ml-auto"
                             title={new Date(evt.timestamp).toLocaleString()}
                           >
                             {relativeTime(evt.timestamp)}
@@ -330,18 +320,18 @@ export function AdminLeadTimeline({ history, notes, audits = [], actorNames = {}
                         )}
 
                         {evt.description && !isAuth && (
-                          <p className="text-sm text-muted-foreground">{evt.description}</p>
+                          <p className="text-sm text-muted-foreground break-words">{evt.description}</p>
                         )}
 
                         {isAuth && evt.reason && (
-                          <p className="text-sm rounded-md p-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900">
+                          <p className="text-sm rounded-md p-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 break-words">
                             Reason: {evt.reason}
                           </p>
                         )}
 
                         {evt.noteText && (
                           <p
-                            className={`text-sm rounded-md p-2.5 ${
+                            className={`text-sm rounded-md p-2.5 break-words ${
                               evt.noteType === "internal"
                                 ? "bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900"
                                 : "bg-muted/50 border border-border/60"
