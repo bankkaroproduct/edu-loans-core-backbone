@@ -122,11 +122,20 @@ const COURSE_CATEGORY_MAP: Record<string, string> = {
 };
 
 // Free-text course-name keyword fallback when course_category is null.
+//
+// High-confidence STEM keywords include modern tech/security/analytics/AI tracks
+// that the original regex did not capture (cyber security, analytics, AI/ML,
+// software, IT, cloud, networking, robotics, mechatronics). A common typo
+// ("secuirity") is also tolerated so legitimate STEM leads aren't misclassified.
 function deriveCourseCategoryFromName(name: string | null | undefined): string | null {
   if (!name) return null;
   const n = name.toLowerCase();
-  if (/\bmba\b|master of business/.test(n)) return "mba";
-  if (/\b(ms|m\.s\.?|msc|m\.sc)\b|engineer|computer|data|information|tech|stem|physics|chem|math|bio/.test(n))
+  if (/\bmba\b|master of business|\bpgdm\b|post[- ]?graduate diploma in management/.test(n)) return "mba";
+  if (
+    /\b(ms|m\.s\.?|msc|m\.sc)\b|engineer|computer|data|information|tech|stem|physics|chem|math|bio|cyber ?sec(?:u(?:i)?r)?ity|infosec|information security|analytics|\bai\b|artificial intelligence|\bml\b|machine learning|deep learning|software|\bit\b|cloud|network(?:ing)?|robotics|mechatronics/.test(
+      n,
+    )
+  )
     return "stem";
   if (/management|business|finance|economic|marketing|hr/.test(n)) return "management";
   if (/medic|nurs|health|pharma|dental|clinic/.test(n)) return "healthcare";
@@ -543,8 +552,18 @@ function buildProfileCore(
   const ts = lead.test_scores as unknown;
   const classX = numFromTestScores(ts, "tenth") ?? numFromTestScores(ts, "class_x");
   const classXII = numFromTestScores(ts, "twelfth") ?? numFromTestScores(ts, "class_xii");
-  // Graduation marks: prefer test_scores.graduation; fall back to legacy `marks_gpa` text.
-  const graduation = numFromTestScores(ts, "graduation") ?? parseGpa(lead.marks_gpa);
+  // Graduation marks priority:
+  //   1. test_scores.graduation (numeric, percentage)
+  //   2. test_scores.highest_qualification_score — when ≤ 10, treated as a
+  //      10-point GPA and converted to percentage via the standard ×9.5
+  //      multiplier (mirrors parseGpa). When > 10, used as-is (already a %).
+  //   3. legacy `marks_gpa` free-text (parsed via parseGpa)
+  //   4. null → engine band 0
+  const hqScoreRaw = numFromTestScores(ts, "highest_qualification_score");
+  const hqScore =
+    hqScoreRaw == null ? null : hqScoreRaw <= 10 ? Math.round(hqScoreRaw * 9.5 * 100) / 100 : hqScoreRaw;
+  const graduation =
+    numFromTestScores(ts, "graduation") ?? hqScore ?? parseGpa(lead.marks_gpa);
   const entranceRank =
     numFromTestScores(ts, "entrance_percentile") ??
     numFromTestScores(ts, "entrance_rank") ??
