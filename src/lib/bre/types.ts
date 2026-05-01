@@ -95,11 +95,29 @@ export interface LenderCollateralLtv {
   commercial_ltv_pct: number | null;
 }
 
+/**
+ * Optional, descriptive expense-coverage flags for a lender.
+ * Populated by Admins via the BRE Lender Rule editor and stored inside
+ * the existing `bre_lender_rules.coverage` JSONB column. The BRE engine
+ * does NOT read these values for scoring, knockout, ranking, or projection.
+ * They are surfaced read-only on the Admin Lead Detail lender cards.
+ */
+export interface LenderExpenseCoverage {
+  tuition?: boolean | null;
+  living?: boolean | null;
+  travel?: boolean | null;
+  insurance?: boolean | null;
+  other_education_expenses?: boolean | null;
+  notes?: string | null;
+}
+
 export interface LenderCoverage {
   supported_countries: string[];
   excluded_states: string[];
   accepted_courses: string[];
   university_tier_overrides: { tier: string; allowed: boolean }[];
+  /** Optional descriptive expense coverage. Engine does not consume this. */
+  expenses?: LenderExpenseCoverage;
 }
 
 export interface LenderPolicy {
@@ -183,6 +201,11 @@ export interface LenderMatchResult {
   payout_pct: number | null;
   rank: number | null;
   badge: "best_match" | "strong" | "backup" | null;
+  /**
+   * Pass-through copy of `lender.coverage.expenses` from the lender rule.
+   * Descriptive only — never used by scoring, ranking, or eligibility logic.
+   */
+  coverage_expenses?: LenderExpenseCoverage;
 }
 
 export interface BreResult {

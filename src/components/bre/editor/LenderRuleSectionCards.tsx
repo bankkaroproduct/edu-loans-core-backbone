@@ -175,6 +175,61 @@ export function LenderRuleSectionCards({ rule, onChange, readOnly }: Props) {
         </CardContent>
       </Card>
 
+      {/* Expense Coverage (descriptive only — not used by scoring/ranking) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Expense Coverage</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            What this lender funds for the student. Descriptive only — does not affect scoring,
+            ranking, or eligibility. Leave a toggle off if unknown; only items explicitly turned on
+            are shown on the lender card.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid gap-3 md:grid-cols-2">
+            <CoverageToggle
+              label="Tuition Fee"
+              checked={rule.coverage.expenses?.tuition === true}
+              onCheckedChange={(v) => set("coverage", { ...rule.coverage, expenses: { ...(rule.coverage.expenses ?? {}), tuition: v } })}
+              disabled={readOnly}
+            />
+            <CoverageToggle
+              label="Living / Accommodation"
+              checked={rule.coverage.expenses?.living === true}
+              onCheckedChange={(v) => set("coverage", { ...rule.coverage, expenses: { ...(rule.coverage.expenses ?? {}), living: v } })}
+              disabled={readOnly}
+            />
+            <CoverageToggle
+              label="Travel"
+              checked={rule.coverage.expenses?.travel === true}
+              onCheckedChange={(v) => set("coverage", { ...rule.coverage, expenses: { ...(rule.coverage.expenses ?? {}), travel: v } })}
+              disabled={readOnly}
+            />
+            <CoverageToggle
+              label="Insurance"
+              checked={rule.coverage.expenses?.insurance === true}
+              onCheckedChange={(v) => set("coverage", { ...rule.coverage, expenses: { ...(rule.coverage.expenses ?? {}), insurance: v } })}
+              disabled={readOnly}
+            />
+            <CoverageToggle
+              label="Other education expenses"
+              checked={rule.coverage.expenses?.other_education_expenses === true}
+              onCheckedChange={(v) => set("coverage", { ...rule.coverage, expenses: { ...(rule.coverage.expenses ?? {}), other_education_expenses: v } })}
+              disabled={readOnly}
+            />
+          </div>
+          <Field label="Coverage notes (optional)">
+            <Textarea
+              value={rule.coverage.expenses?.notes ?? ""}
+              onChange={(e) => set("coverage", { ...rule.coverage, expenses: { ...(rule.coverage.expenses ?? {}), notes: e.target.value || null } })}
+              rows={2}
+              placeholder="Internal notes about coverage (not shown on lender cards)."
+              disabled={readOnly}
+            />
+          </Field>
+        </CardContent>
+      </Card>
+
       {/* Policy */}
       <Card>
         <CardHeader>
@@ -221,6 +276,25 @@ function Field({ label, children, className }: { label: string; children: React.
     <div className={`space-y-1 ${className ?? ""}`}>
       <Label className="text-[10px] uppercase text-muted-foreground">{label}</Label>
       {children}
+    </div>
+  );
+}
+
+function CoverageToggle({
+  label,
+  checked,
+  onCheckedChange,
+  disabled,
+}: {
+  label: string;
+  checked: boolean;
+  onCheckedChange: (v: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-md border border-border bg-muted/20 px-3 py-2">
+      <span className="text-sm text-foreground">{label}</span>
+      <Switch checked={checked} onCheckedChange={onCheckedChange} disabled={disabled} />
     </div>
   );
 }
