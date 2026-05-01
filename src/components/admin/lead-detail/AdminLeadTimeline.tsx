@@ -193,7 +193,7 @@ export function AdminLeadTimeline({ history, notes, audits = [], actorNames = {}
           <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10">
             <Clock className="h-3.5 w-3.5 text-primary" />
           </span>
-          Recent Timeline
+          Lifecycle Timeline
         </CardTitle>
         {major.length > 0 && (
           <span className="text-[11px] text-muted-foreground">
