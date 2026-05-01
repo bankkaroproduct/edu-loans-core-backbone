@@ -295,6 +295,8 @@ export function evaluate(
         payout_pct: lender.commercials.payout_pct,
         rank: null,
         badge: null,
+        // Descriptive pass-through only — not used by scoring/ranking/eligibility.
+        coverage_expenses: lender.coverage?.expenses,
       };
     });
 
