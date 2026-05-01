@@ -475,11 +475,13 @@ export type Database = {
           applicable_for: string
           created_at: string
           description: string | null
+          display_name: string | null
           document_category: string | null
           document_code: string
           document_name: string
           id: string
           mandatory_flag: boolean
+          sort_order: number
           updated_at: string
         }
         Insert: {
@@ -487,11 +489,13 @@ export type Database = {
           applicable_for?: string
           created_at?: string
           description?: string | null
+          display_name?: string | null
           document_category?: string | null
           document_code: string
           document_name: string
           id?: string
           mandatory_flag?: boolean
+          sort_order?: number
           updated_at?: string
         }
         Update: {
@@ -499,11 +503,13 @@ export type Database = {
           applicable_for?: string
           created_at?: string
           description?: string | null
+          display_name?: string | null
           document_category?: string | null
           document_code?: string
           document_name?: string
           id?: string
           mandatory_flag?: boolean
+          sort_order?: number
           updated_at?: string
         }
         Relationships: []
