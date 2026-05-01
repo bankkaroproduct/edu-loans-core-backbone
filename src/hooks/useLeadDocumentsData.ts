@@ -10,6 +10,8 @@ export type LeadDocRequirement = Tables<"lead_document_requirements"> & {
     document_category: string | null;
     document_code?: string | null;
     applicable_for?: string | null;
+    display_name?: string | null;
+    sort_order?: number | null;
   } | null;
 };
 
@@ -54,7 +56,7 @@ export function useLeadDocumentsData(leadId: string | undefined) {
     const [reqRes, docRes] = await Promise.all([
       supabase
         .from("lead_document_requirements")
-        .select("*, document_master(document_name, document_category, document_code, applicable_for)")
+        .select("*, document_master(document_name, document_category, document_code, applicable_for, display_name, sort_order)")
         .eq("lead_id", leadId)
         .order("created_at"),
       supabase
@@ -64,11 +66,20 @@ export function useLeadDocumentsData(leadId: string | undefined) {
         .order("uploaded_at", { ascending: false }),
     ]);
 
+    // Sort requirements by document_master.sort_order so both Partner and Admin
+    // portals render the canonical 19-item checklist order. Falls back to a
+    // large sentinel for legacy rows that pre-date the column.
+    const sortedReqs = [...((reqRes.data ?? []) as LeadDocRequirement[])].sort((a, b) => {
+      const ao = a.document_master?.sort_order ?? 9999;
+      const bo = b.document_master?.sort_order ?? 9999;
+      return ao - bo;
+    });
+
     setState({
       loading: false,
       notFound: false,
       lead: leadRes.data,
-      requirements: (reqRes.data ?? []) as LeadDocRequirement[],
+      requirements: sortedReqs,
       documents: (docRes.data ?? []) as LeadDocFile[],
     });
   }, [leadId]);
