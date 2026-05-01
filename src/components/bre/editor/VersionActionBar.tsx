@@ -41,25 +41,39 @@ export function VersionActionBar({
   if (hidden) return null;
   const hasErrors = errors.length > 0;
 
+  const summaryEmpty = !changeSummary.trim();
+  const disabledReason = hasErrors
+    ? "Fix validation errors before saving"
+    : summaryEmpty
+      ? "Enter a change summary above to save"
+      : null;
+
   const left = (
     <div className="flex-1 min-w-0 space-y-1">
-      <Label className="text-[10px] uppercase text-muted-foreground">
-        Change summary (required)
+      <Label htmlFor="bre-change-summary" className="text-[10px] uppercase text-muted-foreground">
+        Change summary <span className="text-destructive" aria-hidden="true">*</span> (required)
       </Label>
       <Input
+        id="bre-change-summary"
         value={changeSummary}
         onChange={(e) => onChangeSummary(e.target.value)}
         placeholder="e.g. Adjusted CIBIL bands, raised salary threshold"
         className="h-10 min-w-[260px] md:w-[420px]"
+        aria-required="true"
       />
     </div>
   );
 
   const right = (
     <>
+      {disabledReason && !saving && (
+        <span className="text-xs text-muted-foreground mr-1 hidden md:inline">
+          {disabledReason}
+        </span>
+      )}
       <Button
         onClick={onSave}
-        disabled={hasErrors || saving || !changeSummary.trim()}
+        disabled={hasErrors || saving || summaryEmpty}
         className={cn(hasErrors && "opacity-60")}
       >
         <Save className="mr-1.5 h-4 w-4" /> {saving ? "Saving…" : saveLabel}
@@ -68,7 +82,7 @@ export function VersionActionBar({
         <Button
           variant="default"
           onClick={onSaveAndActivate}
-          disabled={hasErrors || saving || !changeSummary.trim()}
+          disabled={hasErrors || saving || summaryEmpty}
         >
           <Power className="mr-1.5 h-4 w-4" /> Save & activate
         </Button>
