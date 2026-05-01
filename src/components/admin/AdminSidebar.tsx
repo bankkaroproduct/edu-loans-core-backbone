@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useAdminPendingRequests } from "@/hooks/useAdminPendingRequests";
+
 import { AdminPartnerSwitcher } from "@/components/AdminPartnerSwitcher";
 
 const adminItems = [
