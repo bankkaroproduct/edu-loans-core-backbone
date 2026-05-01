@@ -17,9 +17,8 @@ import { AdminStageStatusPanel } from "@/components/admin/AdminStageStatusPanel"
 import { AdminLeadDocumentsView } from "@/components/admin/AdminLeadDocumentsView";
 import { AdminInternalNotes } from "@/components/admin/AdminInternalNotes";
 import { AdminEditRequestPanel } from "@/components/admin/AdminEditRequestPanel";
-import { AdminLenderRecommendations } from "@/components/admin/AdminLenderRecommendations";
 import { AdminAssignLenderCard } from "@/components/admin/AdminAssignLenderCard";
-import { AdminCalculateBreCard } from "@/components/admin/AdminCalculateBreCard";
+import { AdminBreAndLenderSection } from "@/components/admin/AdminBreAndLenderSection";
 import { LeadAuthenticityEditor } from "@/components/admin/LeadAuthenticityEditor";
 import { LeadCommunicationPanel } from "@/components/admin/communications/LeadCommunicationPanel";
 import { useLeadDocumentsData } from "@/hooks/useLeadDocumentsData";
@@ -262,8 +261,7 @@ export default function AdminLeadDetail() {
           </p>
         </div>
         <AdminLeadTimeline history={history} notes={notes} audits={audits} actorNames={actorNames} />
-        <AdminLenderRecommendations leadId={lead.id} />
-        <AdminCalculateBreCard lead={lead} />
+        <AdminBreAndLenderSection lead={lead} />
         <AdminAssignLenderCard leadId={lead.id} />
       </div>
 
