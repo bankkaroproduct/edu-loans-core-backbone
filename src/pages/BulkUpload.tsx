@@ -46,11 +46,12 @@ const rowStatusConfig = {
 
 const fmt = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-/* ─── Template field reference (final canonical 32-column order) ─── */
+/* ─── Template field reference (final canonical 30-column order) ─── */
 const REQUIRED_COLS = [
   { name: "student_first_name", example: "Rahul" },
   { name: "student_last_name", example: "Sharma" },
   { name: "student_phone", example: "+919876543210" },
+  { name: "pincode", example: "400001" },
   { name: "intended_study_country", example: "United States" },
   { name: "intake_session", example: "Apr-Jun-2026" },
   { name: "course_name", example: "MS Computer Science" },
@@ -60,9 +61,6 @@ const REQUIRED_COLS = [
 const OPTIONAL_COLS = [
   { name: "student_email", example: "rahul@email.com" },
   { name: "student_whatsapp", example: "+919876543210" },
-  { name: "city", example: "Mumbai" },
-  { name: "state", example: "Maharashtra" },
-  { name: "country_of_residence", example: "India" },
   { name: "university_name", example: "MIT" },
   { name: "10th_score", example: "92" },
   { name: "12th_score", example: "88" },
@@ -305,9 +303,20 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
                   <Badge variant="secondary" className={`${cfg.className} gap-1`}>
                     <Icon className="h-3 w-3" /> {cfg.label}
                   </Badge>
+                  {r.status === "success" && r.warning && (
+                    <Badge
+                      variant="outline"
+                      className="ml-1.5 gap-1 border-yellow-300 bg-yellow-50 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400 text-[10px] px-1.5"
+                      title={r.warning}
+                    >
+                      <AlertTriangle className="h-3 w-3" /> Warning
+                    </Badge>
+                  )}
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground max-w-[220px]">
-                  <span className="line-clamp-2">{r.reason}</span>
+                  <span className="line-clamp-2">
+                    {r.status === "success" && r.warning ? r.warning : r.reason}
+                  </span>
                 </TableCell>
                 <TableCell className="font-mono text-xs">
                   {r.status === "success" && (r.createdLeadDisplayId ?? r.createdLeadId?.slice(0, 8) ?? "—")}

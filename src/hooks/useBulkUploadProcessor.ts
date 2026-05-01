@@ -24,8 +24,12 @@ export interface ParsedRow {
   student_phone?: string;
   student_email?: string;
   student_whatsapp?: string;
+  /** Required 6-digit Indian pincode. Master lookup fills city/state/district/tier. */
+  pincode?: string;
   city?: string;
   state?: string;
+  district?: string;
+  tier?: string;
   country_of_residence?: string;
   intended_study_country?: string;
   intake_term?: string;
@@ -59,6 +63,8 @@ export interface RowResult {
   raw: Record<string, string>;
   status: "success" | "failed" | "duplicate";
   reason: string;
+  /** Non-blocking row-level warning (e.g. pincode not in master). Surfaces on success rows. */
+  warning?: string;
   createdLeadId?: string;
   createdLeadDisplayId?: string;
   matchedLeadId?: string;
@@ -70,15 +76,19 @@ export type ProcessingStage = "idle" | "parsing" | "validating" | "processing" |
 /** Required-fields contract — unchanged business rules. */
 const REQUIRED_HEADERS = [
   "student_first_name", "student_last_name", "student_phone",
+  "pincode",
   "intended_study_country", "intake_session",
   "course_name", "loan_amount_required",
 ];
 
 /**
- * Final canonical 32-column header order — used everywhere (Partner + Admin):
+ * Final canonical 30-column header order — used everywhere (Partner + Admin):
  * - Downloaded template
  * - Parser strict-template check (rejects outdated templates missing new headers)
  * - UI column reference
+ *
+ * `pincode` is mandatory; city/state/district/tier/country_of_residence are
+ * derived server-side from `pincode_master` and are NOT upload columns.
  *
  * `intake_session` is a SINGLE composite column in quarter-format
  * (e.g. "Apr-Jun-2026") — internally decomposed into `intake_term` + `intake_year`
@@ -86,7 +96,8 @@ const REQUIRED_HEADERS = [
  */
 const ALL_HEADERS = [
   "student_first_name", "student_last_name", "student_phone", "student_email",
-  "student_whatsapp", "city", "state", "country_of_residence",
+  "student_whatsapp",
+  "pincode",
   "intended_study_country", "intake_session", "course_name",
   "university_name",
   "10th_score", "12th_score", "graduation_score",
@@ -101,6 +112,7 @@ const ALL_HEADERS = [
 
 /** Headers introduced in the newest template — used to detect outdated uploads. */
 const NEW_TEMPLATE_HEADERS = [
+  "pincode",
   "intake_session",
   "10th_score", "12th_score", "graduation_score",
   "highest_qualification", "highest_qualification_score",
@@ -269,6 +281,7 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
   const lastName = val("student_last_name");
   const phone = val("student_phone");
   const email = val("student_email");
+  const pincodeRaw = val("pincode");
   const country = val("intended_study_country");
   const intakeSessionStr = val("intake_session");
   const courseName = val("course_name");
@@ -294,6 +307,17 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
   if (!phone) errors.push("student_phone is required");
   else if (!/^\+?[\d\s\-()]{7,15}$/.test(phone)) errors.push("Invalid phone format");
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push("Invalid email format");
+
+  // Pincode: required, must be exactly 6 numeric digits.
+  let pincodeValid: string | undefined;
+  if (!pincodeRaw) {
+    errors.push("Pincode is required.");
+  } else if (!/^\d{6}$/.test(pincodeRaw)) {
+    errors.push("Pincode must be a valid 6-digit number.");
+  } else {
+    pincodeValid = pincodeRaw;
+  }
+
   if (!country) errors.push("intended_study_country is required");
   else if (!master.countries.includes(country.toLowerCase())) errors.push(`Country "${country}" not found in master data`);
 
@@ -381,9 +405,9 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
     student_phone: phone,
     student_email: email || undefined,
     student_whatsapp: val("student_whatsapp") || undefined,
-    city: val("city") || undefined,
-    state: val("state") || undefined,
-    country_of_residence: val("country_of_residence") || undefined,
+    pincode: pincodeValid,
+    // city/state/district/tier/country_of_residence are derived server-side
+    // from pincode_master in processBulkUpload — no upload columns for these.
     intended_study_country: country,
     intake_term: intakeTerm,
     intake_year: intakeYear,
@@ -518,6 +542,62 @@ export async function processBulkUpload(
   const validParsed = validatedRows.filter((v) => v.errors.length === 0).map((v) => v.parsed);
   const intraFileDups = detectIntraFileDuplicates(validParsed);
 
+  // 3b. Bulk pincode_master lookup (one query for all unique pincodes).
+  // Failures here are non-blocking — rows fall through to "not found" warning path.
+  const pincodeMap = new Map<string, { district: string | null; state: string | null; tier: string | null; has_conflict: boolean }>();
+  const uniquePincodes = Array.from(
+    new Set(validParsed.map((r) => r.pincode).filter((p): p is string => !!p))
+  );
+  if (uniquePincodes.length > 0) {
+    const { data: pmData } = await supabase
+      .from("pincode_master")
+      .select("pincode,district,state,tier,has_conflict")
+      .in("pincode", uniquePincodes);
+    for (const r of pmData ?? []) {
+      pincodeMap.set(r.pincode, {
+        district: r.district ?? null,
+        state: r.state ?? null,
+        tier: r.tier ?? null,
+        has_conflict: !!r.has_conflict,
+      });
+    }
+  }
+
+  /**
+   * Resolve pincode → location fields + warning per the approved rules.
+   * Caller has already validated that `pincode` is a 6-digit numeric string.
+   */
+  const resolvePincode = (pincode: string | undefined): {
+    city: string | null;
+    state: string | null;
+    district: string | null;
+    tier: string | null;
+    country_of_residence: string | null;
+    warning: string | null;
+  } => {
+    if (!pincode) {
+      return { city: null, state: null, district: null, tier: null, country_of_residence: null, warning: null };
+    }
+    const hit = pincodeMap.get(pincode);
+    if (!hit) {
+      return {
+        city: null, state: null, district: null, tier: null,
+        country_of_residence: "India",
+        warning: "Pincode not found in master. City/state could not be auto-filled. Admin review required.",
+      };
+    }
+    return {
+      city: hit.district ?? null, // pincode_master has no city; district fills city.
+      state: hit.state,
+      district: hit.district,
+      tier: hit.tier,
+      country_of_residence: "India",
+      warning: hit.has_conflict
+        ? "Pincode maps to multiple locations — please verify city/state."
+        : null,
+    };
+  };
+
   // 4. Create batch record
   const { data: batchData, error: batchError } = await supabase
     .from("bulk_upload_batches")
@@ -596,6 +676,7 @@ export async function processBulkUpload(
     // Create the lead
     
     const universityId = row.university_name ? master.universityMap.get(row.university_name.toLowerCase()) ?? null : null;
+    const loc = resolvePincode(row.pincode);
 
     const { data: leadData, error: leadError } = await supabase
       .from("student_leads")
@@ -610,9 +691,12 @@ export async function processBulkUpload(
         student_phone: row.student_phone!,
         student_email: row.student_email ?? null,
         student_whatsapp: row.student_whatsapp ?? null,
-        city: row.city ?? null,
-        state: row.state ?? null,
-        country_of_residence: row.country_of_residence ?? null,
+        pincode: row.pincode ?? null,
+        city: loc.city,
+        state: loc.state,
+        district: loc.district,
+        tier: loc.tier,
+        country_of_residence: loc.country_of_residence,
         intended_study_country: row.intended_study_country!,
         intake_term: row.intake_term!,
         intake_year: row.intake_year!,
@@ -680,6 +764,7 @@ export async function processBulkUpload(
     successCount++;
     results.push({
       rowNumber: row.rowNumber, raw: row.raw, status: "success", reason: "Lead created successfully",
+      warning: loc.warning ?? undefined,
       createdLeadId: leadData.id, createdLeadDisplayId: leadData.lead_id ?? undefined,
     });
     await supabase.from("bulk_upload_row_results").insert({
