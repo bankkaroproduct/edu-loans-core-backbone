@@ -22,7 +22,6 @@ const adminItems = [
   { title: "Admin Dashboard", url: "/admin", icon: Shield, end: true },
   { title: "Lead Queue", url: "/admin/leads", icon: Inbox },
   { title: "Reports", url: "/admin/reports", icon: FileSpreadsheet },
-  { title: "Requests & Approvals", url: "/admin/requests", icon: ClipboardCheck, badgeKey: "pendingRequests" as const },
 ];
 
 const leadOpsItems = [
