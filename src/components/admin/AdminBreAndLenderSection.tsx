@@ -15,6 +15,10 @@ import {
   IndianRupee,
   ShieldCheck,
   Unlock,
+  GraduationCap,
+  Home,
+  Plane,
+  Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -653,6 +657,15 @@ function LenderCard({ l }: { l: BreResult["eligible_lenders"][number] }) {
   const isSecured = l.product_type === "secured";
   const isUnsecured = l.product_type === "unsecured";
 
+  // Coverage chips: render only items explicitly set to true.
+  const exp = l.coverage_expenses;
+  const coverageItems: { label: string; icon: React.ReactNode }[] = [];
+  if (exp?.tuition === true) coverageItems.push({ label: "Tuition Fee", icon: <GraduationCap className="h-3 w-3" /> });
+  if (exp?.living === true) coverageItems.push({ label: "Living / Accommodation", icon: <Home className="h-3 w-3" /> });
+  if (exp?.travel === true) coverageItems.push({ label: "Travel", icon: <Plane className="h-3 w-3" /> });
+  if (exp?.insurance === true) coverageItems.push({ label: "Insurance", icon: <ShieldCheck className="h-3 w-3" /> });
+  if (exp?.other_education_expenses === true) coverageItems.push({ label: "Other expenses", icon: <Wallet className="h-3 w-3" /> });
+
   return (
     <li className="group relative rounded-lg border border-border bg-card hover:border-primary/40 hover:shadow-sm transition-all p-3 flex flex-col gap-2.5">
       {/* Top row: rank + name + fit */}
@@ -691,6 +704,18 @@ function LenderCard({ l }: { l: BreResult["eligible_lenders"][number] }) {
           <Chip icon={<Unlock className="h-3 w-3" />} label="Unsecured" />
         )}
       </div>
+
+      {/* Coverage row — shown only when at least one expense is explicitly true */}
+      {coverageItems.length > 0 && (
+        <div className="space-y-1 pt-0.5">
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Coverage</div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {coverageItems.map((item) => (
+              <Chip key={item.label} icon={item.icon} label={item.label} />
+            ))}
+          </div>
+        </div>
+      )}
     </li>
   );
 }
