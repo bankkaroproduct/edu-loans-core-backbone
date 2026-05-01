@@ -109,12 +109,13 @@ export function DocumentChecklist({ requirements, documents, onUpload, leadId, h
     }
   });
 
-  // Sort: blockers first, then pending, then in-progress, then verified
+  // Render in canonical document_master.sort_order so the Partner Portal
+  // checklist matches the approved 19-item order. Status priority is no
+  // longer used for sorting — the per-row badge already conveys urgency.
   const sortedRequirements = [...requirements].sort((a, b) => {
-    const pa = STATUS_CONFIG[a.status]?.priority ?? 5;
-    const pb = STATUS_CONFIG[b.status]?.priority ?? 5;
-    if (pa !== pb) return pa - pb;
-    // Required before optional
+    const ao = (a.document_master as { sort_order?: number | null } | null | undefined)?.sort_order ?? 9999;
+    const bo = (b.document_master as { sort_order?: number | null } | null | undefined)?.sort_order ?? 9999;
+    if (ao !== bo) return ao - bo;
     if (a.required_flag !== b.required_flag) return a.required_flag ? -1 : 1;
     return 0;
   });
@@ -169,7 +170,7 @@ export function DocumentChecklist({ requirements, documents, onUpload, leadId, h
                     {/* Document name + badges */}
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className={`text-sm font-medium ${isBlocker ? "text-destructive" : ""}`}>
-                        {req.document_master?.document_name ?? "Document"}
+                        {(req.document_master as { display_name?: string | null } | null | undefined)?.display_name ?? req.document_master?.document_name ?? "Document"}
                       </p>
                       {req.document_master?.document_category && (
                         <Badge variant="outline" className="text-[9px]">{req.document_master.document_category}</Badge>
