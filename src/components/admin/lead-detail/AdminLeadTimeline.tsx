@@ -254,96 +254,150 @@ export function AdminLeadTimeline({ history, notes, audits = [], actorNames = {}
             )}
 
             {major.length > 0 && (
-              <div className="space-y-2">
-                {major.map((evt) => {
-                  const isAuth = evt.type === "authenticity_change";
-                  return (
+              <div className="overflow-x-auto -mx-1 px-1 pb-1">
+                <TooltipProvider delayDuration={200}>
+                  <div className="relative flex items-start gap-3 pt-5 min-w-max">
+                    {/* Single horizontal connector line behind dots */}
                     <div
-                      key={evt.id}
-                      className={`rounded-md border bg-card p-3 min-w-0 ${
-                        isAuth ? "border-l-2 border-l-amber-500 border-border/60" : "border-border/60"
-                      }`}
-                    >
-                      <div className="space-y-1.5 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Badge
-                            variant={evt.noteType === "internal" || isAuth ? "secondary" : "outline"}
-                            className={`text-[10px] ${
-                              isAuth ? "bg-amber-100 text-amber-800 border-amber-200" : ""
-                            }`}
-                          >
-                            {isAuth && <ShieldAlert className="h-3 w-3 mr-1 inline" />}
-                            {evt.type === "stage_change"
-                              ? "Stage Change"
-                              : evt.type === "system"
-                              ? "System"
-                              : evt.type === "authenticity_change"
-                              ? "Authenticity"
-                              : evt.noteType === "internal"
-                              ? "Internal Note"
-                              : evt.noteType === "partner_visible"
-                              ? "Partner Note"
-                              : "Note"}
-                          </Badge>
-                          <span className="text-[11px] text-foreground/80 font-medium truncate">{evt.actor}</span>
-                          <span aria-hidden className="text-muted-foreground">·</span>
+                      aria-hidden
+                      className="absolute left-3 right-3 top-[26px] h-px bg-border"
+                    />
+                    {major.map((evt) => {
+                      const isAuth = evt.type === "authenticity_change";
+                      const typeLabel =
+                        evt.type === "stage_change"
+                          ? "Stage Change"
+                          : evt.type === "system"
+                          ? "System"
+                          : evt.type === "authenticity_change"
+                          ? "Authenticity"
+                          : evt.noteType === "internal"
+                          ? "Internal Note"
+                          : evt.noteType === "partner_visible"
+                          ? "Partner Note"
+                          : "Note";
+                      const fullText =
+                        evt.noteText ||
+                        (isAuth ? evt.reason || "" : evt.description || "") ||
+                        typeLabel;
+                      return (
+                        <div
+                          key={evt.id}
+                          className="relative flex flex-col items-center w-[220px] shrink-0"
+                        >
+                          {/* Dot */}
                           <span
-                            className="text-[11px] text-muted-foreground ml-auto"
-                            title={new Date(evt.timestamp).toLocaleString()}
-                          >
-                            {relativeTime(evt.timestamp)}
-                          </span>
-                        </div>
-
-                        {evt.type === "stage_change" && (
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            {evt.prevStage && <StageBadge stage={evt.prevStage} className="text-[10px]" />}
-                            {evt.prevStage && <ArrowRight className="h-3 w-3 text-muted-foreground" />}
-                            {evt.newStage && <StageBadge stage={evt.newStage} className="text-[10px]" />}
-                            {evt.newStatus && <StatusBadge status={evt.newStatus} className="text-[10px]" />}
-                          </div>
-                        )}
-
-                        {isAuth && (
-                          <div className="flex items-center gap-1.5 flex-wrap text-xs">
-                            <Badge variant="outline" className="text-[10px] capitalize">
-                              {evt.oldAuthenticity ?? "unverified"}
-                            </Badge>
-                            <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] capitalize bg-amber-50 border-amber-200 text-amber-800"
-                            >
-                              {evt.newAuthenticity ?? "—"}
-                            </Badge>
-                          </div>
-                        )}
-
-                        {evt.description && !isAuth && (
-                          <p className="text-sm text-muted-foreground break-words">{evt.description}</p>
-                        )}
-
-                        {isAuth && evt.reason && (
-                          <p className="text-sm rounded-md p-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 break-words">
-                            Reason: {evt.reason}
-                          </p>
-                        )}
-
-                        {evt.noteText && (
-                          <p
-                            className={`text-sm rounded-md p-2.5 break-words ${
-                              evt.noteType === "internal"
-                                ? "bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900"
-                                : "bg-muted/50 border border-border/60"
+                            className={`relative z-10 h-3 w-3 rounded-full border-2 bg-card ${
+                              isAuth ? "border-amber-500" : "border-primary"
                             }`}
-                          >
-                            {evt.noteText}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                          />
+                          {/* Compact card */}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div
+                                className={`mt-3 w-full rounded-md border bg-card p-2.5 min-w-0 cursor-default ${
+                                  isAuth
+                                    ? "border-l-2 border-l-amber-500 border-border/60"
+                                    : "border-border/60"
+                                }`}
+                              >
+                                <div className="space-y-1.5 min-w-0">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <Badge
+                                      variant={evt.noteType === "internal" || isAuth ? "secondary" : "outline"}
+                                      className={`text-[10px] ${
+                                        isAuth ? "bg-amber-100 text-amber-800 border-amber-200" : ""
+                                      }`}
+                                    >
+                                      {isAuth && <ShieldAlert className="h-3 w-3 mr-1 inline" />}
+                                      {typeLabel}
+                                    </Badge>
+                                    <span
+                                      className="text-[10px] text-muted-foreground ml-auto"
+                                      title={new Date(evt.timestamp).toLocaleString()}
+                                    >
+                                      {relativeTime(evt.timestamp)}
+                                    </span>
+                                  </div>
+
+                                  <p className="text-[11px] text-foreground/80 font-medium truncate">
+                                    {evt.actor}
+                                  </p>
+
+                                  {evt.type === "stage_change" && (
+                                    <div className="flex items-center gap-1 flex-wrap">
+                                      {evt.prevStage && (
+                                        <StageBadge stage={evt.prevStage} className="text-[10px]" />
+                                      )}
+                                      {evt.prevStage && (
+                                        <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                                      )}
+                                      {evt.newStage && (
+                                        <StageBadge stage={evt.newStage} className="text-[10px]" />
+                                      )}
+                                      {evt.newStatus && (
+                                        <StatusBadge status={evt.newStatus} className="text-[10px]" />
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {isAuth && (
+                                    <div className="flex items-center gap-1 flex-wrap">
+                                      <Badge variant="outline" className="text-[10px] capitalize">
+                                        {evt.oldAuthenticity ?? "unverified"}
+                                      </Badge>
+                                      <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                                      <Badge
+                                        variant="outline"
+                                        className="text-[10px] capitalize bg-amber-50 border-amber-200 text-amber-800"
+                                      >
+                                        {evt.newAuthenticity ?? "—"}
+                                      </Badge>
+                                    </div>
+                                  )}
+
+                                  {evt.description && !isAuth && (
+                                    <p className="text-xs text-muted-foreground break-words line-clamp-3">
+                                      {evt.description}
+                                    </p>
+                                  )}
+
+                                  {isAuth && evt.reason && (
+                                    <p className="text-xs rounded p-1.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 break-words line-clamp-3">
+                                      Reason: {evt.reason}
+                                    </p>
+                                  )}
+
+                                  {evt.noteText && (
+                                    <p
+                                      className={`text-xs rounded p-1.5 break-words line-clamp-3 ${
+                                        evt.noteType === "internal"
+                                          ? "bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900"
+                                          : "bg-muted/50 border border-border/60"
+                                      }`}
+                                    >
+                                      {evt.noteText}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom" className="max-w-sm">
+                              <div className="space-y-0.5 text-xs">
+                                <p className="font-medium">{typeLabel}</p>
+                                <p className="text-muted-foreground">{evt.actor}</p>
+                                <p className="text-muted-foreground">
+                                  {new Date(evt.timestamp).toLocaleString()}
+                                </p>
+                                {fullText && <p className="whitespace-pre-wrap">{fullText}</p>}
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </TooltipProvider>
               </div>
             )}
           </div>
