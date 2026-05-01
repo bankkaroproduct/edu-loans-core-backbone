@@ -138,10 +138,17 @@ export default function BreLenderRuleEditor() {
     setSaving(true);
     try {
       const created = await createNewLenderRuleVersion(lenderId, draft, changeSummary.trim());
-      toast({ title: `Saved v${created.version_number}`, description: "Created as inactive. Activate to make it live." });
       if (thenActivate) {
+        toast({
+          title: `v${created.version_number} saved`,
+          description: "Confirm activation in the next dialog to make this version live.",
+        });
         setConfirmActivate({ id: created.id, version: created.version_number });
       } else {
+        toast({
+          title: `Saved v${created.version_number}`,
+          description: "Created as inactive. Activate it from Version History to make it live.",
+        });
         setChangeSummary("");
       }
     } catch (err) {
@@ -153,14 +160,30 @@ export default function BreLenderRuleEditor() {
 
   const doActivate = async () => {
     if (!confirmActivate) return;
+    const targetVersion = confirmActivate.version;
     try {
       await activateLenderRuleVersion(confirmActivate.id);
-      toast({ title: `v${confirmActivate.version} activated`, description: "Lender pointer updated." });
+      toast({
+        title: `v${targetVersion} saved and activated`,
+        description: "Coverage is now live. Re-run BRE to see updated lender cards.",
+      });
       setConfirmActivate(null);
       setChangeSummary("");
       await loadActive();
     } catch (err) {
       toast({ title: "Activation failed", description: err instanceof Error ? err.message : "Unknown error", variant: "destructive" });
+    }
+  };
+
+  const handleActivateDialogChange = (open: boolean) => {
+    if (!open && confirmActivate) {
+      // User dismissed without activating — make state explicit.
+      toast({
+        title: `v${confirmActivate.version} saved as inactive`,
+        description: "Activate it from Version History to make it live.",
+      });
+      setConfirmActivate(null);
+      setChangeSummary("");
     }
   };
 
@@ -201,7 +224,7 @@ export default function BreLenderRuleEditor() {
 
       <ConfirmActivateDialog
         open={confirmActivate !== null}
-        onOpenChange={(o) => !o && setConfirmActivate(null)}
+        onOpenChange={handleActivateDialogChange}
         onConfirm={doActivate}
         newVersionLabel={confirmActivate ? `v${confirmActivate.version}` : ""}
         currentActiveLabel={activeRow ? `v${activeRow.version_number}` : null}
