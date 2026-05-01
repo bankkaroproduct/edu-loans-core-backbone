@@ -31,6 +31,8 @@ interface DocRequirementInput {
     document_category: string | null;
     document_code?: string | null;
     applicable_for?: string | null;
+    display_name?: string | null;
+    sort_order?: number | null;
   } | null;
 }
 
@@ -232,6 +234,8 @@ function DocReviewRow({
       document_category: req.document_master?.document_category ?? null,
       document_code: req.document_master?.document_code ?? null,
       applicable_for: req.document_master?.applicable_for ?? null,
+      display_name: req.document_master?.display_name ?? null,
+      sort_order: req.document_master?.sort_order ?? null,
     },
   } as DocRequirement;
 
@@ -245,7 +249,7 @@ function DocReviewRow({
         <div className="flex items-center gap-2 min-w-0">
           {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
           <span className="text-sm font-medium truncate">
-            {req.document_master?.document_name ?? "Document"}
+            {req.document_master?.display_name ?? req.document_master?.document_name ?? "Document"}
           </span>
           {req.required_flag && <span className="text-[10px] text-muted-foreground">(required)</span>}
         </div>
