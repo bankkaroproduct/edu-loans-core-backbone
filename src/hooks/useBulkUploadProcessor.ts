@@ -63,6 +63,8 @@ export interface RowResult {
   raw: Record<string, string>;
   status: "success" | "failed" | "duplicate";
   reason: string;
+  /** Non-blocking row-level warning (e.g. pincode not in master). Surfaces on success rows. */
+  warning?: string;
   createdLeadId?: string;
   createdLeadDisplayId?: string;
   matchedLeadId?: string;
