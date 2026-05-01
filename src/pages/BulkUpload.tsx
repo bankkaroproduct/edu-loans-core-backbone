@@ -46,11 +46,12 @@ const rowStatusConfig = {
 
 const fmt = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-/* ─── Template field reference (final canonical 32-column order) ─── */
+/* ─── Template field reference (final canonical 30-column order) ─── */
 const REQUIRED_COLS = [
   { name: "student_first_name", example: "Rahul" },
   { name: "student_last_name", example: "Sharma" },
   { name: "student_phone", example: "+919876543210" },
+  { name: "pincode", example: "400001" },
   { name: "intended_study_country", example: "United States" },
   { name: "intake_session", example: "Apr-Jun-2026" },
   { name: "course_name", example: "MS Computer Science" },
@@ -60,9 +61,6 @@ const REQUIRED_COLS = [
 const OPTIONAL_COLS = [
   { name: "student_email", example: "rahul@email.com" },
   { name: "student_whatsapp", example: "+919876543210" },
-  { name: "city", example: "Mumbai" },
-  { name: "state", example: "Maharashtra" },
-  { name: "country_of_residence", example: "India" },
   { name: "university_name", example: "MIT" },
   { name: "10th_score", example: "92" },
   { name: "12th_score", example: "88" },
