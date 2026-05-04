@@ -354,6 +354,19 @@ export function useStudentApplication() {
           const n = parseInt(cibilRaw, 10);
           if (Number.isFinite(n)) ext.coapplicant_cibil = n;
         }
+        // Co-applicant Work Experience (years/months) — feeds BRE
+        // coapplicant.income_stability_years. Stored as separate keys so
+        // it never collides with the student's `work_experience_years`.
+        const cwYearsRaw = (formData.test_scores.coapplicant_work_experience_years ?? "").toString().trim();
+        if (cwYearsRaw) {
+          const n = parseInt(cwYearsRaw, 10);
+          if (Number.isFinite(n) && n >= 0) ext.coapplicant_work_experience_years = n;
+        }
+        const cwMonthsRaw = (formData.test_scores.coapplicant_work_experience_months ?? "").toString().trim();
+        if (cwMonthsRaw) {
+          const n = parseInt(cwMonthsRaw, 10);
+          if (Number.isFinite(n) && n >= 0 && n <= 11) ext.coapplicant_work_experience_months = n;
+        }
 
         payload = {
           coapplicant_name: formData.coapplicant_name || null,
