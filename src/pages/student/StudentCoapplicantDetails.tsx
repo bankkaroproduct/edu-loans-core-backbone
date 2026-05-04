@@ -91,10 +91,8 @@ export default function StudentCoapplicantDetails() {
     const err = validateCoapplicant();
     if (err) { toast({ title: "Please complete required fields", description: err, variant: "destructive" }); return; }
     // Soft (non-blocking) warning when co-applicant work experience is blank.
-    // Do NOT make the field mandatory.
-    const cwY = String(formData.test_scores.coapplicant_work_experience_years ?? "").trim();
-    const cwM = String(formData.test_scores.coapplicant_work_experience_months ?? "").trim();
-    if (!cwY && !cwM) {
+    // Explicit "0" is allowed and must NOT trigger this warning.
+    if (!coWorkExp.trim()) {
       const proceed = window.confirm(
         "Co-applicant work experience is missing. This may reduce Income Stability score in BRE. Continue?",
       );
