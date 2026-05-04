@@ -613,7 +613,11 @@ Deno.serve(async (req) => {
               delete (mergedTestScores as any)[k];
             } else {
               if (k === "coapplicant_work_experience_years" || k === "coapplicant_work_experience_months") {
-                const n = typeof v === "number" ? v : parseInt(String(v), 10);
+                const raw = String(v).trim();
+                if (typeof v !== "number" && !/^\d+$/.test(raw)) {
+                  return jsonResponse({ error: "Invalid co-applicant work experience" }, 400);
+                }
+                const n = typeof v === "number" ? v : parseInt(raw, 10);
                 const max = k === "coapplicant_work_experience_months" ? 11 : Number.MAX_SAFE_INTEGER;
                 if (!Number.isInteger(n) || n < 0 || n > max) {
                   return jsonResponse({ error: "Invalid co-applicant work experience" }, 400);
