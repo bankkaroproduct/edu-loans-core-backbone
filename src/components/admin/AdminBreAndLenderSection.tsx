@@ -655,6 +655,7 @@ type StoredMatchValue = {
   fit: "best_fit" | "good_fit" | "backup" | null;
   reason: string | null;
   score: number | null;
+  processingTimeDays: number | null;
 };
 
 function LenderOptionCards({
