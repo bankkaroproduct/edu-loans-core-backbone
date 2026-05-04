@@ -87,6 +87,30 @@ function Field({
   );
 }
 
+function NormalizedField({
+  label,
+  score,
+  total,
+}: {
+  label: string;
+  score: string | null | undefined;
+  total: string | null | undefined;
+}) {
+  if (!score || !total) return null;
+  const { percentage, source } = normalizeAcademicScore(score, total);
+  if (percentage == null || source !== "score_total") return null;
+  return (
+    <div className="min-w-0 space-y-0.5 overflow-hidden">
+      <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+        {label}
+      </span>
+      <p className="text-sm font-medium text-foreground break-words min-w-0">
+        Normalized: {percentage}%
+      </p>
+    </div>
+  );
+}
+
 function SectionCard({
   icon: Icon,
   title,
