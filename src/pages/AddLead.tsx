@@ -1553,6 +1553,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               <div className="space-y-2 md:col-span-2" data-field="coapplicant_work_experience_years">
                 <Label>Co-applicant Work Experience</Label>
                 <p className="text-xs text-muted-foreground">The co-applicant's total work experience (not the student's).</p>
+                <p className="text-xs text-muted-foreground">Used in BRE → Co-applicant Income Stability.</p>
                 <div className="grid gap-3 md:grid-cols-2">
                   <div>
                     <Label className="text-xs text-muted-foreground">Years</Label>
