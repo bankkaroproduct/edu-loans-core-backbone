@@ -236,7 +236,7 @@ export function coapplicantWorkExperienceToYears(
   if (y == null && m == null) return null;
   const yi = y == null ? 0 : Math.max(0, y);
   const mi = m == null ? 0 : Math.max(0, m);
-  return Math.round((yi + mi / 12) * 100) / 100;
+  return Math.round((yi + mi / 12) * 10000) / 10000;
 }
 
 /** Validate co-applicant work-exp inputs. Returns null on success. */
