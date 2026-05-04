@@ -11,6 +11,13 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import type { BreProfileInput } from "./types";
+import {
+  computeEffectiveAcademicScore,
+  normalizeAcademicScore,
+  coapplicantWorkExperienceToYears,
+  type EffectiveAcademicResult,
+  type NormalizedScore,
+} from "@/lib/academicScore";
 
 type Lead = Tables<"student_leads">;
 
@@ -426,6 +433,19 @@ export interface BuildProfileResolution {
     | { kind: "none" };
   course_level_derivation?: { source: "course_name"; raw: string; derived: string } | { kind: "none" };
   english_proficiency?: EnglishProficiencyResolution;
+  /** Effective academic score derivation (Graduation ± Highest Qualification). */
+  academic?: EffectiveAcademicResult;
+  /** 10th score normalization (raw → normalized %). */
+  class_x?: NormalizedScore;
+  /** 12th score normalization (raw → normalized %). */
+  class_xii?: NormalizedScore;
+  /** Co-applicant work experience derivation. */
+  coapplicant_work_experience?: {
+    years: number | null;
+    months: number | null;
+    decimal_years: number | null;
+    mapped_to: "income_stability_years" | "none";
+  };
 }
 
 export interface BuildProfileResult {
