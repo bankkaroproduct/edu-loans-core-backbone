@@ -69,10 +69,11 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
   const [resolution, setResolution] = useState<BuildProfileResolution | null>(null);
   const [scoringVersion, setScoringVersion] = useState<number | null>(null);
   const [bucketThreshold, setBucketThreshold] = useState<number | null>(null);
-  // Stored recommendation_rank from lead_lender_matches (premiere-aware source of truth).
-  // Used only to ORDER the displayed lender cards. Does not affect BRE engine, scores,
-  // rates, loan amounts, fit labels, coverage chips, or eligibility.
-  const [storedRanks, setStoredRanks] = useState<Map<string, number>>(new Map());
+  // Stored recommendation_rank + fit_category from lead_lender_matches (premiere-aware
+  // source of truth). Used only to display rank badge, fit label, and ORDER the cards.
+  // Does not affect BRE engine, scores, rates, loan amounts, coverage chips, or eligibility.
+  type StoredMatch = { rank: number | null; fit: "best_fit" | "good_fit" | "backup" | null };
+  const [storedMatches, setStoredMatches] = useState<Map<string, StoredMatch>>(new Map());
 
   // VERBATIM copy of AdminCalculateBreCard.handleRun — no logic changes.
   const handleRun = async () => {
@@ -89,18 +90,19 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
       setScoringVersion(cfg.version_number);
       setBucketThreshold(cfg.bucket_threshold);
 
-      // Fetch stored recommendation_rank snapshot for display ordering only.
+      // Fetch stored recommendation_rank + fit_category snapshot for display only.
       const { data: stored } = await supabase
         .from("lead_lender_matches")
-        .select("lender_id, recommendation_rank")
+        .select("lender_id, recommendation_rank, fit_category")
         .eq("lead_id", lead.id);
-      const m = new Map<string, number>();
+      const m = new Map<string, StoredMatch>();
       for (const row of stored ?? []) {
-        if (row.recommendation_rank != null) {
-          m.set(row.lender_id, row.recommendation_rank);
-        }
+        m.set(row.lender_id, {
+          rank: row.recommendation_rank ?? null,
+          fit: (row.fit_category as StoredMatch["fit"]) ?? null,
+        });
       }
-      setStoredRanks(m);
+      setStoredMatches(m);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       toast.error(`BRE evaluation failed: ${msg}`);
@@ -287,7 +289,7 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
                 eligibleLenders={derived.eligibleLenders}
                 loanRange={result.eligible_loan_range}
                 rateRange={result.indicative_rate_range}
-                storedRanks={storedRanks}
+                storedMatches={storedMatches}
               />
             )}
           </section>
@@ -622,23 +624,25 @@ function ScoreHighlights({ result }: { result: BreResult }) {
 
 // ---------------- Premium lender card list ----------------
 
+type StoredMatchValue = { rank: number | null; fit: "best_fit" | "good_fit" | "backup" | null };
+
 function LenderOptionCards({
   eligibleLenders,
   loanRange,
   rateRange,
-  storedRanks,
+  storedMatches,
 }: {
   eligibleLenders: BreResult["eligible_lenders"];
   loanRange: BreResult["eligible_loan_range"];
   rateRange: BreResult["indicative_rate_range"];
-  storedRanks: Map<string, number>;
+  storedMatches: Map<string, StoredMatchValue>;
 }) {
   // Display order: stored recommendation_rank (premiere-aware) when available;
   // otherwise fall back to engine's l.rank. This is a display-only sort —
-  // scores, rates, loan amounts, fit labels and coverage chips are unchanged.
+  // scores, rates, loan amounts and coverage chips are unchanged.
   const ordered = [...eligibleLenders].sort((a, b) => {
-    const sa = storedRanks.get(a.lender_id);
-    const sb = storedRanks.get(b.lender_id);
+    const sa = storedMatches.get(a.lender_id)?.rank ?? null;
+    const sb = storedMatches.get(b.lender_id)?.rank ?? null;
     if (sa != null && sb != null) return sa - sb;
     if (sa != null) return -1;
     if (sb != null) return 1;
@@ -670,7 +674,7 @@ function LenderOptionCards({
 
       <ol className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
         {ordered.slice(0, 8).map((l) => (
-          <LenderCard key={l.lender_id} l={l} />
+          <LenderCard key={l.lender_id} l={l} stored={storedMatches.get(l.lender_id) ?? null} />
         ))}
       </ol>
 
@@ -681,9 +685,18 @@ function LenderOptionCards({
   );
 }
 
-function LenderCard({ l }: { l: BreResult["eligible_lenders"][number] }) {
+function LenderCard({
+  l,
+  stored,
+}: {
+  l: BreResult["eligible_lenders"][number];
+  stored: StoredMatchValue | null;
+}) {
   const isSecured = l.product_type === "secured";
   const isUnsecured = l.product_type === "unsecured";
+
+  // Display rank: stored recommendation_rank wins over engine rank when present.
+  const displayRank = stored?.rank ?? l.rank ?? null;
 
   // Coverage chips: render only items explicitly set to true.
   const exp = l.coverage_expenses;
@@ -700,9 +713,9 @@ function LenderCard({ l }: { l: BreResult["eligible_lenders"][number] }) {
       <div className="flex items-start gap-2">
         <span
           className="inline-flex h-6 min-w-[1.75rem] shrink-0 items-center justify-center rounded-md bg-muted px-1.5 text-[11px] font-mono font-semibold text-foreground"
-          aria-label={`Rank ${l.rank ?? "unranked"}`}
+          aria-label={`Rank ${displayRank ?? "unranked"}`}
         >
-          {l.rank != null ? `#${l.rank}` : "—"}
+          {displayRank != null ? `#${displayRank}` : "—"}
         </span>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-semibold text-foreground truncate" title={l.lender_name}>
@@ -710,7 +723,7 @@ function LenderCard({ l }: { l: BreResult["eligible_lenders"][number] }) {
           </div>
           <div className="text-[10px] font-mono text-muted-foreground mt-0.5">{l.lender_code}</div>
         </div>
-        <FitBadge badge={l.badge} />
+        <FitBadge badge={l.badge} storedFit={stored?.fit ?? null} />
       </div>
 
       {/* Metrics row */}
@@ -771,14 +784,21 @@ function Chip({
   );
 }
 
-function FitBadge({ badge }: { badge: BreResult["eligible_lenders"][number]["badge"] }) {
-  if (!badge) return null;
+function FitBadge({
+  badge,
+  storedFit,
+}: {
+  badge: BreResult["eligible_lenders"][number]["badge"];
+  storedFit: "best_fit" | "good_fit" | "backup" | null;
+}) {
+  // Stored fit_category from lead_lender_matches wins over engine badge when present.
+  // Engine badges map: best_match→Best fit, strong→Good fit, backup→Backup.
   const map = {
-    best_match: {
+    best_fit: {
       label: "Best fit",
       cls: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
     },
-    strong: {
+    good_fit: {
       label: "Good fit",
       cls: "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300",
     },
@@ -787,7 +807,14 @@ function FitBadge({ badge }: { badge: BreResult["eligible_lenders"][number]["bad
       cls: "border-muted-foreground/30 bg-muted/40 text-muted-foreground",
     },
   } as const;
-  const m = map[badge];
+  const engineMap: Record<NonNullable<BreResult["eligible_lenders"][number]["badge"]>, keyof typeof map> = {
+    best_match: "best_fit",
+    strong: "good_fit",
+    backup: "backup",
+  };
+  const key: keyof typeof map | null = storedFit ?? (badge ? engineMap[badge] : null);
+  if (!key) return null;
+  const m = map[key];
   return (
     <Badge variant="outline" className={`text-[10px] px-1.5 py-0 shrink-0 ${m.cls}`}>
       {m.label}
