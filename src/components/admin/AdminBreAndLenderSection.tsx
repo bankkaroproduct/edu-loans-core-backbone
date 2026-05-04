@@ -769,6 +769,14 @@ function LenderCard({
           </div>
         </div>
       )}
+
+      {/* Recommendation rationale — bullets shown only when backed by real data */}
+      <RecommendationRationale
+        storedReason={stored?.reason ?? null}
+        projectedLoanAmount={l.projected_loan_amount}
+        productType={l.product_type}
+        coverageCount={coverageItems.length}
+      />
     </li>
   );
 }
