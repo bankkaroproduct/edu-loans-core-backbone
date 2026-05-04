@@ -631,7 +631,12 @@ function ScoreHighlights({ result }: { result: BreResult }) {
 
 // ---------------- Premium lender card list ----------------
 
-type StoredMatchValue = { rank: number | null; fit: "best_fit" | "good_fit" | "backup" | null };
+type StoredMatchValue = {
+  rank: number | null;
+  fit: "best_fit" | "good_fit" | "backup" | null;
+  reason: string | null;
+  score: number | null;
+};
 
 function LenderOptionCards({
   eligibleLenders,
