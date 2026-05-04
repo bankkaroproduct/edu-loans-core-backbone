@@ -1317,8 +1317,12 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               10th_score, 12th_score, graduation_score. */}
           <Card className="mt-4">
             <CardHeader><CardTitle className="text-lg">Current Academic Profile</CardTitle></CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2" data-field="highest_qualification">
+            <CardContent className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Total Marks / Scale is optional but recommended for accurate scoring. Example: enter <code>9.5</code> and total <code>10</code> for CGPA, or <code>78</code> and total <code>100</code> for percentage.
+              </p>
+              <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2 md:col-span-2" data-field="highest_qualification">
                 <Label>Highest Qualification *</Label>
                 <Select
                   value={form.highest_qualification}
@@ -1388,9 +1392,6 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 onScore={(v) => set("highest_qualification_score", v)}
                 onTotal={(v) => set("highest_qualification_total", v)}
               />
-              <p className="text-xs text-muted-foreground md:col-span-2">
-                10th and 12th are required. Graduation and Highest Qualification Score are optional. Total Marks / Scale is optional but recommended for accurate scoring (e.g. enter 9.5 and total 10 for CGPA, or 78 and total 100 for percentage).
-              </p>
 
               {/* Read-only academic context for student-origin leads in admin edit mode */}
               {isAdminForm && isEditMode && originalLead?.source_type === "student_direct" && (
@@ -1406,6 +1407,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   </div>
                 )
               )}
+              </div>
             </CardContent>
           </Card>
 
