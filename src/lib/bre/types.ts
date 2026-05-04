@@ -212,6 +212,16 @@ export interface LenderMatchResult {
    * Descriptive only — never used by scoring, ranking, or eligibility logic.
    */
   coverage_expenses?: LenderExpenseCoverage;
+  /**
+   * Display-only ROI range (lower/upper bound) used to render "ROI Range: X% – Y%"
+   * alongside the projected midpoint. Source indicates which precedence tier was
+   * used: "secured" / "unsecured" (product-specific), "policy" (policy.roi_min/max),
+   * or "band" (overall band fallback). Pass-through only — NEVER used by ranking,
+   * scoring, eligibility, filtering, loan amount, or assignment logic.
+   */
+  roi_range_min?: number | null;
+  roi_range_max?: number | null;
+  roi_range_source?: "secured" | "unsecured" | "policy" | "band" | null;
 }
 
 export interface BreResult {

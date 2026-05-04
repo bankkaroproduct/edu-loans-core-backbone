@@ -210,8 +210,21 @@ function projectLoanAndRate(
   product_type: "secured" | "unsecured" | null,
   band: OverallBandRow | null,
   profile: BreProfileInput,
-): { projected_loan: number | null; projected_rate: number | null } {
-  if (!band || !product_type) return { projected_loan: null, projected_rate: null };
+): {
+  projected_loan: number | null;
+  projected_rate: number | null;
+  roi_range_min: number | null;
+  roi_range_max: number | null;
+  roi_range_source: "secured" | "unsecured" | "policy" | "band" | null;
+} {
+  if (!band || !product_type)
+    return {
+      projected_loan: null,
+      projected_rate: null,
+      roi_range_min: null,
+      roi_range_max: null,
+      roi_range_source: null,
+    };
 
   const cap = product_type === "secured" ? lender.loan_caps.secured : lender.loan_caps.unsecured;
   const lenderMin = cap.min ?? band.loan_min;
@@ -220,16 +233,24 @@ function projectLoanAndRate(
   // Effective range = intersection of band and lender cap
   const effMin = Math.max(band.loan_min, lenderMin);
   const effMax = Math.min(band.loan_max, lenderMax);
-  if (effMax < effMin) return { projected_loan: null, projected_rate: null };
+  if (effMax < effMin)
+    return {
+      projected_loan: null,
+      projected_rate: null,
+      roi_range_min: null,
+      roi_range_max: null,
+      roi_range_source: null,
+    };
 
   const projected_loan = Math.min(Math.max(profile.loan_amount, effMin), effMax);
 
-  // Rate selection precedence (deterministic):
+  // Rate selection precedence (deterministic) — UNCHANGED logic:
   // 1) product_type-specific ROI (secured / unsecured) if both bounds present
   // 2) generic policy.roi_min/max if present
   // 3) overall band rate range (existing fallback)
   let rateMin: number;
   let rateMax: number;
+  let roi_range_source: "secured" | "unsecured" | "policy" | "band";
   const sMin = lender.policy.roi_secured_min;
   const sMax = lender.policy.roi_secured_max;
   const uMin = lender.policy.roi_unsecured_min;
@@ -237,19 +258,29 @@ function projectLoanAndRate(
   if (product_type === "secured" && sMin != null && sMax != null) {
     rateMin = sMin;
     rateMax = sMax;
+    roi_range_source = "secured";
   } else if (product_type === "unsecured" && uMin != null && uMax != null) {
     rateMin = uMin;
     rateMax = uMax;
+    roi_range_source = "unsecured";
   } else if (lender.policy.roi_min != null && lender.policy.roi_max != null) {
     rateMin = lender.policy.roi_min;
     rateMax = lender.policy.roi_max;
+    roi_range_source = "policy";
   } else {
     rateMin = band.rate_min;
     rateMax = band.rate_max;
+    roi_range_source = "band";
   }
   const projected_rate = round2((rateMin + rateMax) / 2);
 
-  return { projected_loan, projected_rate };
+  return {
+    projected_loan,
+    projected_rate,
+    roi_range_min: round2(rateMin),
+    roi_range_max: round2(rateMax),
+    roi_range_source,
+  };
 }
 
 export function evaluate(
@@ -302,7 +333,13 @@ export function evaluate(
       }
       const proj = ko.eligible
         ? projectLoanAndRate(lender, ko.product_type, overall_band, profile)
-        : { projected_loan: null, projected_rate: null };
+        : {
+            projected_loan: null,
+            projected_rate: null,
+            roi_range_min: null,
+            roi_range_max: null,
+            roi_range_source: null,
+          };
       return {
         lender_id: lender.lender_id,
         lender_name: lender.basic_info.lender_name,
@@ -317,6 +354,10 @@ export function evaluate(
         badge: null,
         // Descriptive pass-through only — not used by scoring/ranking/eligibility.
         coverage_expenses: lender.coverage?.expenses,
+        // Display-only ROI range (pass-through). Not used in ranking/scoring/eligibility.
+        roi_range_min: proj.roi_range_min,
+        roi_range_max: proj.roi_range_max,
+        roi_range_source: proj.roi_range_source,
       };
     });
 

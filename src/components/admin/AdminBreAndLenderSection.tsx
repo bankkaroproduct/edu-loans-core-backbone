@@ -705,8 +705,13 @@ function LenderOptionCards({
       </div>
 
       <ol className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-        {ordered.slice(0, 8).map((l) => (
-          <LenderCard key={l.lender_id} l={l} stored={storedMatches.get(l.lender_id) ?? null} />
+        {ordered.slice(0, 8).map((l, idx) => (
+          <LenderCard
+            key={l.lender_id}
+            l={l}
+            stored={storedMatches.get(l.lender_id) ?? null}
+            displayPosition={idx + 1}
+          />
         ))}
       </ol>
 
@@ -720,24 +725,49 @@ function LenderOptionCards({
 function LenderCard({
   l,
   stored,
+  displayPosition,
 }: {
   l: BreResult["eligible_lenders"][number];
   stored: StoredMatchValue | null;
+  displayPosition: number;
 }) {
   const isSecured = l.product_type === "secured";
   const isUnsecured = l.product_type === "unsecured";
 
-  // Display rank: stored recommendation_rank wins over engine rank when present.
-  const displayRank = stored?.rank ?? l.rank ?? null;
+  // Visible serial badge — always reflects the current visible order (#1, #2, #3, ...).
+  // Stored recommendation_rank is still used to ORDER the list (in LenderOptionCards),
+  // but is NOT mutated and not shown as the badge number. This avoids gaps caused by
+  // filtered-out lenders occupying low stored ranks.
+  const displayRank = displayPosition;
 
   // Coverage chips: render only items explicitly set to true.
   const exp = l.coverage_expenses;
-  const coverageItems: { label: string; icon: React.ReactNode }[] = [];
-  if (exp?.tuition === true) coverageItems.push({ label: "Tuition Fee", icon: <GraduationCap className="h-3 w-3" /> });
-  if (exp?.living === true) coverageItems.push({ label: "Living / Accommodation", icon: <Home className="h-3 w-3" /> });
-  if (exp?.travel === true) coverageItems.push({ label: "Travel", icon: <Plane className="h-3 w-3" /> });
-  if (exp?.insurance === true) coverageItems.push({ label: "Insurance", icon: <ShieldCheck className="h-3 w-3" /> });
-  if (exp?.other_education_expenses === true) coverageItems.push({ label: "Other expenses", icon: <Wallet className="h-3 w-3" /> });
+  type CovItem = { key: keyof NonNullable<typeof exp>; label: string; icon: React.ReactNode };
+  const ALL_ITEMS: CovItem[] = [
+    { key: "tuition", label: "Tuition Fee", icon: <GraduationCap className="h-3 w-3" /> },
+    { key: "living", label: "Living / Accommodation", icon: <Home className="h-3 w-3" /> },
+    { key: "travel", label: "Travel", icon: <Plane className="h-3 w-3" /> },
+    { key: "insurance", label: "Insurance", icon: <ShieldCheck className="h-3 w-3" /> },
+    { key: "other_education_expenses", label: "Other education expenses", icon: <Wallet className="h-3 w-3" /> },
+  ];
+  const coverageItems = ALL_ITEMS.filter((it) => exp?.[it.key] === true);
+
+  // "Not covered" inference rule (UI-only, no DB writes):
+  //   - exp must be a non-null object (i.e. lender has source-backed coverage data)
+  //   - AND at least one item is explicitly true (proves the object is populated, not empty)
+  // Otherwise we render NOTHING — never assume "Not covered" for unknown / null data.
+  const hasCoverageSource =
+    exp != null && typeof exp === "object" && coverageItems.length > 0;
+  const notCoveredItems = hasCoverageSource
+    ? ALL_ITEMS.filter((it) => exp?.[it.key] !== true)
+    : [];
+
+  // ROI range display (pass-through values from engine; no recompute here).
+  const hasRoiRange =
+    typeof l.roi_range_min === "number" &&
+    typeof l.roi_range_max === "number" &&
+    l.roi_range_min != null &&
+    l.roi_range_max != null;
 
   return (
     <li className="group relative rounded-lg border border-border bg-card hover:border-primary/40 hover:shadow-sm transition-all p-3 flex flex-col gap-2.5">
@@ -745,9 +775,9 @@ function LenderCard({
       <div className="flex items-start gap-2">
         <span
           className="inline-flex h-6 min-w-[1.75rem] shrink-0 items-center justify-center rounded-md bg-muted px-1.5 text-[11px] font-mono font-semibold text-foreground"
-          aria-label={`Rank ${displayRank ?? "unranked"}`}
+          aria-label={`Rank ${displayRank}`}
         >
-          {displayRank != null ? `#${displayRank}` : "—"}
+          {`#${displayRank}`}
         </span>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-semibold text-foreground truncate" title={l.lender_name}>
@@ -760,8 +790,22 @@ function LenderCard({
 
       {/* Metrics row */}
       <div className="flex flex-wrap items-center gap-1.5">
-        {l.projected_rate != null && (
-          <Chip icon={<Percent className="h-3 w-3" />} label={`${l.projected_rate}%`} accent />
+        {hasRoiRange ? (
+          <>
+            <Chip
+              icon={<Percent className="h-3 w-3" />}
+              label={`ROI Range: ${l.roi_range_min}% – ${l.roi_range_max}%`}
+              accent
+            />
+            {l.projected_rate != null && (
+              <Chip label={`Projected: ~${l.projected_rate}%`} icon={<Percent className="h-3 w-3" />} />
+            )}
+          </>
+        ) : (
+          // Fallback: keep the original single projected-rate chip when range is missing.
+          l.projected_rate != null && (
+            <Chip icon={<Percent className="h-3 w-3" />} label={`${l.projected_rate}%`} accent />
+          )
         )}
         {l.projected_loan_amount != null && (
           <Chip
@@ -785,6 +829,25 @@ function LenderCard({
           <div className="flex flex-wrap items-center gap-1.5">
             {coverageItems.map((item) => (
               <Chip key={item.label} icon={item.icon} label={item.label} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Not covered row — shown only for lenders with source-backed coverage data
+          (i.e. coverage_expenses object exists AND has at least one true value). */}
+      {hasCoverageSource && notCoveredItems.length > 0 && (
+        <div className="space-y-1 pt-0.5">
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Not covered</div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {notCoveredItems.map((item) => (
+              <span
+                key={item.label}
+                className="inline-flex items-center gap-1 rounded-md border border-dashed border-muted-foreground/30 bg-muted/20 px-1.5 py-0.5 text-[11px] text-muted-foreground line-through decoration-muted-foreground/40"
+              >
+                {item.icon}
+                {item.label}
+              </span>
             ))}
           </div>
         </div>
