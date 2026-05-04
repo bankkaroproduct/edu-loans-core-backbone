@@ -251,10 +251,11 @@ export default function QuickLead() {
     setSubmitting(false);
   };
 
-  const currentYear = new Date().getFullYear();
-  const futureIntakes = intakes.filter((i) => i.intake_year >= currentYear);
-  const intakeTerms = [...new Set(futureIntakes.map((i) => i.intake_term))];
-  const intakeYears = [...new Set(futureIntakes.map((i) => i.intake_year))].sort();
+  const intakeSessionOptions = useMemo(
+    () => buildIntakeSessionOptions(intakes, { onlyFuture: true }),
+    [intakes],
+  );
+
 
   if (isEffectivePartnerInactive === true) {
     return (
