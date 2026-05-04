@@ -626,15 +626,24 @@ function LenderOptionCards({
   eligibleLenders,
   loanRange,
   rateRange,
+  storedRanks,
 }: {
   eligibleLenders: BreResult["eligible_lenders"];
   loanRange: BreResult["eligible_loan_range"];
   rateRange: BreResult["indicative_rate_range"];
+  storedRanks: Map<string, number>;
 }) {
-  // Preserve exact ordering (engine's rank). No re-sort beyond this.
-  const ordered = [...eligibleLenders].sort(
-    (a, b) => (a.rank ?? Number.POSITIVE_INFINITY) - (b.rank ?? Number.POSITIVE_INFINITY),
-  );
+  // Display order: stored recommendation_rank (premiere-aware) when available;
+  // otherwise fall back to engine's l.rank. This is a display-only sort —
+  // scores, rates, loan amounts, fit labels and coverage chips are unchanged.
+  const ordered = [...eligibleLenders].sort((a, b) => {
+    const sa = storedRanks.get(a.lender_id);
+    const sb = storedRanks.get(b.lender_id);
+    if (sa != null && sb != null) return sa - sb;
+    if (sa != null) return -1;
+    if (sb != null) return 1;
+    return (a.rank ?? Number.POSITIVE_INFINITY) - (b.rank ?? Number.POSITIVE_INFINITY);
+  });
 
   return (
     <div className="space-y-3">
