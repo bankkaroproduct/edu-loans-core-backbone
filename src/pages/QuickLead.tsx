@@ -125,6 +125,8 @@ export default function QuickLead() {
     if (!form.student_phone.trim()) return "Phone number is required";
     if (!isValidIndianPhone(form.student_phone)) return "Phone must be a valid 10-digit Indian number (with or without +91)";
     if (form.student_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.student_email.trim())) return "Email format is invalid";
+    if (!form.pincode.trim()) return "Pincode is required";
+    if (!/^\d{6}$/.test(form.pincode.trim())) return "Pincode must be exactly 6 digits";
     if (!form.intended_study_country) return "Study country is required";
     if (!form.intake_term) return "Intake term is required";
     if (!form.intake_year) return "Intake year is required";
