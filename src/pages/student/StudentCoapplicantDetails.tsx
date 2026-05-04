@@ -11,6 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { HeartHandshake } from "lucide-react";
 import { CollateralRadio, collateralBoolToState, collateralStateToBool } from "@/components/shared/CollateralRadio";
 import { MoneyInput } from "@/components/ui/money-input";
+import { formatCoapplicantWorkExperience, validateCoapplicantWorkExperience } from "@/lib/academicScore";
 
 const RELATIONSHIPS = ["Father", "Mother", "Spouse", "Sibling", "Uncle", "Aunt", "Grandparent", "Other"];
 const EMPLOYMENT_TYPES = ["Salaried", "Self-employed", "Business Owner", "Professional", "Retired", "Homemaker", "Other"];
@@ -65,6 +66,12 @@ export default function StudentCoapplicantDetails() {
     if (!cibilStr) return "CIBIL Score is required";
     const cibil = parseInt(cibilStr, 10);
     if (!Number.isFinite(cibil) || cibil < 300 || cibil > 900) return "CIBIL Score must be between 300 and 900";
+    // Co-applicant work experience (optional but validated when present)
+    const wErr = validateCoapplicantWorkExperience(
+      String(formData.test_scores.coapplicant_work_experience_years ?? ""),
+      String(formData.test_scores.coapplicant_work_experience_months ?? ""),
+    );
+    if (wErr) return `Co-applicant Work Experience: ${wErr}`;
     return null;
   };
 
@@ -196,6 +203,56 @@ export default function StudentCoapplicantDetails() {
                 placeholder="e.g. 750"
               />
               <p className="text-xs text-muted-foreground">Range 300–900. Required to improve lender match accuracy.</p>
+            </div>
+            {/* 11. Co-applicant Work Experience (Years + Months) — feeds BRE
+                coapplicant.income_stability_years. This is the CO-APPLICANT's
+                work experience, not the student's. */}
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label className="text-sm font-medium">Co-applicant Work Experience</Label>
+              <p className="text-xs text-muted-foreground">
+                The co-applicant's total work experience (not the student's).
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Years</Label>
+                  <Input
+                    inputMode="numeric"
+                    value={formData.test_scores.coapplicant_work_experience_years || ""}
+                    onChange={e =>
+                      updateTestScore(
+                        "coapplicant_work_experience_years",
+                        e.target.value.replace(/\D/g, "").slice(0, 2),
+                      )
+                    }
+                    placeholder="e.g. 3"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Months (0–11)</Label>
+                  <Input
+                    inputMode="numeric"
+                    value={formData.test_scores.coapplicant_work_experience_months || ""}
+                    onChange={e =>
+                      updateTestScore(
+                        "coapplicant_work_experience_months",
+                        e.target.value.replace(/\D/g, "").slice(0, 2),
+                      )
+                    }
+                    placeholder="e.g. 6"
+                  />
+                </div>
+              </div>
+              {(() => {
+                const y = formData.test_scores.coapplicant_work_experience_years;
+                const m = formData.test_scores.coapplicant_work_experience_months;
+                if (!y && !m) return null;
+                const err = validateCoapplicantWorkExperience(String(y ?? ""), String(m ?? ""));
+                if (err) return <p className="text-xs font-medium text-destructive">{err}</p>;
+                const formatted = formatCoapplicantWorkExperience(y, m);
+                return formatted ? (
+                  <p className="text-xs text-muted-foreground">{formatted}</p>
+                ) : null;
+              })()}
             </div>
             <div className="sm:col-span-2">
               <CollateralRadio

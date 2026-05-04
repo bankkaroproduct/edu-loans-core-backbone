@@ -42,6 +42,17 @@ export const EDITABLE_FIELDS: EditFieldDef[] = [
   // Academic
   { key: "highest_qualification", label: "Highest qualification", group: "Academic", type: "text" },
   { key: "marks_gpa", label: "Marks / GPA", group: "Academic", type: "text" },
+  // New academic-total denominators (stored on test_scores JSONB) — exposed via
+  // InlineEditField using jsonbColumn="test_scores"; whitelisted here so partner
+  // edit-requests and audit diffs treat them as known fields.
+  { key: "tenth_total", label: "10th Total Marks", group: "Academic", type: "text" },
+  { key: "twelfth_total", label: "12th Total Marks", group: "Academic", type: "text" },
+  { key: "graduation_total", label: "Graduation Total Marks / CGPA Scale", group: "Academic", type: "text" },
+  { key: "highest_qualification_total", label: "Highest Qualification Total Marks / CGPA Scale", group: "Academic", type: "text" },
+  // Co-applicant work experience (stored on test_scores JSONB) — feeds BRE
+  // coapplicant.income_stability_years.
+  { key: "coapplicant_work_experience_years", label: "Co-applicant Work Experience (years)", group: "Co-applicant", type: "number" },
+  { key: "coapplicant_work_experience_months", label: "Co-applicant Work Experience (months)", group: "Co-applicant", type: "number" },
 
   // Co-applicant
   { key: "coapplicant_name", label: "Co-applicant name", group: "Co-applicant", type: "text" },

@@ -227,8 +227,12 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
             onSaved={onSaved}
           />
           <Field label="10th Score" value={tsStr("tenth")} editable={edTS("tenth")} onSaved={onSaved} />
+          <Field label="10th Total Marks" value={tsStr("tenth_total")} editable={edTS("tenth_total")} onSaved={onSaved} />
           <Field label="12th Score" value={tsStr("twelfth")} editable={edTS("twelfth")} onSaved={onSaved} />
+          <Field label="12th Total Marks" value={tsStr("twelfth_total")} editable={edTS("twelfth_total")} onSaved={onSaved} />
           <Field label="Graduation Score" value={tsStr("graduation")} editable={edTS("graduation")} onSaved={onSaved} />
+          <Field label="Graduation Total / CGPA Scale" value={tsStr("graduation_total")} editable={edTS("graduation_total")} onSaved={onSaved} />
+          <Field label="Highest Qual. Total / CGPA Scale" value={tsStr("highest_qualification_total")} editable={edTS("highest_qualification_total")} onSaved={onSaved} />
           <Field label="IELTS" value={tsStr("ielts")} editable={edTS("ielts")} onSaved={onSaved} />
           <Field label="TOEFL" value={tsStr("toefl")} editable={edTS("toefl")} onSaved={onSaved} />
           <Field label="PTE" value={tsStr("pte")} editable={edTS("pte")} onSaved={onSaved} />
@@ -261,6 +265,18 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
             label="Co-Applicant CIBIL"
             value={tsStr("coapplicant_cibil")}
             editable={edTS("coapplicant_cibil", { inputType: "number", parseValue: numericParse })}
+            onSaved={onSaved}
+          />
+          <Field
+            label="Co-Applicant Work Exp (years)"
+            value={tsStr("coapplicant_work_experience_years")}
+            editable={edTS("coapplicant_work_experience_years", { inputType: "number", parseValue: numericParse })}
+            onSaved={onSaved}
+          />
+          <Field
+            label="Co-Applicant Work Exp (months)"
+            value={tsStr("coapplicant_work_experience_months")}
+            editable={edTS("coapplicant_work_experience_months", { inputType: "number", parseValue: numericParse })}
             onSaved={onSaved}
           />
           <Field

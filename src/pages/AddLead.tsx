@@ -33,6 +33,8 @@ import { LakhsInput } from "@/components/ui/lakhs-input";
 import { MasterCombobox, type MasterOption } from "@/components/ui/master-combobox";
 import { CollateralRadio, collateralBoolToState, collateralStateToBool, type CollateralState } from "@/components/shared/CollateralRadio";
 import { sanitizeWorkExpInput, formatWorkExperience, isValidWorkExp } from "@/lib/workExperience";
+import { ScoreTotalPair } from "@/components/shared/ScoreTotalPair";
+import { validateScoreTotalPair, validateCoapplicantWorkExperience, formatCoapplicantWorkExperience } from "@/lib/academicScore";
 import { usePincodeLookup } from "@/hooks/usePincodeLookup";
 import { sortByPriority } from "@/lib/countryOrder";
 import { buildIntakeSessionOptions, intakeSessionValue, parseIntakeSessionValue } from "@/lib/intakeSession";
@@ -212,11 +214,19 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     twelfth_score: "",
     graduation_score: "",
     highest_qualification_score: "",
+    // Total marks / scale denominators (optional, BRE-aware, persisted in test_scores JSONB)
+    tenth_total: "",
+    twelfth_total: "",
+    graduation_total: "",
+    highest_qualification_total: "",
     // Co-applicant extension (mirrors Student portal — persisted in test_scores JSONB)
     coapplicant_email: "",
     coapplicant_age: "",          // numeric string in UI; persisted as number
     coapplicant_cibil: "",        // numeric string in UI; persisted as number
     work_experience_years: "",    // Student shorthand: "3" or "3.2"; "0" = Fresher
+    // Co-applicant work experience (years + months) — feeds BRE income_stability_years.
+    coapplicant_work_experience_years: "",
+    coapplicant_work_experience_months: "",
     // Standardized test scores (aligned with Student portal keys)
     ielts: "",
     toefl: "",
@@ -326,6 +336,10 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         twelfth_score: ((data as any).test_scores?.twelfth ?? "").toString(),
         graduation_score: ((data as any).test_scores?.graduation ?? "").toString(),
         highest_qualification_score: ((data as any).test_scores?.highest_qualification_score ?? "").toString(),
+        tenth_total: ((data as any).test_scores?.tenth_total ?? "").toString(),
+        twelfth_total: ((data as any).test_scores?.twelfth_total ?? "").toString(),
+        graduation_total: ((data as any).test_scores?.graduation_total ?? "").toString(),
+        highest_qualification_total: ((data as any).test_scores?.highest_qualification_total ?? "").toString(),
         coapplicant_email: (data as any).coapplicant_email ?? "",
         coapplicant_age: ((data as any).test_scores?.coapplicant_age ?? "").toString(),
         coapplicant_cibil: ((data as any).test_scores?.coapplicant_cibil ?? "").toString(),
@@ -333,6 +347,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
           const v = (data as any).test_scores?.work_experience_years;
           return v === undefined || v === null ? "" : v.toString();
         })(),
+        coapplicant_work_experience_years: ((data as any).test_scores?.coapplicant_work_experience_years ?? "").toString(),
+        coapplicant_work_experience_months: ((data as any).test_scores?.coapplicant_work_experience_months ?? "").toString(),
         ielts: ((data as any).test_scores?.ielts ?? "").toString(),
         toefl: ((data as any).test_scores?.toefl ?? "").toString(),
         duolingo: ((data as any).test_scores?.duolingo ?? "").toString(),
@@ -474,6 +490,17 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       if (!form.highest_qualification) return { message: "Highest qualification is required", step: "study", field: "highest_qualification" };
       if (!form.tenth_score.trim()) return { message: "10th score is required", step: "study", field: "tenth_score" };
       if (!form.twelfth_score.trim()) return { message: "12th score is required", step: "study", field: "twelfth_score" };
+      // Score / total pair validation (totals are optional, legacy compat)
+      const pairs: Array<[string, string, string, string]> = [
+        ["10th", form.tenth_score, form.tenth_total, "tenth_total"],
+        ["12th", form.twelfth_score, form.twelfth_total, "twelfth_total"],
+        ["Graduation", form.graduation_score, form.graduation_total, "graduation_total"],
+        ["Highest Qualification", form.highest_qualification_score, form.highest_qualification_total, "highest_qualification_total"],
+      ];
+      for (const [label, s, t, field] of pairs) {
+        const err = validateScoreTotalPair(s, t);
+        if (err) return { message: `${label}: ${err}`, step: "study", field };
+      }
 
       // Financial Info — required in BOTH partner and admin modes (restored).
       if (!form.loan_amount_required) return { message: "Approx loan amount is required", step: "financial", field: "loan_amount_required" };
@@ -517,6 +544,9 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       }
       if (form.work_experience_years.trim() && !isValidWorkExp(form.work_experience_years))
         return { message: "Work experience must be a number with at most one decimal (e.g. 3 or 3.2)", step: "study", field: "work_experience_years" };
+      // Co-applicant work experience (optional)
+      const cwErr = validateCoapplicantWorkExperience(form.coapplicant_work_experience_years, form.coapplicant_work_experience_months);
+      if (cwErr) return { message: `Co-applicant Work Experience: ${cwErr}`, step: "financial", field: "coapplicant_work_experience_years" };
     }
 
     if (!effectivePartnerId) return { message: "No partner organization found for your account. Admins can use 'Test as Partner' in the sidebar.", step: stepIds[0] };
@@ -711,6 +741,11 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     setOrDelete("twelfth", form.twelfth_score);
     setOrDelete("graduation", form.graduation_score);
     setOrDelete("highest_qualification_score", form.highest_qualification_score);
+    // Total marks denominators (BRE-aware)
+    setOrDelete("tenth_total", form.tenth_total);
+    setOrDelete("twelfth_total", form.twelfth_total);
+    setOrDelete("graduation_total", form.graduation_total);
+    setOrDelete("highest_qualification_total", form.highest_qualification_total);
 
     // Standardized test scores (aligned with Student portal: ielts/toefl/duolingo/gre/gmat)
     setOrDelete("ielts", form.ielts);
@@ -726,12 +761,18 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     // Work experience: same shorthand & coercion as Student. "0" → number 0 (Fresher).
     setOrDelete("work_experience_years", form.work_experience_years);
 
+    // Co-applicant work experience (years/months) — strict integer.
+    setIntOrDelete("coapplicant_work_experience_years", form.coapplicant_work_experience_years);
+    setIntOrDelete("coapplicant_work_experience_months", form.coapplicant_work_experience_months);
+
     return existing;
   }, [
     originalLead,
     form.tenth_score, form.twelfth_score, form.graduation_score, form.highest_qualification_score,
+    form.tenth_total, form.twelfth_total, form.graduation_total, form.highest_qualification_total,
     form.ielts, form.toefl, form.duolingo, form.gre, form.gmat,
     form.coapplicant_age, form.coapplicant_cibil, form.work_experience_years,
+    form.coapplicant_work_experience_years, form.coapplicant_work_experience_months,
   ]);
 
   const createLead = async (asDraft: boolean, hasDuplicateWarning: boolean) => {
@@ -1260,41 +1301,63 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2" data-field="highest_qualification_score">
-                <Label>Highest Qualification Score</Label>
-                <Input
-                  value={form.highest_qualification_score}
-                  onChange={(e) => set("highest_qualification_score", e.target.value)}
-                  placeholder="e.g. 8.5 CGPA or 78%"
-                />
-              </div>
-              <div className="space-y-2" data-field="tenth_score">
-                <Label>10th Score *</Label>
-                <Input
-                  value={form.tenth_score}
-                  onChange={(e) => set("tenth_score", e.target.value)}
-                  placeholder="e.g. 85%"
-                />
-              </div>
-              <div className="space-y-2" data-field="twelfth_score">
-                <Label>12th Score *</Label>
-                <Input
-                  value={form.twelfth_score}
-                  onChange={(e) => set("twelfth_score", e.target.value)}
-                  placeholder="e.g. 88%"
-                />
-              </div>
-              <div className="space-y-2 md:col-span-2" data-field="graduation_score">
-                <Label>Graduation Score</Label>
-                <Input
-                  value={form.graduation_score}
-                  onChange={(e) => set("graduation_score", e.target.value)}
-                  placeholder="e.g. 7.8 CGPA or 75%"
-                />
-                <p className="text-xs text-muted-foreground">
-                  10th and 12th are required. Graduation and Highest Qualification Score are optional.
-                </p>
-              </div>
+              <ScoreTotalPair
+                label="10th"
+                required
+                scoreKey="tenth_score"
+                totalKey="tenth_total"
+                scoreLabel="10th Score Obtained"
+                totalLabel="10th Total Marks"
+                scorePlaceholder="e.g. 85"
+                totalPlaceholder="e.g. 100"
+                scoreValue={form.tenth_score}
+                totalValue={form.tenth_total}
+                onScore={(v) => set("tenth_score", v)}
+                onTotal={(v) => set("tenth_total", v)}
+              />
+              <ScoreTotalPair
+                label="12th"
+                required
+                scoreKey="twelfth_score"
+                totalKey="twelfth_total"
+                scoreLabel="12th Score Obtained"
+                totalLabel="12th Total Marks"
+                scorePlaceholder="e.g. 88"
+                totalPlaceholder="e.g. 100"
+                scoreValue={form.twelfth_score}
+                totalValue={form.twelfth_total}
+                onScore={(v) => set("twelfth_score", v)}
+                onTotal={(v) => set("twelfth_total", v)}
+              />
+              <ScoreTotalPair
+                label="Graduation"
+                scoreKey="graduation_score"
+                totalKey="graduation_total"
+                scoreLabel="Graduation Score Obtained"
+                totalLabel="Graduation Total Marks / CGPA Scale"
+                scorePlaceholder="e.g. 7.8"
+                totalPlaceholder="e.g. 10"
+                scoreValue={form.graduation_score}
+                totalValue={form.graduation_total}
+                onScore={(v) => set("graduation_score", v)}
+                onTotal={(v) => set("graduation_total", v)}
+              />
+              <ScoreTotalPair
+                label="Highest Qualification"
+                scoreKey="highest_qualification_score"
+                totalKey="highest_qualification_total"
+                scoreLabel="Highest Qualification Score Obtained"
+                totalLabel="Highest Qualification Total Marks / CGPA Scale"
+                scorePlaceholder="e.g. 8.5"
+                totalPlaceholder="e.g. 10"
+                scoreValue={form.highest_qualification_score}
+                totalValue={form.highest_qualification_total}
+                onScore={(v) => set("highest_qualification_score", v)}
+                onTotal={(v) => set("highest_qualification_total", v)}
+              />
+              <p className="text-xs text-muted-foreground md:col-span-2">
+                10th and 12th are required. Graduation and Highest Qualification Score are optional. Total Marks / Scale is optional but recommended for accurate scoring (e.g. enter 9.5 and total 10 for CGPA, or 78 and total 100 for percentage).
+              </p>
 
               {/* Read-only academic context for student-origin leads in admin edit mode */}
               {isAdminForm && isEditMode && originalLead?.source_type === "student_direct" && (
@@ -1483,6 +1546,42 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   placeholder="e.g. 750"
                 />
                 <p className="text-xs text-muted-foreground">Range 300–900. Required to improve lender match accuracy.</p>
+              </div>
+              {/* Co-applicant Work Experience (years + months) — feeds BRE
+                  coapplicant.income_stability_years. This is the CO-APPLICANT's
+                  work experience, NOT the student's. */}
+              <div className="space-y-2 md:col-span-2" data-field="coapplicant_work_experience_years">
+                <Label>Co-applicant Work Experience</Label>
+                <p className="text-xs text-muted-foreground">The co-applicant's total work experience (not the student's).</p>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Years</Label>
+                    <Input
+                      inputMode="numeric"
+                      value={form.coapplicant_work_experience_years}
+                      onChange={(e) => set("coapplicant_work_experience_years", e.target.value.replace(/\D/g, "").slice(0, 2))}
+                      placeholder="e.g. 3"
+                    />
+                  </div>
+                  <div data-field="coapplicant_work_experience_months">
+                    <Label className="text-xs text-muted-foreground">Months (0–11)</Label>
+                    <Input
+                      inputMode="numeric"
+                      value={form.coapplicant_work_experience_months}
+                      onChange={(e) => set("coapplicant_work_experience_months", e.target.value.replace(/\D/g, "").slice(0, 2))}
+                      placeholder="e.g. 6"
+                    />
+                  </div>
+                </div>
+                {(() => {
+                  const y = form.coapplicant_work_experience_years;
+                  const m = form.coapplicant_work_experience_months;
+                  if (!y && !m) return null;
+                  const err = validateCoapplicantWorkExperience(y, m);
+                  if (err) return <p className="text-xs font-medium text-destructive">{err}</p>;
+                  const formatted = formatCoapplicantWorkExperience(y, m);
+                  return formatted ? <p className="text-xs text-muted-foreground">{formatted}</p> : null;
+                })()}
               </div>
               <div className="md:col-span-2">
                 <CollateralRadio
