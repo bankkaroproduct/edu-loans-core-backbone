@@ -1317,8 +1317,12 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               10th_score, 12th_score, graduation_score. */}
           <Card className="mt-4">
             <CardHeader><CardTitle className="text-lg">Current Academic Profile</CardTitle></CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2" data-field="highest_qualification">
+            <CardContent className="space-y-4">
+              <p className="text-xs text-muted-foreground">
+                Total Marks / Scale is optional but recommended for accurate scoring. Example: enter <code>9.5</code> and total <code>10</code> for CGPA, or <code>78</code> and total <code>100</code> for percentage.
+              </p>
+              <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2 md:col-span-2" data-field="highest_qualification">
                 <Label>Highest Qualification *</Label>
                 <Select
                   value={form.highest_qualification}
