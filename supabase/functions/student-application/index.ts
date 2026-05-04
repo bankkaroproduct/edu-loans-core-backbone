@@ -547,7 +547,15 @@ Deno.serve(async (req) => {
         .single();
       if (fetchEduErr) return jsonResponse({ error: fetchEduErr.message }, 500);
       const currentEdu = (existingEdu?.test_scores as Record<string, unknown>) || {};
-      const preservedKeys = ["coapplicant_age", "coapplicant_cibil"];
+      // Preserve keys that are saved on OTHER steps (co-applicant), so the
+      // education save never silently wipes them. New keys: co-applicant work
+      // experience years/months are saved on the co-applicant step.
+      const preservedKeys = [
+        "coapplicant_age",
+        "coapplicant_cibil",
+        "coapplicant_work_experience_years",
+        "coapplicant_work_experience_months",
+      ];
       const mergedEduScores: Record<string, unknown> = { ...incomingScores };
       for (const k of preservedKeys) {
         if (k in currentEdu && !(k in incomingScores)) mergedEduScores[k] = currentEdu[k];
@@ -591,8 +599,14 @@ Deno.serve(async (req) => {
         if (fetchErr) return jsonResponse({ error: fetchErr.message }, 500);
         const current = (existing?.test_scores as Record<string, unknown>) || {};
         mergedTestScores = { ...current };
-        // Only set keys we explicitly handle here; preserve everything else.
-        for (const k of ["coapplicant_age", "coapplicant_cibil"]) {
+        // Only set keys we explicitly handle here; preserve everything else
+        // (academic scores/totals saved on the education step are preserved).
+        for (const k of [
+          "coapplicant_age",
+          "coapplicant_cibil",
+          "coapplicant_work_experience_years",
+          "coapplicant_work_experience_months",
+        ]) {
           if (k in extensionRaw) {
             const v = (extensionRaw as any)[k];
             if (v === null || v === "" || v === undefined) {

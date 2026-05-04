@@ -36,6 +36,14 @@ export const ADMIN_EDITABLE_FIELDS: AdminFieldDef[] = [
   // Academic
   { key: "highest_qualification", label: "Highest qualification" },
   { key: "marks_gpa", label: "Marks / GPA" },
+  // Academic totals (test_scores JSONB)
+  { key: "tenth_total", label: "10th Total Marks" },
+  { key: "twelfth_total", label: "12th Total Marks" },
+  { key: "graduation_total", label: "Graduation Total Marks / CGPA Scale" },
+  { key: "highest_qualification_total", label: "Highest Qualification Total Marks / CGPA Scale" },
+  // Co-applicant work experience (test_scores JSONB)
+  { key: "coapplicant_work_experience_years", label: "Co-applicant Work Experience (years)" },
+  { key: "coapplicant_work_experience_months", label: "Co-applicant Work Experience (months)" },
 
   // Co-applicant
   { key: "coapplicant_name", label: "Co-applicant name" },
