@@ -1127,8 +1127,8 @@ function ResolutionNotes({ resolution }: { resolution: BuildProfileResolution | 
     items.push({
       label:
         ep.detected_exam === "generic"
-          ? `English proficiency derived from Other Test Scores: ${ep.ielts_equivalent}`
-          : "English proficiency derived from Other Test Scores",
+          ? `English proficiency captured from Other Test Scores: ${ep.ielts_equivalent} — captured for reference only, not used in BRE scoring`
+          : "English proficiency captured from Other Test Scores — captured for reference only, not used in BRE scoring",
       tone: "ok",
       text:
         ep.detected_exam === "generic" ? (
@@ -1146,9 +1146,19 @@ function ResolutionNotes({ resolution }: { resolution: BuildProfileResolution | 
     });
   } else if (ep && ep.source === "other_test_scores_unparseable") {
     items.push({
-      label: "Other Test Scores present but exam type not specified — needs review",
+      label: "Other Test Scores present (captured for reference only, not used in BRE scoring)",
       tone: "warn",
       text: <span className="italic">"{ep.raw}"</span>,
+    });
+  } else if (ep && (ep.source === "ielts" || ep.source === "toefl" || ep.source === "duolingo" || ep.source === "pte")) {
+    items.push({
+      label: `${ep.source.toUpperCase()} captured — captured for reference only, not used in BRE scoring`,
+      tone: "ok",
+      text: (
+        <>
+          IELTS-equivalent <span className="font-mono">{ep.value}</span>
+        </>
+      ),
     });
   }
 

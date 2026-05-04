@@ -1,10 +1,15 @@
-// Default v1 scoring config — single source of truth shared with the DB seed.
-// Keep this file in sync with the v1 INSERT in the BRE Phase 1 migration.
+// Default scoring config — single source of truth shared with the DB seed.
+// Keep this file in sync with the active row in `bre_scoring_configs`.
+//
+// v2 (current): Test scores (entrance_rank, english_proficiency) are excluded
+// from Student scoring. Remaining Student weights renormalized to sum to 100.
+// University, Co-applicant, bucket threshold, and overall band mapping are
+// unchanged from v1.
 
 import type { BreScoringConfig } from "./types";
 
 export const DEFAULT_SCORING_CONFIG_V1: BreScoringConfig = {
-  version_number: 1,
+  version_number: 2,
   is_active: true,
   bucket_threshold: 60,
   student_params: [
@@ -12,7 +17,7 @@ export const DEFAULT_SCORING_CONFIG_V1: BreScoringConfig = {
       param_key: "class_x_marks",
       label: "Class X marks (%)",
       input_type: "number",
-      weight: 15,
+      weight: 20,
       bands: [
         { from: 90, to: 100, score: 100, label: "Excellent" },
         { from: 75, to: 89.99, score: 80, label: "Good" },
@@ -24,7 +29,7 @@ export const DEFAULT_SCORING_CONFIG_V1: BreScoringConfig = {
       param_key: "class_xii_marks",
       label: "Class XII marks (%)",
       input_type: "number",
-      weight: 20,
+      weight: 27,
       bands: [
         { from: 90, to: 100, score: 100, label: "Excellent" },
         { from: 75, to: 89.99, score: 80, label: "Good" },
@@ -36,7 +41,7 @@ export const DEFAULT_SCORING_CONFIG_V1: BreScoringConfig = {
       param_key: "graduation_marks",
       label: "Graduation marks (%)",
       input_type: "number",
-      weight: 25,
+      weight: 33,
       bands: [
         { from: 80, to: 100, score: 100, label: "Excellent" },
         { from: 65, to: 79.99, score: 80, label: "Good" },
@@ -45,38 +50,14 @@ export const DEFAULT_SCORING_CONFIG_V1: BreScoringConfig = {
       ],
     },
     {
-      param_key: "entrance_rank",
-      label: "Entrance test percentile",
-      input_type: "number",
-      weight: 10,
-      bands: [
-        { from: 90, to: 100, score: 100, label: "Top decile" },
-        { from: 75, to: 89.99, score: 80, label: "Strong" },
-        { from: 50, to: 74.99, score: 60, label: "Average" },
-        { from: 0, to: 49.99, score: 30, label: "Weak" },
-      ],
-    },
-    {
       param_key: "work_experience_years",
       label: "Work experience (years)",
       input_type: "number",
-      weight: 15,
+      weight: 20,
       bands: [
         { from: 3, to: 99, score: 100, label: "3+ years" },
         { from: 1, to: 2.99, score: 70, label: "1-3 years" },
         { from: 0, to: 0.99, score: 40, label: "Fresher" },
-      ],
-    },
-    {
-      param_key: "english_proficiency",
-      label: "English proficiency score",
-      input_type: "number",
-      weight: 15,
-      bands: [
-        { from: 7.5, to: 9, score: 100, label: "IELTS 7.5+ / equivalent" },
-        { from: 6.5, to: 7.49, score: 80, label: "IELTS 6.5-7.4" },
-        { from: 6, to: 6.49, score: 60, label: "IELTS 6.0" },
-        { from: 0, to: 5.99, score: 30, label: "Below 6.0" },
       ],
     },
   ],
