@@ -564,13 +564,15 @@ function buildProfileCore(
     hqScoreRaw == null ? null : hqScoreRaw <= 10 ? Math.round(hqScoreRaw * 9.5 * 100) / 100 : hqScoreRaw;
   const graduation =
     numFromTestScores(ts, "graduation") ?? hqScore ?? parseGpa(lead.marks_gpa);
-  const entranceRank =
-    numFromTestScores(ts, "entrance_percentile") ??
-    numFromTestScores(ts, "entrance_rank") ??
-    numFromTestScores(ts, "gre") ??
-    numFromTestScores(ts, "gmat_percentile");
+  // NOTE: entrance_rank and english_proficiency are intentionally NOT included
+  // in the scoring profile. Test scores (IELTS/TOEFL/PTE/Duolingo/GRE/GMAT/SAT/
+  // entrance percentile) are captured for reference only and do not contribute
+  // to BRE Student-bucket scoring. Parsing helpers and resolution metadata are
+  // preserved so the Admin BRE detail can still surface "captured for reference"
+  // chips, but no value is fed into profile.student.
   const workExp = workExpToYears((ts as Record<string, unknown> | null)?.work_experience_years);
-  const englishProficiency = englishResult.value;
+  // Reference englishResult so existing resolution chip continues to render.
+  void englishResult;
 
   // ---- co-applicant bucket ----
   const coIncomeMonthly = lead.coapplicant_income != null ? Number(lead.coapplicant_income) : null;
