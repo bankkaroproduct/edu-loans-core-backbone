@@ -124,6 +124,12 @@ export interface LenderPolicy {
   processing_time_days: number | null;
   roi_min: number | null;
   roi_max: number | null;
+  /** Optional source-backed secured-route ROI. Engine prefers this when product_type === "secured". */
+  roi_secured_min?: number | null;
+  roi_secured_max?: number | null;
+  /** Optional source-backed unsecured-route ROI. Engine prefers this when product_type === "unsecured". */
+  roi_unsecured_min?: number | null;
+  roi_unsecured_max?: number | null;
   tenure_min_years: number | null;
   tenure_max_years: number | null;
   moratorium_months: number | null;
