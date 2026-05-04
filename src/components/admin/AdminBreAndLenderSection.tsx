@@ -1038,6 +1038,26 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
+/**
+ * Formats a Processing Fee chip label from a lender match result.
+ * Returns null when no PF data is configured (chip is then hidden entirely).
+ * Display precedence: range → single % → flat ₹. Pass-through only — never
+ * used by ranking, scoring, eligibility, or any backend logic.
+ */
+function formatPfLabel(l: BreResult["eligible_lenders"][number]): string | null {
+  const gst = l.pf_gst_applicable === true ? " + GST" : "";
+  if (l.pf_pct_min != null && l.pf_pct_max != null) {
+    return `PF: ${l.pf_pct_min}%–${l.pf_pct_max}%${gst}`;
+  }
+  if (l.pf_pct != null) {
+    return `PF: ${l.pf_pct}%${gst}`;
+  }
+  if (l.pf_flat != null) {
+    return `PF: ₹${Math.round(l.pf_flat).toLocaleString("en-IN")}${gst}`;
+  }
+  return null;
+}
+
 function ResolutionNotes({ resolution }: { resolution: BuildProfileResolution | null }) {
   if (!resolution) return null;
   const um = resolution.university_match;
