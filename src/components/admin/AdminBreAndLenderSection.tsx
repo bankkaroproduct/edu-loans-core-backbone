@@ -1162,6 +1162,45 @@ function ResolutionNotes({ resolution }: { resolution: BuildProfileResolution | 
     });
   }
 
+  // Effective Academic Score (Graduation ± Highest Qualification)
+  const ac = resolution.academic;
+  if (ac && ac.source !== "none") {
+    const grad = ac.graduation;
+    const hq = ac.highestQualification;
+    items.push({
+      label: "Effective academic score used in BRE",
+      tone: "ok",
+      text: (
+        <>
+          {grad.percentage != null ? (
+            <>Graduation: <span className="font-mono">{grad.scoreNum}{grad.totalNum != null ? `/${grad.totalNum}` : ""} → {grad.percentage}%</span>{" · "}</>
+          ) : null}
+          {hq.percentage != null ? (
+            <>Highest Qualification: <span className="font-mono">{hq.scoreNum}{hq.totalNum != null ? `/${hq.totalNum}` : ""} → {hq.percentage}%</span>{" · "}</>
+          ) : null}
+          Effective: <span className="font-mono font-semibold">{ac.effective}%</span>
+          <div className="text-[11px] mt-0.5 text-muted-foreground">{ac.reason}</div>
+        </>
+      ),
+    });
+  }
+
+  // Co-applicant work experience → income_stability_years
+  const cw = resolution.coapplicant_work_experience;
+  if (cw && (cw.years != null || cw.months != null)) {
+    items.push({
+      label: "Co-applicant work experience",
+      tone: cw.mapped_to === "income_stability_years" ? "ok" : "muted",
+      text: (
+        <>
+          Input: <span className="font-mono">{cw.years ?? 0} years {cw.months ?? 0} months</span>
+          {" · "}BRE value: <span className="font-mono">{cw.decimal_years ?? "—"} years</span>
+          {" · "}Mapped to: <span className="font-mono">{cw.mapped_to}</span>
+        </>
+      ),
+    });
+  }
+
   if (items.length === 0) return null;
 
   return (
