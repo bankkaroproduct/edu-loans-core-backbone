@@ -67,6 +67,11 @@ export interface LenderCommercials {
   payout_trigger_stage: string | null;
   processing_fee_pct: number | null;
   processing_fee_flat: number | null;
+  /** Optional source-backed PF range (e.g. 1%–1.25%). Display-only. */
+  processing_fee_pct_min?: number | null;
+  processing_fee_pct_max?: number | null;
+  /** Whether GST applies to PF. Display-only. */
+  processing_fee_gst_applicable?: boolean | null;
 }
 
 export interface LenderHardThresholds {
@@ -222,6 +227,16 @@ export interface LenderMatchResult {
   roi_range_min?: number | null;
   roi_range_max?: number | null;
   roi_range_source?: "secured" | "unsecured" | "policy" | "band" | null;
+  /**
+   * Display-only Processing Fee pass-through from lender.commercials.
+   * NEVER used by ranking, scoring, eligibility, filtering, loan amount
+   * calculation, or assignment logic.
+   */
+  pf_pct?: number | null;
+  pf_pct_min?: number | null;
+  pf_pct_max?: number | null;
+  pf_flat?: number | null;
+  pf_gst_applicable?: boolean | null;
 }
 
 export interface BreResult {

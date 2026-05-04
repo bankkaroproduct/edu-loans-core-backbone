@@ -42,6 +42,7 @@ import { evaluate } from "@/lib/bre/engine";
 import { loadActive } from "@/lib/bre/loader";
 import { buildBreProfileFromLeadAsync, type BuildProfileResolution } from "@/lib/bre/leadProfile";
 import type { BreResult, BucketKey, ParameterTrace } from "@/lib/bre/types";
+import { displayLenderCode } from "@/lib/lenderDisplay";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Lead = Tables<"student_leads">;
@@ -681,6 +682,14 @@ function LenderOptionCards({
     return (a.rank ?? Number.POSITIVE_INFINITY) - (b.rank ?? Number.POSITIVE_INFINITY);
   });
 
+  // Stale-rank detection: stored rank disagrees with engine's live rate-based
+  // rank. Display-only signal — does NOT trigger any recompute or DB write.
+  const hasStoredRanks = ordered.some((l) => storedMatches.get(l.lender_id)?.rank != null);
+  const engineOrderById = new Map<string, number>();
+  [...eligibleLenders]
+    .sort((a, b) => (a.rank ?? Number.POSITIVE_INFINITY) - (b.rank ?? Number.POSITIVE_INFINITY))
+    .forEach((l, i) => engineOrderById.set(l.lender_id, i + 1));
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between flex-wrap gap-2">
@@ -704,15 +713,32 @@ function LenderOptionCards({
         )}
       </div>
 
+      <p className="text-[11px] text-muted-foreground italic flex items-start gap-1.5">
+        <Info className="h-3 w-3 shrink-0 mt-0.5" />
+        <span>
+          Order reflects BRE recommendation rank (overall fit). ROI shown is the live indicative rate.
+        </span>
+      </p>
+
       <ol className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-        {ordered.slice(0, 8).map((l, idx) => (
-          <LenderCard
-            key={l.lender_id}
-            l={l}
-            stored={storedMatches.get(l.lender_id) ?? null}
-            displayPosition={idx + 1}
-          />
-        ))}
+        {ordered.slice(0, 8).map((l, idx) => {
+          const storedRank = storedMatches.get(l.lender_id)?.rank ?? null;
+          const engineRank = engineOrderById.get(l.lender_id) ?? null;
+          const isStale =
+            hasStoredRanks &&
+            storedRank != null &&
+            engineRank != null &&
+            storedRank !== engineRank;
+          return (
+            <LenderCard
+              key={l.lender_id}
+              l={l}
+              stored={storedMatches.get(l.lender_id) ?? null}
+              displayPosition={idx + 1}
+              staleRank={isStale}
+            />
+          );
+        })}
       </ol>
 
       <p className="text-[11px] text-muted-foreground italic">
@@ -726,10 +752,12 @@ function LenderCard({
   l,
   stored,
   displayPosition,
+  staleRank = false,
 }: {
   l: BreResult["eligible_lenders"][number];
   stored: StoredMatchValue | null;
   displayPosition: number;
+  staleRank?: boolean;
 }) {
   const isSecured = l.product_type === "secured";
   const isUnsecured = l.product_type === "unsecured";
@@ -739,6 +767,10 @@ function LenderCard({
   // but is NOT mutated and not shown as the badge number. This avoids gaps caused by
   // filtered-out lenders occupying low stored ranks.
   const displayRank = displayPosition;
+
+  // User-facing code subtitle: hide only the Credila/HDFC mismatch.
+  // Internal lender_code is preserved in DB and admin/internal screens.
+  const codeSubtitle = displayLenderCode(l.lender_name, l.lender_code);
 
   // Coverage chips: render only items explicitly set to true.
   const exp = l.coverage_expenses;
@@ -769,6 +801,9 @@ function LenderCard({
     l.roi_range_min != null &&
     l.roi_range_max != null;
 
+  // PF chip text — pass-through from engine. Hidden entirely if no PF source.
+  const pfLabel = formatPfLabel(l);
+
   return (
     <li className="group relative rounded-lg border border-border bg-card hover:border-primary/40 hover:shadow-sm transition-all p-3 flex flex-col gap-2.5">
       {/* Top row: rank + name + fit */}
@@ -783,29 +818,41 @@ function LenderCard({
           <div className="text-sm font-semibold text-foreground truncate" title={l.lender_name}>
             {l.lender_name}
           </div>
-          <div className="text-[10px] font-mono text-muted-foreground mt-0.5">{l.lender_code}</div>
+          {codeSubtitle && (
+            <div className="text-[10px] font-mono text-muted-foreground mt-0.5">{codeSubtitle}</div>
+          )}
         </div>
         <FitBadge badge={l.badge} storedFit={stored?.fit ?? null} />
       </div>
 
-      {/* Metrics row */}
+      {/* Projected ROI — primary metric, displayed prominently */}
+      {l.projected_rate != null && (
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            Projected ROI
+          </span>
+          <span className="text-base font-semibold text-foreground tabular-nums">
+            ~{l.projected_rate}%
+          </span>
+          {staleRank && (
+            <Badge
+              variant="outline"
+              className="text-[9px] px-1 py-0 border-amber-500/40 text-amber-700 dark:text-amber-300"
+              title="Stored recommendation rank differs from live rate-based order"
+            >
+              Stale rank
+            </Badge>
+          )}
+        </div>
+      )}
+
+      {/* Secondary metrics row */}
       <div className="flex flex-wrap items-center gap-1.5">
-        {hasRoiRange ? (
-          <>
-            <Chip
-              icon={<Percent className="h-3 w-3" />}
-              label={`ROI Range: ${l.roi_range_min}% – ${l.roi_range_max}%`}
-              accent
-            />
-            {l.projected_rate != null && (
-              <Chip label={`Projected: ~${l.projected_rate}%`} icon={<Percent className="h-3 w-3" />} />
-            )}
-          </>
-        ) : (
-          // Fallback: keep the original single projected-rate chip when range is missing.
-          l.projected_rate != null && (
-            <Chip icon={<Percent className="h-3 w-3" />} label={`${l.projected_rate}%`} accent />
-          )
+        {hasRoiRange && (
+          <Chip
+            icon={<Percent className="h-3 w-3" />}
+            label={`ROI Range: ${l.roi_range_min}% – ${l.roi_range_max}%`}
+          />
         )}
         {l.projected_loan_amount != null && (
           <Chip
@@ -814,6 +861,7 @@ function LenderCard({
             accent
           />
         )}
+        {pfLabel && <Chip icon={<Wallet className="h-3 w-3" />} label={pfLabel} />}
         {isSecured && (
           <Chip icon={<ShieldCheck className="h-3 w-3" />} label="Secured" />
         )}
@@ -988,6 +1036,26 @@ function FitBadge({
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+/**
+ * Formats a Processing Fee chip label from a lender match result.
+ * Returns null when no PF data is configured (chip is then hidden entirely).
+ * Display precedence: range → single % → flat ₹. Pass-through only — never
+ * used by ranking, scoring, eligibility, or any backend logic.
+ */
+function formatPfLabel(l: BreResult["eligible_lenders"][number]): string | null {
+  const gst = l.pf_gst_applicable === true ? " + GST" : "";
+  if (l.pf_pct_min != null && l.pf_pct_max != null) {
+    return `PF: ${l.pf_pct_min}%–${l.pf_pct_max}%${gst}`;
+  }
+  if (l.pf_pct != null) {
+    return `PF: ${l.pf_pct}%${gst}`;
+  }
+  if (l.pf_flat != null) {
+    return `PF: ₹${Math.round(l.pf_flat).toLocaleString("en-IN")}${gst}`;
+  }
+  return null;
 }
 
 function ResolutionNotes({ resolution }: { resolution: BuildProfileResolution | null }) {
