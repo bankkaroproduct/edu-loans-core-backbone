@@ -352,6 +352,10 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         })(),
         coapplicant_work_experience_years: ((data as any).test_scores?.coapplicant_work_experience_years ?? "").toString(),
         coapplicant_work_experience_months: ((data as any).test_scores?.coapplicant_work_experience_months ?? "").toString(),
+        coapplicant_work_experience: buildCoappWorkExpShorthand(
+          (data as any).test_scores?.coapplicant_work_experience_years,
+          (data as any).test_scores?.coapplicant_work_experience_months,
+        ),
         ielts: ((data as any).test_scores?.ielts ?? "").toString(),
         toefl: ((data as any).test_scores?.toefl ?? "").toString(),
         duolingo: ((data as any).test_scores?.duolingo ?? "").toString(),
