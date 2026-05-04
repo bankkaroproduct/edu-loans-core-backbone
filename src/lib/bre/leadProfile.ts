@@ -570,27 +570,46 @@ function buildProfileCore(
 
   // ---- student bucket ----
   const ts = lead.test_scores as unknown;
-  const classX = numFromTestScores(ts, "tenth") ?? numFromTestScores(ts, "class_x");
-  const classXII = numFromTestScores(ts, "twelfth") ?? numFromTestScores(ts, "class_xii");
-  // Graduation marks priority:
-  //   1. test_scores.graduation (numeric, percentage)
-  //   2. test_scores.highest_qualification_score — when ≤ 10, treated as a
-  //      10-point GPA and converted to percentage via the standard ×9.5
-  //      multiplier (mirrors parseGpa). When > 10, used as-is (already a %).
-  //   3. legacy `marks_gpa` free-text (parsed via parseGpa)
-  //   4. null → engine band 0
-  const hqScoreRaw = numFromTestScores(ts, "highest_qualification_score");
-  const hqScore =
-    hqScoreRaw == null ? null : hqScoreRaw <= 10 ? Math.round(hqScoreRaw * 9.5 * 100) / 100 : hqScoreRaw;
-  const graduation =
-    numFromTestScores(ts, "graduation") ?? hqScore ?? parseGpa(lead.marks_gpa);
+  const tsObj = (ts && typeof ts === "object" ? (ts as Record<string, unknown>) : {}) as Record<string, unknown>;
+
+  // 10th and 12th — normalize using (score, total) pair when total is provided,
+  // else fall back to the existing legacy parse (score-only). Backward-compat:
+  // old leads without `*_total` keys keep behaving exactly as before.
+  const classXNorm = normalizeAcademicScore(
+    tsObj.tenth ?? tsObj.class_x ?? null,
+    tsObj.tenth_total ?? null,
+  );
+  const classXIINorm = normalizeAcademicScore(
+    tsObj.twelfth ?? tsObj.class_xii ?? null,
+    tsObj.twelfth_total ?? null,
+  );
+  const classX = classXNorm.percentage;
+  const classXII = classXIINorm.percentage;
+
+  // Graduation marks — Effective Academic Score that considers BOTH Graduation
+  // and Highest Qualification scores when both are provided.
+  //   - Both present  → average(grad%, hq%) feeds graduation_marks
+  //   - Only grad     → grad%
+  //   - Only HQ       → HQ% (regardless of qualification level — both flows
+  //                     are honest, the reason text reflects intent)
+  //   - Neither       → fall back to legacy `marks_gpa`, else null
+  const academicResult = computeEffectiveAcademicScore({
+    graduationScore: tsObj.graduation ?? null,
+    graduationTotal: tsObj.graduation_total ?? null,
+    highestQualificationScore: tsObj.highest_qualification_score ?? null,
+    highestQualificationTotal: tsObj.highest_qualification_total ?? null,
+    highestQualificationLabel: lead.highest_qualification ?? null,
+    legacyMarksGpa: lead.marks_gpa ?? null,
+  });
+  const graduation = academicResult.effective;
+
   // NOTE: entrance_rank and english_proficiency are intentionally NOT included
   // in the scoring profile. Test scores (IELTS/TOEFL/PTE/Duolingo/GRE/GMAT/SAT/
   // entrance percentile) are captured for reference only and do not contribute
   // to BRE Student-bucket scoring. Parsing helpers and resolution metadata are
   // preserved so the Admin BRE detail can still surface "captured for reference"
   // chips, but no value is fed into profile.student.
-  const workExp = workExpToYears((ts as Record<string, unknown> | null)?.work_experience_years);
+  const workExp = workExpToYears(tsObj.work_experience_years);
   // Reference englishResult so existing resolution chip continues to render.
   void englishResult;
 
@@ -607,14 +626,24 @@ function buildProfileCore(
   const coAge = numFromTestScores(ts, "coapplicant_age");
   const coCibil = numFromTestScores(ts, "coapplicant_cibil") ?? numFromTestScores(ts, "cibil_score");
 
-  // Income stability: legitimate derivation from work_experience_years ONLY when
-  // the co-applicant is salaried/self-employed and the value is present.
-  // Otherwise leave null — engine treats as missing band → 0.
+  // Co-applicant work experience (NEW). Pure co-applicant signal — does not
+  // borrow from the student's work experience anymore. Stored in test_scores
+  // as `coapplicant_work_experience_years` (integer years) +
+  // `coapplicant_work_experience_months` (0–11).
+  const coYearsRaw = tsObj.coapplicant_work_experience_years;
+  const coMonthsRaw = tsObj.coapplicant_work_experience_months;
+  const coWorkExpYears = coapplicantWorkExperienceToYears(
+    coYearsRaw as number | string | null | undefined,
+    coMonthsRaw as number | string | null | undefined,
+  );
+
+  // Income stability: maps from co-applicant work experience ONLY when the
+  // co-applicant is salaried/self-employed and a value was captured. Student
+  // work experience NEVER feeds this anymore.
+  const employedKinds = /^(salaried_private|salaried_govt|self_employed_professional|self_employed_business)$/;
   const incomeStabilityYears =
-    employmentType &&
-    /^(salaried_private|salaried_govt|self_employed_professional|self_employed_business)$/.test(employmentType) &&
-    workExp != null
-      ? workExp
+    employmentType && employedKinds.test(employmentType) && coWorkExpYears != null
+      ? coWorkExpYears
       : null;
 
   const profile: BreProfileInput = {
@@ -648,6 +677,17 @@ function buildProfileCore(
       age: coAge,
       cibil_score: coCibil,
     },
+  };
+
+  // Attach academic + co-app WE resolution metadata for the BRE detail UI.
+  finalResolution.academic = academicResult;
+  finalResolution.class_x = classXNorm;
+  finalResolution.class_xii = classXIINorm;
+  finalResolution.coapplicant_work_experience = {
+    years: coYearsRaw == null || coYearsRaw === "" ? null : Number(coYearsRaw),
+    months: coMonthsRaw == null || coMonthsRaw === "" ? null : Number(coMonthsRaw),
+    decimal_years: coWorkExpYears,
+    mapped_to: incomeStabilityYears != null ? "income_stability_years" : "none",
   };
 
   return { profile, missing, resolution: finalResolution };
