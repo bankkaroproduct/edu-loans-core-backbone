@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { StudentStepLayout } from "@/components/student/StudentStepLayout";
 import { useStudentAuth } from "@/hooks/useStudentAuth";
@@ -11,7 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { HeartHandshake } from "lucide-react";
 import { CollateralRadio, collateralBoolToState, collateralStateToBool } from "@/components/shared/CollateralRadio";
 import { MoneyInput } from "@/components/ui/money-input";
-import { formatCoapplicantWorkExperience, validateCoapplicantWorkExperience } from "@/lib/academicScore";
+import { parseCoappWorkExpShorthand, validateCoappWorkExpShorthand, previewCoappWorkExpShorthand, buildCoappWorkExpShorthand } from "@/lib/academicScore";
 
 const RELATIONSHIPS = ["Father", "Mother", "Spouse", "Sibling", "Uncle", "Aunt", "Grandparent", "Other"];
 const EMPLOYMENT_TYPES = ["Salaried", "Self-employed", "Business Owner", "Professional", "Retired", "Homemaker", "Other"];
