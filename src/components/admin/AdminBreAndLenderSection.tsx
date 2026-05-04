@@ -784,14 +784,21 @@ function Chip({
   );
 }
 
-function FitBadge({ badge }: { badge: BreResult["eligible_lenders"][number]["badge"] }) {
-  if (!badge) return null;
+function FitBadge({
+  badge,
+  storedFit,
+}: {
+  badge: BreResult["eligible_lenders"][number]["badge"];
+  storedFit: "best_fit" | "good_fit" | "backup" | null;
+}) {
+  // Stored fit_category from lead_lender_matches wins over engine badge when present.
+  // Engine badges map: best_match→Best fit, strong→Good fit, backup→Backup.
   const map = {
-    best_match: {
+    best_fit: {
       label: "Best fit",
       cls: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
     },
-    strong: {
+    good_fit: {
       label: "Good fit",
       cls: "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300",
     },
@@ -800,7 +807,14 @@ function FitBadge({ badge }: { badge: BreResult["eligible_lenders"][number]["bad
       cls: "border-muted-foreground/30 bg-muted/40 text-muted-foreground",
     },
   } as const;
-  const m = map[badge];
+  const engineMap: Record<NonNullable<BreResult["eligible_lenders"][number]["badge"]>, keyof typeof map> = {
+    best_match: "best_fit",
+    strong: "good_fit",
+    backup: "backup",
+  };
+  const key: keyof typeof map | null = storedFit ?? (badge ? engineMap[badge] : null);
+  if (!key) return null;
+  const m = map[key];
   return (
     <Badge variant="outline" className={`text-[10px] px-1.5 py-0 shrink-0 ${m.cls}`}>
       {m.label}
