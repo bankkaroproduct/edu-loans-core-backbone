@@ -34,7 +34,7 @@ import { MasterCombobox, type MasterOption } from "@/components/ui/master-combob
 import { CollateralRadio, collateralBoolToState, collateralStateToBool, type CollateralState } from "@/components/shared/CollateralRadio";
 import { sanitizeWorkExpInput, formatWorkExperience, isValidWorkExp } from "@/lib/workExperience";
 import { ScoreTotalPair } from "@/components/shared/ScoreTotalPair";
-import { validateScoreTotalPair, validateCoapplicantWorkExperience, formatCoapplicantWorkExperience } from "@/lib/academicScore";
+import { validateScoreTotalPair, validateCoapplicantWorkExperience, formatCoapplicantWorkExperience, parseCoappWorkExpShorthand, validateCoappWorkExpShorthand, previewCoappWorkExpShorthand, buildCoappWorkExpShorthand } from "@/lib/academicScore";
 import { usePincodeLookup } from "@/hooks/usePincodeLookup";
 import { sortByPriority } from "@/lib/countryOrder";
 import { buildIntakeSessionOptions, intakeSessionValue, parseIntakeSessionValue } from "@/lib/intakeSession";
