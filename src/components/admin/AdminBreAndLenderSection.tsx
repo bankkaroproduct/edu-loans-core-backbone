@@ -705,8 +705,13 @@ function LenderOptionCards({
       </div>
 
       <ol className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-        {ordered.slice(0, 8).map((l) => (
-          <LenderCard key={l.lender_id} l={l} stored={storedMatches.get(l.lender_id) ?? null} />
+        {ordered.slice(0, 8).map((l, idx) => (
+          <LenderCard
+            key={l.lender_id}
+            l={l}
+            stored={storedMatches.get(l.lender_id) ?? null}
+            displayPosition={idx + 1}
+          />
         ))}
       </ol>
 
