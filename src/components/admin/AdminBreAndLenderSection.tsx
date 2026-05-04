@@ -69,10 +69,11 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
   const [resolution, setResolution] = useState<BuildProfileResolution | null>(null);
   const [scoringVersion, setScoringVersion] = useState<number | null>(null);
   const [bucketThreshold, setBucketThreshold] = useState<number | null>(null);
-  // Stored recommendation_rank from lead_lender_matches (premiere-aware source of truth).
-  // Used only to ORDER the displayed lender cards. Does not affect BRE engine, scores,
-  // rates, loan amounts, fit labels, coverage chips, or eligibility.
-  const [storedRanks, setStoredRanks] = useState<Map<string, number>>(new Map());
+  // Stored recommendation_rank + fit_category from lead_lender_matches (premiere-aware
+  // source of truth). Used only to display rank badge, fit label, and ORDER the cards.
+  // Does not affect BRE engine, scores, rates, loan amounts, coverage chips, or eligibility.
+  type StoredMatch = { rank: number | null; fit: "best_fit" | "good_fit" | "backup" | null };
+  const [storedMatches, setStoredMatches] = useState<Map<string, StoredMatch>>(new Map());
 
   // VERBATIM copy of AdminCalculateBreCard.handleRun — no logic changes.
   const handleRun = async () => {
@@ -89,18 +90,19 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
       setScoringVersion(cfg.version_number);
       setBucketThreshold(cfg.bucket_threshold);
 
-      // Fetch stored recommendation_rank snapshot for display ordering only.
+      // Fetch stored recommendation_rank + fit_category snapshot for display only.
       const { data: stored } = await supabase
         .from("lead_lender_matches")
-        .select("lender_id, recommendation_rank")
+        .select("lender_id, recommendation_rank, fit_category")
         .eq("lead_id", lead.id);
-      const m = new Map<string, number>();
+      const m = new Map<string, StoredMatch>();
       for (const row of stored ?? []) {
-        if (row.recommendation_rank != null) {
-          m.set(row.lender_id, row.recommendation_rank);
-        }
+        m.set(row.lender_id, {
+          rank: row.recommendation_rank ?? null,
+          fit: (row.fit_category as StoredMatch["fit"]) ?? null,
+        });
       }
-      setStoredRanks(m);
+      setStoredMatches(m);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       toast.error(`BRE evaluation failed: ${msg}`);
@@ -287,7 +289,7 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
                 eligibleLenders={derived.eligibleLenders}
                 loanRange={result.eligible_loan_range}
                 rateRange={result.indicative_rate_range}
-                storedRanks={storedRanks}
+                storedMatches={storedMatches}
               />
             )}
           </section>
