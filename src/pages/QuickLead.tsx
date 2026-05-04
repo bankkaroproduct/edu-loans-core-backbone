@@ -82,6 +82,7 @@ export default function QuickLead() {
     district: string | null;
     state: string | null;
     tier: string | null;
+    city: string | null;
   } | null>(null);
   useEffect(() => {
     const current = (form.pincode ?? "").trim();
@@ -98,8 +99,18 @@ export default function QuickLead() {
         const nextDistrict = overwriteIfOurs(prev.district, prevApplied?.district ?? null, pincodeResult.district);
         const nextState = overwriteIfOurs(prev.state, prevApplied?.state ?? null, pincodeResult.state);
         const nextTier = overwriteIfOurs(prev.tier, prevApplied?.tier ?? null, pincodeResult.tier);
-        lastAppliedPincode.current = { pincode: current, district: nextDistrict, state: nextState, tier: nextTier };
-        return { ...prev, district: nextDistrict, state: nextState, tier: nextTier };
+        // pincode_master has no dedicated city column; use district as the best available
+        // city proxy (same value users would otherwise type). District remains editable.
+        const cityProxy = pincodeResult.district;
+        const nextCity = overwriteIfOurs(prev.city, prevApplied?.city ?? null, cityProxy);
+        lastAppliedPincode.current = {
+          pincode: current,
+          district: nextDistrict,
+          state: nextState,
+          tier: nextTier,
+          city: nextCity,
+        };
+        return { ...prev, district: nextDistrict, state: nextState, tier: nextTier, city: nextCity };
       });
       return;
     }
@@ -114,6 +125,7 @@ export default function QuickLead() {
           district: prev.district && p.district === prev.district ? "" : p.district,
           state: prev.state && p.state === prev.state ? "" : p.state,
           tier: prev.tier && p.tier === prev.tier ? "" : p.tier,
+          city: prev.city && p.city === prev.city ? "" : p.city,
         }));
         if (current.length !== 6) lastAppliedPincode.current = null;
       }
