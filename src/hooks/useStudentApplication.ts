@@ -357,13 +357,14 @@ export function useStudentApplication() {
         // Co-applicant Work Experience (years/months) — feeds BRE
         // coapplicant.income_stability_years. Stored as separate keys so
         // it never collides with the student's `work_experience_years`.
+        // Use numeric-validity checks so explicit "0" is preserved (NOT dropped).
         const cwYearsRaw = (formData.test_scores.coapplicant_work_experience_years ?? "").toString().trim();
-        if (cwYearsRaw) {
+        if (cwYearsRaw !== "") {
           const n = parseInt(cwYearsRaw, 10);
           if (Number.isFinite(n) && n >= 0) ext.coapplicant_work_experience_years = n;
         }
         const cwMonthsRaw = (formData.test_scores.coapplicant_work_experience_months ?? "").toString().trim();
-        if (cwMonthsRaw) {
+        if (cwMonthsRaw !== "") {
           const n = parseInt(cwMonthsRaw, 10);
           if (Number.isFinite(n) && n >= 0 && n <= 11) ext.coapplicant_work_experience_months = n;
         }
