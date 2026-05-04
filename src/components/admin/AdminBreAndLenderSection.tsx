@@ -72,7 +72,12 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
   // Stored recommendation_rank + fit_category from lead_lender_matches (premiere-aware
   // source of truth). Used only to display rank badge, fit label, and ORDER the cards.
   // Does not affect BRE engine, scores, rates, loan amounts, coverage chips, or eligibility.
-  type StoredMatch = { rank: number | null; fit: "best_fit" | "good_fit" | "backup" | null };
+  type StoredMatch = {
+    rank: number | null;
+    fit: "best_fit" | "good_fit" | "backup" | null;
+    reason: string | null;
+    score: number | null;
+  };
   const [storedMatches, setStoredMatches] = useState<Map<string, StoredMatch>>(new Map());
 
   // VERBATIM copy of AdminCalculateBreCard.handleRun — no logic changes.
