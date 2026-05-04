@@ -229,57 +229,49 @@ export default function StudentCoapplicantDetails() {
               />
               <p className="text-xs text-muted-foreground">Range 300–900. Required to improve lender match accuracy.</p>
             </div>
-            {/* 11. Co-applicant Work Experience (Years + Months) — feeds BRE
-                coapplicant.income_stability_years. This is the CO-APPLICANT's
-                work experience, not the student's. */}
+            {/* 11. Co-applicant Work Experience — single shorthand input
+                ("years.months", e.g. 3.6 = 3y 6m). Feeds BRE
+                coapplicant.income_stability_years. */}
             <div className="space-y-1.5 sm:col-span-2">
               <Label className="text-sm font-medium">Co-applicant Work Experience</Label>
               <p className="text-xs text-muted-foreground">
                 The co-applicant's total work experience (not the student's).
               </p>
               <p className="text-xs text-muted-foreground">
-                Used in BRE → Co-applicant Income Stability.
+                Example: enter <strong>3.6</strong> for 3 years 6 months. Used in BRE → Co-applicant Income Stability.
               </p>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <Label className="text-xs text-muted-foreground">Years</Label>
-                  <Input
-                    inputMode="numeric"
-                    value={formData.test_scores.coapplicant_work_experience_years || ""}
-                    onChange={e =>
-                      updateTestScore(
-                        "coapplicant_work_experience_years",
-                        e.target.value.replace(/\D/g, "").slice(0, 2),
-                      )
-                    }
-                    placeholder="e.g. 3"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">Months (0–11)</Label>
-                  <Input
-                    inputMode="numeric"
-                    value={formData.test_scores.coapplicant_work_experience_months || ""}
-                    onChange={e =>
-                      updateTestScore(
-                        "coapplicant_work_experience_months",
-                        e.target.value.replace(/\D/g, "").slice(0, 2),
-                      )
-                    }
-                    placeholder="e.g. 6"
-                  />
-                </div>
-              </div>
+              <Input
+                inputMode="decimal"
+                value={coWorkExp}
+                onChange={(e) => {
+                  let v = e.target.value.replace(/[^\d.]/g, "");
+                  const firstDot = v.indexOf(".");
+                  if (firstDot !== -1) {
+                    v = v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, "");
+                    const [a, b = ""] = v.split(".");
+                    v = a + "." + b.slice(0, 2);
+                  }
+                  setCoWorkExp(v);
+                  // Mirror immediately into stored keys so save/exit + review preview are accurate.
+                  if (!v) {
+                    updateTestScore("coapplicant_work_experience_years", "");
+                    updateTestScore("coapplicant_work_experience_months", "");
+                    return;
+                  }
+                  const parsed = parseCoappWorkExpShorthand(v);
+                  if (parsed) {
+                    updateTestScore("coapplicant_work_experience_years", String(parsed.years));
+                    updateTestScore("coapplicant_work_experience_months", String(parsed.months));
+                  }
+                }}
+                placeholder="e.g. 3.6"
+              />
               {(() => {
-                const y = formData.test_scores.coapplicant_work_experience_years;
-                const m = formData.test_scores.coapplicant_work_experience_months;
-                if (!y && !m) return null;
-                const err = validateCoapplicantWorkExperience(String(y ?? ""), String(m ?? ""));
+                if (!coWorkExp) return null;
+                const err = validateCoappWorkExpShorthand(coWorkExp);
                 if (err) return <p className="text-xs font-medium text-destructive">{err}</p>;
-                const formatted = formatCoapplicantWorkExperience(y, m);
-                return formatted ? (
-                  <p className="text-xs text-muted-foreground">{formatted}</p>
-                ) : null;
+                const preview = previewCoappWorkExpShorthand(coWorkExp);
+                return preview ? <p className="text-xs text-muted-foreground">{preview}</p> : null;
               })()}
             </div>
             <div className="sm:col-span-2">
