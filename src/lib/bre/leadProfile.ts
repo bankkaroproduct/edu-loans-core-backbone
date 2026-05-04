@@ -608,9 +608,9 @@ function buildProfileCore(
       class_x_marks: classX,
       class_xii_marks: classXII,
       graduation_marks: graduation,
-      entrance_rank: entranceRank,
+      // entrance_rank and english_proficiency intentionally omitted — test
+      // scores are not used in BRE scoring (captured for reference only).
       work_experience_years: workExp,
-      english_proficiency: englishProficiency,
     },
     university: {
       university_tier: resolved.universityTier,
