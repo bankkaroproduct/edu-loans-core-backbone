@@ -780,9 +780,23 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     // Work experience: same shorthand & coercion as Student. "0" → number 0 (Fresher).
     setOrDelete("work_experience_years", form.work_experience_years);
 
-    // Co-applicant work experience (years/months) — strict integer.
-    setIntOrDelete("coapplicant_work_experience_years", form.coapplicant_work_experience_years);
-    setIntOrDelete("coapplicant_work_experience_months", form.coapplicant_work_experience_months);
+    // Co-applicant work experience — single shorthand "years.months". Persist
+    // to the existing two integer keys. Explicit "0" persists as years=0,
+    // months=0 (NOT deleted). Blank deletes both keys (treated as missing).
+    {
+      const raw = (form.coapplicant_work_experience ?? "").toString().trim();
+      if (!raw) {
+        delete existing.coapplicant_work_experience_years;
+        delete existing.coapplicant_work_experience_months;
+      } else {
+        const parsed = parseCoappWorkExpShorthand(raw);
+        if (parsed) {
+          existing.coapplicant_work_experience_years = parsed.years;
+          existing.coapplicant_work_experience_months = parsed.months;
+        }
+        // If invalid, validate() would have blocked submit — leave existing keys untouched.
+      }
+    }
 
     return existing;
   }, [
