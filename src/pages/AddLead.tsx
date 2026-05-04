@@ -1392,9 +1392,6 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 onScore={(v) => set("highest_qualification_score", v)}
                 onTotal={(v) => set("highest_qualification_total", v)}
               />
-              <p className="text-xs text-muted-foreground md:col-span-2">
-                10th and 12th are required. Graduation and Highest Qualification Score are optional. Total Marks / Scale is optional but recommended for accurate scoring (e.g. enter 9.5 and total 10 for CGPA, or 78 and total 100 for percentage).
-              </p>
 
               {/* Read-only academic context for student-origin leads in admin edit mode */}
               {isAdminForm && isEditMode && originalLead?.source_type === "student_direct" && (
@@ -1410,6 +1407,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   </div>
                 )
               )}
+              </div>
             </CardContent>
           </Card>
 
