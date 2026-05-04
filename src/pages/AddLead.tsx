@@ -490,6 +490,17 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       if (!form.highest_qualification) return { message: "Highest qualification is required", step: "study", field: "highest_qualification" };
       if (!form.tenth_score.trim()) return { message: "10th score is required", step: "study", field: "tenth_score" };
       if (!form.twelfth_score.trim()) return { message: "12th score is required", step: "study", field: "twelfth_score" };
+      // Score / total pair validation (totals are optional, legacy compat)
+      const pairs: Array<[string, string, string, string]> = [
+        ["10th", form.tenth_score, form.tenth_total, "tenth_total"],
+        ["12th", form.twelfth_score, form.twelfth_total, "twelfth_total"],
+        ["Graduation", form.graduation_score, form.graduation_total, "graduation_total"],
+        ["Highest Qualification", form.highest_qualification_score, form.highest_qualification_total, "highest_qualification_total"],
+      ];
+      for (const [label, s, t, field] of pairs) {
+        const err = validateScoreTotalPair(s, t);
+        if (err) return { message: `${label}: ${err}`, step: "study", field };
+      }
 
       // Financial Info — required in BOTH partner and admin modes (restored).
       if (!form.loan_amount_required) return { message: "Approx loan amount is required", step: "financial", field: "loan_amount_required" };
@@ -1532,6 +1543,42 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   placeholder="e.g. 750"
                 />
                 <p className="text-xs text-muted-foreground">Range 300–900. Required to improve lender match accuracy.</p>
+              </div>
+              {/* Co-applicant Work Experience (years + months) — feeds BRE
+                  coapplicant.income_stability_years. This is the CO-APPLICANT's
+                  work experience, NOT the student's. */}
+              <div className="space-y-2 md:col-span-2" data-field="coapplicant_work_experience_years">
+                <Label>Co-applicant Work Experience</Label>
+                <p className="text-xs text-muted-foreground">The co-applicant's total work experience (not the student's).</p>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Years</Label>
+                    <Input
+                      inputMode="numeric"
+                      value={form.coapplicant_work_experience_years}
+                      onChange={(e) => set("coapplicant_work_experience_years", e.target.value.replace(/\D/g, "").slice(0, 2))}
+                      placeholder="e.g. 3"
+                    />
+                  </div>
+                  <div data-field="coapplicant_work_experience_months">
+                    <Label className="text-xs text-muted-foreground">Months (0–11)</Label>
+                    <Input
+                      inputMode="numeric"
+                      value={form.coapplicant_work_experience_months}
+                      onChange={(e) => set("coapplicant_work_experience_months", e.target.value.replace(/\D/g, "").slice(0, 2))}
+                      placeholder="e.g. 6"
+                    />
+                  </div>
+                </div>
+                {(() => {
+                  const y = form.coapplicant_work_experience_years;
+                  const m = form.coapplicant_work_experience_months;
+                  if (!y && !m) return null;
+                  const err = validateCoapplicantWorkExperience(y, m);
+                  if (err) return <p className="text-xs font-medium text-destructive">{err}</p>;
+                  const formatted = formatCoapplicantWorkExperience(y, m);
+                  return formatted ? <p className="text-xs text-muted-foreground">{formatted}</p> : null;
+                })()}
               </div>
               <div className="md:col-span-2">
                 <CollateralRadio
