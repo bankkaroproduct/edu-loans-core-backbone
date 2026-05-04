@@ -805,7 +805,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     form.tenth_total, form.twelfth_total, form.graduation_total, form.highest_qualification_total,
     form.ielts, form.toefl, form.duolingo, form.gre, form.gmat,
     form.coapplicant_age, form.coapplicant_cibil, form.work_experience_years,
-    form.coapplicant_work_experience_years, form.coapplicant_work_experience_months,
+    form.coapplicant_work_experience,
   ]);
 
   const createLead = async (asDraft: boolean, hasDuplicateWarning: boolean) => {
