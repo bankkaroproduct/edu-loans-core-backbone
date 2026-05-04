@@ -224,7 +224,10 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     coapplicant_age: "",          // numeric string in UI; persisted as number
     coapplicant_cibil: "",        // numeric string in UI; persisted as number
     work_experience_years: "",    // Student shorthand: "3" or "3.2"; "0" = Fresher
-    // Co-applicant work experience (years + months) — feeds BRE income_stability_years.
+    // Co-applicant work experience — single shorthand "years.months" (e.g. "3.6"
+    // = 3y 6m). On save we split into integer years/months and persist BOTH
+    // keys into test_scores. Years/months keys remain the storage contract.
+    coapplicant_work_experience: "",
     coapplicant_work_experience_years: "",
     coapplicant_work_experience_months: "",
     // Standardized test scores (aligned with Student portal keys)
