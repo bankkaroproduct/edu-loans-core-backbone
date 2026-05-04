@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useStudentAuth } from "@/hooks/useStudentAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { parseCoappWorkExpShorthand } from "@/lib/academicScore";
 
 export interface StudentFormData {
   // Basic
@@ -268,7 +269,10 @@ export function useStudentApplication() {
     }));
   };
 
-  const saveStep = useCallback(async (action: "save_basic" | "save_education" | "save_coapplicant" | "submit") => {
+  const saveStep = useCallback(async (
+    action: "save_basic" | "save_education" | "save_coapplicant" | "submit",
+    options?: { coapplicantWorkExperience?: string },
+  ) => {
     if (!phone) return null;
     setSaving(true);
     try {
@@ -358,15 +362,24 @@ export function useStudentApplication() {
         // coapplicant.income_stability_years. Stored as separate keys so
         // it never collides with the student's `work_experience_years`.
         // Use numeric-validity checks so explicit "0" is preserved (NOT dropped).
-        const cwYearsRaw = (formData.test_scores.coapplicant_work_experience_years ?? "").toString().trim();
-        if (cwYearsRaw !== "") {
-          const n = parseInt(cwYearsRaw, 10);
-          if (Number.isFinite(n) && n >= 0) ext.coapplicant_work_experience_years = n;
-        }
-        const cwMonthsRaw = (formData.test_scores.coapplicant_work_experience_months ?? "").toString().trim();
-        if (cwMonthsRaw !== "") {
-          const n = parseInt(cwMonthsRaw, 10);
-          if (Number.isFinite(n) && n >= 0 && n <= 11) ext.coapplicant_work_experience_months = n;
+        const cwOverride = options?.coapplicantWorkExperience;
+        if (cwOverride !== undefined) {
+          const parsed = parseCoappWorkExpShorthand(cwOverride);
+          if (parsed) {
+            ext.coapplicant_work_experience_years = parsed.years;
+            ext.coapplicant_work_experience_months = parsed.months;
+          }
+        } else {
+          const cwYearsRaw = (formData.test_scores.coapplicant_work_experience_years ?? "").toString().trim();
+          if (cwYearsRaw !== "") {
+            const n = parseInt(cwYearsRaw, 10);
+            if (Number.isFinite(n) && n >= 0) ext.coapplicant_work_experience_years = n;
+          }
+          const cwMonthsRaw = (formData.test_scores.coapplicant_work_experience_months ?? "").toString().trim();
+          if (cwMonthsRaw !== "") {
+            const n = parseInt(cwMonthsRaw, 10);
+            if (Number.isFinite(n) && n >= 0 && n <= 11) ext.coapplicant_work_experience_months = n;
+          }
         }
 
         payload = {

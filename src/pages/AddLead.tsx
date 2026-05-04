@@ -1590,15 +1590,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   inputMode="decimal"
                   value={form.coapplicant_work_experience}
                   onChange={(e) => {
-                    // Accept digits + at most one dot + at most 2 decimal digits.
-                    let v = e.target.value.replace(/[^\d.]/g, "");
-                    const firstDot = v.indexOf(".");
-                    if (firstDot !== -1) {
-                      v = v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, "");
-                      const [a, b = ""] = v.split(".");
-                      v = a + "." + b.slice(0, 2);
-                    }
-                    set("coapplicant_work_experience", v);
+                    set("coapplicant_work_experience", e.target.value.trim());
                   }}
                   placeholder="e.g. 3.6"
                 />

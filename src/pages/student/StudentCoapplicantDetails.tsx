@@ -98,7 +98,7 @@ export default function StudentCoapplicantDetails() {
       );
       if (!proceed) return;
     }
-    const result = await saveStep("save_coapplicant");
+    const result = await saveStep("save_coapplicant", { coapplicantWorkExperience: coWorkExp });
     if (result) {
       toast({ title: "Co-applicant details saved" });
       navigate("/student/apply/review");
@@ -106,7 +106,7 @@ export default function StudentCoapplicantDetails() {
   };
 
   const handleSaveExit = async () => {
-    await saveStep("save_coapplicant");
+    await saveStep("save_coapplicant", { coapplicantWorkExperience: coWorkExp });
     toast({ title: "Progress saved" });
     navigate("/student/continue");
   };
@@ -239,13 +239,7 @@ export default function StudentCoapplicantDetails() {
                 inputMode="decimal"
                 value={coWorkExp}
                 onChange={(e) => {
-                  let v = e.target.value.replace(/[^\d.]/g, "");
-                  const firstDot = v.indexOf(".");
-                  if (firstDot !== -1) {
-                    v = v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, "");
-                    const [a, b = ""] = v.split(".");
-                    v = a + "." + b.slice(0, 2);
-                  }
+                  const v = e.target.value.trim();
                   setCoWorkExp(v);
                   // Mirror immediately into stored keys so save/exit + review preview are accurate.
                   if (!v) {
