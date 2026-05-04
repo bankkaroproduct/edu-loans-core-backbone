@@ -15,6 +15,7 @@ import { useHighestQualificationOptions } from "@/hooks/useHighestQualificationO
 import { buildIntakeSessionOptions, intakeSessionValue, parseIntakeSessionValue } from "@/lib/intakeSession";
 import { sanitizeWorkExpInput, formatWorkExperience } from "@/lib/workExperience";
 import { Checkbox } from "@/components/ui/checkbox";
+import { normalizeAcademicScore, validateScoreTotalPair } from "@/lib/academicScore";
 
 interface UniversityRow { id: string; university_name: string; country: string }
 interface CourseRow { id: string; course_name: string; course_category: string | null }
