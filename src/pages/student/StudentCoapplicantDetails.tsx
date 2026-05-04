@@ -98,7 +98,7 @@ export default function StudentCoapplicantDetails() {
       );
       if (!proceed) return;
     }
-    const result = await saveStep("save_coapplicant");
+    const result = await saveStep("save_coapplicant", { coapplicantWorkExperience: coWorkExp });
     if (result) {
       toast({ title: "Co-applicant details saved" });
       navigate("/student/apply/review");
@@ -106,7 +106,7 @@ export default function StudentCoapplicantDetails() {
   };
 
   const handleSaveExit = async () => {
-    await saveStep("save_coapplicant");
+    await saveStep("save_coapplicant", { coapplicantWorkExperience: coWorkExp });
     toast({ title: "Progress saved" });
     navigate("/student/continue");
   };
