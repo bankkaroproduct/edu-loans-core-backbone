@@ -34,7 +34,7 @@ import { MasterCombobox, type MasterOption } from "@/components/ui/master-combob
 import { CollateralRadio, collateralBoolToState, collateralStateToBool, type CollateralState } from "@/components/shared/CollateralRadio";
 import { sanitizeWorkExpInput, formatWorkExperience, isValidWorkExp } from "@/lib/workExperience";
 import { ScoreTotalPair } from "@/components/shared/ScoreTotalPair";
-import { validateScoreTotalPair, validateCoapplicantWorkExperience, formatCoapplicantWorkExperience } from "@/lib/academicScore";
+import { validateScoreTotalPair, parseCoappWorkExpShorthand, validateCoappWorkExpShorthand, previewCoappWorkExpShorthand, buildCoappWorkExpShorthand } from "@/lib/academicScore";
 import { usePincodeLookup } from "@/hooks/usePincodeLookup";
 import { sortByPriority } from "@/lib/countryOrder";
 import { buildIntakeSessionOptions, intakeSessionValue, parseIntakeSessionValue } from "@/lib/intakeSession";
@@ -224,7 +224,10 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     coapplicant_age: "",          // numeric string in UI; persisted as number
     coapplicant_cibil: "",        // numeric string in UI; persisted as number
     work_experience_years: "",    // Student shorthand: "3" or "3.2"; "0" = Fresher
-    // Co-applicant work experience (years + months) — feeds BRE income_stability_years.
+    // Co-applicant work experience — single shorthand "years.months" (e.g. "3.6"
+    // = 3y 6m). On save we split into integer years/months and persist BOTH
+    // keys into test_scores. Years/months keys remain the storage contract.
+    coapplicant_work_experience: "",
     coapplicant_work_experience_years: "",
     coapplicant_work_experience_months: "",
     // Standardized test scores (aligned with Student portal keys)
@@ -349,6 +352,10 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         })(),
         coapplicant_work_experience_years: ((data as any).test_scores?.coapplicant_work_experience_years ?? "").toString(),
         coapplicant_work_experience_months: ((data as any).test_scores?.coapplicant_work_experience_months ?? "").toString(),
+        coapplicant_work_experience: buildCoappWorkExpShorthand(
+          (data as any).test_scores?.coapplicant_work_experience_years,
+          (data as any).test_scores?.coapplicant_work_experience_months,
+        ),
         ielts: ((data as any).test_scores?.ielts ?? "").toString(),
         toefl: ((data as any).test_scores?.toefl ?? "").toString(),
         duolingo: ((data as any).test_scores?.duolingo ?? "").toString(),
@@ -544,9 +551,9 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       }
       if (form.work_experience_years.trim() && !isValidWorkExp(form.work_experience_years))
         return { message: "Work experience must be a number with at most one decimal (e.g. 3 or 3.2)", step: "study", field: "work_experience_years" };
-      // Co-applicant work experience (optional)
-      const cwErr = validateCoapplicantWorkExperience(form.coapplicant_work_experience_years, form.coapplicant_work_experience_months);
-      if (cwErr) return { message: `Co-applicant Work Experience: ${cwErr}`, step: "financial", field: "coapplicant_work_experience_years" };
+      // Co-applicant work experience (optional) — single shorthand input "years.months"
+      const cwErr = validateCoappWorkExpShorthand(form.coapplicant_work_experience);
+      if (cwErr) return { message: `Co-applicant Work Experience: ${cwErr}`, step: "financial", field: "coapplicant_work_experience" };
     }
 
     if (!effectivePartnerId) return { message: "No partner organization found for your account. Admins can use 'Test as Partner' in the sidebar.", step: stepIds[0] };
@@ -627,9 +634,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     // Soft (non-blocking) warning when co-applicant work experience is blank on real submit.
     // Skipped for drafts and edits. Field remains optional.
     if (!asDraft && !isEditMode) {
-      const cwY = (form.coapplicant_work_experience_years ?? "").toString().trim();
-      const cwM = (form.coapplicant_work_experience_months ?? "").toString().trim();
-      if (!cwY && !cwM) {
+      const cwShorthand = (form.coapplicant_work_experience ?? "").toString().trim();
+      if (!cwShorthand) {
         const proceed = window.confirm(
           "Co-applicant work experience is missing. This may reduce Income Stability score in BRE. Continue?",
         );
@@ -774,9 +780,23 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     // Work experience: same shorthand & coercion as Student. "0" → number 0 (Fresher).
     setOrDelete("work_experience_years", form.work_experience_years);
 
-    // Co-applicant work experience (years/months) — strict integer.
-    setIntOrDelete("coapplicant_work_experience_years", form.coapplicant_work_experience_years);
-    setIntOrDelete("coapplicant_work_experience_months", form.coapplicant_work_experience_months);
+    // Co-applicant work experience — single shorthand "years.months". Persist
+    // to the existing two integer keys. Explicit "0" persists as years=0,
+    // months=0 (NOT deleted). Blank deletes both keys (treated as missing).
+    {
+      const raw = (form.coapplicant_work_experience ?? "").toString().trim();
+      if (!raw) {
+        delete existing.coapplicant_work_experience_years;
+        delete existing.coapplicant_work_experience_months;
+      } else {
+        const parsed = parseCoappWorkExpShorthand(raw);
+        if (parsed) {
+          existing.coapplicant_work_experience_years = parsed.years;
+          existing.coapplicant_work_experience_months = parsed.months;
+        }
+        // If invalid, validate() would have blocked submit — leave existing keys untouched.
+      }
+    }
 
     return existing;
   }, [
@@ -785,7 +805,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     form.tenth_total, form.twelfth_total, form.graduation_total, form.highest_qualification_total,
     form.ielts, form.toefl, form.duolingo, form.gre, form.gmat,
     form.coapplicant_age, form.coapplicant_cibil, form.work_experience_years,
-    form.coapplicant_work_experience_years, form.coapplicant_work_experience_months,
+    form.coapplicant_work_experience,
   ]);
 
   const createLead = async (asDraft: boolean, hasDuplicateWarning: boolean) => {
@@ -1560,41 +1580,35 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 />
                 <p className="text-xs text-muted-foreground">Range 300–900. Required to improve lender match accuracy.</p>
               </div>
-              {/* Co-applicant Work Experience (years + months) — feeds BRE
-                  coapplicant.income_stability_years. This is the CO-APPLICANT's
-                  work experience, NOT the student's. */}
-              <div className="space-y-2 md:col-span-2" data-field="coapplicant_work_experience_years">
+              {/* Co-applicant Work Experience — single shorthand input "years.months"
+                  (e.g. 3.6 = 3y 6m). Feeds BRE coapplicant.income_stability_years. */}
+              <div className="space-y-2 md:col-span-2" data-field="coapplicant_work_experience">
                 <Label>Co-applicant Work Experience</Label>
                 <p className="text-xs text-muted-foreground">The co-applicant's total work experience (not the student's).</p>
-                <p className="text-xs text-muted-foreground">Used in BRE → Co-applicant Income Stability.</p>
-                <div className="grid gap-3 md:grid-cols-2">
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Years</Label>
-                    <Input
-                      inputMode="numeric"
-                      value={form.coapplicant_work_experience_years}
-                      onChange={(e) => set("coapplicant_work_experience_years", e.target.value.replace(/\D/g, "").slice(0, 2))}
-                      placeholder="e.g. 3"
-                    />
-                  </div>
-                  <div data-field="coapplicant_work_experience_months">
-                    <Label className="text-xs text-muted-foreground">Months (0–11)</Label>
-                    <Input
-                      inputMode="numeric"
-                      value={form.coapplicant_work_experience_months}
-                      onChange={(e) => set("coapplicant_work_experience_months", e.target.value.replace(/\D/g, "").slice(0, 2))}
-                      placeholder="e.g. 6"
-                    />
-                  </div>
-                </div>
+                <p className="text-xs text-muted-foreground">Example: enter <strong>3.6</strong> for 3 years 6 months. Used in BRE → Co-applicant Income Stability.</p>
+                <Input
+                  inputMode="decimal"
+                  value={form.coapplicant_work_experience}
+                  onChange={(e) => {
+                    // Accept digits + at most one dot + at most 2 decimal digits.
+                    let v = e.target.value.replace(/[^\d.]/g, "");
+                    const firstDot = v.indexOf(".");
+                    if (firstDot !== -1) {
+                      v = v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, "");
+                      const [a, b = ""] = v.split(".");
+                      v = a + "." + b.slice(0, 2);
+                    }
+                    set("coapplicant_work_experience", v);
+                  }}
+                  placeholder="e.g. 3.6"
+                />
                 {(() => {
-                  const y = form.coapplicant_work_experience_years;
-                  const m = form.coapplicant_work_experience_months;
-                  if (!y && !m) return null;
-                  const err = validateCoapplicantWorkExperience(y, m);
+                  const raw = form.coapplicant_work_experience;
+                  if (!raw) return null;
+                  const err = validateCoappWorkExpShorthand(raw);
                   if (err) return <p className="text-xs font-medium text-destructive">{err}</p>;
-                  const formatted = formatCoapplicantWorkExperience(y, m);
-                  return formatted ? <p className="text-xs text-muted-foreground">{formatted}</p> : null;
+                  const preview = previewCoappWorkExpShorthand(raw);
+                  return preview ? <p className="text-xs text-muted-foreground">{preview}</p> : null;
                 })()}
               </div>
               <div className="md:col-span-2">
