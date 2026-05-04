@@ -752,10 +752,12 @@ function LenderCard({
   l,
   stored,
   displayPosition,
+  staleRank = false,
 }: {
   l: BreResult["eligible_lenders"][number];
   stored: StoredMatchValue | null;
   displayPosition: number;
+  staleRank?: boolean;
 }) {
   const isSecured = l.product_type === "secured";
   const isUnsecured = l.product_type === "unsecured";
@@ -765,6 +767,10 @@ function LenderCard({
   // but is NOT mutated and not shown as the badge number. This avoids gaps caused by
   // filtered-out lenders occupying low stored ranks.
   const displayRank = displayPosition;
+
+  // User-facing code subtitle: hide only the Credila/HDFC mismatch.
+  // Internal lender_code is preserved in DB and admin/internal screens.
+  const codeSubtitle = displayLenderCode(l.lender_name, l.lender_code);
 
   // Coverage chips: render only items explicitly set to true.
   const exp = l.coverage_expenses;
@@ -795,6 +801,9 @@ function LenderCard({
     l.roi_range_min != null &&
     l.roi_range_max != null;
 
+  // PF chip text — pass-through from engine. Hidden entirely if no PF source.
+  const pfLabel = formatPfLabel(l);
+
   return (
     <li className="group relative rounded-lg border border-border bg-card hover:border-primary/40 hover:shadow-sm transition-all p-3 flex flex-col gap-2.5">
       {/* Top row: rank + name + fit */}
@@ -809,29 +818,41 @@ function LenderCard({
           <div className="text-sm font-semibold text-foreground truncate" title={l.lender_name}>
             {l.lender_name}
           </div>
-          <div className="text-[10px] font-mono text-muted-foreground mt-0.5">{l.lender_code}</div>
+          {codeSubtitle && (
+            <div className="text-[10px] font-mono text-muted-foreground mt-0.5">{codeSubtitle}</div>
+          )}
         </div>
         <FitBadge badge={l.badge} storedFit={stored?.fit ?? null} />
       </div>
 
-      {/* Metrics row */}
+      {/* Projected ROI — primary metric, displayed prominently */}
+      {l.projected_rate != null && (
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            Projected ROI
+          </span>
+          <span className="text-base font-semibold text-foreground tabular-nums">
+            ~{l.projected_rate}%
+          </span>
+          {staleRank && (
+            <Badge
+              variant="outline"
+              className="text-[9px] px-1 py-0 border-amber-500/40 text-amber-700 dark:text-amber-300"
+              title="Stored recommendation rank differs from live rate-based order"
+            >
+              Stale rank
+            </Badge>
+          )}
+        </div>
+      )}
+
+      {/* Secondary metrics row */}
       <div className="flex flex-wrap items-center gap-1.5">
-        {hasRoiRange ? (
-          <>
-            <Chip
-              icon={<Percent className="h-3 w-3" />}
-              label={`ROI Range: ${l.roi_range_min}% – ${l.roi_range_max}%`}
-              accent
-            />
-            {l.projected_rate != null && (
-              <Chip label={`Projected: ~${l.projected_rate}%`} icon={<Percent className="h-3 w-3" />} />
-            )}
-          </>
-        ) : (
-          // Fallback: keep the original single projected-rate chip when range is missing.
-          l.projected_rate != null && (
-            <Chip icon={<Percent className="h-3 w-3" />} label={`${l.projected_rate}%`} accent />
-          )
+        {hasRoiRange && (
+          <Chip
+            icon={<Percent className="h-3 w-3" />}
+            label={`ROI Range: ${l.roi_range_min}% – ${l.roi_range_max}%`}
+          />
         )}
         {l.projected_loan_amount != null && (
           <Chip
@@ -840,6 +861,7 @@ function LenderCard({
             accent
           />
         )}
+        {pfLabel && <Chip icon={<Wallet className="h-3 w-3" />} label={pfLabel} />}
         {isSecured && (
           <Chip icon={<ShieldCheck className="h-3 w-3" />} label="Secured" />
         )}
