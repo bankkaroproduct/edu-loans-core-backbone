@@ -72,7 +72,12 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
   // Stored recommendation_rank + fit_category from lead_lender_matches (premiere-aware
   // source of truth). Used only to display rank badge, fit label, and ORDER the cards.
   // Does not affect BRE engine, scores, rates, loan amounts, coverage chips, or eligibility.
-  type StoredMatch = { rank: number | null; fit: "best_fit" | "good_fit" | "backup" | null };
+  type StoredMatch = {
+    rank: number | null;
+    fit: "best_fit" | "good_fit" | "backup" | null;
+    reason: string | null;
+    score: number | null;
+  };
   const [storedMatches, setStoredMatches] = useState<Map<string, StoredMatch>>(new Map());
 
   // VERBATIM copy of AdminCalculateBreCard.handleRun — no logic changes.
@@ -93,13 +98,15 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
       // Fetch stored recommendation_rank + fit_category snapshot for display only.
       const { data: stored } = await supabase
         .from("lead_lender_matches")
-        .select("lender_id, recommendation_rank, fit_category")
+        .select("lender_id, recommendation_rank, fit_category, recommendation_reason_summary, score")
         .eq("lead_id", lead.id);
       const m = new Map<string, StoredMatch>();
       for (const row of stored ?? []) {
         m.set(row.lender_id, {
           rank: row.recommendation_rank ?? null,
           fit: (row.fit_category as StoredMatch["fit"]) ?? null,
+          reason: (row.recommendation_reason_summary as string | null) ?? null,
+          score: row.score != null ? Number(row.score) : null,
         });
       }
       setStoredMatches(m);
@@ -624,7 +631,12 @@ function ScoreHighlights({ result }: { result: BreResult }) {
 
 // ---------------- Premium lender card list ----------------
 
-type StoredMatchValue = { rank: number | null; fit: "best_fit" | "good_fit" | "backup" | null };
+type StoredMatchValue = {
+  rank: number | null;
+  fit: "best_fit" | "good_fit" | "backup" | null;
+  reason: string | null;
+  score: number | null;
+};
 
 function LenderOptionCards({
   eligibleLenders,
@@ -757,7 +769,67 @@ function LenderCard({
           </div>
         </div>
       )}
+
+      {/* Recommendation rationale — bullets shown only when backed by real data */}
+      <RecommendationRationale
+        storedReason={stored?.reason ?? null}
+        projectedLoanAmount={l.projected_loan_amount}
+        productType={l.product_type}
+        coverageCount={coverageItems.length}
+      />
     </li>
+  );
+}
+
+function RecommendationRationale({
+  storedReason,
+  projectedLoanAmount,
+  productType,
+  coverageCount,
+}: {
+  storedReason: string | null;
+  projectedLoanAmount: number | null;
+  productType: "secured" | "unsecured" | null;
+  coverageCount: number;
+}) {
+  const bullets: string[] = [];
+
+  const reason = storedReason?.trim();
+  if (reason) bullets.push(reason);
+
+  if (projectedLoanAmount != null && projectedLoanAmount > 0) {
+    bullets.push(
+      `Loan amount ₹${Math.round(projectedLoanAmount).toLocaleString("en-IN")} fits lender range`,
+    );
+  }
+
+  if (productType === "secured") {
+    bullets.push("Secured route available");
+  } else if (productType === "unsecured") {
+    bullets.push("Unsecured route available");
+  }
+
+  if (coverageCount > 0) {
+    bullets.push(
+      `Covers ${coverageCount} expense ${coverageCount === 1 ? "category" : "categories"}`,
+    );
+  }
+
+  if (bullets.length === 0) return null;
+
+  return (
+    <div className="space-y-1 pt-0.5">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+        Recommendation rationale
+      </div>
+      <ul className="list-disc pl-4 space-y-0.5 text-[11px] text-muted-foreground">
+        {bullets.map((b, i) => (
+          <li key={i} className="leading-snug">
+            {b}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
