@@ -239,13 +239,7 @@ export default function StudentCoapplicantDetails() {
                 inputMode="decimal"
                 value={coWorkExp}
                 onChange={(e) => {
-                  let v = e.target.value.replace(/[^\d.]/g, "");
-                  const firstDot = v.indexOf(".");
-                  if (firstDot !== -1) {
-                    v = v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, "");
-                    const [a, b = ""] = v.split(".");
-                    v = a + "." + b.slice(0, 2);
-                  }
+                  const v = e.target.value.trim();
                   setCoWorkExp(v);
                   // Mirror immediately into stored keys so save/exit + review preview are accurate.
                   if (!v) {
