@@ -358,6 +358,12 @@ export function evaluate(
         roi_range_min: proj.roi_range_min,
         roi_range_max: proj.roi_range_max,
         roi_range_source: proj.roi_range_source,
+        // Display-only PF pass-through (commercials → result). Not used in ranking.
+        pf_pct: lender.commercials.processing_fee_pct ?? null,
+        pf_pct_min: lender.commercials.processing_fee_pct_min ?? null,
+        pf_pct_max: lender.commercials.processing_fee_pct_max ?? null,
+        pf_flat: lender.commercials.processing_fee_flat ?? null,
+        pf_gst_applicable: lender.commercials.processing_fee_gst_applicable ?? null,
       };
     });
 
