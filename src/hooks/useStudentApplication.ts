@@ -312,6 +312,11 @@ export function useStudentApplication() {
           twelfth: formData.test_scores.twelfth,
           graduation: formData.test_scores.graduation,
           highest_qualification_score: formData.test_scores.highest_qualification_score,
+          // Total marks denominators (new — optional, BRE-aware).
+          tenth_total: formData.test_scores.tenth_total,
+          twelfth_total: formData.test_scores.twelfth_total,
+          graduation_total: formData.test_scores.graduation_total,
+          highest_qualification_total: formData.test_scores.highest_qualification_total,
           work_experience_years: formData.test_scores.work_experience_years,
         };
         const scores: Record<string, number | string> = {};
