@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { buildIntakeSessionOptions, intakeSessionValue, parseIntakeSessionValue } from "@/lib/intakeSession";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -250,10 +251,11 @@ export default function QuickLead() {
     setSubmitting(false);
   };
 
-  const currentYear = new Date().getFullYear();
-  const futureIntakes = intakes.filter((i) => i.intake_year >= currentYear);
-  const intakeTerms = [...new Set(futureIntakes.map((i) => i.intake_term))];
-  const intakeYears = [...new Set(futureIntakes.map((i) => i.intake_year))].sort();
+  const intakeSessionOptions = useMemo(
+    () => buildIntakeSessionOptions(intakes, { onlyFuture: true }),
+    [intakes],
+  );
+
 
   if (isEffectivePartnerInactive === true) {
     return (
@@ -383,18 +385,21 @@ export default function QuickLead() {
               <Label>Course Name *</Label>
               <Input value={form.course_name} onChange={(e) => set("course_name", e.target.value)} placeholder="e.g. MS Computer Science" />
             </div>
-            <div className="space-y-2">
-              <Label>Intake Term *</Label>
-              <Select value={form.intake_term} onValueChange={(v) => set("intake_term", v)}>
-                <SelectTrigger><SelectValue placeholder="Select term" /></SelectTrigger>
-                <SelectContent>{intakeTerms.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Intake Year *</Label>
-              <Select value={form.intake_year ? String(form.intake_year) : ""} onValueChange={(v) => set("intake_year", Number(v))}>
-                <SelectTrigger><SelectValue placeholder="Select year" /></SelectTrigger>
-                <SelectContent>{intakeYears.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Intake Session *</Label>
+              <Select
+                value={intakeSessionValue(form.intake_term, form.intake_year)}
+                onValueChange={(v) => {
+                  const parsed = parseIntakeSessionValue(v);
+                  if (parsed) setForm((prev) => ({ ...prev, intake_term: parsed.term, intake_year: parsed.year }));
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="Select intake session" /></SelectTrigger>
+                <SelectContent>
+                  {intakeSessionOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
