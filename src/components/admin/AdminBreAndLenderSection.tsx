@@ -624,23 +624,25 @@ function ScoreHighlights({ result }: { result: BreResult }) {
 
 // ---------------- Premium lender card list ----------------
 
+type StoredMatchValue = { rank: number | null; fit: "best_fit" | "good_fit" | "backup" | null };
+
 function LenderOptionCards({
   eligibleLenders,
   loanRange,
   rateRange,
-  storedRanks,
+  storedMatches,
 }: {
   eligibleLenders: BreResult["eligible_lenders"];
   loanRange: BreResult["eligible_loan_range"];
   rateRange: BreResult["indicative_rate_range"];
-  storedRanks: Map<string, number>;
+  storedMatches: Map<string, StoredMatchValue>;
 }) {
   // Display order: stored recommendation_rank (premiere-aware) when available;
   // otherwise fall back to engine's l.rank. This is a display-only sort —
-  // scores, rates, loan amounts, fit labels and coverage chips are unchanged.
+  // scores, rates, loan amounts and coverage chips are unchanged.
   const ordered = [...eligibleLenders].sort((a, b) => {
-    const sa = storedRanks.get(a.lender_id);
-    const sb = storedRanks.get(b.lender_id);
+    const sa = storedMatches.get(a.lender_id)?.rank ?? null;
+    const sb = storedMatches.get(b.lender_id)?.rank ?? null;
     if (sa != null && sb != null) return sa - sb;
     if (sa != null) return -1;
     if (sb != null) return 1;
@@ -672,7 +674,7 @@ function LenderOptionCards({
 
       <ol className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
         {ordered.slice(0, 8).map((l) => (
-          <LenderCard key={l.lender_id} l={l} />
+          <LenderCard key={l.lender_id} l={l} stored={storedMatches.get(l.lender_id) ?? null} />
         ))}
       </ol>
 
