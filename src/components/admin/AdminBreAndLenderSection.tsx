@@ -102,13 +102,31 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
         .select("lender_id, recommendation_rank, fit_category, recommendation_reason_summary, score")
         .eq("lead_id", lead.id);
       const m = new Map<string, StoredMatch>();
+      // Build lender_id -> processing_time_days lookup from already-loaded active rules.
+      // Read-only: only surfaces value when rule already provides policy.processing_time_days.
+      const ptByLender = new Map<string, number>();
+      for (const rule of rules) {
+        const pt = rule.policy?.processing_time_days;
+        if (typeof pt === "number" && pt > 0) ptByLender.set(rule.lender_id, pt);
+      }
       for (const row of stored ?? []) {
         m.set(row.lender_id, {
           rank: row.recommendation_rank ?? null,
           fit: (row.fit_category as StoredMatch["fit"]) ?? null,
           reason: (row.recommendation_reason_summary as string | null) ?? null,
           score: row.score != null ? Number(row.score) : null,
+          processingTimeDays: ptByLender.get(row.lender_id) ?? null,
         });
+      }
+      // Also include lenders that are eligible but have no stored match row,
+      // so their cards still get the processing-time bullet.
+      for (const lr of rules) {
+        if (!m.has(lr.lender_id)) {
+          const pt = ptByLender.get(lr.lender_id) ?? null;
+          if (pt != null) {
+            m.set(lr.lender_id, { rank: null, fit: null, reason: null, score: null, processingTimeDays: pt });
+          }
+        }
       }
       setStoredMatches(m);
     } catch (e) {
