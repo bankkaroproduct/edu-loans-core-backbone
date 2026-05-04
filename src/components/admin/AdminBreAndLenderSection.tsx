@@ -838,6 +838,12 @@ function RecommendationRationale({
     );
   }
 
+  if (processingTimeDays != null && processingTimeDays > 0) {
+    bullets.push(
+      `Processing time ~${processingTimeDays} day${processingTimeDays === 1 ? "" : "s"}`,
+    );
+  }
+
   if (bullets.length === 0) return null;
 
   return (
