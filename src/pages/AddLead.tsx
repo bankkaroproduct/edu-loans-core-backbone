@@ -1580,41 +1580,35 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 />
                 <p className="text-xs text-muted-foreground">Range 300–900. Required to improve lender match accuracy.</p>
               </div>
-              {/* Co-applicant Work Experience (years + months) — feeds BRE
-                  coapplicant.income_stability_years. This is the CO-APPLICANT's
-                  work experience, NOT the student's. */}
-              <div className="space-y-2 md:col-span-2" data-field="coapplicant_work_experience_years">
+              {/* Co-applicant Work Experience — single shorthand input "years.months"
+                  (e.g. 3.6 = 3y 6m). Feeds BRE coapplicant.income_stability_years. */}
+              <div className="space-y-2 md:col-span-2" data-field="coapplicant_work_experience">
                 <Label>Co-applicant Work Experience</Label>
                 <p className="text-xs text-muted-foreground">The co-applicant's total work experience (not the student's).</p>
-                <p className="text-xs text-muted-foreground">Used in BRE → Co-applicant Income Stability.</p>
-                <div className="grid gap-3 md:grid-cols-2">
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Years</Label>
-                    <Input
-                      inputMode="numeric"
-                      value={form.coapplicant_work_experience_years}
-                      onChange={(e) => set("coapplicant_work_experience_years", e.target.value.replace(/\D/g, "").slice(0, 2))}
-                      placeholder="e.g. 3"
-                    />
-                  </div>
-                  <div data-field="coapplicant_work_experience_months">
-                    <Label className="text-xs text-muted-foreground">Months (0–11)</Label>
-                    <Input
-                      inputMode="numeric"
-                      value={form.coapplicant_work_experience_months}
-                      onChange={(e) => set("coapplicant_work_experience_months", e.target.value.replace(/\D/g, "").slice(0, 2))}
-                      placeholder="e.g. 6"
-                    />
-                  </div>
-                </div>
+                <p className="text-xs text-muted-foreground">Example: enter <strong>3.6</strong> for 3 years 6 months. Used in BRE → Co-applicant Income Stability.</p>
+                <Input
+                  inputMode="decimal"
+                  value={form.coapplicant_work_experience}
+                  onChange={(e) => {
+                    // Accept digits + at most one dot + at most 2 decimal digits.
+                    let v = e.target.value.replace(/[^\d.]/g, "");
+                    const firstDot = v.indexOf(".");
+                    if (firstDot !== -1) {
+                      v = v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, "");
+                      const [a, b = ""] = v.split(".");
+                      v = a + "." + b.slice(0, 2);
+                    }
+                    set("coapplicant_work_experience", v);
+                  }}
+                  placeholder="e.g. 3.6"
+                />
                 {(() => {
-                  const y = form.coapplicant_work_experience_years;
-                  const m = form.coapplicant_work_experience_months;
-                  if (!y && !m) return null;
-                  const err = validateCoapplicantWorkExperience(y, m);
+                  const raw = form.coapplicant_work_experience;
+                  if (!raw) return null;
+                  const err = validateCoappWorkExpShorthand(raw);
                   if (err) return <p className="text-xs font-medium text-destructive">{err}</p>;
-                  const formatted = formatCoapplicantWorkExperience(y, m);
-                  return formatted ? <p className="text-xs text-muted-foreground">{formatted}</p> : null;
+                  const preview = previewCoappWorkExpShorthand(raw);
+                  return preview ? <p className="text-xs text-muted-foreground">{preview}</p> : null;
                 })()}
               </div>
               <div className="md:col-span-2">
