@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Calculator,
   Loader2,
@@ -68,6 +69,10 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
   const [resolution, setResolution] = useState<BuildProfileResolution | null>(null);
   const [scoringVersion, setScoringVersion] = useState<number | null>(null);
   const [bucketThreshold, setBucketThreshold] = useState<number | null>(null);
+  // Stored recommendation_rank from lead_lender_matches (premiere-aware source of truth).
+  // Used only to ORDER the displayed lender cards. Does not affect BRE engine, scores,
+  // rates, loan amounts, fit labels, coverage chips, or eligibility.
+  const [storedRanks, setStoredRanks] = useState<Map<string, number>>(new Map());
 
   // VERBATIM copy of AdminCalculateBreCard.handleRun — no logic changes.
   const handleRun = async () => {
@@ -83,6 +88,19 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
       setResult(r);
       setScoringVersion(cfg.version_number);
       setBucketThreshold(cfg.bucket_threshold);
+
+      // Fetch stored recommendation_rank snapshot for display ordering only.
+      const { data: stored } = await supabase
+        .from("lead_lender_matches")
+        .select("lender_id, recommendation_rank")
+        .eq("lead_id", lead.id);
+      const m = new Map<string, number>();
+      for (const row of stored ?? []) {
+        if (row.recommendation_rank != null) {
+          m.set(row.lender_id, row.recommendation_rank);
+        }
+      }
+      setStoredRanks(m);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       toast.error(`BRE evaluation failed: ${msg}`);
@@ -269,6 +287,7 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
                 eligibleLenders={derived.eligibleLenders}
                 loanRange={result.eligible_loan_range}
                 rateRange={result.indicative_rate_range}
+                storedRanks={storedRanks}
               />
             )}
           </section>
@@ -607,15 +626,24 @@ function LenderOptionCards({
   eligibleLenders,
   loanRange,
   rateRange,
+  storedRanks,
 }: {
   eligibleLenders: BreResult["eligible_lenders"];
   loanRange: BreResult["eligible_loan_range"];
   rateRange: BreResult["indicative_rate_range"];
+  storedRanks: Map<string, number>;
 }) {
-  // Preserve exact ordering (engine's rank). No re-sort beyond this.
-  const ordered = [...eligibleLenders].sort(
-    (a, b) => (a.rank ?? Number.POSITIVE_INFINITY) - (b.rank ?? Number.POSITIVE_INFINITY),
-  );
+  // Display order: stored recommendation_rank (premiere-aware) when available;
+  // otherwise fall back to engine's l.rank. This is a display-only sort —
+  // scores, rates, loan amounts, fit labels and coverage chips are unchanged.
+  const ordered = [...eligibleLenders].sort((a, b) => {
+    const sa = storedRanks.get(a.lender_id);
+    const sb = storedRanks.get(b.lender_id);
+    if (sa != null && sb != null) return sa - sb;
+    if (sa != null) return -1;
+    if (sb != null) return 1;
+    return (a.rank ?? Number.POSITIVE_INFINITY) - (b.rank ?? Number.POSITIVE_INFINITY);
+  });
 
   return (
     <div className="space-y-3">
