@@ -1185,20 +1185,36 @@ function ResolutionNotes({ resolution }: { resolution: BuildProfileResolution | 
     });
   }
 
-  // Co-applicant work experience → income_stability_years
+  // Co-applicant work experience → income_stability_years.
+  // Distinguish missing (null on BOTH years and months) vs explicit 0/0.
   const cw = resolution.coapplicant_work_experience;
-  if (cw && (cw.years != null || cw.months != null)) {
-    items.push({
-      label: "Co-applicant work experience",
-      tone: cw.mapped_to === "income_stability_years" ? "ok" : "muted",
-      text: (
-        <>
-          Input: <span className="font-mono">{cw.years ?? 0} years {cw.months ?? 0} months</span>
-          {" · "}BRE value: <span className="font-mono">{cw.decimal_years ?? "—"} years</span>
-          {" · "}Mapped to: <span className="font-mono">{cw.mapped_to}</span>
-        </>
-      ),
-    });
+  if (cw) {
+    const provided = cw.years != null || cw.months != null;
+    if (!provided) {
+      items.push({
+        label: "Co-applicant work experience",
+        tone: "muted",
+        text: (
+          <>
+            Lead input: <span className="font-mono">Not provided</span>
+            {" · "}Status: <span className="font-mono">Not provided</span>
+            {" · "}Reason: Co-applicant work experience was not provided.
+          </>
+        ),
+      });
+    } else {
+      items.push({
+        label: "Co-applicant work experience",
+        tone: cw.mapped_to === "income_stability_years" ? "ok" : "muted",
+        text: (
+          <>
+            Input: <span className="font-mono">{cw.years ?? 0} years {cw.months ?? 0} months</span>
+            {" · "}BRE value: <span className="font-mono">{cw.decimal_years ?? "—"} years</span>
+            {" · "}Mapped to: <span className="font-mono">{cw.mapped_to}</span>
+          </>
+        ),
+      });
+    }
   }
 
   if (items.length === 0) return null;
