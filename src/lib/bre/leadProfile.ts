@@ -107,6 +107,7 @@ const EMPLOYMENT_MAP: Record<string, string> = {
   "self-employed business": "self_employed_business",
   "business owner": "self_employed_business",
   "self-employed professional": "self_employed_professional",
+  professional: "self_employed_professional",
   retired: "retired_with_pension",
   "retired (pension)": "retired_with_pension",
   unemployed: "unemployed",
@@ -637,14 +638,11 @@ function buildProfileCore(
     coMonthsRaw as number | string | null | undefined,
   );
 
-  // Income stability: maps from co-applicant work experience ONLY when the
-  // co-applicant is salaried/self-employed and a value was captured. Student
-  // work experience NEVER feeds this anymore.
-  const employedKinds = /^(salaried_private|salaried_govt|self_employed_professional|self_employed_business)$/;
-  const incomeStabilityYears =
-    employmentType && employedKinds.test(employmentType) && coWorkExpYears != null
-      ? coWorkExpYears
-      : null;
+  // Income stability: maps directly from co-applicant work experience when
+  // captured. Employment-type normalization no longer gates this — if the
+  // user entered years/months for the co-applicant, BRE consumes them.
+  // Student work experience NEVER feeds this.
+  const incomeStabilityYears = coWorkExpYears != null ? coWorkExpYears : null;
 
   const profile: BreProfileInput = {
     loan_amount: loanAmount,
