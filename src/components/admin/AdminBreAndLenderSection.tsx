@@ -98,13 +98,15 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
       // Fetch stored recommendation_rank + fit_category snapshot for display only.
       const { data: stored } = await supabase
         .from("lead_lender_matches")
-        .select("lender_id, recommendation_rank, fit_category")
+        .select("lender_id, recommendation_rank, fit_category, recommendation_reason_summary, score")
         .eq("lead_id", lead.id);
       const m = new Map<string, StoredMatch>();
       for (const row of stored ?? []) {
         m.set(row.lender_id, {
           rank: row.recommendation_rank ?? null,
           fit: (row.fit_category as StoredMatch["fit"]) ?? null,
+          reason: (row.recommendation_reason_summary as string | null) ?? null,
+          score: row.score != null ? Number(row.score) : null,
         });
       }
       setStoredMatches(m);
