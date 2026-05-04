@@ -73,6 +73,18 @@ export default function StudentEducationDetails() {
     if (!(formData.test_scores.twelfth ?? "").toString().trim()) {
       toast({ title: "12th score is required", variant: "destructive" }); return;
     }
+    // Score/Total pair validation — totals are optional (legacy compat),
+    // but when both are filled they must be a valid pair.
+    const pairChecks: Array<[string, string, string]> = [
+      ["10th", formData.test_scores.tenth || "", formData.test_scores.tenth_total || ""],
+      ["12th", formData.test_scores.twelfth || "", formData.test_scores.twelfth_total || ""],
+      ["Graduation", formData.test_scores.graduation || "", formData.test_scores.graduation_total || ""],
+      ["Highest Qualification", formData.test_scores.highest_qualification_score || "", formData.test_scores.highest_qualification_total || ""],
+    ];
+    for (const [label, s, t] of pairChecks) {
+      const err = validateScoreTotalPair(s, t);
+      if (err) { toast({ title: `${label}: ${err}`, variant: "destructive" }); return; }
+    }
     const result = await saveStep("save_education");
     if (result) {
       toast({ title: "Education details saved" });
@@ -191,50 +203,76 @@ export default function StudentEducationDetails() {
           Profile above, also part of this academic group. */}
       <Card>
         <CardContent className="p-5 sm:p-6">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Current Academic Profile</h2>
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Current Academic Profile</h2>
+          <p className="mb-4 text-xs text-muted-foreground">
+            Enter your score and the total it was out of. Example: enter <code>9.5</code> and total <code>10</code> for CGPA, or <code>78</code> and total <code>100</code> for percentage.
+          </p>
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 sm:col-span-2">
               <Label>Highest Qualification <span className="text-destructive">*</span></Label>
               <Select value={formData.highest_qualification} onValueChange={v => updateField("highest_qualification", v)}>
                 <SelectTrigger><SelectValue placeholder="Select qualification" /></SelectTrigger>
                 <SelectContent>{QUALIFICATIONS.map(q => <SelectItem key={q} value={q}>{q}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <Label>Highest Qualification Score</Label>
-              <Input
-                value={formData.test_scores.highest_qualification_score || ""}
-                onChange={e => updateTestScore("highest_qualification_score", e.target.value)}
-                placeholder="e.g. 8.5 CGPA or 78%"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>10th Score <span className="text-destructive">*</span></Label>
-              <Input
-                value={formData.test_scores.tenth || ""}
-                onChange={e => updateTestScore("tenth", e.target.value)}
-                placeholder="e.g. 85%"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>12th Score <span className="text-destructive">*</span></Label>
-              <Input
-                value={formData.test_scores.twelfth || ""}
-                onChange={e => updateTestScore("twelfth", e.target.value)}
-                placeholder="e.g. 88%"
-              />
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label>Graduation Score</Label>
-              <Input
-                value={formData.test_scores.graduation || ""}
-                onChange={e => updateTestScore("graduation", e.target.value)}
-                placeholder="e.g. 7.8 CGPA or 75%"
-              />
-              <p className="text-xs text-muted-foreground">
-                Highest Qualification, 10th and 12th are required. Graduation and Highest Qualification Score are optional.
-              </p>
-            </div>
+
+            <ScoreTotalPair
+              label="10th"
+              required
+              scoreKey="tenth"
+              totalKey="tenth_total"
+              scoreLabel="10th Score Obtained"
+              totalLabel="10th Total Marks"
+              scorePlaceholder="e.g. 85"
+              totalPlaceholder="e.g. 100"
+              scoreValue={formData.test_scores.tenth || ""}
+              totalValue={formData.test_scores.tenth_total || ""}
+              onScore={(v) => updateTestScore("tenth", v)}
+              onTotal={(v) => updateTestScore("tenth_total", v)}
+            />
+            <ScoreTotalPair
+              label="12th"
+              required
+              scoreKey="twelfth"
+              totalKey="twelfth_total"
+              scoreLabel="12th Score Obtained"
+              totalLabel="12th Total Marks"
+              scorePlaceholder="e.g. 88"
+              totalPlaceholder="e.g. 100"
+              scoreValue={formData.test_scores.twelfth || ""}
+              totalValue={formData.test_scores.twelfth_total || ""}
+              onScore={(v) => updateTestScore("twelfth", v)}
+              onTotal={(v) => updateTestScore("twelfth_total", v)}
+            />
+            <ScoreTotalPair
+              label="Graduation"
+              scoreKey="graduation"
+              totalKey="graduation_total"
+              scoreLabel="Graduation Score Obtained"
+              totalLabel="Graduation Total Marks / CGPA Scale"
+              scorePlaceholder="e.g. 7.8"
+              totalPlaceholder="e.g. 10"
+              scoreValue={formData.test_scores.graduation || ""}
+              totalValue={formData.test_scores.graduation_total || ""}
+              onScore={(v) => updateTestScore("graduation", v)}
+              onTotal={(v) => updateTestScore("graduation_total", v)}
+            />
+            <ScoreTotalPair
+              label="Highest Qualification"
+              scoreKey="highest_qualification_score"
+              totalKey="highest_qualification_total"
+              scoreLabel="Highest Qualification Score Obtained"
+              totalLabel="Highest Qualification Total Marks / CGPA Scale"
+              scorePlaceholder="e.g. 8.5"
+              totalPlaceholder="e.g. 10"
+              scoreValue={formData.test_scores.highest_qualification_score || ""}
+              totalValue={formData.test_scores.highest_qualification_total || ""}
+              onScore={(v) => updateTestScore("highest_qualification_score", v)}
+              onTotal={(v) => updateTestScore("highest_qualification_total", v)}
+            />
+            <p className="text-xs text-muted-foreground sm:col-span-2">
+              Highest Qualification, 10th and 12th are required. Graduation and Highest Qualification Score are optional. Total Marks / Scale is optional but recommended for accurate scoring.
+            </p>
           </div>
         </CardContent>
       </Card>
