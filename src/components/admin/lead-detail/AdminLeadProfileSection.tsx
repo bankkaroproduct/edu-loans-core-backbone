@@ -8,6 +8,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { InlineEditField } from "@/components/admin/InlineEditField";
 import { formatINR } from "@/lib/formatCurrency";
+import { normalizeAcademicScore } from "@/lib/academicScore";
 
 type Lead = Tables<"student_leads"> & {
   district?: string | null;
@@ -81,6 +82,30 @@ function Field({
         ) : (
           readOnlyFallback
         )}
+      </p>
+    </div>
+  );
+}
+
+function NormalizedField({
+  label,
+  score,
+  total,
+}: {
+  label: string;
+  score: string | null | undefined;
+  total: string | null | undefined;
+}) {
+  if (!score || !total) return null;
+  const { percentage, source } = normalizeAcademicScore(score, total);
+  if (percentage == null || source !== "score_total") return null;
+  return (
+    <div className="min-w-0 space-y-0.5 overflow-hidden">
+      <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+        {label}
+      </span>
+      <p className="text-sm font-medium text-foreground break-words min-w-0">
+        Normalized: {percentage}%
       </p>
     </div>
   );
@@ -228,11 +253,15 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
           />
           <Field label="10th Score" value={tsStr("tenth")} editable={edTS("tenth")} onSaved={onSaved} />
           <Field label="10th Total Marks" value={tsStr("tenth_total")} editable={edTS("tenth_total")} onSaved={onSaved} />
+          <NormalizedField label="10th Normalized" score={tsStr("tenth")} total={tsStr("tenth_total")} />
           <Field label="12th Score" value={tsStr("twelfth")} editable={edTS("twelfth")} onSaved={onSaved} />
           <Field label="12th Total Marks" value={tsStr("twelfth_total")} editable={edTS("twelfth_total")} onSaved={onSaved} />
+          <NormalizedField label="12th Normalized" score={tsStr("twelfth")} total={tsStr("twelfth_total")} />
           <Field label="Graduation Score" value={tsStr("graduation")} editable={edTS("graduation")} onSaved={onSaved} />
           <Field label="Graduation Total / CGPA Scale" value={tsStr("graduation_total")} editable={edTS("graduation_total")} onSaved={onSaved} />
+          <NormalizedField label="Graduation Normalized" score={tsStr("graduation")} total={tsStr("graduation_total")} />
           <Field label="Highest Qual. Total / CGPA Scale" value={tsStr("highest_qualification_total")} editable={edTS("highest_qualification_total")} onSaved={onSaved} />
+          <NormalizedField label="Highest Qual. Normalized" score={hqScore} total={tsStr("highest_qualification_total")} />
           <Field label="IELTS" value={tsStr("ielts")} editable={edTS("ielts")} onSaved={onSaved} />
           <Field label="TOEFL" value={tsStr("toefl")} editable={edTS("toefl")} onSaved={onSaved} />
           <Field label="PTE" value={tsStr("pte")} editable={edTS("pte")} onSaved={onSaved} />
