@@ -551,9 +551,9 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       }
       if (form.work_experience_years.trim() && !isValidWorkExp(form.work_experience_years))
         return { message: "Work experience must be a number with at most one decimal (e.g. 3 or 3.2)", step: "study", field: "work_experience_years" };
-      // Co-applicant work experience (optional)
-      const cwErr = validateCoapplicantWorkExperience(form.coapplicant_work_experience_years, form.coapplicant_work_experience_months);
-      if (cwErr) return { message: `Co-applicant Work Experience: ${cwErr}`, step: "financial", field: "coapplicant_work_experience_years" };
+      // Co-applicant work experience (optional) — single shorthand input "years.months"
+      const cwErr = validateCoappWorkExpShorthand(form.coapplicant_work_experience);
+      if (cwErr) return { message: `Co-applicant Work Experience: ${cwErr}`, step: "financial", field: "coapplicant_work_experience" };
     }
 
     if (!effectivePartnerId) return { message: "No partner organization found for your account. Admins can use 'Test as Partner' in the sidebar.", step: stepIds[0] };
