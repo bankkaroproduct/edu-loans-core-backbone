@@ -75,6 +75,51 @@ export default function QuickLead() {
   const set = (field: string, value: string | number) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
+  // Pincode auto-fill (mirrors AddLead behavior)
+  const pincodeResult = usePincodeLookup(form.pincode);
+  const lastAppliedPincode = useRef<{
+    pincode: string;
+    district: string | null;
+    state: string | null;
+    tier: string | null;
+  } | null>(null);
+  useEffect(() => {
+    const current = (form.pincode ?? "").trim();
+    if (
+      pincodeResult.found &&
+      pincodeResult.pincode === current &&
+      current.length === 6 &&
+      lastAppliedPincode.current?.pincode !== current
+    ) {
+      setForm((prev) => {
+        const prevApplied = lastAppliedPincode.current;
+        const overwriteIfOurs = (cur: string, was: string | null, next: string | null) =>
+          (!cur || (prevApplied && cur === was)) && next ? next : cur;
+        const nextDistrict = overwriteIfOurs(prev.district, prevApplied?.district ?? null, pincodeResult.district);
+        const nextState = overwriteIfOurs(prev.state, prevApplied?.state ?? null, pincodeResult.state);
+        const nextTier = overwriteIfOurs(prev.tier, prevApplied?.tier ?? null, pincodeResult.tier);
+        lastAppliedPincode.current = { pincode: current, district: nextDistrict, state: nextState, tier: nextTier };
+        return { ...prev, district: nextDistrict, state: nextState, tier: nextTier };
+      });
+      return;
+    }
+    const prev = lastAppliedPincode.current;
+    if (prev && prev.pincode !== current) {
+      const newIsInvalid =
+        current.length !== 6 ||
+        (pincodeResult.found === false && pincodeResult.pincode === current);
+      if (newIsInvalid) {
+        setForm((p) => ({
+          ...p,
+          district: prev.district && p.district === prev.district ? "" : p.district,
+          state: prev.state && p.state === prev.state ? "" : p.state,
+          tier: prev.tier && p.tier === prev.tier ? "" : p.tier,
+        }));
+        if (current.length !== 6) lastAppliedPincode.current = null;
+      }
+    }
+  }, [pincodeResult, form.pincode]);
+
   const validate = (): string | null => {
     if (!form.student_first_name.trim()) return "Student first name is required";
     if (!form.student_phone.trim()) return "Phone number is required";
