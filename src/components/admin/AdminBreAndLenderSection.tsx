@@ -781,6 +781,58 @@ function LenderCard({
   );
 }
 
+function RecommendationRationale({
+  storedReason,
+  projectedLoanAmount,
+  productType,
+  coverageCount,
+}: {
+  storedReason: string | null;
+  projectedLoanAmount: number | null;
+  productType: "secured" | "unsecured" | null;
+  coverageCount: number;
+}) {
+  const bullets: string[] = [];
+
+  const reason = storedReason?.trim();
+  if (reason) bullets.push(reason);
+
+  if (projectedLoanAmount != null && projectedLoanAmount > 0) {
+    bullets.push(
+      `Loan amount ₹${Math.round(projectedLoanAmount).toLocaleString("en-IN")} fits lender range`,
+    );
+  }
+
+  if (productType === "secured") {
+    bullets.push("Secured route available");
+  } else if (productType === "unsecured") {
+    bullets.push("Unsecured route available");
+  }
+
+  if (coverageCount > 0) {
+    bullets.push(
+      `Covers ${coverageCount} expense ${coverageCount === 1 ? "category" : "categories"}`,
+    );
+  }
+
+  if (bullets.length === 0) return null;
+
+  return (
+    <div className="space-y-1 pt-0.5">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+        Recommendation rationale
+      </div>
+      <ul className="list-disc pl-4 space-y-0.5 text-[11px] text-muted-foreground">
+        {bullets.map((b, i) => (
+          <li key={i} className="leading-snug">
+            {b}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function Chip({
   icon,
   label,
