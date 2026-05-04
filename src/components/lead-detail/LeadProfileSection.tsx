@@ -72,6 +72,26 @@ function Field({
   );
 }
 
+function NormalizedField({
+  label,
+  score,
+  total,
+}: {
+  label: string;
+  score: string | null | undefined;
+  total: string | null | undefined;
+}) {
+  if (!score || !total) return null;
+  const { percentage, source } = normalizeAcademicScore(score, total);
+  if (percentage == null || source !== "score_total") return null;
+  return (
+    <div className="min-w-0">
+      <span className="text-muted-foreground text-xs">{label}</span>
+      <p className="text-sm font-medium break-words">Normalized: {percentage}%</p>
+    </div>
+  );
+}
+
 interface Props {
   lead: Lead;
   submittedByName: string | null;
