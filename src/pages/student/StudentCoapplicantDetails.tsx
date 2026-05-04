@@ -82,10 +82,7 @@ export default function StudentCoapplicantDetails() {
     const cibil = parseInt(cibilStr, 10);
     if (!Number.isFinite(cibil) || cibil < 300 || cibil > 900) return "CIBIL Score must be between 300 and 900";
     // Co-applicant work experience (optional but validated when present)
-    const wErr = validateCoapplicantWorkExperience(
-      String(formData.test_scores.coapplicant_work_experience_years ?? ""),
-      String(formData.test_scores.coapplicant_work_experience_months ?? ""),
-    );
+    const wErr = validateCoappWorkExpShorthand(coWorkExp);
     if (wErr) return `Co-applicant Work Experience: ${wErr}`;
     return null;
   };
