@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePartnerContext } from "@/hooks/usePartnerContext";
 import { PartnerInactiveNotice } from "@/components/shared/PartnerInactiveNotice";
 import { useDuplicateCheck } from "@/hooks/useDuplicateCheck";
+import { usePincodeLookup } from "@/hooks/usePincodeLookup";
 import { createDownstreamRecords, fetchLeadDisplayId } from "@/hooks/useLeadWriteFlow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,9 +17,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DuplicateWarningDialog } from "@/components/leads/DuplicateWarningDialog";
 import { LeadSuccessDialog } from "@/components/leads/LeadSuccessDialog";
 import { IndianPhoneInput } from "@/components/shared/IndianPhoneInput";
-import { IndianCityCombobox } from "@/components/shared/IndianCityCombobox";
 import { toast } from "sonner";
-import { ArrowLeft, Zap } from "lucide-react";
+import { ArrowLeft, Info, Zap } from "lucide-react";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phone";
 import type { Tables } from "@/integrations/supabase/types";
 
