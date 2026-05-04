@@ -39,10 +39,21 @@ export interface StudentFormData {
     twelfth?: string;
     graduation?: string;
     highest_qualification_score?: string;
+    // Total Marks / Scale denominators for academic scores. Stored alongside
+    // the score so BRE can normalize as score/total*100. Optional — when
+    // missing, BRE falls back to the legacy parse so old leads still work.
+    tenth_total?: string;
+    twelfth_total?: string;
+    graduation_total?: string;
+    highest_qualification_total?: string;
     // Extended (Student portal only — persisted in test_scores JSONB to avoid schema change):
     coapplicant_age?: string;
     coapplicant_cibil?: string;
     work_experience_years?: string;
+    // Co-applicant work experience — feeds BRE coapplicant.income_stability_years.
+    // Stored as separate years/months keys; never confused with student WE.
+    coapplicant_work_experience_years?: string;
+    coapplicant_work_experience_months?: string;
   };
   // Co-applicant
   coapplicant_name: string;
@@ -227,11 +238,21 @@ export function useStudentApplication() {
         twelfth: ts.twelfth?.toString() || prev.test_scores.twelfth || "",
         graduation: ts.graduation?.toString() || prev.test_scores.graduation || "",
         highest_qualification_score: ts.highest_qualification_score?.toString() || prev.test_scores.highest_qualification_score || "",
+        tenth_total: ts.tenth_total?.toString() || prev.test_scores.tenth_total || "",
+        twelfth_total: ts.twelfth_total?.toString() || prev.test_scores.twelfth_total || "",
+        graduation_total: ts.graduation_total?.toString() || prev.test_scores.graduation_total || "",
+        highest_qualification_total: ts.highest_qualification_total?.toString() || prev.test_scores.highest_qualification_total || "",
         coapplicant_age: ts.coapplicant_age?.toString() || prev.test_scores.coapplicant_age || "",
         coapplicant_cibil: ts.coapplicant_cibil?.toString() || prev.test_scores.coapplicant_cibil || "",
         work_experience_years: ts.work_experience_years !== undefined && ts.work_experience_years !== null
           ? ts.work_experience_years.toString()
           : (prev.test_scores.work_experience_years || ""),
+        coapplicant_work_experience_years: ts.coapplicant_work_experience_years !== undefined && ts.coapplicant_work_experience_years !== null
+          ? ts.coapplicant_work_experience_years.toString()
+          : (prev.test_scores.coapplicant_work_experience_years || ""),
+        coapplicant_work_experience_months: ts.coapplicant_work_experience_months !== undefined && ts.coapplicant_work_experience_months !== null
+          ? ts.coapplicant_work_experience_months.toString()
+          : (prev.test_scores.coapplicant_work_experience_months || ""),
       },
       coapplicant_name: lead.coapplicant_name || prev.coapplicant_name,
       coapplicant_relation: lead.coapplicant_relation || prev.coapplicant_relation,
@@ -291,6 +312,11 @@ export function useStudentApplication() {
           twelfth: formData.test_scores.twelfth,
           graduation: formData.test_scores.graduation,
           highest_qualification_score: formData.test_scores.highest_qualification_score,
+          // Total marks denominators (new — optional, BRE-aware).
+          tenth_total: formData.test_scores.tenth_total,
+          twelfth_total: formData.test_scores.twelfth_total,
+          graduation_total: formData.test_scores.graduation_total,
+          highest_qualification_total: formData.test_scores.highest_qualification_total,
           work_experience_years: formData.test_scores.work_experience_years,
         };
         const scores: Record<string, number | string> = {};
@@ -327,6 +353,19 @@ export function useStudentApplication() {
         if (cibilRaw) {
           const n = parseInt(cibilRaw, 10);
           if (Number.isFinite(n)) ext.coapplicant_cibil = n;
+        }
+        // Co-applicant Work Experience (years/months) — feeds BRE
+        // coapplicant.income_stability_years. Stored as separate keys so
+        // it never collides with the student's `work_experience_years`.
+        const cwYearsRaw = (formData.test_scores.coapplicant_work_experience_years ?? "").toString().trim();
+        if (cwYearsRaw) {
+          const n = parseInt(cwYearsRaw, 10);
+          if (Number.isFinite(n) && n >= 0) ext.coapplicant_work_experience_years = n;
+        }
+        const cwMonthsRaw = (formData.test_scores.coapplicant_work_experience_months ?? "").toString().trim();
+        if (cwMonthsRaw) {
+          const n = parseInt(cwMonthsRaw, 10);
+          if (Number.isFinite(n) && n >= 0 && n <= 11) ext.coapplicant_work_experience_months = n;
         }
 
         payload = {
