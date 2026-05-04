@@ -33,6 +33,8 @@ import { LakhsInput } from "@/components/ui/lakhs-input";
 import { MasterCombobox, type MasterOption } from "@/components/ui/master-combobox";
 import { CollateralRadio, collateralBoolToState, collateralStateToBool, type CollateralState } from "@/components/shared/CollateralRadio";
 import { sanitizeWorkExpInput, formatWorkExperience, isValidWorkExp } from "@/lib/workExperience";
+import { ScoreTotalPair } from "@/components/shared/ScoreTotalPair";
+import { validateScoreTotalPair, validateCoapplicantWorkExperience, formatCoapplicantWorkExperience } from "@/lib/academicScore";
 import { usePincodeLookup } from "@/hooks/usePincodeLookup";
 import { sortByPriority } from "@/lib/countryOrder";
 import { buildIntakeSessionOptions, intakeSessionValue, parseIntakeSessionValue } from "@/lib/intakeSession";
@@ -725,6 +727,11 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     setOrDelete("twelfth", form.twelfth_score);
     setOrDelete("graduation", form.graduation_score);
     setOrDelete("highest_qualification_score", form.highest_qualification_score);
+    // Total marks denominators (BRE-aware)
+    setOrDelete("tenth_total", form.tenth_total);
+    setOrDelete("twelfth_total", form.twelfth_total);
+    setOrDelete("graduation_total", form.graduation_total);
+    setOrDelete("highest_qualification_total", form.highest_qualification_total);
 
     // Standardized test scores (aligned with Student portal: ielts/toefl/duolingo/gre/gmat)
     setOrDelete("ielts", form.ielts);
@@ -740,12 +747,18 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     // Work experience: same shorthand & coercion as Student. "0" → number 0 (Fresher).
     setOrDelete("work_experience_years", form.work_experience_years);
 
+    // Co-applicant work experience (years/months) — strict integer.
+    setIntOrDelete("coapplicant_work_experience_years", form.coapplicant_work_experience_years);
+    setIntOrDelete("coapplicant_work_experience_months", form.coapplicant_work_experience_months);
+
     return existing;
   }, [
     originalLead,
     form.tenth_score, form.twelfth_score, form.graduation_score, form.highest_qualification_score,
+    form.tenth_total, form.twelfth_total, form.graduation_total, form.highest_qualification_total,
     form.ielts, form.toefl, form.duolingo, form.gre, form.gmat,
     form.coapplicant_age, form.coapplicant_cibil, form.work_experience_years,
+    form.coapplicant_work_experience_years, form.coapplicant_work_experience_months,
   ]);
 
   const createLead = async (asDraft: boolean, hasDuplicateWarning: boolean) => {
