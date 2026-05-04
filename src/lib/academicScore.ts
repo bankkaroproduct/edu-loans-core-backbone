@@ -257,3 +257,88 @@ export function validateCoapplicantWorkExperience(
   }
   return null;
 }
+
+/**
+ * Single-field shorthand for Co-applicant Work Experience.
+ *
+ * Format: "<years>.<months>" where the decimal portion is interpreted as
+ * LITERAL months (NOT a fraction). Decimal length 1 = single-digit months.
+ * Examples:
+ *   "3"     -> 3y 0m
+ *   "5"     -> 5y 0m
+ *   "0"     -> 0y 0m
+ *   "3.6"   -> 3y 6m
+ *   "0.6"   -> 0y 6m
+ *   "3.06"  -> 3y 6m
+ *   "3.11"  -> 3y 11m
+ *   "3.12"  -> INVALID (months > 11)
+ */
+export interface CoappWorkExpParsed {
+  years: number;
+  months: number;
+}
+
+/** Parse the shorthand. Returns null when blank, or throws no error — pair with validate first. */
+export function parseCoappWorkExpShorthand(raw: string): CoappWorkExpParsed | null {
+  const s = (raw ?? "").toString().trim();
+  if (!s) return null;
+  if (!/^\d+(\.\d{1,2})?$/.test(s)) return null;
+  const [yPart, mPartRaw = ""] = s.split(".");
+  const years = parseInt(yPart, 10);
+  let months = 0;
+  if (mPartRaw.length > 0) {
+    months = parseInt(mPartRaw, 10);
+  }
+  if (!Number.isFinite(years) || !Number.isFinite(months)) return null;
+  if (years < 0 || months < 0 || months > 11) return null;
+  return { years, months };
+}
+
+/** Validate shorthand input. Returns null on success or when blank. */
+export function validateCoappWorkExpShorthand(raw: string): string | null {
+  const s = (raw ?? "").toString().trim();
+  if (!s) return null;
+  if (!/^-?\d+(\.\d+)?$/.test(s)) return "Enter a number like 3.6 (3 years 6 months)";
+  if (s.startsWith("-")) return "Value cannot be negative";
+  if (!/^\d+(\.\d{1,2})?$/.test(s)) return "Use at most 2 decimal digits (e.g. 3.6 or 3.11)";
+  const parsed = parseCoappWorkExpShorthand(s);
+  if (!parsed) return "Months must be between 0 and 11";
+  if (parsed.months > 11) return "Months must be between 0 and 11";
+  return null;
+}
+
+/** Build the human preview ("3 years 6 months") from shorthand input. */
+export function previewCoappWorkExpShorthand(raw: string): string | null {
+  const parsed = parseCoappWorkExpShorthand(raw);
+  if (!parsed) return null;
+  const { years, months } = parsed;
+  if (years === 0 && months === 0) return "0 years";
+  const parts: string[] = [];
+  if (years > 0) parts.push(`${years} year${years === 1 ? "" : "s"}`);
+  if (months > 0) parts.push(`${months} month${months === 1 ? "" : "s"}`);
+  return parts.join(" ");
+}
+
+/**
+ * Reverse: build the shorthand string from stored years/months keys.
+ * Used when hydrating a saved lead into the single-field UI.
+ *   (3, 6)  -> "3.6"
+ *   (3, 11) -> "3.11"
+ *   (0, 6)  -> "0.6"
+ *   (5, 0)  -> "5"
+ *   (0, 0)  -> "0"
+ *   missing -> ""
+ */
+export function buildCoappWorkExpShorthand(
+  years: number | string | null | undefined,
+  months: number | string | null | undefined,
+): string {
+  const yNum = parseNum(years);
+  const mNum = parseNum(months);
+  if (yNum == null && mNum == null) return "";
+  const yi = yNum == null ? 0 : Math.max(0, Math.floor(yNum));
+  const mi = mNum == null ? 0 : Math.max(0, Math.min(11, Math.floor(mNum)));
+  if (mi === 0) return String(yi);
+  // Two-digit months render as e.g. "3.11"; single-digit as "3.6".
+  return mi < 10 ? `${yi}.${mi}` : `${yi}.${mi}`;
+}
