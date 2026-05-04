@@ -1287,41 +1287,63 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2" data-field="highest_qualification_score">
-                <Label>Highest Qualification Score</Label>
-                <Input
-                  value={form.highest_qualification_score}
-                  onChange={(e) => set("highest_qualification_score", e.target.value)}
-                  placeholder="e.g. 8.5 CGPA or 78%"
-                />
-              </div>
-              <div className="space-y-2" data-field="tenth_score">
-                <Label>10th Score *</Label>
-                <Input
-                  value={form.tenth_score}
-                  onChange={(e) => set("tenth_score", e.target.value)}
-                  placeholder="e.g. 85%"
-                />
-              </div>
-              <div className="space-y-2" data-field="twelfth_score">
-                <Label>12th Score *</Label>
-                <Input
-                  value={form.twelfth_score}
-                  onChange={(e) => set("twelfth_score", e.target.value)}
-                  placeholder="e.g. 88%"
-                />
-              </div>
-              <div className="space-y-2 md:col-span-2" data-field="graduation_score">
-                <Label>Graduation Score</Label>
-                <Input
-                  value={form.graduation_score}
-                  onChange={(e) => set("graduation_score", e.target.value)}
-                  placeholder="e.g. 7.8 CGPA or 75%"
-                />
-                <p className="text-xs text-muted-foreground">
-                  10th and 12th are required. Graduation and Highest Qualification Score are optional.
-                </p>
-              </div>
+              <ScoreTotalPair
+                label="10th"
+                required
+                scoreKey="tenth_score"
+                totalKey="tenth_total"
+                scoreLabel="10th Score Obtained"
+                totalLabel="10th Total Marks"
+                scorePlaceholder="e.g. 85"
+                totalPlaceholder="e.g. 100"
+                scoreValue={form.tenth_score}
+                totalValue={form.tenth_total}
+                onScore={(v) => set("tenth_score", v)}
+                onTotal={(v) => set("tenth_total", v)}
+              />
+              <ScoreTotalPair
+                label="12th"
+                required
+                scoreKey="twelfth_score"
+                totalKey="twelfth_total"
+                scoreLabel="12th Score Obtained"
+                totalLabel="12th Total Marks"
+                scorePlaceholder="e.g. 88"
+                totalPlaceholder="e.g. 100"
+                scoreValue={form.twelfth_score}
+                totalValue={form.twelfth_total}
+                onScore={(v) => set("twelfth_score", v)}
+                onTotal={(v) => set("twelfth_total", v)}
+              />
+              <ScoreTotalPair
+                label="Graduation"
+                scoreKey="graduation_score"
+                totalKey="graduation_total"
+                scoreLabel="Graduation Score Obtained"
+                totalLabel="Graduation Total Marks / CGPA Scale"
+                scorePlaceholder="e.g. 7.8"
+                totalPlaceholder="e.g. 10"
+                scoreValue={form.graduation_score}
+                totalValue={form.graduation_total}
+                onScore={(v) => set("graduation_score", v)}
+                onTotal={(v) => set("graduation_total", v)}
+              />
+              <ScoreTotalPair
+                label="Highest Qualification"
+                scoreKey="highest_qualification_score"
+                totalKey="highest_qualification_total"
+                scoreLabel="Highest Qualification Score Obtained"
+                totalLabel="Highest Qualification Total Marks / CGPA Scale"
+                scorePlaceholder="e.g. 8.5"
+                totalPlaceholder="e.g. 10"
+                scoreValue={form.highest_qualification_score}
+                totalValue={form.highest_qualification_total}
+                onScore={(v) => set("highest_qualification_score", v)}
+                onTotal={(v) => set("highest_qualification_total", v)}
+              />
+              <p className="text-xs text-muted-foreground md:col-span-2">
+                10th and 12th are required. Graduation and Highest Qualification Score are optional. Total Marks / Scale is optional but recommended for accurate scoring (e.g. enter 9.5 and total 10 for CGPA, or 78 and total 100 for percentage).
+              </p>
 
               {/* Read-only academic context for student-origin leads in admin edit mode */}
               {isAdminForm && isEditMode && originalLead?.source_type === "student_direct" && (
