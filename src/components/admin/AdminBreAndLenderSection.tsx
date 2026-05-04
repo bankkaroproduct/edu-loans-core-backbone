@@ -776,6 +776,7 @@ function LenderCard({
         projectedLoanAmount={l.projected_loan_amount}
         productType={l.product_type}
         coverageCount={coverageItems.length}
+        processingTimeDays={stored?.processingTimeDays ?? null}
       />
     </li>
   );
@@ -786,11 +787,13 @@ function RecommendationRationale({
   projectedLoanAmount,
   productType,
   coverageCount,
+  processingTimeDays,
 }: {
   storedReason: string | null;
   projectedLoanAmount: number | null;
   productType: "secured" | "unsecured" | null;
   coverageCount: number;
+  processingTimeDays: number | null;
 }) {
   const bullets: string[] = [];
 
