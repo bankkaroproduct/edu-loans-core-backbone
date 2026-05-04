@@ -78,6 +78,16 @@ export default function StudentCoapplicantDetails() {
   const handleContinue = async () => {
     const err = validateCoapplicant();
     if (err) { toast({ title: "Please complete required fields", description: err, variant: "destructive" }); return; }
+    // Soft (non-blocking) warning when co-applicant work experience is blank.
+    // Do NOT make the field mandatory.
+    const cwY = String(formData.test_scores.coapplicant_work_experience_years ?? "").trim();
+    const cwM = String(formData.test_scores.coapplicant_work_experience_months ?? "").trim();
+    if (!cwY && !cwM) {
+      const proceed = window.confirm(
+        "Co-applicant work experience is missing. This may reduce Income Stability score in BRE. Continue?",
+      );
+      if (!proceed) return;
+    }
     const result = await saveStep("save_coapplicant");
     if (result) {
       toast({ title: "Co-applicant details saved" });
@@ -211,6 +221,9 @@ export default function StudentCoapplicantDetails() {
               <Label className="text-sm font-medium">Co-applicant Work Experience</Label>
               <p className="text-xs text-muted-foreground">
                 The co-applicant's total work experience (not the student's).
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Used in BRE → Co-applicant Income Stability.
               </p>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>

@@ -624,6 +624,19 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       }
     }
 
+    // Soft (non-blocking) warning when co-applicant work experience is blank on real submit.
+    // Skipped for drafts and edits. Field remains optional.
+    if (!asDraft && !isEditMode) {
+      const cwY = (form.coapplicant_work_experience_years ?? "").toString().trim();
+      const cwM = (form.coapplicant_work_experience_months ?? "").toString().trim();
+      if (!cwY && !cwM) {
+        const proceed = window.confirm(
+          "Co-applicant work experience is missing. This may reduce Income Stability score in BRE. Continue?",
+        );
+        if (!proceed) return;
+      }
+    }
+
     await createLead(asDraft, false);
   };
 
@@ -1553,6 +1566,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               <div className="space-y-2 md:col-span-2" data-field="coapplicant_work_experience_years">
                 <Label>Co-applicant Work Experience</Label>
                 <p className="text-xs text-muted-foreground">The co-applicant's total work experience (not the student's).</p>
+                <p className="text-xs text-muted-foreground">Used in BRE → Co-applicant Income Stability.</p>
                 <div className="grid gap-3 md:grid-cols-2">
                   <div>
                     <Label className="text-xs text-muted-foreground">Years</Label>
