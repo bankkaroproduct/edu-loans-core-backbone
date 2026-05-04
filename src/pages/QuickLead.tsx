@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePartnerContext } from "@/hooks/usePartnerContext";
 import { PartnerInactiveNotice } from "@/components/shared/PartnerInactiveNotice";
 import { useDuplicateCheck } from "@/hooks/useDuplicateCheck";
+import { usePincodeLookup } from "@/hooks/usePincodeLookup";
 import { createDownstreamRecords, fetchLeadDisplayId } from "@/hooks/useLeadWriteFlow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,9 +17,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DuplicateWarningDialog } from "@/components/leads/DuplicateWarningDialog";
 import { LeadSuccessDialog } from "@/components/leads/LeadSuccessDialog";
 import { IndianPhoneInput } from "@/components/shared/IndianPhoneInput";
-import { IndianCityCombobox } from "@/components/shared/IndianCityCombobox";
 import { toast } from "sonner";
-import { ArrowLeft, Zap } from "lucide-react";
+import { ArrowLeft, Info, Zap } from "lucide-react";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phone";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -48,7 +48,11 @@ export default function QuickLead() {
     student_phone: "",
     student_email: "",
     student_whatsapp: "",
+    pincode: "",
     city: "",
+    district: "",
+    state: "",
+    tier: "",
     intended_study_country: "",
     intake_term: "",
     intake_year: 0,
@@ -71,11 +75,58 @@ export default function QuickLead() {
   const set = (field: string, value: string | number) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
+  // Pincode auto-fill (mirrors AddLead behavior)
+  const pincodeResult = usePincodeLookup(form.pincode);
+  const lastAppliedPincode = useRef<{
+    pincode: string;
+    district: string | null;
+    state: string | null;
+    tier: string | null;
+  } | null>(null);
+  useEffect(() => {
+    const current = (form.pincode ?? "").trim();
+    if (
+      pincodeResult.found &&
+      pincodeResult.pincode === current &&
+      current.length === 6 &&
+      lastAppliedPincode.current?.pincode !== current
+    ) {
+      setForm((prev) => {
+        const prevApplied = lastAppliedPincode.current;
+        const overwriteIfOurs = (cur: string, was: string | null, next: string | null) =>
+          (!cur || (prevApplied && cur === was)) && next ? next : cur;
+        const nextDistrict = overwriteIfOurs(prev.district, prevApplied?.district ?? null, pincodeResult.district);
+        const nextState = overwriteIfOurs(prev.state, prevApplied?.state ?? null, pincodeResult.state);
+        const nextTier = overwriteIfOurs(prev.tier, prevApplied?.tier ?? null, pincodeResult.tier);
+        lastAppliedPincode.current = { pincode: current, district: nextDistrict, state: nextState, tier: nextTier };
+        return { ...prev, district: nextDistrict, state: nextState, tier: nextTier };
+      });
+      return;
+    }
+    const prev = lastAppliedPincode.current;
+    if (prev && prev.pincode !== current) {
+      const newIsInvalid =
+        current.length !== 6 ||
+        (pincodeResult.found === false && pincodeResult.pincode === current);
+      if (newIsInvalid) {
+        setForm((p) => ({
+          ...p,
+          district: prev.district && p.district === prev.district ? "" : p.district,
+          state: prev.state && p.state === prev.state ? "" : p.state,
+          tier: prev.tier && p.tier === prev.tier ? "" : p.tier,
+        }));
+        if (current.length !== 6) lastAppliedPincode.current = null;
+      }
+    }
+  }, [pincodeResult, form.pincode]);
+
   const validate = (): string | null => {
     if (!form.student_first_name.trim()) return "Student first name is required";
     if (!form.student_phone.trim()) return "Phone number is required";
     if (!isValidIndianPhone(form.student_phone)) return "Phone must be a valid 10-digit Indian number (with or without +91)";
     if (form.student_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.student_email.trim())) return "Email format is invalid";
+    if (!form.pincode.trim()) return "Pincode is required";
+    if (!/^\d{6}$/.test(form.pincode.trim())) return "Pincode must be exactly 6 digits";
     if (!form.intended_study_country) return "Study country is required";
     if (!form.intake_term) return "Intake term is required";
     if (!form.intake_year) return "Intake year is required";
@@ -132,6 +183,11 @@ export default function QuickLead() {
       student_email: form.student_email.trim() || null,
       student_whatsapp: canonicalWhatsapp,
       city: form.city.trim() || null,
+      pincode: form.pincode.trim() || null,
+      district: form.district.trim() || null,
+      state: form.state.trim() || null,
+      tier: form.tier.trim() || null,
+      country_of_residence: "India",
       intended_study_country: form.intended_study_country,
       intake_term: form.intake_term,
       intake_year: form.intake_year,
@@ -265,12 +321,36 @@ export default function QuickLead() {
               />
             </div>
             <div className="space-y-2">
-              <Label>City / District</Label>
-              <IndianCityCombobox
-                value={form.city}
-                onChange={(v) => set("city", v)}
-                placeholder="Search city or district…"
+              <Label>Pincode *</Label>
+              <Input
+                value={form.pincode}
+                onChange={(e) => set("pincode", e.target.value.replace(/\D/g, "").slice(0, 6))}
+                placeholder="6-digit pincode"
+                inputMode="numeric"
               />
+              {form.pincode.length === 6 && pincodeResult.found === false && (
+                <p className="text-[11px] text-muted-foreground">We couldn't match this pincode. Please confirm District and State manually.</p>
+              )}
+              {pincodeResult.hasConflict && (
+                <p className="text-[11px] text-amber-700 flex items-center gap-1">
+                  <Info className="h-3 w-3" /> Please verify District and State — this pincode maps to more than one location.
+                </p>
+              )}
+              {!pincodeResult.hasConflict && pincodeResult.found && form.pincode.length === 6 && (
+                <p className="text-[11px] text-muted-foreground">Location details auto-filled. You can edit if needed.</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>City</Label>
+              <Input value={form.city} onChange={(e) => set("city", e.target.value)} placeholder="City" />
+            </div>
+            <div className="space-y-2">
+              <Label>District</Label>
+              <Input value={form.district} onChange={(e) => set("district", e.target.value)} placeholder="Auto-fills from pincode" />
+            </div>
+            <div className="space-y-2">
+              <Label>State</Label>
+              <Input value={form.state} onChange={(e) => set("state", e.target.value)} placeholder="Auto-fills from pincode" />
             </div>
           </CardContent>
         </Card>
