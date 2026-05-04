@@ -21,6 +21,21 @@ export default function StudentCoapplicantDetails() {
   const { isVerified } = useStudentAuth();
   const { formData, updateField, updateTestScore, saveStep, saving } = useStudentApplication();
 
+  // Single-field shorthand for Co-applicant Work Experience ("years.months").
+  // Hydrated once from stored years/months keys; parsed back on save.
+  const [coWorkExp, setCoWorkExp] = useState<string>("");
+  const [coWorkExpHydrated, setCoWorkExpHydrated] = useState(false);
+  useEffect(() => {
+    if (coWorkExpHydrated) return;
+    const y = formData.test_scores.coapplicant_work_experience_years;
+    const m = formData.test_scores.coapplicant_work_experience_months;
+    if (y !== undefined || m !== undefined) {
+      const built = buildCoappWorkExpShorthand(y, m);
+      if (built) setCoWorkExp(built);
+      setCoWorkExpHydrated(true);
+    }
+  }, [formData.test_scores.coapplicant_work_experience_years, formData.test_scores.coapplicant_work_experience_months, coWorkExpHydrated]);
+
   useEffect(() => {
     if (!isVerified) { navigate("/student/login"); return; }
   }, [isVerified, navigate]);
