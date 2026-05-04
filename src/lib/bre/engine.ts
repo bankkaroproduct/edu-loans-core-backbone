@@ -224,9 +224,29 @@ function projectLoanAndRate(
 
   const projected_loan = Math.min(Math.max(profile.loan_amount, effMin), effMax);
 
-  // Rate: prefer lender ROI range if configured, else band rate range; choose midpoint deterministically
-  const rateMin = lender.policy.roi_min ?? band.rate_min;
-  const rateMax = lender.policy.roi_max ?? band.rate_max;
+  // Rate selection precedence (deterministic):
+  // 1) product_type-specific ROI (secured / unsecured) if both bounds present
+  // 2) generic policy.roi_min/max if present
+  // 3) overall band rate range (existing fallback)
+  let rateMin: number;
+  let rateMax: number;
+  const sMin = lender.policy.roi_secured_min;
+  const sMax = lender.policy.roi_secured_max;
+  const uMin = lender.policy.roi_unsecured_min;
+  const uMax = lender.policy.roi_unsecured_max;
+  if (product_type === "secured" && sMin != null && sMax != null) {
+    rateMin = sMin;
+    rateMax = sMax;
+  } else if (product_type === "unsecured" && uMin != null && uMax != null) {
+    rateMin = uMin;
+    rateMax = uMax;
+  } else if (lender.policy.roi_min != null && lender.policy.roi_max != null) {
+    rateMin = lender.policy.roi_min;
+    rateMax = lender.policy.roi_max;
+  } else {
+    rateMin = band.rate_min;
+    rateMax = band.rate_max;
+  }
   const projected_rate = round2((rateMin + rateMax) / 2);
 
   return { projected_loan, projected_rate };
