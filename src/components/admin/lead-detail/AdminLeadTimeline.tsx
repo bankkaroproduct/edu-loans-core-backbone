@@ -33,6 +33,9 @@ interface TimelineEvent {
   newAuthenticity?: string | null;
   reason?: string | null;
   actionType?: string;
+  oldValue?: Record<string, unknown> | null;
+  newValue?: Record<string, unknown> | null;
+  meta?: Record<string, unknown> | null;
 }
 
 const AUDIT_VISIBLE_LIMIT = 6;
@@ -85,20 +88,27 @@ function buildEvents(
     const role = a.actor_role ? formatStageLabel(a.actor_role) : "System";
     const actor = actorName ? `${actorName} (${role})` : role;
 
+    const oldVal = (a.old_value as Record<string, unknown> | null) ?? null;
+    const newVal = (a.new_value as Record<string, unknown> | null) ?? null;
+    const metaVal = (a.meta as Record<string, unknown> | null) ?? null;
+
     if (a.action_type === "lead_authenticity_changed") {
-      const oldVal = (a.old_value as { lead_authenticity?: string } | null)?.lead_authenticity ?? null;
-      const newVal = (a.new_value as { lead_authenticity?: string } | null)?.lead_authenticity ?? null;
-      const reason = (a.meta as { reason?: string } | null)?.reason ?? null;
+      const oldAuth = (oldVal as { lead_authenticity?: string } | null)?.lead_authenticity ?? null;
+      const newAuth = (newVal as { lead_authenticity?: string } | null)?.lead_authenticity ?? null;
+      const reason = (metaVal as { reason?: string } | null)?.reason ?? null;
       major.push({
         id: `a-${a.id}`,
         type: "authenticity_change",
         timestamp: a.created_at,
         actor,
         description: reason || "",
-        oldAuthenticity: oldVal,
-        newAuthenticity: newVal,
+        oldAuthenticity: oldAuth,
+        newAuthenticity: newAuth,
         reason,
         actionType: a.action_type,
+        oldValue: oldVal,
+        newValue: newVal,
+        meta: metaVal,
       });
       continue;
     }
@@ -110,6 +120,9 @@ function buildEvents(
       actor,
       description: humanizeAuditAction(a.action_type, a.meta),
       actionType: a.action_type,
+      oldValue: oldVal,
+      newValue: newVal,
+      meta: metaVal,
     });
   }
 
@@ -172,6 +185,141 @@ function relativeTime(iso: string): string {
   return `${Math.round(mo / 12)}y ago`;
 }
 
+// ---- Detail rendering helpers (display-only) ----
+function formatFieldName(key: string): string {
+  return key
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function formatValue(v: unknown): string {
+  if (v === null || v === undefined || v === "") return "—";
+  if (typeof v === "string") return v;
+  if (typeof v === "number" || typeof v === "boolean") return String(v);
+  try {
+    const s = JSON.stringify(v);
+    return s.length > 160 ? s.slice(0, 160) + "…" : s;
+  } catch {
+    return String(v);
+  }
+}
+
+interface FieldDiff {
+  field: string;
+  oldVal: unknown;
+  newVal: unknown;
+}
+
+function extractFieldDiffs(
+  oldValue: Record<string, unknown> | null | undefined,
+  newValue: Record<string, unknown> | null | undefined,
+): FieldDiff[] {
+  const diffs: FieldDiff[] = [];
+  const keys = new Set<string>([
+    ...Object.keys(oldValue ?? {}),
+    ...Object.keys(newValue ?? {}),
+  ]);
+  for (const k of keys) {
+    const o = oldValue?.[k];
+    const n = newValue?.[k];
+    if (JSON.stringify(o) === JSON.stringify(n)) continue;
+    diffs.push({ field: k, oldVal: o, newVal: n });
+  }
+  return diffs;
+}
+
+function extractMetaHighlights(meta: Record<string, unknown> | null | undefined): {
+  documentLabel: string | null;
+  fileLabel: string | null;
+  versionLabel: string | null;
+  reason: string | null;
+} {
+  if (!meta) return { documentLabel: null, fileLabel: null, versionLabel: null, reason: null };
+  const m = meta as Record<string, unknown>;
+  const documentLabel =
+    (m.document_name as string | undefined) ??
+    (m.document_type as string | undefined) ??
+    (m.document_code as string | undefined) ??
+    null;
+  const fileLabel =
+    (m.file_name as string | undefined) ??
+    (m.original_file_name as string | undefined) ??
+    (m.filename as string | undefined) ??
+    null;
+  const versionRaw = m.version ?? m.file_version;
+  const versionLabel =
+    versionRaw !== undefined && versionRaw !== null ? `v${String(versionRaw)}` : null;
+  const reason =
+    (m.reason as string | undefined) ??
+    (m.remark as string | undefined) ??
+    (m.note as string | undefined) ??
+    null;
+  return { documentLabel, fileLabel, versionLabel, reason };
+}
+
+function ChangeDetailCard({ evt }: { evt: TimelineEvent }) {
+  const label = humanizeAuditAction(evt.actionType ?? "", evt.meta).split(" — ")[0];
+  const diffs = extractFieldDiffs(evt.oldValue, evt.newValue);
+  const { documentLabel, fileLabel, versionLabel, reason } = extractMetaHighlights(evt.meta);
+  const hasRich = diffs.length > 0 || documentLabel || fileLabel || versionLabel || reason;
+
+  return (
+    <div className="rounded-md border bg-muted/30 p-3 space-y-2">
+      <div className="flex items-center gap-2 flex-wrap">
+        <Badge variant="secondary" className="text-[10px]">
+          {label}
+        </Badge>
+        <span className="text-[11px] text-muted-foreground">{evt.actor}</span>
+        <span className="text-[11px] text-muted-foreground ml-auto">
+          {new Date(evt.timestamp).toLocaleString()}
+        </span>
+      </div>
+
+      {(documentLabel || fileLabel || versionLabel) && (
+        <div className="text-xs text-foreground/90 break-words">
+          <span className="text-muted-foreground">Document: </span>
+          {[documentLabel, fileLabel, versionLabel].filter(Boolean).join(" · ")}
+        </div>
+      )}
+
+      {diffs.length > 0 && (
+        <div className="space-y-1">
+          {diffs.map((d) => (
+            <div
+              key={d.field}
+              className="text-xs grid grid-cols-[auto,1fr] gap-x-2 items-start break-words"
+            >
+              <span className="text-muted-foreground whitespace-nowrap">
+                {formatFieldName(d.field)}:
+              </span>
+              <span className="break-words">
+                <span className="line-through text-muted-foreground/80">
+                  {formatValue(d.oldVal)}
+                </span>
+                <ArrowRight className="h-3 w-3 inline mx-1 text-muted-foreground" />
+                <span className="text-foreground">{formatValue(d.newVal)}</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {reason && (
+        <div className="text-xs rounded p-1.5 bg-muted/60 border border-border/60 break-words whitespace-pre-wrap">
+          <span className="text-muted-foreground">Reason: </span>
+          {reason}
+        </div>
+      )}
+
+      {!hasRich && (
+        <p className="text-xs text-muted-foreground break-words whitespace-pre-wrap">
+          {evt.description}
+        </p>
+      )}
+    </div>
+  );
+}
+
 interface Props {
   history: History[];
   notes: Note[];
@@ -231,7 +379,8 @@ export function AdminLeadTimeline({ history, notes, audits = [], actorNames = {}
                         <TooltipTrigger asChild>
                           <Badge
                             variant="secondary"
-                            className="text-[11px] font-normal gap-1 cursor-default px-2 py-0.5"
+                            className="text-[11px] font-normal gap-1 cursor-pointer px-2 py-0.5"
+                            onClick={() => setAuditDialogOpen(true)}
                           >
                             <Pencil className="h-2.5 w-2.5 opacity-70" />
                             <span>{shortLabel(evt.actionType, evt.description)}</span>
@@ -241,7 +390,7 @@ export function AdminLeadTimeline({ history, notes, audits = [], actorNames = {}
                         </TooltipTrigger>
                         <TooltipContent side="top" className="max-w-xs">
                           <div className="space-y-0.5 text-xs">
-                            <p className="font-medium">{evt.description}</p>
+                            <p className="font-medium break-words">{evt.description}</p>
                             <p className="text-muted-foreground">{evt.actor}</p>
                             <p className="text-muted-foreground">{new Date(evt.timestamp).toLocaleString()}</p>
                           </div>
@@ -283,7 +432,7 @@ export function AdminLeadTimeline({ history, notes, audits = [], actorNames = {}
                       return (
                         <div
                           key={evt.id}
-                          className="relative flex flex-col items-center w-[220px] shrink-0"
+                          className="relative flex flex-col items-center w-[280px] shrink-0"
                         >
                           {/* Dot */}
                           <span
@@ -320,7 +469,7 @@ export function AdminLeadTimeline({ history, notes, audits = [], actorNames = {}
                                     </span>
                                   </div>
 
-                                  <p className="text-[11px] text-foreground/80 font-medium truncate">
+                                  <p className="text-[11px] text-foreground/80 font-medium break-words">
                                     {evt.actor}
                                   </p>
 
@@ -357,20 +506,20 @@ export function AdminLeadTimeline({ history, notes, audits = [], actorNames = {}
                                   )}
 
                                   {evt.description && !isAuth && (
-                                    <p className="text-xs text-muted-foreground break-words line-clamp-3">
+                                    <p className="text-xs text-muted-foreground break-words line-clamp-4 whitespace-pre-wrap">
                                       {evt.description}
                                     </p>
                                   )}
 
                                   {isAuth && evt.reason && (
-                                    <p className="text-xs rounded p-1.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 break-words line-clamp-3">
+                                    <p className="text-xs rounded p-1.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 break-words line-clamp-4 whitespace-pre-wrap">
                                       Reason: {evt.reason}
                                     </p>
                                   )}
 
                                   {evt.noteText && (
                                     <p
-                                      className={`text-xs rounded p-1.5 break-words line-clamp-3 ${
+                                      className={`text-xs rounded p-1.5 break-words line-clamp-4 whitespace-pre-wrap ${
                                         evt.noteType === "internal"
                                           ? "bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900"
                                           : "bg-muted/50 border border-border/60"
@@ -389,7 +538,9 @@ export function AdminLeadTimeline({ history, notes, audits = [], actorNames = {}
                                 <p className="text-muted-foreground">
                                   {new Date(evt.timestamp).toLocaleString()}
                                 </p>
-                                {fullText && <p className="whitespace-pre-wrap">{fullText}</p>}
+                                {fullText && (
+                                  <p className="whitespace-pre-wrap break-words">{fullText}</p>
+                                )}
                               </div>
                             </TooltipContent>
                           </Tooltip>
@@ -405,25 +556,14 @@ export function AdminLeadTimeline({ history, notes, audits = [], actorNames = {}
       </CardContent>
 
       <Dialog open={auditDialogOpen} onOpenChange={setAuditDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>All changes ({auditChips.length})</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="max-h-[60vh] pr-4">
+          <ScrollArea className="max-h-[75vh] pr-4">
             <div className="space-y-3">
               {auditChips.map((evt) => (
-                <div key={evt.id} className="rounded-md border bg-muted/30 p-3 space-y-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Badge variant="secondary" className="text-[10px]">
-                      {shortLabel(evt.actionType, evt.description)}
-                    </Badge>
-                    <span className="text-[10px] text-muted-foreground">{evt.actor}</span>
-                    <span className="text-[10px] text-muted-foreground ml-auto">
-                      {new Date(evt.timestamp).toLocaleString()}
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{evt.description}</p>
-                </div>
+                <ChangeDetailCard key={evt.id} evt={evt} />
               ))}
             </div>
           </ScrollArea>
