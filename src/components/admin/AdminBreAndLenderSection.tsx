@@ -685,9 +685,18 @@ function LenderOptionCards({
   );
 }
 
-function LenderCard({ l }: { l: BreResult["eligible_lenders"][number] }) {
+function LenderCard({
+  l,
+  stored,
+}: {
+  l: BreResult["eligible_lenders"][number];
+  stored: StoredMatchValue | null;
+}) {
   const isSecured = l.product_type === "secured";
   const isUnsecured = l.product_type === "unsecured";
+
+  // Display rank: stored recommendation_rank wins over engine rank when present.
+  const displayRank = stored?.rank ?? l.rank ?? null;
 
   // Coverage chips: render only items explicitly set to true.
   const exp = l.coverage_expenses;
@@ -704,9 +713,9 @@ function LenderCard({ l }: { l: BreResult["eligible_lenders"][number] }) {
       <div className="flex items-start gap-2">
         <span
           className="inline-flex h-6 min-w-[1.75rem] shrink-0 items-center justify-center rounded-md bg-muted px-1.5 text-[11px] font-mono font-semibold text-foreground"
-          aria-label={`Rank ${l.rank ?? "unranked"}`}
+          aria-label={`Rank ${displayRank ?? "unranked"}`}
         >
-          {l.rank != null ? `#${l.rank}` : "—"}
+          {displayRank != null ? `#${displayRank}` : "—"}
         </span>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-semibold text-foreground truncate" title={l.lender_name}>
@@ -714,7 +723,7 @@ function LenderCard({ l }: { l: BreResult["eligible_lenders"][number] }) {
           </div>
           <div className="text-[10px] font-mono text-muted-foreground mt-0.5">{l.lender_code}</div>
         </div>
-        <FitBadge badge={l.badge} />
+        <FitBadge badge={l.badge} storedFit={stored?.fit ?? null} />
       </div>
 
       {/* Metrics row */}
