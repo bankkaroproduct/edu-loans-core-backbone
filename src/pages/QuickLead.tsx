@@ -321,12 +321,36 @@ export default function QuickLead() {
               />
             </div>
             <div className="space-y-2">
-              <Label>City / District</Label>
-              <IndianCityCombobox
-                value={form.city}
-                onChange={(v) => set("city", v)}
-                placeholder="Search city or district…"
+              <Label>Pincode *</Label>
+              <Input
+                value={form.pincode}
+                onChange={(e) => set("pincode", e.target.value.replace(/\D/g, "").slice(0, 6))}
+                placeholder="6-digit pincode"
+                inputMode="numeric"
               />
+              {form.pincode.length === 6 && pincodeResult.found === false && (
+                <p className="text-[11px] text-muted-foreground">We couldn't match this pincode. Please confirm District and State manually.</p>
+              )}
+              {pincodeResult.hasConflict && (
+                <p className="text-[11px] text-amber-700 flex items-center gap-1">
+                  <Info className="h-3 w-3" /> Please verify District and State — this pincode maps to more than one location.
+                </p>
+              )}
+              {!pincodeResult.hasConflict && pincodeResult.found && form.pincode.length === 6 && (
+                <p className="text-[11px] text-muted-foreground">Location details auto-filled. You can edit if needed.</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>City</Label>
+              <Input value={form.city} onChange={(e) => set("city", e.target.value)} placeholder="City" />
+            </div>
+            <div className="space-y-2">
+              <Label>District</Label>
+              <Input value={form.district} onChange={(e) => set("district", e.target.value)} placeholder="Auto-fills from pincode" />
+            </div>
+            <div className="space-y-2">
+              <Label>State</Label>
+              <Input value={form.state} onChange={(e) => set("state", e.target.value)} placeholder="Auto-fills from pincode" />
             </div>
           </CardContent>
         </Card>
