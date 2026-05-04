@@ -69,6 +69,10 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
   const [resolution, setResolution] = useState<BuildProfileResolution | null>(null);
   const [scoringVersion, setScoringVersion] = useState<number | null>(null);
   const [bucketThreshold, setBucketThreshold] = useState<number | null>(null);
+  // Stored recommendation_rank from lead_lender_matches (premiere-aware source of truth).
+  // Used only to ORDER the displayed lender cards. Does not affect BRE engine, scores,
+  // rates, loan amounts, fit labels, coverage chips, or eligibility.
+  const [storedRanks, setStoredRanks] = useState<Map<string, number>>(new Map());
 
   // VERBATIM copy of AdminCalculateBreCard.handleRun — no logic changes.
   const handleRun = async () => {
@@ -84,6 +88,19 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
       setResult(r);
       setScoringVersion(cfg.version_number);
       setBucketThreshold(cfg.bucket_threshold);
+
+      // Fetch stored recommendation_rank snapshot for display ordering only.
+      const { data: stored } = await supabase
+        .from("lead_lender_matches")
+        .select("lender_id, recommendation_rank")
+        .eq("lead_id", lead.id);
+      const m = new Map<string, number>();
+      for (const row of stored ?? []) {
+        if (row.recommendation_rank != null) {
+          m.set(row.lender_id, row.recommendation_rank);
+        }
+      }
+      setStoredRanks(m);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       toast.error(`BRE evaluation failed: ${msg}`);
