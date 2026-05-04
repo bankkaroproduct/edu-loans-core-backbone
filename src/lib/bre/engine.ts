@@ -333,7 +333,13 @@ export function evaluate(
       }
       const proj = ko.eligible
         ? projectLoanAndRate(lender, ko.product_type, overall_band, profile)
-        : { projected_loan: null, projected_rate: null };
+        : {
+            projected_loan: null,
+            projected_rate: null,
+            roi_range_min: null,
+            roi_range_max: null,
+            roi_range_source: null,
+          };
       return {
         lender_id: lender.lender_id,
         lender_name: lender.basic_info.lender_name,
@@ -348,6 +354,10 @@ export function evaluate(
         badge: null,
         // Descriptive pass-through only — not used by scoring/ranking/eligibility.
         coverage_expenses: lender.coverage?.expenses,
+        // Display-only ROI range (pass-through). Not used in ranking/scoring/eligibility.
+        roi_range_min: proj.roi_range_min,
+        roi_range_max: proj.roi_range_max,
+        roi_range_source: proj.roi_range_source,
       };
     });
 
