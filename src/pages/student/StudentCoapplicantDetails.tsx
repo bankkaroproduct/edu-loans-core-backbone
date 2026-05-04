@@ -11,6 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { HeartHandshake } from "lucide-react";
 import { CollateralRadio, collateralBoolToState, collateralStateToBool } from "@/components/shared/CollateralRadio";
 import { MoneyInput } from "@/components/ui/money-input";
+import { formatCoapplicantWorkExperience, validateCoapplicantWorkExperience } from "@/lib/academicScore";
 
 const RELATIONSHIPS = ["Father", "Mother", "Spouse", "Sibling", "Uncle", "Aunt", "Grandparent", "Other"];
 const EMPLOYMENT_TYPES = ["Salaried", "Self-employed", "Business Owner", "Professional", "Retired", "Homemaker", "Other"];
@@ -65,6 +66,12 @@ export default function StudentCoapplicantDetails() {
     if (!cibilStr) return "CIBIL Score is required";
     const cibil = parseInt(cibilStr, 10);
     if (!Number.isFinite(cibil) || cibil < 300 || cibil > 900) return "CIBIL Score must be between 300 and 900";
+    // Co-applicant work experience (optional but validated when present)
+    const wErr = validateCoapplicantWorkExperience(
+      String(formData.test_scores.coapplicant_work_experience_years ?? ""),
+      String(formData.test_scores.coapplicant_work_experience_months ?? ""),
+    );
+    if (wErr) return `Co-applicant Work Experience: ${wErr}`;
     return null;
   };
 
