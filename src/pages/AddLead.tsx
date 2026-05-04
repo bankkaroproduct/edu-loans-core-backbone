@@ -212,11 +212,19 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     twelfth_score: "",
     graduation_score: "",
     highest_qualification_score: "",
+    // Total marks / scale denominators (optional, BRE-aware, persisted in test_scores JSONB)
+    tenth_total: "",
+    twelfth_total: "",
+    graduation_total: "",
+    highest_qualification_total: "",
     // Co-applicant extension (mirrors Student portal — persisted in test_scores JSONB)
     coapplicant_email: "",
     coapplicant_age: "",          // numeric string in UI; persisted as number
     coapplicant_cibil: "",        // numeric string in UI; persisted as number
     work_experience_years: "",    // Student shorthand: "3" or "3.2"; "0" = Fresher
+    // Co-applicant work experience (years + months) — feeds BRE income_stability_years.
+    coapplicant_work_experience_years: "",
+    coapplicant_work_experience_months: "",
     // Standardized test scores (aligned with Student portal keys)
     ielts: "",
     toefl: "",
@@ -326,6 +334,10 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         twelfth_score: ((data as any).test_scores?.twelfth ?? "").toString(),
         graduation_score: ((data as any).test_scores?.graduation ?? "").toString(),
         highest_qualification_score: ((data as any).test_scores?.highest_qualification_score ?? "").toString(),
+        tenth_total: ((data as any).test_scores?.tenth_total ?? "").toString(),
+        twelfth_total: ((data as any).test_scores?.twelfth_total ?? "").toString(),
+        graduation_total: ((data as any).test_scores?.graduation_total ?? "").toString(),
+        highest_qualification_total: ((data as any).test_scores?.highest_qualification_total ?? "").toString(),
         coapplicant_email: (data as any).coapplicant_email ?? "",
         coapplicant_age: ((data as any).test_scores?.coapplicant_age ?? "").toString(),
         coapplicant_cibil: ((data as any).test_scores?.coapplicant_cibil ?? "").toString(),
@@ -333,6 +345,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
           const v = (data as any).test_scores?.work_experience_years;
           return v === undefined || v === null ? "" : v.toString();
         })(),
+        coapplicant_work_experience_years: ((data as any).test_scores?.coapplicant_work_experience_years ?? "").toString(),
+        coapplicant_work_experience_months: ((data as any).test_scores?.coapplicant_work_experience_months ?? "").toString(),
         ielts: ((data as any).test_scores?.ielts ?? "").toString(),
         toefl: ((data as any).test_scores?.toefl ?? "").toString(),
         duolingo: ((data as any).test_scores?.duolingo ?? "").toString(),
