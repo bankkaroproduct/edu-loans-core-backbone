@@ -16,6 +16,7 @@ import { buildIntakeSessionOptions, intakeSessionValue, parseIntakeSessionValue 
 import { sanitizeWorkExpInput, formatWorkExperience } from "@/lib/workExperience";
 import { Checkbox } from "@/components/ui/checkbox";
 import { normalizeAcademicScore, validateScoreTotalPair } from "@/lib/academicScore";
+import { ScoreTotalPair } from "@/components/shared/ScoreTotalPair";
 
 interface UniversityRow { id: string; university_name: string; country: string }
 interface CourseRow { id: string; course_name: string; course_category: string | null }
