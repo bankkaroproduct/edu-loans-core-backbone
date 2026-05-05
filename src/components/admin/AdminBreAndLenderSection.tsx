@@ -734,6 +734,10 @@ function LenderOptionCards({
       <p className="text-[11px] text-muted-foreground italic">
         Estimates only. No lender is auto-assigned and lead stage is not changed.
       </p>
+      <p className="text-[10px] text-muted-foreground/80 tabular-nums pt-1 border-t border-border/40">
+        Rule snapshot: scoring v{scoringVersion ?? "—"} · {activeRuleCount} active lender rule
+        {activeRuleCount === 1 ? "" : "s"} · live BRE estimate
+      </p>
     </div>
   );
 }
