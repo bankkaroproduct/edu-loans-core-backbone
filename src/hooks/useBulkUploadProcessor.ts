@@ -389,13 +389,45 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
     return n;
   };
   const tenth = parseNumeric(tenthStr, "10th_score", { min: 0 });
+  const tenthTotal = parseNumeric(tenthTotalStr, "10th_total_marks", { min: 0 });
   const twelfth = parseNumeric(twelfthStr, "12th_score", { min: 0 });
+  const twelfthTotal = parseNumeric(twelfthTotalStr, "12th_total_marks", { min: 0 });
   const grad = parseNumeric(gradStr, "graduation_score", { min: 0 });
+  const gradTotal = parseNumeric(gradTotalStr, "graduation_total_marks", { min: 0 });
   const qualScore = parseNumeric(qualificationScoreStr, "highest_qualification_score", { min: 0 });
+  const qualTotal = parseNumeric(qualificationTotalStr, "highest_qualification_total_marks", { min: 0 });
   const coapplicantEmi = parseNumeric(coapplicantEmiStr, "coapplicant_existing_emi", { min: 0 });
   const coapplicantAge = parseNumeric(coapplicantAgeStr, "coapplicant_age", { min: 18, max: 100 });
   const coapplicantCibil = parseNumeric(coapplicantCibilStr, "coapplicant_cibil", { min: 300, max: 900 });
   const workExp = parseNumeric(workExpStr, "work_experience", { min: 0, max: 60 });
+
+  // Score / total cross-validation — mirrors Add Lead's validateScoreTotalPair.
+  const pairChecks: Array<[string, string, string]> = [
+    ["10th", tenthStr, tenthTotalStr],
+    ["12th", twelfthStr, twelfthTotalStr],
+    ["Graduation", gradStr, gradTotalStr],
+    ["Highest Qualification", qualificationScoreStr, qualificationTotalStr],
+  ];
+  for (const [label, s, t] of pairChecks) {
+    const err = validateScoreTotalPair(s, t);
+    if (err) errors.push(`${label}: ${err}`);
+  }
+
+  // Co-applicant work experience shorthand ("3.6" => 3y 6m, etc.)
+  let coappWorkExpYears: number | undefined;
+  let coappWorkExpMonths: number | undefined;
+  if (coappWorkExpStr) {
+    const wErr = validateCoappWorkExpShorthand(coappWorkExpStr);
+    if (wErr) {
+      errors.push(`co_applicant_work_experience: ${wErr}`);
+    } else {
+      const parsedWE = parseCoappWorkExpShorthand(coappWorkExpStr);
+      if (parsedWE) {
+        coappWorkExpYears = parsedWE.years;
+        coappWorkExpMonths = parsedWE.months;
+      }
+    }
+  }
 
   let qualificationNormalized: string | undefined;
   if (qualification) {
