@@ -236,7 +236,7 @@ export default function AdminLeadDetail() {
         />
       </div>
 
-      <AdminLeadSummaryStrip lead={lead} />
+      <AdminLeadSummaryStrip lead={lead} onSaved={loadAll} />
 
       {/* Student PTR / Partner Source profile — promoted to the top of Admin Lead
           Detail so the originating partner / student-direct context is always
