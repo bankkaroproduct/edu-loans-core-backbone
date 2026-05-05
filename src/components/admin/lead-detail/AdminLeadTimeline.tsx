@@ -410,14 +410,14 @@ function ChangeDetailCard({ evt }: { evt: TimelineEvent }) {
               className="text-xs grid grid-cols-[auto,1fr] gap-x-2 items-start break-words"
             >
               <span className="text-muted-foreground whitespace-nowrap">
-                {formatFieldName(d.field)}:
+                {d.label ?? formatFieldName(d.field)}:
               </span>
               <span className="break-words">
                 <span className="line-through text-muted-foreground/80">
-                  {formatValue(d.oldVal)}
+                  {d.oldDisplay ?? formatValue(d.oldVal)}
                 </span>
                 <ArrowRight className="h-3 w-3 inline mx-1 text-muted-foreground" />
-                <span className="text-foreground">{formatValue(d.newVal)}</span>
+                <span className="text-foreground">{d.newDisplay ?? formatValue(d.newVal)}</span>
               </span>
             </div>
           ))}
