@@ -318,6 +318,7 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
                 storedMatches={storedMatches}
                 scoringVersion={scoringVersion}
                 activeRuleCount={result.eligible_lenders.length}
+                collateralState={resolution?.collateral_state ?? null}
               />
             )}
           </section>
@@ -666,12 +667,14 @@ function LenderOptionCards({
   storedMatches,
   scoringVersion,
   activeRuleCount,
+  collateralState,
 }: {
   eligibleLenders: BreResult["eligible_lenders"];
   loanRange: BreResult["eligible_loan_range"];
   storedMatches: Map<string, StoredMatchValue>;
   scoringVersion: number | null;
   activeRuleCount: number;
+  collateralState: "secured" | "secured_review_needed" | "unsecured" | null;
 }) {
   const ordered = [...eligibleLenders].sort((a, b) => {
     const sa = storedMatches.get(a.lender_id)?.rank ?? null;
@@ -688,9 +691,6 @@ function LenderOptionCards({
     .sort((a, b) => (a.rank ?? Number.POSITIVE_INFINITY) - (b.rank ?? Number.POSITIVE_INFINITY))
     .forEach((l, i) => engineOrderById.set(l.lender_id, i + 1));
 
-  // Section-level signal: do stored recommendation ranks differ from the live
-  // rate-based ordering for any visible lender? Used to render a single subtle
-  // note instead of repeating a chip on every card.
   const ranksDifferFromLive =
     hasStoredRanks &&
     ordered.some((l) => {
@@ -699,20 +699,41 @@ function LenderOptionCards({
       return storedRank != null && engineRank != null && storedRank !== engineRank;
     });
 
+  // Phase 2 — section-level route rationale (single source of truth for the
+  // primary route on this lead). Drives the small line above the cards plus
+  // the per-card route label fallback when engine roi_range_source is generic.
+  const routeRationale = (() => {
+    switch (collateralState) {
+      case "secured":
+        return "Showing rates for the Secured route (collateral provided).";
+      case "secured_review_needed":
+        return "Showing rates for the Secured route — collateral details pending verification.";
+      case "unsecured":
+        return "Showing rates for the Unsecured route (no collateral provided).";
+      default:
+        return null;
+    }
+  })();
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="text-xs text-muted-foreground">
           {ordered.length} {ordered.length === 1 ? "lender" : "lenders"} match this profile
         </div>
-        {/* Header aggregate ROI range intentionally hidden — it blended secured + unsecured
-            across lenders. Per-card, route-specific ROI ranges remain. */}
         {loanRange && (
           <div className="text-[11px] text-muted-foreground tabular-nums">
             ₹{loanRange.min.toLocaleString("en-IN")} – ₹{loanRange.max.toLocaleString("en-IN")}
           </div>
         )}
       </div>
+
+      {routeRationale && (
+        <p className="text-[11px] text-foreground/80 flex items-start gap-1.5">
+          <Info className="h-3 w-3 shrink-0 mt-0.5" />
+          <span>{routeRationale}</span>
+        </p>
+      )}
 
       <p className="text-[11px] text-muted-foreground italic flex items-start gap-1.5">
         <Info className="h-3 w-3 shrink-0 mt-0.5" />
@@ -739,6 +760,7 @@ function LenderOptionCards({
               l={l}
               stored={storedMatches.get(l.lender_id) ?? null}
               displayPosition={idx + 1}
+              collateralState={collateralState}
             />
           );
         })}
