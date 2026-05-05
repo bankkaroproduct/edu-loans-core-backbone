@@ -4,7 +4,7 @@
 // use MasterEditPopover + master tables fetched via useLeadMasterData. Other
 // fields (Loan Amount, Co-applicant, Collateral, Source) keep the existing
 // InlineEditField behaviour unchanged.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { InlineEditField } from "@/components/admin/InlineEditField";
 import { MasterEditPopover } from "@/components/admin/MasterEditPopover";
@@ -120,7 +120,7 @@ export function AdminLeadSummaryStrip({ lead, onSaved }: Props) {
   );
 
   // Re-sync drafts when lead changes (after a refresh)
-  useMemo(() => {
+  useEffect(() => {
     setCountryDraft(lead.intended_study_country ?? "");
     setIntakeDraft(intakeSessionValue(lead.intake_term, lead.intake_year));
     setUniId(lead.university_id ?? "");
