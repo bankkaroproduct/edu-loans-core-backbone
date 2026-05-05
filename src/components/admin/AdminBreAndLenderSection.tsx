@@ -759,12 +759,10 @@ function LenderCard({
   l,
   stored,
   displayPosition,
-  staleRank = false,
 }: {
   l: BreResult["eligible_lenders"][number];
   stored: StoredMatchValue | null;
   displayPosition: number;
-  staleRank?: boolean;
 }) {
   const isSecured = l.product_type === "secured";
   const isUnsecured = l.product_type === "unsecured";
