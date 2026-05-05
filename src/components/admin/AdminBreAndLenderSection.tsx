@@ -688,6 +688,17 @@ function LenderOptionCards({
     .sort((a, b) => (a.rank ?? Number.POSITIVE_INFINITY) - (b.rank ?? Number.POSITIVE_INFINITY))
     .forEach((l, i) => engineOrderById.set(l.lender_id, i + 1));
 
+  // Section-level signal: do stored recommendation ranks differ from the live
+  // rate-based ordering for any visible lender? Used to render a single subtle
+  // note instead of repeating a chip on every card.
+  const ranksDifferFromLive =
+    hasStoredRanks &&
+    ordered.some((l) => {
+      const storedRank = storedMatches.get(l.lender_id)?.rank ?? null;
+      const engineRank = engineOrderById.get(l.lender_id) ?? null;
+      return storedRank != null && engineRank != null && storedRank !== engineRank;
+    });
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between flex-wrap gap-2">
@@ -706,26 +717,28 @@ function LenderOptionCards({
       <p className="text-[11px] text-muted-foreground italic flex items-start gap-1.5">
         <Info className="h-3 w-3 shrink-0 mt-0.5" />
         <span>
-          Order reflects BRE recommendation rank (overall fit). ROI shown is the live indicative rate.
+          Order reflects stored BRE recommendation rank (overall fit). ROI shown is the live indicative rate.
         </span>
       </p>
 
+      {ranksDifferFromLive && (
+        <p className="text-[11px] text-muted-foreground/90 italic flex items-start gap-1.5">
+          <Info className="h-3 w-3 shrink-0 mt-0.5" />
+          <span>
+            Stored recommendation ranks differ from the latest live ordering for this profile.
+            Ranks shown are stored values and have not been recomputed.
+          </span>
+        </p>
+      )}
+
       <ol className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
         {ordered.slice(0, 8).map((l, idx) => {
-          const storedRank = storedMatches.get(l.lender_id)?.rank ?? null;
-          const engineRank = engineOrderById.get(l.lender_id) ?? null;
-          const isStale =
-            hasStoredRanks &&
-            storedRank != null &&
-            engineRank != null &&
-            storedRank !== engineRank;
           return (
             <LenderCard
               key={l.lender_id}
               l={l}
               stored={storedMatches.get(l.lender_id) ?? null}
               displayPosition={idx + 1}
-              staleRank={isStale}
             />
           );
         })}
@@ -746,12 +759,10 @@ function LenderCard({
   l,
   stored,
   displayPosition,
-  staleRank = false,
 }: {
   l: BreResult["eligible_lenders"][number];
   stored: StoredMatchValue | null;
   displayPosition: number;
-  staleRank?: boolean;
 }) {
   const isSecured = l.product_type === "secured";
   const isUnsecured = l.product_type === "unsecured";
@@ -833,17 +844,9 @@ function LenderCard({
               · {isSecured ? "Secured" : "Unsecured"}
             </span>
           )}
-          {staleRank && (
-            <Badge
-              variant="outline"
-              className="text-[9px] px-1 py-0 border-amber-500/40 text-amber-700 dark:text-amber-300"
-              title="Stored recommendation rank differs from live rate-based order"
-            >
-              Stale rank
-            </Badge>
-          )}
         </div>
       )}
+
 
       {/* Secondary metrics row. ROI chip is labelled with the route source the
           engine actually used (l.roi_range_source), so the primary visible
