@@ -717,26 +717,28 @@ function LenderOptionCards({
       <p className="text-[11px] text-muted-foreground italic flex items-start gap-1.5">
         <Info className="h-3 w-3 shrink-0 mt-0.5" />
         <span>
-          Order reflects BRE recommendation rank (overall fit). ROI shown is the live indicative rate.
+          Order reflects stored BRE recommendation rank (overall fit). ROI shown is the live indicative rate.
         </span>
       </p>
 
+      {ranksDifferFromLive && (
+        <p className="text-[11px] text-muted-foreground/90 italic flex items-start gap-1.5">
+          <Info className="h-3 w-3 shrink-0 mt-0.5" />
+          <span>
+            Stored recommendation ranks differ from the latest live ordering for this profile.
+            Ranks shown are stored values and have not been recomputed.
+          </span>
+        </p>
+      )}
+
       <ol className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
         {ordered.slice(0, 8).map((l, idx) => {
-          const storedRank = storedMatches.get(l.lender_id)?.rank ?? null;
-          const engineRank = engineOrderById.get(l.lender_id) ?? null;
-          const isStale =
-            hasStoredRanks &&
-            storedRank != null &&
-            engineRank != null &&
-            storedRank !== engineRank;
           return (
             <LenderCard
               key={l.lender_id}
               l={l}
               stored={storedMatches.get(l.lender_id) ?? null}
               displayPosition={idx + 1}
-              staleRank={isStale}
             />
           );
         })}
