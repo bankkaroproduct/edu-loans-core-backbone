@@ -990,6 +990,20 @@ function LenderCard({
         </div>
       )}
 
+      {/* Phase 3 rationale chips — only real factors derived from live ranking */}
+      {ranking && ranking.rationale.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+          {ranking.rationale.map((r) => (
+            <span
+              key={r}
+              className="inline-flex items-center rounded-md border border-primary/20 bg-primary/5 px-1.5 py-0.5 text-[10px] text-foreground/80"
+            >
+              {r}
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* Recommendation rationale — bullets shown only when backed by real data */}
       <RecommendationRationale
         storedReason={stored?.reason ?? null}
