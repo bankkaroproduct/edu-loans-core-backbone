@@ -434,6 +434,16 @@ export interface BuildProfileResolution {
     | { kind: "none" };
   course_level_derivation?: { source: "course_name"; raw: string; derived: string } | { kind: "none" };
   english_proficiency?: EnglishProficiencyResolution;
+  /**
+   * Derived collateral state for UI display.
+   *  - "secured":               collateral_available = true AND collateral_notes provided
+   *  - "secured_review_needed": collateral_available = true but collateral_notes blank
+   *  - "unsecured":             collateral_available = false OR null/blank
+   *
+   * Engine `collateral_route` follows the same fork ("secured" / "unsecured"); the
+   * `_review_needed` flavor is purely a UI hint and does not change engine routing.
+   */
+  collateral_state?: "secured" | "secured_review_needed" | "unsecured";
   /** Effective academic score derivation (Graduation ± Highest Qualification). */
   academic?: EffectiveAcademicResult;
   /** 10th score normalization (raw → normalized %). */
@@ -558,16 +568,33 @@ function buildProfileCore(
   // Course level: derived from course_name when not explicitly captured on the lead.
   const derivedCourseLevel = deriveCourseLevelFromName(lead.course_name);
   const englishResult = deriveEnglishProficiency(lead.test_scores as unknown);
+
+  // Phase 2 collateral routing.
+  // Approved business mapping (does NOT depend on free-text collateral_notes for routing):
+  //   collateral_available = true   → secured route
+  //   collateral_available = false  → unsecured route
+  //   collateral_available = null   → unsecured route (blank must NOT silently open secured)
+  // Free-text `collateral_notes` only drives a UI "review needed" chip when Yes
+  // is recorded without details; it does not flip the route.
+  const collateralRoute: BreProfileInput["collateral_route"] =
+    lead.collateral_available === true ? "secured" : "unsecured";
+
+  const collateralNotes = (lead.collateral_notes ?? "").trim();
+  const collateralState: "secured" | "secured_review_needed" | "unsecured" =
+    lead.collateral_available === true
+      ? collateralNotes.length > 0
+        ? "secured"
+        : "secured_review_needed"
+      : "unsecured";
+
   const finalResolution: BuildProfileResolution = {
     ...(resolution ?? {}),
     course_level_derivation: derivedCourseLevel
       ? { source: "course_name", raw: lead.course_name ?? "", derived: derivedCourseLevel }
       : { kind: "none" },
     english_proficiency: englishResult.resolution,
+    collateral_state: collateralState,
   };
-
-  const collateralRoute: BreProfileInput["collateral_route"] =
-    lead.collateral_available === true ? "either" : lead.collateral_available === false ? "unsecured" : "either";
 
   // ---- student bucket ----
   const ts = lead.test_scores as unknown;
