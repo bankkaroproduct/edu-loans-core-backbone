@@ -781,10 +781,12 @@ function LenderCard({
   l,
   stored,
   displayPosition,
+  collateralState,
 }: {
   l: BreResult["eligible_lenders"][number];
   stored: StoredMatchValue | null;
   displayPosition: number;
+  collateralState: "secured" | "secured_review_needed" | "unsecured" | null;
 }) {
   const isSecured = l.product_type === "secured";
   const isUnsecured = l.product_type === "unsecured";
@@ -811,10 +813,6 @@ function LenderCard({
   ];
   const coverageItems = ALL_ITEMS.filter((it) => exp?.[it.key] === true);
 
-  // "Not covered" inference rule (UI-only, no DB writes):
-  //   - exp must be a non-null object (i.e. lender has source-backed coverage data)
-  //   - AND at least one item is explicitly true (proves the object is populated, not empty)
-  // Otherwise we render NOTHING — never assume "Not covered" for unknown / null data.
   const hasCoverageSource =
     exp != null && typeof exp === "object" && coverageItems.length > 0;
   const notCoveredItems = hasCoverageSource
@@ -830,6 +828,12 @@ function LenderCard({
 
   // PF chip text — pass-through from engine. Hidden entirely if no PF source.
   const pfLabel = formatPfLabel(l);
+
+  // Phase 2 — show "Collateral review needed" chip only when this card actually
+  // uses the secured route AND the lead recorded collateral_available=true with
+  // no notes. Never invented; never shown for unsecured cards.
+  const showCollateralReviewChip =
+    isSecured && collateralState === "secured_review_needed";
 
   return (
     <li className="group relative rounded-lg border border-border bg-card hover:border-primary/40 hover:shadow-sm transition-all p-3 flex flex-col gap-2.5">
@@ -866,9 +870,16 @@ function LenderCard({
               · {isSecured ? "Secured" : "Unsecured"}
             </span>
           )}
+          {showCollateralReviewChip && (
+            <Badge
+              variant="outline"
+              className="text-[10px] px-1.5 py-0 border-amber-500/40 text-amber-700 dark:text-amber-300"
+            >
+              Collateral review needed
+            </Badge>
+          )}
         </div>
       )}
-
 
       {/* Secondary metrics row. ROI chip is labelled with the route source the
           engine actually used (l.roi_range_source), so the primary visible
