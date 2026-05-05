@@ -226,11 +226,7 @@ const TEST_SCORES_NESTED_LABELS: Record<string, string> = {
   sat: "SAT Score",
 };
 
-const KNOWN_NESTED_KEYS = new Set<string>([
-  ...Object.keys(TEST_SCORES_NESTED_LABELS),
-  "coapplicant_work_experience_years",
-  "coapplicant_work_experience_months",
-]);
+// (KNOWN_NESTED_KEYS removed — unused)
 
 function formatWorkExp(years: unknown, months: unknown): string {
   const yBlank = isBlank(years);
