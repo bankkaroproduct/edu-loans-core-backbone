@@ -33,7 +33,18 @@ export const REASON = {
     `${bucket} bucket score ${score.toFixed(1)} is below the required threshold of ${threshold}`,
   country_not_supported: (country: string) =>
     `Country ${country} is not serviced by this lender`,
+  country_excluded: (country: string) =>
+    `Country ${country} is explicitly excluded by this lender`,
   state_excluded: (state: string) => `State ${state} is excluded by this lender`,
+  city_excluded: (city: string) => `City ${city} is excluded by this lender`,
+  marks_below_min: (level: string, min: number) =>
+    `Academic marks (${level}) are below the lender's minimum of ${min}%`,
+  salary_below_min: (min: number) =>
+    `Salaried co-applicant monthly income is below the lender's minimum of ₹${min.toLocaleString("en-IN")}`,
+  itr_below_min: (min: number) =>
+    `Self-employed co-applicant annual ITR is below the lender's minimum of ₹${min.toLocaleString("en-IN")}`,
+  student_age_out_of_range: (age: number, min: number | null, max: number | null) =>
+    `Student age ${age} is outside the lender's permitted range (${min ?? "—"}–${max ?? "—"})`,
   loan_below_min: (min: number) =>
     `Requested loan amount is below the lender's minimum of ₹${min.toLocaleString("en-IN")}`,
   loan_above_max: (max: number) =>
