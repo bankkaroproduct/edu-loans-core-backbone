@@ -418,6 +418,8 @@ export function evaluate(
             roi_range_min: null,
             roi_range_max: null,
             roi_range_source: null,
+            effective_rate_min: null,
+            effective_rate_max: null,
           };
       return {
         lender_id: lender.lender_id,
@@ -437,6 +439,9 @@ export function evaluate(
         roi_range_min: proj.roi_range_min,
         roi_range_max: proj.roi_range_max,
         roi_range_source: proj.roi_range_source,
+        // Display-only Effective ROI for the selected route. Not used in ranking.
+        effective_rate_min: proj.effective_rate_min,
+        effective_rate_max: proj.effective_rate_max,
         // Display-only PF pass-through (commercials → result). Not used in ranking.
         pf_pct: lender.commercials.processing_fee_pct ?? null,
         pf_pct_min: lender.commercials.processing_fee_pct_min ?? null,
