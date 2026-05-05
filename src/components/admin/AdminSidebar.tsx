@@ -244,23 +244,35 @@ export function AdminSidebar() {
             </div>
           )}
 
-          {/* Sign out: icon button (not full-width) */}
-          <div className={collapsed ? "flex justify-center" : "flex justify-end px-2"}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={handleSignOut}
-                  aria-label="Sign Out"
-                >
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Sign Out</TooltipContent>
-            </Tooltip>
-          </div>
+          {/* Sign out: footer action button */}
+          {collapsed ? (
+            <div className="flex justify-center pt-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 border-sidebar-border/60 text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/60"
+                    onClick={handleSignOut}
+                    aria-label="Sign out"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Sign out</TooltipContent>
+              </Tooltip>
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-2 h-9 border-sidebar-border/60 text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/60"
+              onClick={handleSignOut}
+              aria-label="Sign out"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Sign out</span>
+            </Button>
+          )}
         </div>
       </SidebarFooter>
     </Sidebar>
