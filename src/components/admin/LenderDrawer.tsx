@@ -272,6 +272,32 @@ export function LenderDrawer({ open, onOpenChange, record, onSaved }: Props) {
             </div>
           </FormSection>
 
+          {/* Communication Contact */}
+          <FormSection
+            title="Communication Contact"
+            actions={<span className="text-[10px] text-muted-foreground">Used by Send to Lender</span>}
+          >
+            <div className="space-y-1.5">
+              <Label className="text-xs">Lender Contact Email</Label>
+              <Input
+                type="email"
+                value={form.contact_email}
+                onChange={(e) => setField("contact_email", e.target.value)}
+                placeholder="lender@example.com"
+              />
+              <p className="text-[10px] text-muted-foreground">Used to auto-fill the recipient on Send to Lender.</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">CC Emails</Label>
+              <Input
+                value={form.cc_emails}
+                onChange={(e) => setField("cc_emails", e.target.value)}
+                placeholder="copy1@example.com, copy2@example.com"
+              />
+              <p className="text-[10px] text-muted-foreground">Optional. Separate multiple emails with commas.</p>
+            </div>
+          </FormSection>
+
           {/* Internal Notes */}
           <FormSection
             title="Internal Notes"
