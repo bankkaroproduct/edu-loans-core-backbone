@@ -99,6 +99,20 @@ export function LenderDrawer({ open, onOpenChange, record, onSaved }: Props) {
       toast({ title: "Validation error", description: "Min income is required when unsecured loans are supported.", variant: "destructive" });
       return;
     }
+    const contactEmail = form.contact_email.trim().toLowerCase();
+    if (contactEmail && !EMAIL_RE.test(contactEmail)) {
+      toast({ title: "Validation error", description: "Lender contact email is not valid.", variant: "destructive" });
+      return;
+    }
+    const ccEmails = form.cc_emails
+      .split(",")
+      .map((e) => e.trim().toLowerCase())
+      .filter((e) => e.length > 0);
+    const invalidCc = ccEmails.find((e) => !EMAIL_RE.test(e));
+    if (invalidCc) {
+      toast({ title: "Validation error", description: `CC email "${invalidCc}" is not valid.`, variant: "destructive" });
+      return;
+    }
     setSaving(true);
     try {
       const num = (s: string) => (s.trim() === "" ? null : Number(s));
