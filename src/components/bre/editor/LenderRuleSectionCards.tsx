@@ -40,6 +40,19 @@ export function LenderRuleSectionCards({ rule, onChange, readOnly }: Props) {
           <Field label="SPOC email">
             <Input type="email" value={rule.basic_info.spoc_email ?? ""} onChange={(e) => set("basic_info", { ...rule.basic_info, spoc_email: e.target.value || null })} disabled={readOnly} />
           </Field>
+          <Field label="Code type">
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              value={rule.basic_info.code_type ?? ""}
+              onChange={(e) => set("basic_info", { ...rule.basic_info, code_type: (e.target.value || null) as "internal" | "external" | "internal_under_process" | null })}
+              disabled={readOnly}
+            >
+              <option value="">—</option>
+              <option value="internal">Internal</option>
+              <option value="external">External</option>
+              <option value="internal_under_process">Internal (Under Process)</option>
+            </select>
+          </Field>
           <Field label="Active">
             <div className="flex h-10 items-center">
               <Switch checked={rule.basic_info.active} onCheckedChange={(v) => set("basic_info", { ...rule.basic_info, active: v })} disabled={readOnly} />
@@ -59,7 +72,17 @@ export function LenderRuleSectionCards({ rule, onChange, readOnly }: Props) {
             <Input type="number" step="any" value={rule.commercials.payout_pct ?? ""} onChange={(e) => set("commercials", { ...rule.commercials, payout_pct: numOrNull(e.target.value) })} disabled={readOnly} />
           </Field>
           <Field label="Payout trigger stage">
-            <Input value={rule.commercials.payout_trigger_stage ?? ""} onChange={(e) => set("commercials", { ...rule.commercials, payout_trigger_stage: e.target.value || null })} placeholder="disbursed" disabled={readOnly} />
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              value={rule.commercials.payout_trigger_stage ?? ""}
+              onChange={(e) => set("commercials", { ...rule.commercials, payout_trigger_stage: e.target.value || null })}
+              disabled={readOnly}
+            >
+              <option value="">—</option>
+              <option value="sanction">On sanction</option>
+              <option value="tranche_disbursement">On tranche disbursement</option>
+              <option value="disbursement">On disbursement</option>
+            </select>
           </Field>
           <Field label="Processing fee %">
             <Input type="number" step="any" value={rule.commercials.processing_fee_pct ?? ""} onChange={(e) => set("commercials", { ...rule.commercials, processing_fee_pct: numOrNull(e.target.value) })} disabled={readOnly} />
@@ -67,6 +90,27 @@ export function LenderRuleSectionCards({ rule, onChange, readOnly }: Props) {
           <Field label="Processing fee flat (₹)">
             <Input type="number" step="any" value={rule.commercials.processing_fee_flat ?? ""} onChange={(e) => set("commercials", { ...rule.commercials, processing_fee_flat: numOrNull(e.target.value) })} disabled={readOnly} />
           </Field>
+          <CoverageToggle
+            label="PF GST applicable"
+            checked={rule.commercials.processing_fee_gst_applicable === true}
+            onCheckedChange={(v) => set("commercials", { ...rule.commercials, processing_fee_gst_applicable: v })}
+            disabled={readOnly}
+          />
+          <CoverageToggle
+            label="PF refundable on disbursement"
+            checked={rule.commercials.processing_fee_refundable_on_disbursement === true}
+            onCheckedChange={(v) => set("commercials", { ...rule.commercials, processing_fee_refundable_on_disbursement: v })}
+            disabled={readOnly}
+          />
+          <Field label="VAS %">
+            <Input type="number" step="any" value={rule.commercials.vas_pct ?? ""} onChange={(e) => set("commercials", { ...rule.commercials, vas_pct: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <CoverageToggle
+            label="VAS varies by lender (aggregator)"
+            checked={rule.commercials.vas_varies_by_lender === true}
+            onCheckedChange={(v) => set("commercials", { ...rule.commercials, vas_varies_by_lender: v })}
+            disabled={readOnly}
+          />
         </CardContent>
       </Card>
 
@@ -94,6 +138,48 @@ export function LenderRuleSectionCards({ rule, onChange, readOnly }: Props) {
           </Field>
           <Field label="Min ITR years">
             <Input type="number" step="any" value={rule.hard_thresholds.min_itr_years ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, min_itr_years: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <Field label="Min CIBIL — student">
+            <Input type="number" step="any" value={rule.hard_thresholds.min_cibil_student ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, min_cibil_student: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <Field label="Min CIBIL — co-applicant">
+            <Input type="number" step="any" value={rule.hard_thresholds.min_cibil_coapplicant ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, min_cibil_coapplicant: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <Field label="Student min age">
+            <Input type="number" step="any" value={rule.hard_thresholds.student_min_age ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, student_min_age: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <Field label="Student max age">
+            <Input type="number" step="any" value={rule.hard_thresholds.student_max_age ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, student_max_age: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <Field label="Co-applicant min age">
+            <Input type="number" step="any" value={rule.hard_thresholds.coapplicant_min_age ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, coapplicant_min_age: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <Field label="Co-applicant max age">
+            <Input type="number" step="any" value={rule.hard_thresholds.coapplicant_max_age ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, coapplicant_max_age: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <Field label="Min marks Class X (%)">
+            <Input type="number" step="any" value={rule.hard_thresholds.min_marks_class_x_pct ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, min_marks_class_x_pct: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <Field label="Min marks Class XII (%)">
+            <Input type="number" step="any" value={rule.hard_thresholds.min_marks_class_xii_pct ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, min_marks_class_xii_pct: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <Field label="Min marks Graduation (%)">
+            <Input type="number" step="any" value={rule.hard_thresholds.min_marks_grad_pct ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, min_marks_grad_pct: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <Field label="Min monthly salary (₹) — salaried">
+            <Input type="number" step="any" value={rule.hard_thresholds.min_salary_monthly_salaried ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, min_salary_monthly_salaried: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <Field label="Min annual ITR (₹) — self-employed">
+            <Input type="number" step="any" value={rule.hard_thresholds.min_itr_annual_self_employed ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, min_itr_annual_self_employed: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <Field label="Max DPD 30+">
+            <Input type="number" step="any" value={rule.hard_thresholds.max_dpd_30 ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, max_dpd_30: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <Field label="Max DPD 60+">
+            <Input type="number" step="any" value={rule.hard_thresholds.max_dpd_60 ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, max_dpd_60: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <Field label="Max DPD 90+">
+            <Input type="number" step="any" value={rule.hard_thresholds.max_dpd_90 ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, max_dpd_90: numOrNull(e.target.value) })} disabled={readOnly} />
           </Field>
           <Field label="Allowed relationships (CSV)" className="md:col-span-3">
             <Input
@@ -169,6 +255,30 @@ export function LenderRuleSectionCards({ rule, onChange, readOnly }: Props) {
               value={(rule.coverage.accepted_courses ?? []).join(", ")}
               onChange={(e) => set("coverage", { ...rule.coverage, accepted_courses: csvToList(e.target.value) })}
               placeholder="(empty = all)"
+              disabled={readOnly}
+            />
+          </Field>
+          <Field label="Excluded countries (ISO codes, CSV)">
+            <Input
+              value={(rule.coverage.excluded_countries ?? []).join(", ")}
+              onChange={(e) => set("coverage", { ...rule.coverage, excluded_countries: csvToList(e.target.value).map((s) => s.toUpperCase()) })}
+              placeholder="CN, GE, UZ, KZ, UA"
+              disabled={readOnly}
+            />
+          </Field>
+          <Field label="Excluded Indian states (CSV)">
+            <Input
+              value={(rule.coverage.excluded_indian_states ?? []).join(", ")}
+              onChange={(e) => set("coverage", { ...rule.coverage, excluded_indian_states: csvToList(e.target.value) })}
+              placeholder="JK, NE"
+              disabled={readOnly}
+            />
+          </Field>
+          <Field label="Excluded Indian cities (CSV)">
+            <Input
+              value={(rule.coverage.excluded_indian_cities ?? []).join(", ")}
+              onChange={(e) => set("coverage", { ...rule.coverage, excluded_indian_cities: csvToList(e.target.value) })}
+              placeholder="(empty = no city exclusions)"
               disabled={readOnly}
             />
           </Field>
@@ -255,6 +365,56 @@ export function LenderRuleSectionCards({ rule, onChange, readOnly }: Props) {
             </Field>
             <Field label="Moratorium (months)">
               <Input type="number" step="any" value={rule.policy.moratorium_months ?? ""} onChange={(e) => set("policy", { ...rule.policy, moratorium_months: numOrNull(e.target.value) })} disabled={readOnly} />
+            </Field>
+            <Field label="ROI secured min %">
+              <Input type="number" step="any" value={rule.policy.roi_secured_min ?? ""} onChange={(e) => set("policy", { ...rule.policy, roi_secured_min: numOrNull(e.target.value) })} disabled={readOnly} />
+            </Field>
+            <Field label="ROI secured max %">
+              <Input type="number" step="any" value={rule.policy.roi_secured_max ?? ""} onChange={(e) => set("policy", { ...rule.policy, roi_secured_max: numOrNull(e.target.value) })} disabled={readOnly} />
+            </Field>
+            <Field label="ROI unsecured min %">
+              <Input type="number" step="any" value={rule.policy.roi_unsecured_min ?? ""} onChange={(e) => set("policy", { ...rule.policy, roi_unsecured_min: numOrNull(e.target.value) })} disabled={readOnly} />
+            </Field>
+            <Field label="ROI unsecured max %">
+              <Input type="number" step="any" value={rule.policy.roi_unsecured_max ?? ""} onChange={(e) => set("policy", { ...rule.policy, roi_unsecured_max: numOrNull(e.target.value) })} disabled={readOnly} />
+            </Field>
+            <Field label="Effective ROI min %">
+              <Input type="number" step="any" value={rule.policy.effective_roi_min ?? ""} onChange={(e) => set("policy", { ...rule.policy, effective_roi_min: numOrNull(e.target.value) })} disabled={readOnly} />
+            </Field>
+            <Field label="Effective ROI max %">
+              <Input type="number" step="any" value={rule.policy.effective_roi_max ?? ""} onChange={(e) => set("policy", { ...rule.policy, effective_roi_max: numOrNull(e.target.value) })} disabled={readOnly} />
+            </Field>
+            <Field label="Tenure max (years, override)">
+              <Input type="number" step="any" value={rule.policy.tenure_years_max ?? ""} onChange={(e) => set("policy", { ...rule.policy, tenure_years_max: numOrNull(e.target.value) })} disabled={readOnly} />
+            </Field>
+            <Field label="University list mode">
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                value={rule.policy.university_list_mode ?? ""}
+                onChange={(e) => set("policy", { ...rule.policy, university_list_mode: (e.target.value || null) as "premiere" | "internal_list" | "case_to_case" | null })}
+                disabled={readOnly}
+              >
+                <option value="">—</option>
+                <option value="premiere">Premiere list</option>
+                <option value="internal_list">Internal list</option>
+                <option value="case_to_case">Case-to-case</option>
+              </select>
+            </Field>
+            <Field label="Courses covered (CSV)">
+              <Input
+                value={(rule.policy.courses_covered ?? []).join(", ")}
+                onChange={(e) => set("policy", { ...rule.policy, courses_covered: csvToList(e.target.value).map((s) => s.toUpperCase()) })}
+                placeholder="UG, PG"
+                disabled={readOnly}
+              />
+            </Field>
+            <Field label="Allowed relationships (policy CSV)" className="md:col-span-3">
+              <Input
+                value={(rule.policy.allowed_relationships ?? []).join(", ")}
+                onChange={(e) => set("policy", { ...rule.policy, allowed_relationships: csvToList(e.target.value) })}
+                placeholder="parent, sibling, spouse"
+                disabled={readOnly}
+              />
             </Field>
           </div>
           <Field label="Notes">
