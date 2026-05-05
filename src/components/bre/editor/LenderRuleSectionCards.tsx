@@ -139,6 +139,48 @@ export function LenderRuleSectionCards({ rule, onChange, readOnly }: Props) {
           <Field label="Min ITR years">
             <Input type="number" step="any" value={rule.hard_thresholds.min_itr_years ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, min_itr_years: numOrNull(e.target.value) })} disabled={readOnly} />
           </Field>
+          <Field label="Min CIBIL — student">
+            <Input type="number" step="any" value={rule.hard_thresholds.min_cibil_student ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, min_cibil_student: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <Field label="Min CIBIL — co-applicant">
+            <Input type="number" step="any" value={rule.hard_thresholds.min_cibil_coapplicant ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, min_cibil_coapplicant: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <Field label="Student min age">
+            <Input type="number" step="any" value={rule.hard_thresholds.student_min_age ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, student_min_age: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <Field label="Student max age">
+            <Input type="number" step="any" value={rule.hard_thresholds.student_max_age ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, student_max_age: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <Field label="Co-applicant min age">
+            <Input type="number" step="any" value={rule.hard_thresholds.coapplicant_min_age ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, coapplicant_min_age: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <Field label="Co-applicant max age">
+            <Input type="number" step="any" value={rule.hard_thresholds.coapplicant_max_age ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, coapplicant_max_age: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <Field label="Min marks Class X (%)">
+            <Input type="number" step="any" value={rule.hard_thresholds.min_marks_class_x_pct ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, min_marks_class_x_pct: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <Field label="Min marks Class XII (%)">
+            <Input type="number" step="any" value={rule.hard_thresholds.min_marks_class_xii_pct ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, min_marks_class_xii_pct: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <Field label="Min marks Graduation (%)">
+            <Input type="number" step="any" value={rule.hard_thresholds.min_marks_grad_pct ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, min_marks_grad_pct: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <Field label="Min monthly salary (₹) — salaried">
+            <Input type="number" step="any" value={rule.hard_thresholds.min_salary_monthly_salaried ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, min_salary_monthly_salaried: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <Field label="Min annual ITR (₹) — self-employed">
+            <Input type="number" step="any" value={rule.hard_thresholds.min_itr_annual_self_employed ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, min_itr_annual_self_employed: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <Field label="Max DPD 30+">
+            <Input type="number" step="any" value={rule.hard_thresholds.max_dpd_30 ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, max_dpd_30: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <Field label="Max DPD 60+">
+            <Input type="number" step="any" value={rule.hard_thresholds.max_dpd_60 ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, max_dpd_60: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <Field label="Max DPD 90+">
+            <Input type="number" step="any" value={rule.hard_thresholds.max_dpd_90 ?? ""} onChange={(e) => set("hard_thresholds", { ...rule.hard_thresholds, max_dpd_90: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
           <Field label="Allowed relationships (CSV)" className="md:col-span-3">
             <Input
               value={(rule.hard_thresholds.allowed_relationships ?? []).join(", ")}
