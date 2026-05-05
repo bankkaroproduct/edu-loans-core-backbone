@@ -42,11 +42,17 @@ export interface ParsedRow {
   course_name?: string;
   university_name?: string;
   tenth_score?: number;
+  tenth_total?: number;
   twelfth_score?: number;
+  twelfth_total?: number;
   graduation_score?: number;
+  graduation_total?: number;
   highest_qualification?: string;
   highest_qualification_score?: number;
+  highest_qualification_total?: number;
   work_experience?: number;
+  coapplicant_work_experience_years?: number;
+  coapplicant_work_experience_months?: number;
   test_scores_raw?: string;
   loan_amount_required?: number;
   coapplicant_name?: string;
