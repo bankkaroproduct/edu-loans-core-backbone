@@ -39,7 +39,11 @@ const blank = {
   supported_countries: [] as string[],
   active_flag: true,
   internal_notes: "",
+  contact_email: "",
+  cc_emails: "",
 };
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function LenderDrawer({ open, onOpenChange, record, onSaved }: Props) {
   const isEdit = !!record;
@@ -63,6 +67,8 @@ export function LenderDrawer({ open, onOpenChange, record, onSaved }: Props) {
         supported_countries: record.supported_countries ?? [],
         active_flag: record.active_flag,
         internal_notes: record.internal_notes ?? "",
+        contact_email: record.contact_email ?? "",
+        cc_emails: Array.isArray(record.cc_emails) ? record.cc_emails.join(", ") : "",
       });
     } else {
       setForm(blank);
@@ -93,6 +99,20 @@ export function LenderDrawer({ open, onOpenChange, record, onSaved }: Props) {
       toast({ title: "Validation error", description: "Min income is required when unsecured loans are supported.", variant: "destructive" });
       return;
     }
+    const contactEmail = form.contact_email.trim().toLowerCase();
+    if (contactEmail && !EMAIL_RE.test(contactEmail)) {
+      toast({ title: "Validation error", description: "Lender contact email is not valid.", variant: "destructive" });
+      return;
+    }
+    const ccEmails = form.cc_emails
+      .split(",")
+      .map((e) => e.trim().toLowerCase())
+      .filter((e) => e.length > 0);
+    const invalidCc = ccEmails.find((e) => !EMAIL_RE.test(e));
+    if (invalidCc) {
+      toast({ title: "Validation error", description: `CC email "${invalidCc}" is not valid.`, variant: "destructive" });
+      return;
+    }
     setSaving(true);
     try {
       const num = (s: string) => (s.trim() === "" ? null : Number(s));
@@ -108,6 +128,8 @@ export function LenderDrawer({ open, onOpenChange, record, onSaved }: Props) {
         supported_countries: form.supported_countries.length ? form.supported_countries : null,
         active_flag: form.active_flag,
         internal_notes: form.internal_notes.trim() || null,
+        contact_email: contactEmail || null,
+        cc_emails: ccEmails,
       };
 
       if (isEdit && record) {
@@ -247,6 +269,32 @@ export function LenderDrawer({ open, onOpenChange, record, onSaved }: Props) {
                 ))}
               </div>
               <p className="text-[10px] text-muted-foreground mt-1">At least one country required.</p>
+            </div>
+          </FormSection>
+
+          {/* Communication Contact */}
+          <FormSection
+            title="Communication Contact"
+            actions={<span className="text-[10px] text-muted-foreground">Used by Send to Lender</span>}
+          >
+            <div className="space-y-1.5">
+              <Label className="text-xs">Lender Contact Email</Label>
+              <Input
+                type="email"
+                value={form.contact_email}
+                onChange={(e) => setField("contact_email", e.target.value)}
+                placeholder="lender@example.com"
+              />
+              <p className="text-[10px] text-muted-foreground">Used to auto-fill the recipient on Send to Lender.</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">CC Emails</Label>
+              <Input
+                value={form.cc_emails}
+                onChange={(e) => setField("cc_emails", e.target.value)}
+                placeholder="copy1@example.com, copy2@example.com"
+              />
+              <p className="text-[10px] text-muted-foreground">Optional. Separate multiple emails with commas.</p>
             </div>
           </FormSection>
 
