@@ -315,8 +315,9 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
               <LenderOptionCards
                 eligibleLenders={derived.eligibleLenders}
                 loanRange={result.eligible_loan_range}
-                rateRange={result.indicative_rate_range}
                 storedMatches={storedMatches}
+                scoringVersion={scoringVersion}
+                activeRuleCount={result.eligible_lenders.length}
               />
             )}
           </section>
