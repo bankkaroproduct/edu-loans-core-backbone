@@ -210,6 +210,7 @@ export interface BreProfileInput {
   course_level?: string;
   collateral_route?: "secured" | "unsecured" | "either";
   state?: string;
+  city?: string;
 
   // Student bucket
   student: Record<string, number | string | boolean | null | undefined>;
