@@ -378,11 +378,17 @@ export function LenderRuleSectionCards({ rule, onChange, readOnly }: Props) {
             <Field label="ROI unsecured max %">
               <Input type="number" step="any" value={rule.policy.roi_unsecured_max ?? ""} onChange={(e) => set("policy", { ...rule.policy, roi_unsecured_max: numOrNull(e.target.value) })} disabled={readOnly} />
             </Field>
-            <Field label="Effective ROI min %">
-              <Input type="number" step="any" value={rule.policy.effective_roi_min ?? ""} onChange={(e) => set("policy", { ...rule.policy, effective_roi_min: numOrNull(e.target.value) })} disabled={readOnly} />
+            <Field label="Effective ROI secured min %">
+              <Input type="number" step="any" value={rule.policy.effective_roi_secured_min ?? ""} onChange={(e) => set("policy", { ...rule.policy, effective_roi_secured_min: numOrNull(e.target.value) })} disabled={readOnly} />
             </Field>
-            <Field label="Effective ROI max %">
-              <Input type="number" step="any" value={rule.policy.effective_roi_max ?? ""} onChange={(e) => set("policy", { ...rule.policy, effective_roi_max: numOrNull(e.target.value) })} disabled={readOnly} />
+            <Field label="Effective ROI secured max %">
+              <Input type="number" step="any" value={rule.policy.effective_roi_secured_max ?? ""} onChange={(e) => set("policy", { ...rule.policy, effective_roi_secured_max: numOrNull(e.target.value) })} disabled={readOnly} />
+            </Field>
+            <Field label="Effective ROI unsecured min %">
+              <Input type="number" step="any" value={rule.policy.effective_roi_unsecured_min ?? ""} onChange={(e) => set("policy", { ...rule.policy, effective_roi_unsecured_min: numOrNull(e.target.value) })} disabled={readOnly} />
+            </Field>
+            <Field label="Effective ROI unsecured max %">
+              <Input type="number" step="any" value={rule.policy.effective_roi_unsecured_max ?? ""} onChange={(e) => set("policy", { ...rule.policy, effective_roi_unsecured_max: numOrNull(e.target.value) })} disabled={readOnly} />
             </Field>
             <Field label="Tenure max (years, override)">
               <Input type="number" step="any" value={rule.policy.tenure_years_max ?? ""} onChange={(e) => set("policy", { ...rule.policy, tenure_years_max: numOrNull(e.target.value) })} disabled={readOnly} />

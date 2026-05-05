@@ -173,9 +173,18 @@ export interface LenderPolicy {
   tenure_max_years: number | null;
   moratorium_months: number | null;
   notes?: string | null;
-  /** Effective ROI after subvention/concessions, if known. Display-only. */
+  /** Effective ROI after subvention/concessions, if known. Display-only.
+   *  Legacy single-pair fields (kept for back-compat). New data should use the
+   *  route-split fields below so secured vs. unsecured effective ranges are not
+   *  conflated. Engine prefers split fields when present. */
   effective_roi_min?: number | null;
   effective_roi_max?: number | null;
+  /** Source-backed effective ROI for the secured route. Display-only. */
+  effective_roi_secured_min?: number | null;
+  effective_roi_secured_max?: number | null;
+  /** Source-backed effective ROI for the unsecured route. Display-only. */
+  effective_roi_unsecured_min?: number | null;
+  effective_roi_unsecured_max?: number | null;
   /** Max tenure (years), redundant convenience field for breakdown imports. */
   tenure_years_max?: number | null;
   /** Allowed co-applicant relationships at policy level (mirrors hard_thresholds). */
@@ -273,6 +282,14 @@ export interface LenderMatchResult {
   roi_range_min?: number | null;
   roi_range_max?: number | null;
   roi_range_source?: "secured" | "unsecured" | "policy" | "band" | null;
+  /**
+   * Display-only Effective ROI range for the route the engine selected.
+   * Picked from policy.effective_roi_secured_* / effective_roi_unsecured_*
+   * (with legacy effective_roi_min/max fallback). NEVER used by ranking,
+   * scoring, eligibility, filtering, loan amount, or assignment logic.
+   */
+  effective_rate_min?: number | null;
+  effective_rate_max?: number | null;
   /**
    * Display-only Processing Fee pass-through from lender.commercials.
    * NEVER used by ranking, scoring, eligibility, filtering, loan amount

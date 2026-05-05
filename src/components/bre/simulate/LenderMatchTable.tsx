@@ -66,6 +66,7 @@ export function LenderMatchTable({ result }: { result: BreResult }) {
                 <TableHead>Product</TableHead>
                 <TableHead className="text-right">Projected loan</TableHead>
                 <TableHead className="text-right">Projected rate</TableHead>
+                <TableHead className="text-right">Effective ROI</TableHead>
                 <TableHead className="text-right">Payout</TableHead>
                 <TableHead>Badge</TableHead>
               </TableRow>
@@ -81,6 +82,7 @@ export function LenderMatchTable({ result }: { result: BreResult }) {
                   <TableCell><Badge variant="outline" className="text-[10px]">{l.product_type ?? "—"}</Badge></TableCell>
                   <TableCell className="text-right tabular-nums text-sm">{fmtMoney(l.projected_loan_amount)}</TableCell>
                   <TableCell className="text-right tabular-nums text-sm">{l.projected_rate != null ? `${l.projected_rate}%` : "—"}</TableCell>
+                  <TableCell className="text-right tabular-nums text-sm">{l.effective_rate_min != null && l.effective_rate_max != null ? `${l.effective_rate_min}% – ${l.effective_rate_max}%` : "—"}</TableCell>
                   <TableCell className="text-right tabular-nums text-sm">{l.payout_pct != null ? `${l.payout_pct}%` : "—"}</TableCell>
                   <TableCell><BadgePill badge={l.badge} /></TableCell>
                 </TableRow>

@@ -943,6 +943,12 @@ function LenderCard({
             }: ${l.roi_range_min}% – ${l.roi_range_max}%`}
           />
         )}
+        {l.effective_rate_min != null && l.effective_rate_max != null && (
+          <Chip
+            icon={<Percent className="h-3 w-3" />}
+            label={`Effective ROI: ${l.effective_rate_min}% – ${l.effective_rate_max}%`}
+          />
+        )}
         {l.projected_loan_amount != null && (
           <Chip
             icon={<IndianRupee className="h-3 w-3" />}
