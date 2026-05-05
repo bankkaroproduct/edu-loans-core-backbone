@@ -688,6 +688,17 @@ function LenderOptionCards({
     .sort((a, b) => (a.rank ?? Number.POSITIVE_INFINITY) - (b.rank ?? Number.POSITIVE_INFINITY))
     .forEach((l, i) => engineOrderById.set(l.lender_id, i + 1));
 
+  // Section-level signal: do stored recommendation ranks differ from the live
+  // rate-based ordering for any visible lender? Used to render a single subtle
+  // note instead of repeating a chip on every card.
+  const ranksDifferFromLive =
+    hasStoredRanks &&
+    ordered.some((l) => {
+      const storedRank = storedMatches.get(l.lender_id)?.rank ?? null;
+      const engineRank = engineOrderById.get(l.lender_id) ?? null;
+      return storedRank != null && engineRank != null && storedRank !== engineRank;
+    });
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between flex-wrap gap-2">
