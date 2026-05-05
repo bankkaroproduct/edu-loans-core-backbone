@@ -847,13 +847,6 @@ function LenderCard({
         </div>
       )}
 
-              title="Stored recommendation rank differs from live rate-based order"
-            >
-              Stale rank
-            </Badge>
-          )}
-        </div>
-      )}
 
       {/* Secondary metrics row. ROI chip is labelled with the route source the
           engine actually used (l.roi_range_source), so the primary visible
