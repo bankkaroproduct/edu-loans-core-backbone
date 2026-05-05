@@ -416,6 +416,7 @@ export function LenderRuleSectionCards({ rule, onChange, readOnly }: Props) {
                 disabled={readOnly}
               />
             </Field>
+          </div>
           <Field label="Notes">
             <Textarea
               value={rule.policy.notes ?? ""}
