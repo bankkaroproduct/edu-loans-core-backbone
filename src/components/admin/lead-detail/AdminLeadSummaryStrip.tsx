@@ -1,8 +1,26 @@
 // Admin-only summary strip. Premium info-tile row for the key facts.
-// Reuses InlineEditField verbatim — no save/edit logic is duplicated or changed.
+//
+// Master-backed fields (Study Destination, Intake Session, University, Course)
+// use MasterEditPopover + master tables fetched via useLeadMasterData. Other
+// fields (Loan Amount, Co-applicant, Collateral, Source) keep the existing
+// InlineEditField behaviour unchanged.
+import { useMemo, useState } from "react";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { InlineEditField } from "@/components/admin/InlineEditField";
+import { MasterEditPopover } from "@/components/admin/MasterEditPopover";
+import {
+  MasterCombobox,
+  type MasterOption,
+} from "@/components/ui/master-combobox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useLeadMasterData } from "@/hooks/useLeadMasterData";
 import { formatINR } from "@/lib/formatCurrency";
+import {
+  buildIntakeSessionOptions,
+  intakeSessionLabel,
+  intakeSessionValue,
+  parseIntakeSessionValue,
+} from "@/lib/intakeSession";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Lead = Tables<"student_leads">;
@@ -51,10 +69,65 @@ function Tile({
 
 interface Props {
   lead: Lead;
+  onSaved?: () => void;
 }
 
-export function AdminLeadSummaryStrip({ lead }: Props) {
+const sameCountryName = (a: string | null | undefined, b: string | null | undefined) =>
+  (a ?? "").trim().toLowerCase() === (b ?? "").trim().toLowerCase();
+
+export function AdminLeadSummaryStrip({ lead, onSaved }: Props) {
   const { isAdmin } = useRoleAccess();
+  const { countries, universities, courses, intakes } = useLeadMasterData();
+
+  // Country picker (Study Destination)
+  const [countryDraft, setCountryDraft] = useState<string>(lead.intended_study_country ?? "");
+
+  // Intake Session
+  const intakeOptions = useMemo(
+    () => buildIntakeSessionOptions(intakes, { onlyFuture: false }),
+    [intakes],
+  );
+  const [intakeDraft, setIntakeDraft] = useState<string>(
+    intakeSessionValue(lead.intake_term, lead.intake_year),
+  );
+
+  // University picker
+  const universityOptions: MasterOption[] = useMemo(() => {
+    const country = (lead.intended_study_country ?? "").trim();
+    const filtered = country
+      ? universities.filter((u) => sameCountryName(u.country, country))
+      : universities;
+    return filtered.map((u) => ({ id: u.id, label: u.university_name, hint: u.country ?? undefined }));
+  }, [universities, lead.intended_study_country]);
+  const [uniId, setUniId] = useState<string>(lead.university_id ?? "");
+  const [uniManual, setUniManual] = useState<string>(
+    lead.university_id ? "" : lead.university_name_raw ?? "",
+  );
+
+  // Course picker
+  const courseOptions: MasterOption[] = useMemo(
+    () => courses.map((c) => ({ id: c.id, label: c.course_name, hint: c.course_category ?? undefined })),
+    [courses],
+  );
+  const matchedCourseId = useMemo(() => {
+    const cn = (lead.course_name ?? "").trim().toLowerCase();
+    if (!cn) return "";
+    return courses.find((c) => c.course_name.trim().toLowerCase() === cn)?.id ?? "";
+  }, [courses, lead.course_name]);
+  const [courseId, setCourseId] = useState<string>(matchedCourseId);
+  const [courseManual, setCourseManual] = useState<string>(
+    matchedCourseId ? "" : lead.course_name ?? "",
+  );
+
+  // Re-sync drafts when lead changes (after a refresh)
+  useMemo(() => {
+    setCountryDraft(lead.intended_study_country ?? "");
+    setIntakeDraft(intakeSessionValue(lead.intake_term, lead.intake_year));
+    setUniId(lead.university_id ?? "");
+    setUniManual(lead.university_id ? "" : lead.university_name_raw ?? "");
+    setCourseId(matchedCourseId);
+    setCourseManual(matchedCourseId ? "" : lead.course_name ?? "");
+  }, [lead.id, lead.intended_study_country, lead.intake_term, lead.intake_year, lead.university_id, lead.university_name_raw, lead.course_name, matchedCourseId]);
 
   const editable = (
     field: string,
@@ -71,51 +144,193 @@ export function AdminLeadSummaryStrip({ lead }: Props) {
         allowEditExisting
         inputType={extra?.inputType}
         formatDisplay={extra?.formatDisplay}
+        onSaved={() => onSaved?.()}
       />
     ) : (
       <ReadOnlyValue value={value} />
     );
 
+  const intakeDisplay = intakeSessionLabel(lead.intake_term, lead.intake_year) || null;
+  const universityDisplay = lead.university_name_raw ?? null;
+  const courseDisplay = lead.course_name ?? null;
+
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 2xl:grid-cols-8 gap-3">
       <Tile label="Study Destination">
-        {editable("intended_study_country", lead.intended_study_country, "Study Destination")}
+        {isAdmin ? (
+          <MasterEditPopover
+            leadId={lead.id}
+            label="Study Destination"
+            display={lead.intended_study_country || null}
+            renderBody={() => (
+              <Select value={countryDraft} onValueChange={setCountryDraft}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Select country" />
+                </SelectTrigger>
+                <SelectContent>
+                  {countries.map((c) => (
+                    <SelectItem key={c.id} value={c.country_name}>
+                      {c.country_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            validate={() => (!countryDraft ? "Please select a country" : null)}
+            buildPayload={() => ({ intended_study_country: countryDraft })}
+            buildAudit={() => ({
+              old: { intended_study_country: lead.intended_study_country },
+              new: { intended_study_country: countryDraft },
+            })}
+            onSaved={onSaved}
+          />
+        ) : (
+          <ReadOnlyValue value={lead.intended_study_country} />
+        )}
       </Tile>
 
-      <Tile label="Intake">
+      <Tile label="Intake Session">
         {isAdmin ? (
-          <span className="inline-flex items-center gap-1 text-sm font-semibold">
-            <InlineEditField
-              leadId={lead.id}
-              field="intake_term"
-              label="Intake Term"
-              value={lead.intake_term ?? null}
-              allowEditExisting
-            />
-            <span className="text-muted-foreground">·</span>
-            <InlineEditField
-              leadId={lead.id}
-              field="intake_year"
-              label="Intake Year"
-              value={lead.intake_year ? String(lead.intake_year) : null}
-              inputType="number"
-              allowEditExisting
-              parseValue={(raw) => {
-                const n = Number(raw);
-                return Number.isFinite(n) ? n : raw;
-              }}
-            />
-          </span>
+          <MasterEditPopover
+            leadId={lead.id}
+            label="Intake Session"
+            display={intakeDisplay}
+            renderBody={() => (
+              <Select value={intakeDraft} onValueChange={setIntakeDraft}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Select intake session" />
+                </SelectTrigger>
+                <SelectContent>
+                  {intakeOptions.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            validate={() => (!parseIntakeSessionValue(intakeDraft) ? "Please select an intake session" : null)}
+            buildPayload={() => {
+              const parsed = parseIntakeSessionValue(intakeDraft);
+              if (!parsed) return null;
+              return { intake_term: parsed.term, intake_year: parsed.year };
+            }}
+            buildAudit={() => {
+              const parsed = parseIntakeSessionValue(intakeDraft);
+              return {
+                old: { intake_term: lead.intake_term, intake_year: lead.intake_year },
+                new: { intake_term: parsed?.term ?? null, intake_year: parsed?.year ?? null },
+              };
+            }}
+            onSaved={onSaved}
+          />
         ) : (
-          <ReadOnlyValue value={`${lead.intake_term ?? ""} ${lead.intake_year ?? ""}`.trim() || null} />
+          <ReadOnlyValue value={intakeDisplay} />
         )}
       </Tile>
 
       <Tile label="University">
-        {editable("university_name_raw", lead.university_name_raw, "University")}
+        {isAdmin ? (
+          <MasterEditPopover
+            leadId={lead.id}
+            label="University"
+            display={universityDisplay}
+            renderBody={() => (
+              <MasterCombobox
+                options={universityOptions}
+                selectedId={uniId}
+                manualValue={uniManual}
+                onSelectMaster={(opt) => {
+                  setUniId(opt.id);
+                  setUniManual(opt.label);
+                }}
+                onSelectManual={() => {
+                  setUniId("");
+                }}
+                onChangeManual={setUniManual}
+                placeholder="Search universities…"
+                manualPlaceholder="Type the university name"
+                helperText={
+                  lead.intended_study_country
+                    ? `Filtered by ${lead.intended_study_country}`
+                    : "Tip: set Study Destination first to filter the list"
+                }
+              />
+            )}
+            validate={() => (!uniId && !uniManual.trim() ? "Please pick a university or type one" : null)}
+            buildPayload={() => ({
+              university_id: uniId || null,
+              university_name_raw: uniManual.trim() || null,
+            })}
+            buildAudit={() => ({
+              old: {
+                university_id: lead.university_id,
+                university_name_raw: lead.university_name_raw,
+              },
+              new: {
+                university_id: uniId || null,
+                university_name_raw: uniManual.trim() || null,
+              },
+            })}
+            onSaved={onSaved}
+          />
+        ) : (
+          <ReadOnlyValue value={universityDisplay} />
+        )}
       </Tile>
 
-      <Tile label="Course">{editable("course_name", lead.course_name, "Course")}</Tile>
+      <Tile label="Course">
+        {isAdmin ? (
+          <MasterEditPopover
+            leadId={lead.id}
+            label="Course"
+            display={courseDisplay}
+            renderBody={() => (
+              <MasterCombobox
+                options={courseOptions}
+                selectedId={courseId}
+                manualValue={courseManual}
+                onSelectMaster={(opt) => {
+                  setCourseId(opt.id);
+                  setCourseManual(opt.label);
+                }}
+                onSelectManual={() => {
+                  setCourseId("");
+                }}
+                onChangeManual={setCourseManual}
+                placeholder="Search courses…"
+                manualPlaceholder="Type the course name"
+              />
+            )}
+            validate={() => {
+              const name = courseId
+                ? courses.find((c) => c.id === courseId)?.course_name ?? ""
+                : courseManual.trim();
+              return name ? null : "Please pick a course or type one";
+            }}
+            buildPayload={() => {
+              const master = courseId ? courses.find((c) => c.id === courseId) : null;
+              const name = master ? master.course_name : courseManual.trim();
+              if (!name) return null;
+              return {
+                course_name: name,
+                course_category: master?.course_category ?? lead.course_category ?? null,
+              };
+            }}
+            buildAudit={() => {
+              const master = courseId ? courses.find((c) => c.id === courseId) : null;
+              const name = master ? master.course_name : courseManual.trim();
+              return {
+                old: { course_name: lead.course_name, course_category: lead.course_category },
+                new: { course_name: name, course_category: master?.course_category ?? lead.course_category ?? null },
+              };
+            }}
+            onSaved={onSaved}
+          />
+        ) : (
+          <ReadOnlyValue value={courseDisplay} />
+        )}
+      </Tile>
 
       <Tile label="Loan Amount">
         {isAdmin ? (
@@ -128,6 +343,7 @@ export function AdminLeadSummaryStrip({ lead }: Props) {
               allowEditExisting
               inputType="number"
               formatDisplay={(v) => formatINR(v)}
+              onSaved={() => onSaved?.()}
             />
           </span>
         ) : (
@@ -162,6 +378,7 @@ export function AdminLeadSummaryStrip({ lead }: Props) {
             ]}
             parseValue={(raw) => raw === "true"}
             formatDisplay={(v) => (v === "true" ? "Yes" : "No")}
+            onSaved={() => onSaved?.()}
           />
         ) : (
           <ReadOnlyValue
