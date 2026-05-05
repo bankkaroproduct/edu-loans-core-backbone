@@ -366,7 +366,56 @@ export function LenderRuleSectionCards({ rule, onChange, readOnly }: Props) {
             <Field label="Moratorium (months)">
               <Input type="number" step="any" value={rule.policy.moratorium_months ?? ""} onChange={(e) => set("policy", { ...rule.policy, moratorium_months: numOrNull(e.target.value) })} disabled={readOnly} />
             </Field>
-          </div>
+            <Field label="ROI secured min %">
+              <Input type="number" step="any" value={rule.policy.roi_secured_min ?? ""} onChange={(e) => set("policy", { ...rule.policy, roi_secured_min: numOrNull(e.target.value) })} disabled={readOnly} />
+            </Field>
+            <Field label="ROI secured max %">
+              <Input type="number" step="any" value={rule.policy.roi_secured_max ?? ""} onChange={(e) => set("policy", { ...rule.policy, roi_secured_max: numOrNull(e.target.value) })} disabled={readOnly} />
+            </Field>
+            <Field label="ROI unsecured min %">
+              <Input type="number" step="any" value={rule.policy.roi_unsecured_min ?? ""} onChange={(e) => set("policy", { ...rule.policy, roi_unsecured_min: numOrNull(e.target.value) })} disabled={readOnly} />
+            </Field>
+            <Field label="ROI unsecured max %">
+              <Input type="number" step="any" value={rule.policy.roi_unsecured_max ?? ""} onChange={(e) => set("policy", { ...rule.policy, roi_unsecured_max: numOrNull(e.target.value) })} disabled={readOnly} />
+            </Field>
+            <Field label="Effective ROI min %">
+              <Input type="number" step="any" value={rule.policy.effective_roi_min ?? ""} onChange={(e) => set("policy", { ...rule.policy, effective_roi_min: numOrNull(e.target.value) })} disabled={readOnly} />
+            </Field>
+            <Field label="Effective ROI max %">
+              <Input type="number" step="any" value={rule.policy.effective_roi_max ?? ""} onChange={(e) => set("policy", { ...rule.policy, effective_roi_max: numOrNull(e.target.value) })} disabled={readOnly} />
+            </Field>
+            <Field label="Tenure max (years, override)">
+              <Input type="number" step="any" value={rule.policy.tenure_years_max ?? ""} onChange={(e) => set("policy", { ...rule.policy, tenure_years_max: numOrNull(e.target.value) })} disabled={readOnly} />
+            </Field>
+            <Field label="University list mode">
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                value={rule.policy.university_list_mode ?? ""}
+                onChange={(e) => set("policy", { ...rule.policy, university_list_mode: (e.target.value || null) as "premiere" | "internal_list" | "case_to_case" | null })}
+                disabled={readOnly}
+              >
+                <option value="">—</option>
+                <option value="premiere">Premiere list</option>
+                <option value="internal_list">Internal list</option>
+                <option value="case_to_case">Case-to-case</option>
+              </select>
+            </Field>
+            <Field label="Courses covered (CSV)">
+              <Input
+                value={(rule.policy.courses_covered ?? []).join(", ")}
+                onChange={(e) => set("policy", { ...rule.policy, courses_covered: csvToList(e.target.value).map((s) => s.toUpperCase()) })}
+                placeholder="UG, PG"
+                disabled={readOnly}
+              />
+            </Field>
+            <Field label="Allowed relationships (policy CSV)" className="md:col-span-3">
+              <Input
+                value={(rule.policy.allowed_relationships ?? []).join(", ")}
+                onChange={(e) => set("policy", { ...rule.policy, allowed_relationships: csvToList(e.target.value) })}
+                placeholder="parent, sibling, spouse"
+                disabled={readOnly}
+              />
+            </Field>
           <Field label="Notes">
             <Textarea
               value={rule.policy.notes ?? ""}
