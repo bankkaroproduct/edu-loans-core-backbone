@@ -819,7 +819,7 @@ function LenderCard({
         <FitBadge badge={l.badge} storedFit={stored?.fit ?? null} />
       </div>
 
-      {/* Projected ROI — primary metric, displayed prominently */}
+      {/* Projected ROI — primary metric, displayed prominently with route tag */}
       {l.projected_rate != null && (
         <div className="flex items-baseline gap-2 flex-wrap">
           <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -828,6 +828,11 @@ function LenderCard({
           <span className="text-base font-semibold text-foreground tabular-nums">
             ~{l.projected_rate}%
           </span>
+          {(isSecured || isUnsecured) && (
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              · {isSecured ? "Secured" : "Unsecured"}
+            </span>
+          )}
           {staleRank && (
             <Badge
               variant="outline"
@@ -840,12 +845,20 @@ function LenderCard({
         </div>
       )}
 
-      {/* Secondary metrics row */}
+      {/* Secondary metrics row. ROI chip is labelled with the route source the
+          engine actually used (l.roi_range_source), so the primary visible
+          range never blends secured + unsecured. */}
       <div className="flex flex-wrap items-center gap-1.5">
         {hasRoiRange && (
           <Chip
             icon={<Percent className="h-3 w-3" />}
-            label={`ROI Range: ${l.roi_range_min}% – ${l.roi_range_max}%`}
+            label={`${
+              l.roi_range_source === "secured"
+                ? "Secured ROI"
+                : l.roi_range_source === "unsecured"
+                ? "Unsecured ROI"
+                : "ROI Range"
+            }: ${l.roi_range_min}% – ${l.roi_range_max}%`}
           />
         )}
         {l.projected_loan_amount != null && (
