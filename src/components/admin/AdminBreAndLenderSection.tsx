@@ -710,6 +710,7 @@ function LenderOptionCards({
   scoringVersion,
   activeRuleCount,
   collateralState,
+  displayRanking,
 }: {
   eligibleLenders: BreResult["eligible_lenders"];
   loanRange: BreResult["eligible_loan_range"];
@@ -717,28 +718,27 @@ function LenderOptionCards({
   scoringVersion: number | null;
   activeRuleCount: number;
   collateralState: "secured" | "secured_review_needed" | "unsecured" | null;
+  displayRanking: Map<string, DisplayRankingOutput>;
 }) {
+  // Phase 3 — sort by live displayScore-derived displayRank when available;
+  // fall back to engine rank for any lender not in the ranking map.
   const ordered = [...eligibleLenders].sort((a, b) => {
-    const sa = storedMatches.get(a.lender_id)?.rank ?? null;
-    const sb = storedMatches.get(b.lender_id)?.rank ?? null;
-    if (sa != null && sb != null) return sa - sb;
-    if (sa != null) return -1;
-    if (sb != null) return 1;
+    const da = displayRanking.get(a.lender_id)?.displayRank ?? null;
+    const db = displayRanking.get(b.lender_id)?.displayRank ?? null;
+    if (da != null && db != null) return da - db;
+    if (da != null) return -1;
+    if (db != null) return 1;
     return (a.rank ?? Number.POSITIVE_INFINITY) - (b.rank ?? Number.POSITIVE_INFINITY);
   });
 
+  // Compare stored ranks to the new live display order and surface a single
+  // subtle note when they differ. Stored ranks themselves are not mutated.
   const hasStoredRanks = ordered.some((l) => storedMatches.get(l.lender_id)?.rank != null);
-  const engineOrderById = new Map<string, number>();
-  [...eligibleLenders]
-    .sort((a, b) => (a.rank ?? Number.POSITIVE_INFINITY) - (b.rank ?? Number.POSITIVE_INFINITY))
-    .forEach((l, i) => engineOrderById.set(l.lender_id, i + 1));
-
   const ranksDifferFromLive =
     hasStoredRanks &&
-    ordered.some((l) => {
+    ordered.some((l, i) => {
       const storedRank = storedMatches.get(l.lender_id)?.rank ?? null;
-      const engineRank = engineOrderById.get(l.lender_id) ?? null;
-      return storedRank != null && engineRank != null && storedRank !== engineRank;
+      return storedRank != null && storedRank !== i + 1;
     });
 
   // Phase 2 — section-level route rationale (single source of truth for the
@@ -780,7 +780,8 @@ function LenderOptionCards({
       <p className="text-[11px] text-muted-foreground italic flex items-start gap-1.5">
         <Info className="h-3 w-3 shrink-0 mt-0.5" />
         <span>
-          Order reflects stored BRE recommendation rank (overall fit). ROI shown is the live indicative rate.
+          Order reflects live BRE recommendation score. Existing stored assignments and manual
+          ranks are not changed.
         </span>
       </p>
 
@@ -788,8 +789,8 @@ function LenderOptionCards({
         <p className="text-[11px] text-muted-foreground/90 italic flex items-start gap-1.5">
           <Info className="h-3 w-3 shrink-0 mt-0.5" />
           <span>
-            Stored recommendation ranks differ from the latest live ordering for this profile.
-            Ranks shown are stored values and have not been recomputed.
+            Stored recommendation ranks differ from the live display ranking. Stored ranks have
+            not been recomputed.
           </span>
         </p>
       )}
@@ -803,6 +804,7 @@ function LenderOptionCards({
               stored={storedMatches.get(l.lender_id) ?? null}
               displayPosition={idx + 1}
               collateralState={collateralState}
+              ranking={displayRanking.get(l.lender_id) ?? null}
             />
           );
         })}
@@ -824,11 +826,13 @@ function LenderCard({
   stored,
   displayPosition,
   collateralState,
+  ranking,
 }: {
   l: BreResult["eligible_lenders"][number];
   stored: StoredMatchValue | null;
   displayPosition: number;
   collateralState: "secured" | "secured_review_needed" | "unsecured" | null;
+  ranking: DisplayRankingOutput | null;
 }) {
   const isSecured = l.product_type === "secured";
   const isUnsecured = l.product_type === "unsecured";
