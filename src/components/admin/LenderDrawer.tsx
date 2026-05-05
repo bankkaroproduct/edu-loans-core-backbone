@@ -128,6 +128,8 @@ export function LenderDrawer({ open, onOpenChange, record, onSaved }: Props) {
         supported_countries: form.supported_countries.length ? form.supported_countries : null,
         active_flag: form.active_flag,
         internal_notes: form.internal_notes.trim() || null,
+        contact_email: contactEmail || null,
+        cc_emails: ccEmails,
       };
 
       if (isEdit && record) {
