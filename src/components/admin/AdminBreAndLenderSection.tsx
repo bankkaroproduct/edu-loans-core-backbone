@@ -315,8 +315,9 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
               <LenderOptionCards
                 eligibleLenders={derived.eligibleLenders}
                 loanRange={result.eligible_loan_range}
-                rateRange={result.indicative_rate_range}
                 storedMatches={storedMatches}
+                scoringVersion={scoringVersion}
+                activeRuleCount={result.eligible_lenders.length}
               />
             )}
           </section>
@@ -662,17 +663,16 @@ type StoredMatchValue = {
 function LenderOptionCards({
   eligibleLenders,
   loanRange,
-  rateRange,
   storedMatches,
+  scoringVersion,
+  activeRuleCount,
 }: {
   eligibleLenders: BreResult["eligible_lenders"];
   loanRange: BreResult["eligible_loan_range"];
-  rateRange: BreResult["indicative_rate_range"];
   storedMatches: Map<string, StoredMatchValue>;
+  scoringVersion: number | null;
+  activeRuleCount: number;
 }) {
-  // Display order: stored recommendation_rank (premiere-aware) when available;
-  // otherwise fall back to engine's l.rank. This is a display-only sort —
-  // scores, rates, loan amounts and coverage chips are unchanged.
   const ordered = [...eligibleLenders].sort((a, b) => {
     const sa = storedMatches.get(a.lender_id)?.rank ?? null;
     const sb = storedMatches.get(b.lender_id)?.rank ?? null;
@@ -682,8 +682,6 @@ function LenderOptionCards({
     return (a.rank ?? Number.POSITIVE_INFINITY) - (b.rank ?? Number.POSITIVE_INFINITY);
   });
 
-  // Stale-rank detection: stored rank disagrees with engine's live rate-based
-  // rank. Display-only signal — does NOT trigger any recompute or DB write.
   const hasStoredRanks = ordered.some((l) => storedMatches.get(l.lender_id)?.rank != null);
   const engineOrderById = new Map<string, number>();
   [...eligibleLenders]
@@ -696,19 +694,11 @@ function LenderOptionCards({
         <div className="text-xs text-muted-foreground">
           {ordered.length} {ordered.length === 1 ? "lender" : "lenders"} match this profile
         </div>
-        {(loanRange || rateRange) && (
+        {/* Header aggregate ROI range intentionally hidden — it blended secured + unsecured
+            across lenders. Per-card, route-specific ROI ranges remain. */}
+        {loanRange && (
           <div className="text-[11px] text-muted-foreground tabular-nums">
-            {loanRange && (
-              <>
-                ₹{loanRange.min.toLocaleString("en-IN")} – ₹{loanRange.max.toLocaleString("en-IN")}
-              </>
-            )}
-            {rateRange && (
-              <>
-                {" · "}
-                {rateRange.min}% – {rateRange.max}%
-              </>
-            )}
+            ₹{loanRange.min.toLocaleString("en-IN")} – ₹{loanRange.max.toLocaleString("en-IN")}
           </div>
         )}
       </div>
@@ -743,6 +733,10 @@ function LenderOptionCards({
 
       <p className="text-[11px] text-muted-foreground italic">
         Estimates only. No lender is auto-assigned and lead stage is not changed.
+      </p>
+      <p className="text-[10px] text-muted-foreground/80 tabular-nums pt-1 border-t border-border/40">
+        Rule snapshot: scoring v{scoringVersion ?? "—"} · {activeRuleCount} active lender rule
+        {activeRuleCount === 1 ? "" : "s"} · live BRE estimate
       </p>
     </div>
   );
@@ -825,7 +819,7 @@ function LenderCard({
         <FitBadge badge={l.badge} storedFit={stored?.fit ?? null} />
       </div>
 
-      {/* Projected ROI — primary metric, displayed prominently */}
+      {/* Projected ROI — primary metric, displayed prominently with route tag */}
       {l.projected_rate != null && (
         <div className="flex items-baseline gap-2 flex-wrap">
           <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -834,6 +828,11 @@ function LenderCard({
           <span className="text-base font-semibold text-foreground tabular-nums">
             ~{l.projected_rate}%
           </span>
+          {(isSecured || isUnsecured) && (
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              · {isSecured ? "Secured" : "Unsecured"}
+            </span>
+          )}
           {staleRank && (
             <Badge
               variant="outline"
@@ -846,12 +845,20 @@ function LenderCard({
         </div>
       )}
 
-      {/* Secondary metrics row */}
+      {/* Secondary metrics row. ROI chip is labelled with the route source the
+          engine actually used (l.roi_range_source), so the primary visible
+          range never blends secured + unsecured. */}
       <div className="flex flex-wrap items-center gap-1.5">
         {hasRoiRange && (
           <Chip
             icon={<Percent className="h-3 w-3" />}
-            label={`ROI Range: ${l.roi_range_min}% – ${l.roi_range_max}%`}
+            label={`${
+              l.roi_range_source === "secured"
+                ? "Secured ROI"
+                : l.roi_range_source === "unsecured"
+                ? "Unsecured ROI"
+                : "ROI Range"
+            }: ${l.roi_range_min}% – ${l.roi_range_max}%`}
           />
         )}
         {l.projected_loan_amount != null && (
