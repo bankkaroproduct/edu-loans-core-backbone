@@ -663,17 +663,16 @@ type StoredMatchValue = {
 function LenderOptionCards({
   eligibleLenders,
   loanRange,
-  rateRange,
   storedMatches,
+  scoringVersion,
+  activeRuleCount,
 }: {
   eligibleLenders: BreResult["eligible_lenders"];
   loanRange: BreResult["eligible_loan_range"];
-  rateRange: BreResult["indicative_rate_range"];
   storedMatches: Map<string, StoredMatchValue>;
+  scoringVersion: number | null;
+  activeRuleCount: number;
 }) {
-  // Display order: stored recommendation_rank (premiere-aware) when available;
-  // otherwise fall back to engine's l.rank. This is a display-only sort —
-  // scores, rates, loan amounts and coverage chips are unchanged.
   const ordered = [...eligibleLenders].sort((a, b) => {
     const sa = storedMatches.get(a.lender_id)?.rank ?? null;
     const sb = storedMatches.get(b.lender_id)?.rank ?? null;
@@ -683,8 +682,6 @@ function LenderOptionCards({
     return (a.rank ?? Number.POSITIVE_INFINITY) - (b.rank ?? Number.POSITIVE_INFINITY);
   });
 
-  // Stale-rank detection: stored rank disagrees with engine's live rate-based
-  // rank. Display-only signal — does NOT trigger any recompute or DB write.
   const hasStoredRanks = ordered.some((l) => storedMatches.get(l.lender_id)?.rank != null);
   const engineOrderById = new Map<string, number>();
   [...eligibleLenders]
@@ -697,19 +694,11 @@ function LenderOptionCards({
         <div className="text-xs text-muted-foreground">
           {ordered.length} {ordered.length === 1 ? "lender" : "lenders"} match this profile
         </div>
-        {(loanRange || rateRange) && (
+        {/* Header aggregate ROI range intentionally hidden — it blended secured + unsecured
+            across lenders. Per-card, route-specific ROI ranges remain. */}
+        {loanRange && (
           <div className="text-[11px] text-muted-foreground tabular-nums">
-            {loanRange && (
-              <>
-                ₹{loanRange.min.toLocaleString("en-IN")} – ₹{loanRange.max.toLocaleString("en-IN")}
-              </>
-            )}
-            {rateRange && (
-              <>
-                {" · "}
-                {rateRange.min}% – {rateRange.max}%
-              </>
-            )}
+            ₹{loanRange.min.toLocaleString("en-IN")} – ₹{loanRange.max.toLocaleString("en-IN")}
           </div>
         )}
       </div>
