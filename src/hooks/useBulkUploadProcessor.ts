@@ -111,13 +111,16 @@ const ALL_HEADERS = [
   "pincode",
   "intended_study_country", "intake_session", "course_name",
   "university_name",
-  "10th_score", "12th_score", "graduation_score",
-  "highest_qualification", "highest_qualification_score",
+  "10th_score", "10th_total_marks",
+  "12th_score", "12th_total_marks",
+  "graduation_score", "graduation_total_marks",
+  "highest_qualification", "highest_qualification_score", "highest_qualification_total_marks",
   "work_experience", "test_scores",
   "loan_amount_required",
   "coapplicant_name", "coapplicant_relation",
   "coapplicant_age", "coapplicant_employment_type", "coapplicant_employer",
   "coapplicant_income", "coapplicant_existing_emi", "coapplicant_cibil",
+  "co_applicant_work_experience",
   "collateral_available", "collateral_notes", "source_sub_type", "partner_remark",
 ];
 
@@ -125,11 +128,14 @@ const ALL_HEADERS = [
 const NEW_TEMPLATE_HEADERS = [
   "pincode",
   "intake_session",
-  "10th_score", "12th_score", "graduation_score",
-  "highest_qualification", "highest_qualification_score",
+  "10th_score", "10th_total_marks",
+  "12th_score", "12th_total_marks",
+  "graduation_score", "graduation_total_marks",
+  "highest_qualification", "highest_qualification_score", "highest_qualification_total_marks",
   "work_experience", "test_scores",
   "coapplicant_age", "coapplicant_employment_type", "coapplicant_employer",
   "coapplicant_existing_emi", "coapplicant_cibil",
+  "co_applicant_work_experience",
 ];
 
 /** Static fallback if the master fetch fails — keeps validation deterministic. */
