@@ -268,6 +268,8 @@ function projectLoanAndRate(
   roi_range_min: number | null;
   roi_range_max: number | null;
   roi_range_source: "secured" | "unsecured" | "policy" | "band" | null;
+  effective_rate_min: number | null;
+  effective_rate_max: number | null;
 } {
   if (!band || !product_type)
     return {
@@ -276,6 +278,8 @@ function projectLoanAndRate(
       roi_range_min: null,
       roi_range_max: null,
       roi_range_source: null,
+      effective_rate_min: null,
+      effective_rate_max: null,
     };
 
   const cap = product_type === "secured" ? lender.loan_caps.secured : lender.loan_caps.unsecured;
@@ -292,6 +296,8 @@ function projectLoanAndRate(
       roi_range_min: null,
       roi_range_max: null,
       roi_range_source: null,
+      effective_rate_min: null,
+      effective_rate_max: null,
     };
 
   const projected_loan = Math.min(Math.max(profile.loan_amount, effMin), effMax);
@@ -326,12 +332,33 @@ function projectLoanAndRate(
   }
   const projected_rate = round2((rateMin + rateMax) / 2);
 
+  // Display-only effective ROI for the selected route. Prefer route-split
+  // fields; fall back to legacy single-pair fields for back-compat.
+  let effRateMin: number | null = null;
+  let effRateMax: number | null = null;
+  const esMin = lender.policy.effective_roi_secured_min;
+  const esMax = lender.policy.effective_roi_secured_max;
+  const euMin = lender.policy.effective_roi_unsecured_min;
+  const euMax = lender.policy.effective_roi_unsecured_max;
+  if (product_type === "secured" && esMin != null && esMax != null) {
+    effRateMin = esMin;
+    effRateMax = esMax;
+  } else if (product_type === "unsecured" && euMin != null && euMax != null) {
+    effRateMin = euMin;
+    effRateMax = euMax;
+  } else if (lender.policy.effective_roi_min != null && lender.policy.effective_roi_max != null) {
+    effRateMin = lender.policy.effective_roi_min;
+    effRateMax = lender.policy.effective_roi_max;
+  }
+
   return {
     projected_loan,
     projected_rate,
     roi_range_min: round2(rateMin),
     roi_range_max: round2(rateMax),
     roi_range_source,
+    effective_rate_min: effRateMin != null ? round2(effRateMin) : null,
+    effective_rate_max: effRateMax != null ? round2(effRateMax) : null,
   };
 }
 
