@@ -185,22 +185,38 @@ function checkLenderKnockouts(
     }
   }
 
-  // 6. CIBIL
+  // 6. CIBIL — co-applicant (split-aware: prefer min_cibil_coapplicant if set, else legacy min_cibil)
   const cibil = profile.coapplicant?.cibil_score as number | null | undefined;
-  if (lender.hard_thresholds.min_cibil != null && cibil != null && cibil < lender.hard_thresholds.min_cibil) {
-    reasons.push(REASON.cibil_too_low(lender.hard_thresholds.min_cibil));
+  const coCibilMin = lender.hard_thresholds.min_cibil_coapplicant ?? lender.hard_thresholds.min_cibil;
+  if (coCibilMin != null && cibil != null && cibil < coCibilMin) {
+    reasons.push(REASON.cibil_too_low(coCibilMin));
+  }
+  // 6b. CIBIL — student (only when explicit min_cibil_student set + student.cibil_score available)
+  const studentCibil = profile.student?.cibil_score as number | null | undefined;
+  const studentCibilMin = lender.hard_thresholds.min_cibil_student;
+  if (studentCibilMin != null && studentCibil != null && Number(studentCibil) < studentCibilMin) {
+    reasons.push(REASON.cibil_too_low(studentCibilMin));
   }
 
-  // 7. age
+  // 7. co-applicant age (legacy min_age/max_age + new coapplicant_min_age/coapplicant_max_age)
   const age = profile.coapplicant?.age as number | null | undefined;
-  if (lender.hard_thresholds.min_age != null && age != null && age < lender.hard_thresholds.min_age) {
-    reasons.push(REASON.age_below_min(lender.hard_thresholds.min_age));
-  }
-  if (lender.hard_thresholds.max_age != null && age != null && age > lender.hard_thresholds.max_age) {
-    reasons.push(REASON.age_above_max(lender.hard_thresholds.max_age));
+  const coMin = lender.hard_thresholds.coapplicant_min_age ?? lender.hard_thresholds.min_age;
+  const coMax = lender.hard_thresholds.coapplicant_max_age ?? lender.hard_thresholds.max_age;
+  if (coMin != null && age != null && age < coMin) reasons.push(REASON.age_below_min(coMin));
+  if (coMax != null && age != null && age > coMax) reasons.push(REASON.age_above_max(coMax));
+
+  // 7b. student age (knockout when configured)
+  const studentAge = profile.student?.age as number | null | undefined;
+  const sMin = lender.hard_thresholds.student_min_age;
+  const sMax = lender.hard_thresholds.student_max_age;
+  if ((sMin != null || sMax != null) && studentAge != null) {
+    const a = Number(studentAge);
+    if ((sMin != null && a < sMin) || (sMax != null && a > sMax)) {
+      reasons.push(REASON.student_age_out_of_range(a, sMin ?? null, sMax ?? null));
+    }
   }
 
-  // 8. min co-applicant income
+  // 8. min co-applicant income (legacy annual)
   const income = profile.coapplicant?.monthly_income as number | null | undefined;
   if (lender.hard_thresholds.min_coapplicant_income != null && income != null) {
     const annual = income * 12;
@@ -208,10 +224,32 @@ function checkLenderKnockouts(
       reasons.push(REASON.income_below_min(lender.hard_thresholds.min_coapplicant_income));
     }
   }
+  // 8b. salaried monthly minimum
+  const minMonthly = lender.hard_thresholds.min_salary_monthly_salaried;
+  if (minMonthly != null && income != null && income < minMonthly) {
+    reasons.push(REASON.salary_below_min(minMonthly));
+  }
+  // 8c. self-employed annual ITR minimum
+  const annualItr = profile.coapplicant?.annual_itr as number | null | undefined;
+  const minItr = lender.hard_thresholds.min_itr_annual_self_employed;
+  if (minItr != null && annualItr != null && Number(annualItr) < minItr) {
+    reasons.push(REASON.itr_below_min(minItr));
+  }
 
-  // 9. relationship allow-list
+  // 8d. academic marks minimums (student)
+  const marksX = profile.student?.class_x_pct as number | null | undefined;
+  const marksXII = profile.student?.class_xii_pct as number | null | undefined;
+  const marksGrad = profile.student?.grad_pct as number | null | undefined;
+  const minX = lender.hard_thresholds.min_marks_class_x_pct;
+  const minXII = lender.hard_thresholds.min_marks_class_xii_pct;
+  const minGrad = lender.hard_thresholds.min_marks_grad_pct;
+  if (minX != null && marksX != null && Number(marksX) < minX) reasons.push(REASON.marks_below_min("Class X", minX));
+  if (minXII != null && marksXII != null && Number(marksXII) < minXII) reasons.push(REASON.marks_below_min("Class XII", minXII));
+  if (minGrad != null && marksGrad != null && Number(marksGrad) < minGrad) reasons.push(REASON.marks_below_min("Graduation", minGrad));
+
+  // 9. relationship allow-list (hard_thresholds takes precedence; falls back to policy.allowed_relationships)
   const rel = profile.coapplicant?.relationship as string | null | undefined;
-  const allowedRels = lender.hard_thresholds.allowed_relationships || null;
+  const allowedRels = lender.hard_thresholds.allowed_relationships ?? lender.policy.allowed_relationships ?? null;
   if (allowedRels && rel && !allowedRels.includes(rel)) {
     reasons.push(REASON.relationship_not_allowed(rel));
   }
