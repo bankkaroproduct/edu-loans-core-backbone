@@ -192,8 +192,13 @@ function formatFieldName(key: string): string {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+function isBlank(v: unknown): boolean {
+  return v === null || v === undefined || v === "" ||
+    (typeof v === "number" && Number.isNaN(v));
+}
+
 function formatValue(v: unknown): string {
-  if (v === null || v === undefined || v === "") return "—";
+  if (isBlank(v)) return "Not provided";
   if (typeof v === "string") return v;
   if (typeof v === "number" || typeof v === "boolean") return String(v);
   try {
@@ -204,10 +209,48 @@ function formatValue(v: unknown): string {
   }
 }
 
+// Friendly labels for known nested keys inside test_scores JSON
+const TEST_SCORES_NESTED_LABELS: Record<string, string> = {
+  tenth_total: "10th Total Marks",
+  twelfth_total: "12th Total Marks",
+  graduation_total: "Graduation Total Marks / CGPA Scale",
+  highest_qualification_total: "Highest Qualification Total Marks / CGPA Scale",
+  highest_qualification_score: "Highest Qualification Score",
+  raw_text: "Test Score Notes / Other Test Scores",
+  ielts: "IELTS Score",
+  toefl: "TOEFL Score",
+  pte: "PTE Score",
+  duolingo: "Duolingo Score",
+  gre: "GRE Score",
+  gmat: "GMAT Score",
+  sat: "SAT Score",
+};
+
+// (KNOWN_NESTED_KEYS removed — unused)
+
+function formatWorkExp(years: unknown, months: unknown): string {
+  const yBlank = isBlank(years);
+  const mBlank = isBlank(months);
+  if (yBlank && mBlank) return "Not provided";
+  const y = yBlank ? 0 : Number(years);
+  const m = mBlank ? 0 : Number(months);
+  if (!Number.isFinite(y) || !Number.isFinite(m)) return "Not provided";
+  if (y === 0 && m === 0) return "0 years";
+  const parts: string[] = [];
+  if (y > 0) parts.push(`${y} year${y === 1 ? "" : "s"}`);
+  if (m > 0) parts.push(`${m} month${m === 1 ? "" : "s"}`);
+  return parts.join(" ");
+}
+
 interface FieldDiff {
   field: string;
   oldVal: unknown;
   newVal: unknown;
+  /** Optional pre-formatted display label (overrides formatFieldName) */
+  label?: string;
+  /** Optional pre-formatted display values (overrides formatValue) */
+  oldDisplay?: string;
+  newDisplay?: string;
 }
 
 function extractFieldDiffs(
@@ -223,6 +266,79 @@ function extractFieldDiffs(
     const o = oldValue?.[k];
     const n = newValue?.[k];
     if (JSON.stringify(o) === JSON.stringify(n)) continue;
+
+    // Expand test_scores JSONB into nested per-field diffs with friendly labels
+    if (
+      k === "test_scores" &&
+      ((o && typeof o === "object") || (n && typeof n === "object"))
+    ) {
+      const oObj = (o && typeof o === "object" ? (o as Record<string, unknown>) : {}) ?? {};
+      const nObj = (n && typeof n === "object" ? (n as Record<string, unknown>) : {}) ?? {};
+      const nestedKeys = new Set<string>([...Object.keys(oObj), ...Object.keys(nObj)]);
+
+      // Combined co-applicant work experience (years + months → single row)
+      const hasWE =
+        nestedKeys.has("coapplicant_work_experience_years") ||
+        nestedKeys.has("coapplicant_work_experience_months");
+      if (hasWE) {
+        const oY = oObj.coapplicant_work_experience_years;
+        const oM = oObj.coapplicant_work_experience_months;
+        const nY = nObj.coapplicant_work_experience_years;
+        const nM = nObj.coapplicant_work_experience_months;
+        const oldDisplay = formatWorkExp(oY, oM);
+        const newDisplay = formatWorkExp(nY, nM);
+        if (oldDisplay !== newDisplay) {
+          diffs.push({
+            field: "coapplicant_work_experience",
+            oldVal: { oY, oM },
+            newVal: { nY, nM },
+            label: "Co-applicant Work Experience",
+            oldDisplay,
+            newDisplay,
+          });
+        }
+        nestedKeys.delete("coapplicant_work_experience_years");
+        nestedKeys.delete("coapplicant_work_experience_months");
+      }
+
+      // Known nested fields → friendly label, formatted values
+      const unknownEntries: { key: string; oldV: unknown; newV: unknown }[] = [];
+      for (const nk of nestedKeys) {
+        const oV = oObj[nk];
+        const nV = nObj[nk];
+        if (JSON.stringify(oV) === JSON.stringify(nV)) continue;
+        const friendly = TEST_SCORES_NESTED_LABELS[nk];
+        if (friendly) {
+          diffs.push({
+            field: `test_scores.${nk}`,
+            oldVal: oV,
+            newVal: nV,
+            label: friendly,
+            oldDisplay: formatValue(oV),
+            newDisplay: formatValue(nV),
+          });
+        } else {
+          unknownEntries.push({ key: nk, oldV: oV, newV: nV });
+        }
+      }
+
+      // Unknown keys: keep as a single raw JSON fallback row under "Test Scores"
+      if (unknownEntries.length > 0) {
+        const oldUnknown: Record<string, unknown> = {};
+        const newUnknown: Record<string, unknown> = {};
+        for (const u of unknownEntries) {
+          oldUnknown[u.key] = u.oldV;
+          newUnknown[u.key] = u.newV;
+        }
+        diffs.push({
+          field: "test_scores",
+          oldVal: oldUnknown,
+          newVal: newUnknown,
+        });
+      }
+      continue;
+    }
+
     diffs.push({ field: k, oldVal: o, newVal: n });
   }
   return diffs;
@@ -290,14 +406,14 @@ function ChangeDetailCard({ evt }: { evt: TimelineEvent }) {
               className="text-xs grid grid-cols-[auto,1fr] gap-x-2 items-start break-words"
             >
               <span className="text-muted-foreground whitespace-nowrap">
-                {formatFieldName(d.field)}:
+                {d.label ?? formatFieldName(d.field)}:
               </span>
               <span className="break-words">
                 <span className="line-through text-muted-foreground/80">
-                  {formatValue(d.oldVal)}
+                  {d.oldDisplay ?? formatValue(d.oldVal)}
                 </span>
                 <ArrowRight className="h-3 w-3 inline mx-1 text-muted-foreground" />
-                <span className="text-foreground">{formatValue(d.newVal)}</span>
+                <span className="text-foreground">{d.newDisplay ?? formatValue(d.newVal)}</span>
               </span>
             </div>
           ))}
