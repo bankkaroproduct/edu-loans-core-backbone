@@ -118,15 +118,29 @@ function checkLenderKnockouts(
 ): { eligible: boolean; reasons: string[]; product_type: "secured" | "unsecured" | null } {
   const reasons: string[] = [];
 
-  // 1. country
+  // 1. country (supported list)
   const countries = lender.coverage.supported_countries || [];
   if (countries.length > 0 && !countries.includes(profile.destination_country)) {
     reasons.push(REASON.country_not_supported(profile.destination_country));
   }
 
-  // 2. excluded states
+  // 1b. country (excluded list — explicit deny overrides)
+  const excludedCountries = lender.coverage.excluded_countries || [];
+  if (excludedCountries.length > 0 && excludedCountries.includes(profile.destination_country)) {
+    reasons.push(REASON.country_excluded(profile.destination_country));
+  }
+
+  // 2. excluded states (legacy + new Indian state list)
   if (profile.state && (lender.coverage.excluded_states || []).includes(profile.state)) {
     reasons.push(REASON.state_excluded(profile.state));
+  }
+  if (profile.state && (lender.coverage.excluded_indian_states || []).includes(profile.state)) {
+    reasons.push(REASON.state_excluded(profile.state));
+  }
+
+  // 2b. excluded Indian cities
+  if (profile.city && (lender.coverage.excluded_indian_cities || []).includes(profile.city)) {
+    reasons.push(REASON.city_excluded(profile.city));
   }
 
   // 3. accepted courses (only enforce if the list is non-empty)
