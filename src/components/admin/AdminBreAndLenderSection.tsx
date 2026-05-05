@@ -844,10 +844,9 @@ function LenderCard({
               · {isSecured ? "Secured" : "Unsecured"}
             </span>
           )}
-          {staleRank && (
-            <Badge
-              variant="outline"
-              className="text-[9px] px-1 py-0 border-amber-500/40 text-amber-700 dark:text-amber-300"
+        </div>
+      )}
+
               title="Stored recommendation rank differs from live rate-based order"
             >
               Stale rank
