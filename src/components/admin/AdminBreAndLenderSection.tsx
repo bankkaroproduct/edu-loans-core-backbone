@@ -138,6 +138,39 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
         }
       }
       setStoredMatches(m);
+
+      // Phase 3 — compute display ranking from live engine output + premiere lookup.
+      const eligibleForRanking = r.eligible_lenders.filter((l) => l.eligible);
+      const lenderIds = eligibleForRanking.map((l) => l.lender_id);
+      let premiereMap: Record<string, { is_premiere: boolean }> = {};
+      let premiereKnown = true;
+      try {
+        premiereMap = await getPremiereMatches(
+          lead.university_name_raw ?? null,
+          lead.intended_study_country ?? null,
+          lenderIds,
+        );
+      } catch (err) {
+        premiereKnown = false;
+        console.warn("[Phase3] premiere lookup failed", err);
+      }
+      const ruleById = new Map(rules.map((rl) => [rl.lender_id, rl] as const));
+      const collateralState = res?.collateral_state ?? null;
+      const rankingInputs = eligibleForRanking.map((l) => {
+        const rule = ruleById.get(l.lender_id);
+        const cap = l.product_type === "secured" ? rule?.loan_caps?.secured : rule?.loan_caps?.unsecured;
+        return {
+          lender: l,
+          isPremiere: premiereMap[l.lender_id]?.is_premiere === true,
+          premiereKnown,
+          processingTimeDays: ptByLender.get(l.lender_id) ?? null,
+          loanAmountRequested: profile.loan_amount ?? null,
+          loanCapMin: cap?.min ?? null,
+          loanCapMax: cap?.max ?? null,
+        };
+      });
+      const ranked = computeDisplayRanking(rankingInputs, collateralState);
+      setDisplayRanking(new Map(ranked.map((x) => [x.lender_id, x] as const)));
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       toast.error(`BRE evaluation failed: ${msg}`);
