@@ -782,12 +782,19 @@ export async function processBulkUpload(
         test_scores: (() => {
           const ts: Record<string, number | string> = {};
           if (row.tenth_score != null) ts.tenth = row.tenth_score;
+          if (row.tenth_total != null) ts.tenth_total = row.tenth_total;
           if (row.twelfth_score != null) ts.twelfth = row.twelfth_score;
+          if (row.twelfth_total != null) ts.twelfth_total = row.twelfth_total;
           if (row.graduation_score != null) ts.graduation = row.graduation_score;
-          if (row.highest_qualification_score != null) ts.highest_qualification = row.highest_qualification_score;
+          if (row.graduation_total != null) ts.graduation_total = row.graduation_total;
+          // Canonical key — matches Add Lead and BRE leadProfile.ts (tsObj.highest_qualification_score).
+          if (row.highest_qualification_score != null) ts.highest_qualification_score = row.highest_qualification_score;
+          if (row.highest_qualification_total != null) ts.highest_qualification_total = row.highest_qualification_total;
           if (row.work_experience != null) ts.work_experience_years = row.work_experience;
           if (row.coapplicant_age != null) ts.coapplicant_age = row.coapplicant_age;
           if (row.coapplicant_cibil != null) ts.coapplicant_cibil = row.coapplicant_cibil;
+          if (row.coapplicant_work_experience_years != null) ts.coapplicant_work_experience_years = row.coapplicant_work_experience_years;
+          if (row.coapplicant_work_experience_months != null) ts.coapplicant_work_experience_months = row.coapplicant_work_experience_months;
           if (row.test_scores_raw) ts.raw_text = row.test_scores_raw;
           return Object.keys(ts).length > 0 ? ts : {};
         })() as any,
