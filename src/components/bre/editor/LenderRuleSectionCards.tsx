@@ -258,6 +258,30 @@ export function LenderRuleSectionCards({ rule, onChange, readOnly }: Props) {
               disabled={readOnly}
             />
           </Field>
+          <Field label="Excluded countries (ISO codes, CSV)">
+            <Input
+              value={(rule.coverage.excluded_countries ?? []).join(", ")}
+              onChange={(e) => set("coverage", { ...rule.coverage, excluded_countries: csvToList(e.target.value).map((s) => s.toUpperCase()) })}
+              placeholder="CN, GE, UZ, KZ, UA"
+              disabled={readOnly}
+            />
+          </Field>
+          <Field label="Excluded Indian states (CSV)">
+            <Input
+              value={(rule.coverage.excluded_indian_states ?? []).join(", ")}
+              onChange={(e) => set("coverage", { ...rule.coverage, excluded_indian_states: csvToList(e.target.value) })}
+              placeholder="JK, NE"
+              disabled={readOnly}
+            />
+          </Field>
+          <Field label="Excluded Indian cities (CSV)">
+            <Input
+              value={(rule.coverage.excluded_indian_cities ?? []).join(", ")}
+              onChange={(e) => set("coverage", { ...rule.coverage, excluded_indian_cities: csvToList(e.target.value) })}
+              placeholder="(empty = no city exclusions)"
+              disabled={readOnly}
+            />
+          </Field>
         </CardContent>
       </Card>
 
