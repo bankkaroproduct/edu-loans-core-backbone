@@ -13,6 +13,11 @@ import {
   fetchEmploymentTypeOptions,
 } from "@/lib/employmentTypeOptions";
 import { intakeSessionLabel } from "@/lib/intakeSession";
+import {
+  validateScoreTotalPair,
+  parseCoappWorkExpShorthand,
+  validateCoappWorkExpShorthand,
+} from "@/lib/academicScore";
 
 type AppUser = Tables<"users">;
 
@@ -37,11 +42,17 @@ export interface ParsedRow {
   course_name?: string;
   university_name?: string;
   tenth_score?: number;
+  tenth_total?: number;
   twelfth_score?: number;
+  twelfth_total?: number;
   graduation_score?: number;
+  graduation_total?: number;
   highest_qualification?: string;
   highest_qualification_score?: number;
+  highest_qualification_total?: number;
   work_experience?: number;
+  coapplicant_work_experience_years?: number;
+  coapplicant_work_experience_months?: number;
   test_scores_raw?: string;
   loan_amount_required?: number;
   coapplicant_name?: string;
@@ -100,13 +111,16 @@ const ALL_HEADERS = [
   "pincode",
   "intended_study_country", "intake_session", "course_name",
   "university_name",
-  "10th_score", "12th_score", "graduation_score",
-  "highest_qualification", "highest_qualification_score",
+  "10th_score", "10th_total_marks",
+  "12th_score", "12th_total_marks",
+  "graduation_score", "graduation_total_marks",
+  "highest_qualification", "highest_qualification_score", "highest_qualification_total_marks",
   "work_experience", "test_scores",
   "loan_amount_required",
   "coapplicant_name", "coapplicant_relation",
   "coapplicant_age", "coapplicant_employment_type", "coapplicant_employer",
   "coapplicant_income", "coapplicant_existing_emi", "coapplicant_cibil",
+  "co_applicant_work_experience",
   "collateral_available", "collateral_notes", "source_sub_type", "partner_remark",
 ];
 
@@ -114,11 +128,14 @@ const ALL_HEADERS = [
 const NEW_TEMPLATE_HEADERS = [
   "pincode",
   "intake_session",
-  "10th_score", "12th_score", "graduation_score",
-  "highest_qualification", "highest_qualification_score",
+  "10th_score", "10th_total_marks",
+  "12th_score", "12th_total_marks",
+  "graduation_score", "graduation_total_marks",
+  "highest_qualification", "highest_qualification_score", "highest_qualification_total_marks",
   "work_experience", "test_scores",
   "coapplicant_age", "coapplicant_employment_type", "coapplicant_employer",
   "coapplicant_existing_emi", "coapplicant_cibil",
+  "co_applicant_work_experience",
 ];
 
 /** Static fallback if the master fetch fails — keeps validation deterministic. */
@@ -295,11 +312,16 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
   const coapplicantEmployer = val("coapplicant_employer");
   const coapplicantEmploymentTypeRaw = val("coapplicant_employment_type");
   const tenthStr = val("10th_score");
+  const tenthTotalStr = val("10th_total_marks");
   const twelfthStr = val("12th_score");
+  const twelfthTotalStr = val("12th_total_marks");
   const gradStr = val("graduation_score");
+  const gradTotalStr = val("graduation_total_marks");
   const qualification = val("highest_qualification");
   const qualificationScoreStr = val("highest_qualification_score");
+  const qualificationTotalStr = val("highest_qualification_total_marks");
   const workExpStr = val("work_experience");
+  const coappWorkExpStr = val("co_applicant_work_experience");
   const testScoresRaw = val("test_scores");
 
   if (!firstName) errors.push("student_first_name is required");
@@ -367,13 +389,45 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
     return n;
   };
   const tenth = parseNumeric(tenthStr, "10th_score", { min: 0 });
+  const tenthTotal = parseNumeric(tenthTotalStr, "10th_total_marks", { min: 0 });
   const twelfth = parseNumeric(twelfthStr, "12th_score", { min: 0 });
+  const twelfthTotal = parseNumeric(twelfthTotalStr, "12th_total_marks", { min: 0 });
   const grad = parseNumeric(gradStr, "graduation_score", { min: 0 });
+  const gradTotal = parseNumeric(gradTotalStr, "graduation_total_marks", { min: 0 });
   const qualScore = parseNumeric(qualificationScoreStr, "highest_qualification_score", { min: 0 });
+  const qualTotal = parseNumeric(qualificationTotalStr, "highest_qualification_total_marks", { min: 0 });
   const coapplicantEmi = parseNumeric(coapplicantEmiStr, "coapplicant_existing_emi", { min: 0 });
   const coapplicantAge = parseNumeric(coapplicantAgeStr, "coapplicant_age", { min: 18, max: 100 });
   const coapplicantCibil = parseNumeric(coapplicantCibilStr, "coapplicant_cibil", { min: 300, max: 900 });
   const workExp = parseNumeric(workExpStr, "work_experience", { min: 0, max: 60 });
+
+  // Score / total cross-validation — mirrors Add Lead's validateScoreTotalPair.
+  const pairChecks: Array<[string, string, string]> = [
+    ["10th", tenthStr, tenthTotalStr],
+    ["12th", twelfthStr, twelfthTotalStr],
+    ["Graduation", gradStr, gradTotalStr],
+    ["Highest Qualification", qualificationScoreStr, qualificationTotalStr],
+  ];
+  for (const [label, s, t] of pairChecks) {
+    const err = validateScoreTotalPair(s, t);
+    if (err) errors.push(`${label}: ${err}`);
+  }
+
+  // Co-applicant work experience shorthand ("3.6" => 3y 6m, etc.)
+  let coappWorkExpYears: number | undefined;
+  let coappWorkExpMonths: number | undefined;
+  if (coappWorkExpStr) {
+    const wErr = validateCoappWorkExpShorthand(coappWorkExpStr);
+    if (wErr) {
+      errors.push(`co_applicant_work_experience: ${wErr}`);
+    } else {
+      const parsedWE = parseCoappWorkExpShorthand(coappWorkExpStr);
+      if (parsedWE) {
+        coappWorkExpYears = parsedWE.years;
+        coappWorkExpMonths = parsedWE.months;
+      }
+    }
+  }
 
   let qualificationNormalized: string | undefined;
   if (qualification) {
@@ -414,11 +468,17 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
     course_name: courseName,
     university_name: universityRaw || undefined,
     tenth_score: tenth,
+    tenth_total: tenthTotal,
     twelfth_score: twelfth,
+    twelfth_total: twelfthTotal,
     graduation_score: grad,
+    graduation_total: gradTotal,
     highest_qualification: qualificationNormalized,
     highest_qualification_score: qualScore,
+    highest_qualification_total: qualTotal,
     work_experience: workExp,
+    coapplicant_work_experience_years: coappWorkExpYears,
+    coapplicant_work_experience_months: coappWorkExpMonths,
     test_scores_raw: testScoresRaw || undefined,
     loan_amount_required: isNaN(loanAmount) ? undefined : loanAmount,
     coapplicant_name: val("coapplicant_name") || undefined,
@@ -722,12 +782,19 @@ export async function processBulkUpload(
         test_scores: (() => {
           const ts: Record<string, number | string> = {};
           if (row.tenth_score != null) ts.tenth = row.tenth_score;
+          if (row.tenth_total != null) ts.tenth_total = row.tenth_total;
           if (row.twelfth_score != null) ts.twelfth = row.twelfth_score;
+          if (row.twelfth_total != null) ts.twelfth_total = row.twelfth_total;
           if (row.graduation_score != null) ts.graduation = row.graduation_score;
-          if (row.highest_qualification_score != null) ts.highest_qualification = row.highest_qualification_score;
+          if (row.graduation_total != null) ts.graduation_total = row.graduation_total;
+          // Canonical key — matches Add Lead and BRE leadProfile.ts (tsObj.highest_qualification_score).
+          if (row.highest_qualification_score != null) ts.highest_qualification_score = row.highest_qualification_score;
+          if (row.highest_qualification_total != null) ts.highest_qualification_total = row.highest_qualification_total;
           if (row.work_experience != null) ts.work_experience_years = row.work_experience;
           if (row.coapplicant_age != null) ts.coapplicant_age = row.coapplicant_age;
           if (row.coapplicant_cibil != null) ts.coapplicant_cibil = row.coapplicant_cibil;
+          if (row.coapplicant_work_experience_years != null) ts.coapplicant_work_experience_years = row.coapplicant_work_experience_years;
+          if (row.coapplicant_work_experience_months != null) ts.coapplicant_work_experience_months = row.coapplicant_work_experience_months;
           if (row.test_scores_raw) ts.raw_text = row.test_scores_raw;
           return Object.keys(ts).length > 0 ? ts : {};
         })() as any,
