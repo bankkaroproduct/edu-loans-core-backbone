@@ -312,11 +312,16 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
   const coapplicantEmployer = val("coapplicant_employer");
   const coapplicantEmploymentTypeRaw = val("coapplicant_employment_type");
   const tenthStr = val("10th_score");
+  const tenthTotalStr = val("10th_total_marks");
   const twelfthStr = val("12th_score");
+  const twelfthTotalStr = val("12th_total_marks");
   const gradStr = val("graduation_score");
+  const gradTotalStr = val("graduation_total_marks");
   const qualification = val("highest_qualification");
   const qualificationScoreStr = val("highest_qualification_score");
+  const qualificationTotalStr = val("highest_qualification_total_marks");
   const workExpStr = val("work_experience");
+  const coappWorkExpStr = val("co_applicant_work_experience");
   const testScoresRaw = val("test_scores");
 
   if (!firstName) errors.push("student_first_name is required");
