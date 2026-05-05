@@ -72,7 +72,17 @@ export function LenderRuleSectionCards({ rule, onChange, readOnly }: Props) {
             <Input type="number" step="any" value={rule.commercials.payout_pct ?? ""} onChange={(e) => set("commercials", { ...rule.commercials, payout_pct: numOrNull(e.target.value) })} disabled={readOnly} />
           </Field>
           <Field label="Payout trigger stage">
-            <Input value={rule.commercials.payout_trigger_stage ?? ""} onChange={(e) => set("commercials", { ...rule.commercials, payout_trigger_stage: e.target.value || null })} placeholder="disbursed" disabled={readOnly} />
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              value={rule.commercials.payout_trigger_stage ?? ""}
+              onChange={(e) => set("commercials", { ...rule.commercials, payout_trigger_stage: e.target.value || null })}
+              disabled={readOnly}
+            >
+              <option value="">—</option>
+              <option value="sanction">On sanction</option>
+              <option value="tranche_disbursement">On tranche disbursement</option>
+              <option value="disbursement">On disbursement</option>
+            </select>
           </Field>
           <Field label="Processing fee %">
             <Input type="number" step="any" value={rule.commercials.processing_fee_pct ?? ""} onChange={(e) => set("commercials", { ...rule.commercials, processing_fee_pct: numOrNull(e.target.value) })} disabled={readOnly} />
@@ -80,6 +90,27 @@ export function LenderRuleSectionCards({ rule, onChange, readOnly }: Props) {
           <Field label="Processing fee flat (₹)">
             <Input type="number" step="any" value={rule.commercials.processing_fee_flat ?? ""} onChange={(e) => set("commercials", { ...rule.commercials, processing_fee_flat: numOrNull(e.target.value) })} disabled={readOnly} />
           </Field>
+          <CoverageToggle
+            label="PF GST applicable"
+            checked={rule.commercials.processing_fee_gst_applicable === true}
+            onCheckedChange={(v) => set("commercials", { ...rule.commercials, processing_fee_gst_applicable: v })}
+            disabled={readOnly}
+          />
+          <CoverageToggle
+            label="PF refundable on disbursement"
+            checked={rule.commercials.processing_fee_refundable_on_disbursement === true}
+            onCheckedChange={(v) => set("commercials", { ...rule.commercials, processing_fee_refundable_on_disbursement: v })}
+            disabled={readOnly}
+          />
+          <Field label="VAS %">
+            <Input type="number" step="any" value={rule.commercials.vas_pct ?? ""} onChange={(e) => set("commercials", { ...rule.commercials, vas_pct: numOrNull(e.target.value) })} disabled={readOnly} />
+          </Field>
+          <CoverageToggle
+            label="VAS varies by lender (aggregator)"
+            checked={rule.commercials.vas_varies_by_lender === true}
+            onCheckedChange={(v) => set("commercials", { ...rule.commercials, vas_varies_by_lender: v })}
+            disabled={readOnly}
+          />
         </CardContent>
       </Card>
 
