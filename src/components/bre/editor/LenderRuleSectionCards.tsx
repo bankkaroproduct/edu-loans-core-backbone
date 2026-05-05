@@ -40,6 +40,19 @@ export function LenderRuleSectionCards({ rule, onChange, readOnly }: Props) {
           <Field label="SPOC email">
             <Input type="email" value={rule.basic_info.spoc_email ?? ""} onChange={(e) => set("basic_info", { ...rule.basic_info, spoc_email: e.target.value || null })} disabled={readOnly} />
           </Field>
+          <Field label="Code type">
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              value={rule.basic_info.code_type ?? ""}
+              onChange={(e) => set("basic_info", { ...rule.basic_info, code_type: (e.target.value || null) as "internal" | "external" | "internal_under_process" | null })}
+              disabled={readOnly}
+            >
+              <option value="">—</option>
+              <option value="internal">Internal</option>
+              <option value="external">External</option>
+              <option value="internal_under_process">Internal (Under Process)</option>
+            </select>
+          </Field>
           <Field label="Active">
             <div className="flex h-10 items-center">
               <Switch checked={rule.basic_info.active} onCheckedChange={(v) => set("basic_info", { ...rule.basic_info, active: v })} disabled={readOnly} />
