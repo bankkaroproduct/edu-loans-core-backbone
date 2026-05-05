@@ -67,6 +67,8 @@ export function LenderDrawer({ open, onOpenChange, record, onSaved }: Props) {
         supported_countries: record.supported_countries ?? [],
         active_flag: record.active_flag,
         internal_notes: record.internal_notes ?? "",
+        contact_email: record.contact_email ?? "",
+        cc_emails: Array.isArray(record.cc_emails) ? record.cc_emails.join(", ") : "",
       });
     } else {
       setForm(blank);
