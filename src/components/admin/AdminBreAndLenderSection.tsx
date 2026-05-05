@@ -360,6 +360,7 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
                 scoringVersion={scoringVersion}
                 activeRuleCount={result.eligible_lenders.length}
                 collateralState={resolution?.collateral_state ?? null}
+                displayRanking={displayRanking}
               />
             )}
           </section>
