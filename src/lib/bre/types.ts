@@ -283,6 +283,14 @@ export interface LenderMatchResult {
   roi_range_max?: number | null;
   roi_range_source?: "secured" | "unsecured" | "policy" | "band" | null;
   /**
+   * Display-only Effective ROI range for the route the engine selected.
+   * Picked from policy.effective_roi_secured_* / effective_roi_unsecured_*
+   * (with legacy effective_roi_min/max fallback). NEVER used by ranking,
+   * scoring, eligibility, filtering, loan amount, or assignment logic.
+   */
+  effective_rate_min?: number | null;
+  effective_rate_max?: number | null;
+  /**
    * Display-only Processing Fee pass-through from lender.commercials.
    * NEVER used by ranking, scoring, eligibility, filtering, loan amount
    * calculation, or assignment logic.
