@@ -43,6 +43,11 @@ import { loadActive } from "@/lib/bre/loader";
 import { buildBreProfileFromLeadAsync, type BuildProfileResolution } from "@/lib/bre/leadProfile";
 import type { BreResult, BucketKey, ParameterTrace } from "@/lib/bre/types";
 import { displayLenderCode } from "@/lib/lenderDisplay";
+import {
+  computeDisplayRanking,
+  type DisplayRankingOutput,
+} from "@/lib/bre/displayRanking";
+import { getPremiereMatches } from "@/lib/premiere/lookup";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Lead = Tables<"student_leads">;
