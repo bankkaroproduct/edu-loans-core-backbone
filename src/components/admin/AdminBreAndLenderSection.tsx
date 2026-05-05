@@ -43,6 +43,11 @@ import { loadActive } from "@/lib/bre/loader";
 import { buildBreProfileFromLeadAsync, type BuildProfileResolution } from "@/lib/bre/leadProfile";
 import type { BreResult, BucketKey, ParameterTrace } from "@/lib/bre/types";
 import { displayLenderCode } from "@/lib/lenderDisplay";
+import {
+  computeDisplayRanking,
+  type DisplayRankingOutput,
+} from "@/lib/bre/displayRanking";
+import { getPremiereMatches } from "@/lib/premiere/lookup";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Lead = Tables<"student_leads">;
@@ -81,6 +86,9 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
     processingTimeDays: number | null;
   };
   const [storedMatches, setStoredMatches] = useState<Map<string, StoredMatch>>(new Map());
+  // Phase 3 — live display ranking computed from engine output + premiere lookup.
+  // Display-only. Does not mutate lead_lender_matches or stored ranks.
+  const [displayRanking, setDisplayRanking] = useState<Map<string, DisplayRankingOutput>>(new Map());
 
   // VERBATIM copy of AdminCalculateBreCard.handleRun — no logic changes.
   const handleRun = async () => {
@@ -130,6 +138,39 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
         }
       }
       setStoredMatches(m);
+
+      // Phase 3 — compute display ranking from live engine output + premiere lookup.
+      const eligibleForRanking = r.eligible_lenders.filter((l) => l.eligible);
+      const lenderIds = eligibleForRanking.map((l) => l.lender_id);
+      let premiereMap: Record<string, { is_premiere: boolean }> = {};
+      let premiereKnown = true;
+      try {
+        premiereMap = await getPremiereMatches(
+          lead.university_name_raw ?? null,
+          lead.intended_study_country ?? null,
+          lenderIds,
+        );
+      } catch (err) {
+        premiereKnown = false;
+        console.warn("[Phase3] premiere lookup failed", err);
+      }
+      const ruleById = new Map(rules.map((rl) => [rl.lender_id, rl] as const));
+      const collateralState = res?.collateral_state ?? null;
+      const rankingInputs = eligibleForRanking.map((l) => {
+        const rule = ruleById.get(l.lender_id);
+        const cap = l.product_type === "secured" ? rule?.loan_caps?.secured : rule?.loan_caps?.unsecured;
+        return {
+          lender: l,
+          isPremiere: premiereMap[l.lender_id]?.is_premiere === true,
+          premiereKnown,
+          processingTimeDays: ptByLender.get(l.lender_id) ?? null,
+          loanAmountRequested: profile.loan_amount ?? null,
+          loanCapMin: cap?.min ?? null,
+          loanCapMax: cap?.max ?? null,
+        };
+      });
+      const ranked = computeDisplayRanking(rankingInputs, collateralState);
+      setDisplayRanking(new Map(ranked.map((x) => [x.lender_id, x] as const)));
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       toast.error(`BRE evaluation failed: ${msg}`);
@@ -319,6 +360,7 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
                 scoringVersion={scoringVersion}
                 activeRuleCount={result.eligible_lenders.length}
                 collateralState={resolution?.collateral_state ?? null}
+                displayRanking={displayRanking}
               />
             )}
           </section>
@@ -668,6 +710,7 @@ function LenderOptionCards({
   scoringVersion,
   activeRuleCount,
   collateralState,
+  displayRanking,
 }: {
   eligibleLenders: BreResult["eligible_lenders"];
   loanRange: BreResult["eligible_loan_range"];
@@ -675,28 +718,27 @@ function LenderOptionCards({
   scoringVersion: number | null;
   activeRuleCount: number;
   collateralState: "secured" | "secured_review_needed" | "unsecured" | null;
+  displayRanking: Map<string, DisplayRankingOutput>;
 }) {
+  // Phase 3 — sort by live displayScore-derived displayRank when available;
+  // fall back to engine rank for any lender not in the ranking map.
   const ordered = [...eligibleLenders].sort((a, b) => {
-    const sa = storedMatches.get(a.lender_id)?.rank ?? null;
-    const sb = storedMatches.get(b.lender_id)?.rank ?? null;
-    if (sa != null && sb != null) return sa - sb;
-    if (sa != null) return -1;
-    if (sb != null) return 1;
+    const da = displayRanking.get(a.lender_id)?.displayRank ?? null;
+    const db = displayRanking.get(b.lender_id)?.displayRank ?? null;
+    if (da != null && db != null) return da - db;
+    if (da != null) return -1;
+    if (db != null) return 1;
     return (a.rank ?? Number.POSITIVE_INFINITY) - (b.rank ?? Number.POSITIVE_INFINITY);
   });
 
+  // Compare stored ranks to the new live display order and surface a single
+  // subtle note when they differ. Stored ranks themselves are not mutated.
   const hasStoredRanks = ordered.some((l) => storedMatches.get(l.lender_id)?.rank != null);
-  const engineOrderById = new Map<string, number>();
-  [...eligibleLenders]
-    .sort((a, b) => (a.rank ?? Number.POSITIVE_INFINITY) - (b.rank ?? Number.POSITIVE_INFINITY))
-    .forEach((l, i) => engineOrderById.set(l.lender_id, i + 1));
-
   const ranksDifferFromLive =
     hasStoredRanks &&
-    ordered.some((l) => {
+    ordered.some((l, i) => {
       const storedRank = storedMatches.get(l.lender_id)?.rank ?? null;
-      const engineRank = engineOrderById.get(l.lender_id) ?? null;
-      return storedRank != null && engineRank != null && storedRank !== engineRank;
+      return storedRank != null && storedRank !== i + 1;
     });
 
   // Phase 2 — section-level route rationale (single source of truth for the
@@ -738,7 +780,8 @@ function LenderOptionCards({
       <p className="text-[11px] text-muted-foreground italic flex items-start gap-1.5">
         <Info className="h-3 w-3 shrink-0 mt-0.5" />
         <span>
-          Order reflects stored BRE recommendation rank (overall fit). ROI shown is the live indicative rate.
+          Order reflects live BRE recommendation score. Existing stored assignments and manual
+          ranks are not changed.
         </span>
       </p>
 
@@ -746,8 +789,8 @@ function LenderOptionCards({
         <p className="text-[11px] text-muted-foreground/90 italic flex items-start gap-1.5">
           <Info className="h-3 w-3 shrink-0 mt-0.5" />
           <span>
-            Stored recommendation ranks differ from the latest live ordering for this profile.
-            Ranks shown are stored values and have not been recomputed.
+            Stored recommendation ranks differ from the live display ranking. Stored ranks have
+            not been recomputed.
           </span>
         </p>
       )}
@@ -761,6 +804,7 @@ function LenderOptionCards({
               stored={storedMatches.get(l.lender_id) ?? null}
               displayPosition={idx + 1}
               collateralState={collateralState}
+              ranking={displayRanking.get(l.lender_id) ?? null}
             />
           );
         })}
@@ -782,11 +826,13 @@ function LenderCard({
   stored,
   displayPosition,
   collateralState,
+  ranking,
 }: {
   l: BreResult["eligible_lenders"][number];
   stored: StoredMatchValue | null;
   displayPosition: number;
   collateralState: "secured" | "secured_review_needed" | "unsecured" | null;
+  ranking: DisplayRankingOutput | null;
 }) {
   const isSecured = l.product_type === "secured";
   const isUnsecured = l.product_type === "unsecured";
@@ -853,7 +899,7 @@ function LenderCard({
             <div className="text-[10px] font-mono text-muted-foreground mt-0.5">{codeSubtitle}</div>
           )}
         </div>
-        <FitBadge badge={l.badge} storedFit={stored?.fit ?? null} />
+        <FitBadge badge={l.badge} storedFit={stored?.fit ?? null} liveFit={ranking?.fitLabel ?? null} />
       </div>
 
       {/* Projected ROI — primary metric, displayed prominently with route tag */}
@@ -941,6 +987,20 @@ function LenderCard({
               </span>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Phase 3 rationale chips — only real factors derived from live ranking */}
+      {ranking && ranking.rationale.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+          {ranking.rationale.map((r) => (
+            <span
+              key={r}
+              className="inline-flex items-center rounded-md border border-primary/20 bg-primary/5 px-1.5 py-0.5 text-[10px] text-foreground/80"
+            >
+              {r}
+            </span>
+          ))}
         </div>
       )}
 
@@ -1042,12 +1102,14 @@ function Chip({
 function FitBadge({
   badge,
   storedFit,
+  liveFit,
 }: {
   badge: BreResult["eligible_lenders"][number]["badge"];
   storedFit: "best_fit" | "good_fit" | "backup" | null;
+  liveFit: "best_fit" | "good_fit" | "backup" | null;
 }) {
-  // Stored fit_category from lead_lender_matches wins over engine badge when present.
-  // Engine badges map: best_match→Best fit, strong→Good fit, backup→Backup.
+  // Phase 3 — live displayScore-derived fit label wins when available.
+  // Falls back to stored fit_category, then to engine badge.
   const map = {
     best_fit: {
       label: "Best fit",
@@ -1067,7 +1129,8 @@ function FitBadge({
     strong: "good_fit",
     backup: "backup",
   };
-  const key: keyof typeof map | null = storedFit ?? (badge ? engineMap[badge] : null);
+  const key: keyof typeof map | null =
+    liveFit ?? storedFit ?? (badge ? engineMap[badge] : null);
   if (!key) return null;
   const m = map[key];
   return (
