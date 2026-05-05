@@ -13,6 +13,11 @@ import {
   fetchEmploymentTypeOptions,
 } from "@/lib/employmentTypeOptions";
 import { intakeSessionLabel } from "@/lib/intakeSession";
+import {
+  validateScoreTotalPair,
+  parseCoappWorkExpShorthand,
+  validateCoappWorkExpShorthand,
+} from "@/lib/academicScore";
 
 type AppUser = Tables<"users">;
 
