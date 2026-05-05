@@ -39,7 +39,11 @@ const blank = {
   supported_countries: [] as string[],
   active_flag: true,
   internal_notes: "",
+  contact_email: "",
+  cc_emails: "",
 };
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function LenderDrawer({ open, onOpenChange, record, onSaved }: Props) {
   const isEdit = !!record;
