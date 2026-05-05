@@ -1088,12 +1088,14 @@ function Chip({
 function FitBadge({
   badge,
   storedFit,
+  liveFit,
 }: {
   badge: BreResult["eligible_lenders"][number]["badge"];
   storedFit: "best_fit" | "good_fit" | "backup" | null;
+  liveFit: "best_fit" | "good_fit" | "backup" | null;
 }) {
-  // Stored fit_category from lead_lender_matches wins over engine badge when present.
-  // Engine badges map: best_match→Best fit, strong→Good fit, backup→Backup.
+  // Phase 3 — live displayScore-derived fit label wins when available.
+  // Falls back to stored fit_category, then to engine badge.
   const map = {
     best_fit: {
       label: "Best fit",
@@ -1113,7 +1115,8 @@ function FitBadge({
     strong: "good_fit",
     backup: "backup",
   };
-  const key: keyof typeof map | null = storedFit ?? (badge ? engineMap[badge] : null);
+  const key: keyof typeof map | null =
+    liveFit ?? storedFit ?? (badge ? engineMap[badge] : null);
   if (!key) return null;
   const m = map[key];
   return (
