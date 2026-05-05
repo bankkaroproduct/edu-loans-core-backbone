@@ -899,7 +899,7 @@ function LenderCard({
             <div className="text-[10px] font-mono text-muted-foreground mt-0.5">{codeSubtitle}</div>
           )}
         </div>
-        <FitBadge badge={l.badge} storedFit={stored?.fit ?? null} />
+        <FitBadge badge={l.badge} storedFit={stored?.fit ?? null} liveFit={ranking?.fitLabel ?? null} />
       </div>
 
       {/* Projected ROI — primary metric, displayed prominently with route tag */}
