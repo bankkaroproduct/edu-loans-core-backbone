@@ -86,6 +86,9 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
     processingTimeDays: number | null;
   };
   const [storedMatches, setStoredMatches] = useState<Map<string, StoredMatch>>(new Map());
+  // Phase 3 — live display ranking computed from engine output + premiere lookup.
+  // Display-only. Does not mutate lead_lender_matches or stored ranks.
+  const [displayRanking, setDisplayRanking] = useState<Map<string, DisplayRankingOutput>>(new Map());
 
   // VERBATIM copy of AdminCalculateBreCard.handleRun — no logic changes.
   const handleRun = async () => {
