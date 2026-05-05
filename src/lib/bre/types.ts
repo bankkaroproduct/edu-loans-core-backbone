@@ -151,6 +151,12 @@ export interface LenderCoverage {
   university_tier_overrides: { tier: string; allowed: boolean }[];
   /** Optional descriptive expense coverage. Engine does not consume this. */
   expenses?: LenderExpenseCoverage;
+  /** ISO codes the lender will NOT fund. Knockout when set. */
+  excluded_countries?: string[];
+  /** Indian state codes/labels the lender will NOT fund (e.g. "JK", "NE"). Knockout when set. */
+  excluded_indian_states?: string[];
+  /** Indian city names the lender will NOT fund. Knockout when set. */
+  excluded_indian_cities?: string[];
 }
 
 export interface LenderPolicy {
@@ -167,6 +173,17 @@ export interface LenderPolicy {
   tenure_max_years: number | null;
   moratorium_months: number | null;
   notes?: string | null;
+  /** Effective ROI after subvention/concessions, if known. Display-only. */
+  effective_roi_min?: number | null;
+  effective_roi_max?: number | null;
+  /** Max tenure (years), redundant convenience field for breakdown imports. */
+  tenure_years_max?: number | null;
+  /** Allowed co-applicant relationships at policy level (mirrors hard_thresholds). */
+  allowed_relationships?: string[] | null;
+  /** University-list governance: premiere list / internal list / case-by-case. */
+  university_list_mode?: "premiere" | "internal_list" | "case_to_case" | null;
+  /** Course buckets covered (e.g. ["UG","PG"]). */
+  courses_covered?: string[] | null;
 }
 
 export interface BreLenderRule {
