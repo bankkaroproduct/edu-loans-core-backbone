@@ -923,11 +923,6 @@ function LenderCard({
           <span className="text-base font-semibold text-foreground tabular-nums">
             {l.roi_range_min}% – {l.roi_range_max}%
           </span>
-          {(isSecured || isUnsecured) && (
-            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              · {isSecured ? "Secured" : "Unsecured"}
-            </span>
-          )}
           {showCollateralReviewChip && (
             <Badge
               variant="outline"
