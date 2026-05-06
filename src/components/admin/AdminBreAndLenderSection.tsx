@@ -30,6 +30,12 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Table,
   TableBody,
   TableCell,
