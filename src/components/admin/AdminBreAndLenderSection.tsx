@@ -12,7 +12,6 @@ import {
   TrendingDown,
   TrendingUp,
   Info,
-  Percent,
   IndianRupee,
   ShieldCheck,
   Unlock,
