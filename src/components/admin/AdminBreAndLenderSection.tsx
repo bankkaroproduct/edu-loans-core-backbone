@@ -908,14 +908,21 @@ function LenderCard({
         <FitBadge badge={l.badge} storedFit={stored?.fit ?? null} liveFit={ranking?.fitLabel ?? null} />
       </div>
 
-      {/* Projected ROI — primary metric, displayed prominently with route tag */}
-      {l.projected_rate != null && (
+      {/* Primary visible rate: source-backed route ROI range from the lender sheet.
+          Indicative midpoint (formerly "Projected ROI") is shown as a smaller
+          secondary line. Effective ROI, if available, is surfaced only inside
+          the midpoint tooltip as informational text — never as a visible chip. */}
+      {hasRoiRange && (
         <div className="flex items-baseline gap-2 flex-wrap">
           <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-            Projected ROI
+            {l.roi_range_source === "secured"
+              ? "Secured Loan ROI"
+              : l.roi_range_source === "unsecured"
+              ? "Unsecured Loan ROI"
+              : "ROI Range"}
           </span>
           <span className="text-base font-semibold text-foreground tabular-nums">
-            ~{l.projected_rate}%
+            {l.roi_range_min}% – {l.roi_range_max}%
           </span>
           {(isSecured || isUnsecured) && (
             <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -933,28 +940,44 @@ function LenderCard({
         </div>
       )}
 
-      {/* Secondary metrics row. ROI chip is labelled with the route source the
-          engine actually used (l.roi_range_source), so the primary visible
-          range never blends secured + unsecured. */}
+      {l.projected_rate != null && (
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <span>
+            Indicative midpoint:{" "}
+            <span className="font-medium tabular-nums text-foreground">~{l.projected_rate}%</span>
+          </span>
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex items-center text-muted-foreground hover:text-foreground"
+                  aria-label="About indicative midpoint"
+                >
+                  <Info className="h-3 w-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs text-xs">
+                <p>
+                  Calculated as the midpoint of the selected route ROI range. Use the
+                  source-backed ROI range for decisioning. Final lender offer may vary.
+                </p>
+                {l.effective_rate_min != null && l.effective_rate_max != null && (
+                  <p className="mt-1.5 opacity-90">
+                    Effective ROI from lender sheet, for reference only:{" "}
+                    {l.effective_rate_min}% – {l.effective_rate_max}%.
+                  </p>
+                )}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      )}
+
+      {/* Secondary metrics row — loan amount, PF, route badges. ROI chips intentionally
+          removed: the source-backed route ROI is now the primary visible value above. */}
       <div className="flex flex-wrap items-center gap-1.5">
-        {hasRoiRange && (
-          <Chip
-            icon={<Percent className="h-3 w-3" />}
-            label={`${
-              l.roi_range_source === "secured"
-                ? "Secured ROI"
-                : l.roi_range_source === "unsecured"
-                ? "Unsecured ROI"
-                : "ROI Range"
-            }: ${l.roi_range_min}% – ${l.roi_range_max}%`}
-          />
-        )}
-        {l.effective_rate_min != null && l.effective_rate_max != null && (
-          <Chip
-            icon={<Percent className="h-3 w-3" />}
-            label={`Effective ROI: ${l.effective_rate_min}% – ${l.effective_rate_max}%`}
-          />
-        )}
+
         {l.projected_loan_amount != null && (
           <Chip
             icon={<IndianRupee className="h-3 w-3" />}
