@@ -533,8 +533,17 @@ export function evaluate(
         r.score_breakdown = sc.score_breakdown;
         r.scorecard_provenance = sc.scorecard_provenance;
         r.scorecard_version = sc.scorecard_version;
-      } catch {
+      } catch (err) {
         // Layer 2 must never break Layer 1 output.
+        console.warn(
+          "[BRE Layer 2] scorecard evaluation failed for lender",
+          {
+            lender_code: lender.basic_info?.lender_code,
+            lender_name: lender.basic_info?.lender_name,
+            lender_id: lender.lender_id,
+          },
+          err,
+        );
       }
     }
   }
