@@ -114,7 +114,7 @@ export default function Login() {
 }
 
 function LoginForm() {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -123,6 +123,21 @@ function LoginForm() {
     e.preventDefault();
     setErrorMsg(null);
     setSubmitting(true);
+
+    // Resolve username -> email if needed. Emails fall through unchanged.
+    let email = identifier.trim();
+    if (email && !email.includes("@")) {
+      const { data: resolved, error: resolveErr } = await supabase.rpc(
+        "resolve_login_email",
+        { _identifier: email }
+      );
+      if (resolveErr || !resolved) {
+        setErrorMsg("Invalid username or password.");
+        setSubmitting(false);
+        return;
+      }
+      email = resolved as string;
+    }
 
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
