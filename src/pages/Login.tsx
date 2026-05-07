@@ -184,8 +184,15 @@ function LoginForm() {
         </Alert>
       )}
       <div className="space-y-2">
-        <Label htmlFor="login-email">Email</Label>
-        <Input id="login-email" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required />
+        <Label htmlFor="login-identifier">Email / Username</Label>
+        <Input
+          id="login-identifier"
+          type="text"
+          autoComplete="username"
+          value={identifier}
+          onChange={e => setIdentifier(e.target.value)}
+          required
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="login-password">Password</Label>
