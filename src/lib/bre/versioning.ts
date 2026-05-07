@@ -225,6 +225,65 @@ export async function createNewLenderRuleVersion(
   return { id: data.id, version_number: data.version_number };
 }
 
+/**
+ * Create a new lender rule version that ONLY changes the scorecard JSONB.
+ * Clones the currently-active row's non-scorecard fields verbatim. Inactive on insert.
+ */
+export async function createNewLenderScorecardVersion(
+  lenderId: string,
+  scorecard: Record<string, unknown>,
+  changeSummary: string,
+): Promise<CreateLenderRuleResult> {
+  const { data: active, error: actErr } = await supabase
+    .from("bre_lender_rules")
+    .select("basic_info, commercials, hard_thresholds, loan_caps, collateral_ltv, coverage, policy, scorecard")
+    .eq("lender_id", lenderId)
+    .eq("is_active", true)
+    .maybeSingle();
+  if (actErr) throw actErr;
+  if (!active) throw new Error("No active lender rule to clone from");
+
+  const actor = await getActorContext();
+  const version = await nextLenderRuleVersion(lenderId);
+
+  const { data, error } = await supabase
+    .from("bre_lender_rules")
+    .insert({
+      lender_id: lenderId,
+      version_number: version,
+      is_active: false,
+      basic_info: active.basic_info,
+      commercials: active.commercials,
+      hard_thresholds: active.hard_thresholds,
+      loan_caps: active.loan_caps,
+      collateral_ltv: active.collateral_ltv,
+      coverage: active.coverage,
+      policy: active.policy,
+      scorecard: scorecard as unknown as Json,
+      change_summary: changeSummary,
+      created_by: actor.id,
+    })
+    .select("id, version_number")
+    .single();
+
+  if (error) throw error;
+
+  await writeAudit({
+    entity_type: "bre_lender_rule",
+    entity_id: data.id,
+    action_type: "bre_lender_scorecard_created",
+    meta: {
+      lender_id: lenderId,
+      version_number: data.version_number,
+      change_summary: changeSummary,
+    },
+    old_value: { scorecard: (active.scorecard ?? null) as unknown } as Record<string, unknown>,
+    new_value: { scorecard } as Record<string, unknown>,
+  });
+
+  return { id: data.id, version_number: data.version_number };
+}
+
 export async function activateLenderRuleVersion(versionId: string): Promise<{
   lender_id: string;
   activated_id: string;
