@@ -1869,6 +1869,7 @@ export type Database = {
           phone: string | null
           role: Database["public"]["Enums"]["app_role"]
           updated_at: string
+          username: string | null
         }
         Insert: {
           auth_user_id?: string | null
@@ -1883,6 +1884,7 @@ export type Database = {
           phone?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
+          username?: string | null
         }
         Update: {
           auth_user_id?: string | null
@@ -1897,6 +1899,7 @@ export type Database = {
           phone?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
+          username?: string | null
         }
         Relationships: [
           {
@@ -1978,6 +1981,7 @@ export type Database = {
       normalize_college_name: { Args: { _name: string }; Returns: string }
       normalize_phone: { Args: { _phone: string }; Returns: string }
       resolve_country_canonical: { Args: { _name: string }; Returns: string }
+      resolve_login_email: { Args: { _identifier: string }; Returns: string }
       seed_lead_document_requirements: {
         Args: { p_lead_id: string }
         Returns: number
