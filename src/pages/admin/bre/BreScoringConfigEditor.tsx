@@ -138,8 +138,8 @@ export default function BreScoringConfigEditor() {
   return (
     <div className="space-y-6 pb-24">
       <PageHeader
-        title="Global Scoring Config"
-        description="Edit student / university / co-applicant bucket parameters and the overall band mapping. Saving creates a new inactive version — activate as a separate step."
+        title="Scoring Config"
+        description="Global scoring buckets/bands and lender-specific scorecards."
       >
         <Button asChild variant="ghost" size="sm">
           <Link to="/admin/bre"><ArrowLeft className="mr-1 h-4 w-4" /> Back to BRE</Link>
@@ -148,50 +148,63 @@ export default function BreScoringConfigEditor() {
         {readOnly && <Badge variant="outline" className="bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-300">Read-only</Badge>}
       </PageHeader>
 
-      <BucketThresholdEditor
-        value={draft.bucket_threshold}
-        onChange={(v) => setDraft({ ...draft, bucket_threshold: v })}
-        readOnly={!canEdit}
-      />
+      <Tabs defaultValue="global" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="global">Global Scoring Config</TabsTrigger>
+          <TabsTrigger value="lenders">Lender-Specific Scoring Config</TabsTrigger>
+        </TabsList>
 
-      <BucketEditor
-        title="Student bucket"
-        description="Academic + test-score parameters. Weights must sum to 100."
-        params={draft.student_params}
-        onChange={(p) => setDraft({ ...draft, student_params: p })}
-        readOnly={!canEdit}
-      />
-      <BucketEditor
-        title="University bucket"
-        description="University tier, country, course type. Weights must sum to 100."
-        params={draft.university_params}
-        onChange={(p) => setDraft({ ...draft, university_params: p })}
-        readOnly={!canEdit}
-      />
-      <BucketEditor
-        title="Co-applicant bucket"
-        description="Income, CIBIL, employment. Weights must sum to 100."
-        params={draft.coapplicant_params}
-        onChange={(p) => setDraft({ ...draft, coapplicant_params: p })}
-        readOnly={!canEdit}
-      />
+        <TabsContent value="global" className="space-y-6">
+          <BucketThresholdEditor
+            value={draft.bucket_threshold}
+            onChange={(v) => setDraft({ ...draft, bucket_threshold: v })}
+            readOnly={!canEdit}
+          />
 
-      <OverallBandMappingEditor
-        rows={draft.overall_band_mapping}
-        onChange={(r) => setDraft({ ...draft, overall_band_mapping: r })}
-        readOnly={!canEdit}
-      />
+          <BucketEditor
+            title="Student bucket"
+            description="Academic + test-score parameters. Weights must sum to 100."
+            params={draft.student_params}
+            onChange={(p) => setDraft({ ...draft, student_params: p })}
+            readOnly={!canEdit}
+          />
+          <BucketEditor
+            title="University bucket"
+            description="University tier, country, course type. Weights must sum to 100."
+            params={draft.university_params}
+            onChange={(p) => setDraft({ ...draft, university_params: p })}
+            readOnly={!canEdit}
+          />
+          <BucketEditor
+            title="Co-applicant bucket"
+            description="Income, CIBIL, employment. Weights must sum to 100."
+            params={draft.coapplicant_params}
+            onChange={(p) => setDraft({ ...draft, coapplicant_params: p })}
+            readOnly={!canEdit}
+          />
 
-      <VersionActionBar
-        errors={validation.errors}
-        changeSummary={changeSummary}
-        onChangeSummary={setChangeSummary}
-        onSave={() => handleSave(false)}
-        onSaveAndActivate={() => handleSave(true)}
-        showActivate
-        saving={saving}
-        hidden={!canEdit}
-      />
+          <OverallBandMappingEditor
+            rows={draft.overall_band_mapping}
+            onChange={(r) => setDraft({ ...draft, overall_band_mapping: r })}
+            readOnly={!canEdit}
+          />
+
+          <VersionActionBar
+            errors={validation.errors}
+            changeSummary={changeSummary}
+            onChangeSummary={setChangeSummary}
+            onSave={() => handleSave(false)}
+            onSaveAndActivate={() => handleSave(true)}
+            showActivate
+            saving={saving}
+            hidden={!canEdit}
+          />
+        </TabsContent>
+
+        <TabsContent value="lenders">
+          <BreLenderScorecardList />
+        </TabsContent>
+      </Tabs>
 
       <ConfirmActivateDialog
         open={confirmActivate !== null}
