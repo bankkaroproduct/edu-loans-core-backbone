@@ -66,7 +66,24 @@ Deno.serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
     let profile: { id: string | null; role: string };
 
-    if (bearer === SERVICE_ROLE) {
+    // Accept the project's service role key as a bootstrap credential.
+    // We probe it against admin.auth.admin (only valid service-role keys
+    // can list users) so we don't depend on string-equality with env.
+    let isServiceRole = false;
+    if (bearer && bearer !== SERVICE_ROLE) {
+      try {
+        const probe = createClient(SUPABASE_URL, bearer);
+        const { error: probeErr } = await probe.auth.admin.listUsers({
+          page: 1,
+          perPage: 1,
+        });
+        if (!probeErr) isServiceRole = true;
+      } catch (_) {
+        /* not a service role */
+      }
+    }
+
+    if (bearer === SERVICE_ROLE || isServiceRole) {
       profile = { id: null, role: "super_admin" };
     } else {
       const userClient = createClient(SUPABASE_URL, ANON, {
