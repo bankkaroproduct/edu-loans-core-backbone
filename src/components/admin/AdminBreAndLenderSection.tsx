@@ -913,11 +913,32 @@ function LenderCard({
       {/* Lender-specific score (Layer 2 — additive, display only) */}
       {typeof l.lender_specific_score === "number" && (
         <div className="flex items-center gap-2 flex-wrap text-xs">
-          <span className="text-muted-foreground">Lender score:</span>
+          <span className="text-muted-foreground">
+            {l.lender_name}-specific score:
+          </span>
           <span className="font-semibold text-foreground tabular-nums">
             {Math.round(l.lender_specific_score)}/100
           </span>
           <ProvenancePill tag={l.scorecard_provenance ?? null} />
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex items-center text-muted-foreground hover:text-foreground"
+                  aria-label="What is the lender-specific score?"
+                >
+                  <Info className="h-3 w-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs text-xs leading-snug">
+                This score is calculated using this lender's own scorecard.
+                Different lenders may weigh academics, CIBIL, income, FOIR,
+                collateral, university/course, and loan fit differently. This
+                is separate from the Global BRE score.
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       )}
 
