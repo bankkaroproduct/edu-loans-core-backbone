@@ -303,15 +303,18 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
                   <Badge variant="secondary" className={`${cfg.className} gap-1`}>
                     <Icon className="h-3 w-3" /> {cfg.label}
                   </Badge>
-                  {r.status === "success" && r.warning && (
-                    <Badge
-                      variant="outline"
-                      className="ml-1.5 gap-1 border-yellow-300 bg-yellow-50 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400 text-[10px] px-1.5"
-                      title={r.warning}
-                    >
-                      <AlertTriangle className="h-3 w-3" /> Warning
-                    </Badge>
-                  )}
+                  {r.status === "success" && r.warning && (() => {
+                    const count = r.warning.split(";").map((s) => s.trim()).filter(Boolean).length;
+                    return (
+                      <Badge
+                        variant="outline"
+                        className="ml-1.5 gap-1 border-yellow-300 bg-yellow-50 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400 text-[10px] px-1.5"
+                        title={r.warning}
+                      >
+                        <AlertTriangle className="h-3 w-3" /> {count > 1 ? `${count} warnings` : "Warning"}
+                      </Badge>
+                    );
+                  })()}
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground max-w-[220px]">
                   <span className="line-clamp-2">
