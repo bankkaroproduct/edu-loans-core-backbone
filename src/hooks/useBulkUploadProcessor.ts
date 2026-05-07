@@ -292,8 +292,9 @@ async function loadMasterData(): Promise<MasterData> {
   return { countries, intakeSessionMap, intakeSessionLabels, universityMap, qualifications, employmentTypes };
 }
 
-function validateRow(row: Record<string, string>, master: MasterData): { parsed: ParsedRow; errors: string[] } {
+function validateRow(row: Record<string, string>, master: MasterData): { parsed: ParsedRow; errors: string[]; warnings: string[] } {
   const errors: string[] = [];
+  const warnings: string[] = [];
 
   const val = (key: string) => (row[key] ?? "").trim();
   const firstName = val("student_first_name");
@@ -325,32 +326,39 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
   const workExpStr = val("work_experience");
   const coappWorkExpStr = val("co_applicant_work_experience");
   const testScoresRaw = val("test_scores");
+  const coapplicantName = val("coapplicant_name");
 
+  // ── HARD-REQUIRED (errors) ──
   if (!firstName) errors.push("student_first_name is required");
-  if (!lastName) errors.push("student_last_name is required");
   if (!phone) errors.push("student_phone is required");
   else if (!/^\+?[\d\s\-()]{7,15}$/.test(phone)) errors.push("Invalid phone format");
+
+  // ── SOFT-OPTIONAL (warnings if blank, errors only if provided + invalid) ──
+  if (!lastName) warnings.push("student_last_name missing");
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push("Invalid email format");
 
-  // Pincode: required, must be exactly 6 numeric digits.
+  // Pincode: optional. If provided, must be 6 digits. If blank → warning, no enrichment.
   let pincodeValid: string | undefined;
   if (!pincodeRaw) {
-    errors.push("Pincode is required.");
+    warnings.push("pincode missing — city/state not auto-filled");
   } else if (!/^\d{6}$/.test(pincodeRaw)) {
     errors.push("Pincode must be a valid 6-digit number.");
   } else {
     pincodeValid = pincodeRaw;
   }
 
-  if (!country) errors.push("intended_study_country is required");
-  else if (!master.countries.includes(country.toLowerCase())) errors.push(`Country "${country}" not found in master data`);
+  // intended_study_country: optional. If provided, must match master.
+  if (!country) {
+    warnings.push("intended_study_country missing");
+  } else if (!master.countries.includes(country.toLowerCase())) {
+    errors.push(`Country "${country}" not found in master data`);
+  }
 
-  // intake_session: composite quarter-format value, e.g. "Apr-Jun-2026".
-  // Internally decomposed into intake_term + intake_year for storage.
+  // intake_session: optional. If provided, must match master.
   let intakeTerm: string | undefined;
   let intakeYear: number | undefined;
   if (!intakeSessionStr) {
-    errors.push("intake_session is required");
+    warnings.push("intake_session missing");
   } else {
     const hit = master.intakeSessionMap.get(intakeSessionStr.toLowerCase());
     if (!hit) {
@@ -363,17 +371,27 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
     }
   }
 
-  if (!courseName) errors.push("course_name is required");
-  if (!loanStr) errors.push("loan_amount_required is required");
-  const loanAmount = parseFloat(loanStr.replace(/,/g, ""));
-  if (loanStr && (isNaN(loanAmount) || loanAmount <= 0)) errors.push("loan_amount_required must be a positive number");
+  if (!courseName) warnings.push("course_name missing");
+
+  // loan_amount_required: optional. If provided, must parse and be positive.
+  let loanAmount: number = NaN;
+  if (!loanStr) {
+    warnings.push("loan_amount_required missing");
+  } else {
+    loanAmount = parseFloat(loanStr.replace(/,/g, ""));
+    if (isNaN(loanAmount) || loanAmount <= 0) {
+      errors.push("loan_amount_required must be a positive number");
+    }
+  }
 
   let collateralAvailable: boolean | null = null;
   if (collateralStr) {
     collateralAvailable = normBool(collateralStr);
     if (collateralAvailable === null) errors.push('collateral_available must be yes/no/true/false');
   }
-  if (collateralAvailable === true && !collateralNotes) errors.push("collateral_notes required when collateral_available is yes");
+  if (collateralAvailable === true && !collateralNotes) {
+    warnings.push("collateral_notes missing while collateral_available is yes");
+  }
 
   let coapplicantIncome: number | undefined;
   if (coapplicantIncomeStr) {
@@ -402,6 +420,15 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
   const coapplicantAge = parseNumeric(coapplicantAgeStr, "coapplicant_age", { min: 18, max: 100 });
   const coapplicantCibil = parseNumeric(coapplicantCibilStr, "coapplicant_cibil", { min: 300, max: 900 });
   const workExp = parseNumeric(workExpStr, "work_experience", { min: 0, max: 60 });
+
+  // Soft warning if no academic marks at all were provided
+  if (!tenthStr && !twelfthStr && !gradStr && !qualificationScoreStr) {
+    warnings.push("academic marks missing");
+  }
+  // Soft warning if no co-applicant block provided
+  if (!coapplicantName && !coapplicantIncomeStr && !coapplicantEmployer) {
+    warnings.push("co-applicant details missing");
+  }
 
   // Score / total cross-validation — mirrors Add Lead's validateScoreTotalPair.
   const pairChecks: Array<[string, string, string]> = [
@@ -452,22 +479,21 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
   }
 
   const universityRaw = val("university_name");
+  if (!universityRaw) warnings.push("university_name missing");
 
   const parsed: ParsedRow = {
     rowNumber: 0,
     raw: row,
     student_first_name: firstName,
-    student_last_name: lastName,
+    student_last_name: lastName || undefined,
     student_phone: phone,
     student_email: email || undefined,
     student_whatsapp: val("student_whatsapp") || undefined,
     pincode: pincodeValid,
-    // city/state/district/tier/country_of_residence are derived server-side
-    // from pincode_master in processBulkUpload — no upload columns for these.
-    intended_study_country: country,
+    intended_study_country: country || undefined,
     intake_term: intakeTerm,
     intake_year: intakeYear,
-    course_name: courseName,
+    course_name: courseName || undefined,
     university_name: universityRaw || undefined,
     tenth_score: tenth,
     tenth_total: tenthTotal,
@@ -483,7 +509,7 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
     coapplicant_work_experience_months: coappWorkExpMonths,
     test_scores_raw: testScoresRaw || undefined,
     loan_amount_required: isNaN(loanAmount) ? undefined : loanAmount,
-    coapplicant_name: val("coapplicant_name") || undefined,
+    coapplicant_name: coapplicantName || undefined,
     coapplicant_relation: val("coapplicant_relation") || undefined,
     coapplicant_age: coapplicantAge,
     coapplicant_employment_type: employmentTypeNormalized,
@@ -497,7 +523,7 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
     partner_remark: val("partner_remark") || undefined,
   };
 
-  return { parsed, errors };
+  return { parsed, errors, warnings };
 }
 
 function detectIntraFileDuplicates(rows: ParsedRow[]): Map<number, { matchRow: number; reason: string }> {
