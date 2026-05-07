@@ -904,8 +904,22 @@ function LenderCard({
             <div className="text-[10px] font-mono text-muted-foreground mt-0.5">{codeSubtitle}</div>
           )}
         </div>
-        <FitBadge badge={l.badge} storedFit={stored?.fit ?? null} liveFit={ranking?.fitLabel ?? null} />
+        <div className="flex items-center gap-1.5 shrink-0">
+          <RiskBandBadge band={l.lender_risk_band ?? null} />
+          <FitBadge badge={l.badge} storedFit={stored?.fit ?? null} liveFit={ranking?.fitLabel ?? null} />
+        </div>
       </div>
+
+      {/* Lender-specific score (Layer 2 — additive, display only) */}
+      {typeof l.lender_specific_score === "number" && (
+        <div className="flex items-center gap-2 flex-wrap text-xs">
+          <span className="text-muted-foreground">Lender score:</span>
+          <span className="font-semibold text-foreground tabular-nums">
+            {Math.round(l.lender_specific_score)}/100
+          </span>
+          <ProvenancePill tag={l.scorecard_provenance ?? null} />
+        </div>
+      )}
 
       {/* Primary visible rate: source-backed route ROI range from the lender sheet.
           Indicative midpoint (formerly "Projected ROI") is shown as a smaller
@@ -934,28 +948,49 @@ function LenderCard({
         </div>
       )}
 
-      {l.projected_rate != null && (
+      {(l.risk_based_indicative_roi != null || l.projected_rate != null) && (
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <span>
-            Indicative midpoint:{" "}
-            <span className="font-medium tabular-nums text-foreground">~{l.projected_rate}%</span>
-          </span>
+          {l.risk_based_indicative_roi != null ? (
+            <span>
+              Profile-based indicative ROI:{" "}
+              <span className="font-medium tabular-nums text-foreground">
+                ~{round2(l.risk_based_indicative_roi)}%
+              </span>
+            </span>
+          ) : (
+            <span>
+              Indicative midpoint:{" "}
+              <span className="font-medium tabular-nums text-foreground">~{l.projected_rate}%</span>
+            </span>
+          )}
           <TooltipProvider delayDuration={150}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   type="button"
                   className="inline-flex items-center text-muted-foreground hover:text-foreground"
-                  aria-label="About indicative midpoint"
+                  aria-label="About indicative ROI"
                 >
                   <Info className="h-3 w-3" />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-xs text-xs">
-                <p>
-                  Calculated as the midpoint of the selected route ROI range. Use the
-                  source-backed ROI range for decisioning. Final lender offer may vary.
-                </p>
+                {l.risk_based_indicative_roi != null ? (
+                  <p>
+                    Calculated within the source-backed ROI range using lender-specific risk
+                    factors. This is not a final lender offer.
+                  </p>
+                ) : (
+                  <p>
+                    Calculated as the midpoint of the selected route ROI range. Use the
+                    source-backed ROI range for decisioning. Final lender offer may vary.
+                  </p>
+                )}
+                {l.risk_based_indicative_roi != null && l.projected_rate != null && (
+                  <p className="mt-1.5 opacity-90">
+                    Simple midpoint reference: ~{l.projected_rate}%.
+                  </p>
+                )}
                 {l.effective_rate_min != null && l.effective_rate_max != null && (
                   <p className="mt-1.5 opacity-90">
                     Effective ROI from lender sheet, for reference only:{" "}
@@ -1033,6 +1068,15 @@ function LenderCard({
         </div>
       )}
 
+      {/* Lender-specific rationale chips (Layer 2) — deduped against existing chips */}
+      <LenderSpecificRationaleChips
+        chips={l.lender_specific_rationale ?? l.lender_rationale_chips ?? []}
+        existingPhase3={ranking?.rationale ?? []}
+        coverageCount={coverageItems.length}
+        loanFitsRange={l.projected_loan_amount != null && l.projected_loan_amount > 0}
+        showCollateralReviewChip={showCollateralReviewChip}
+      />
+
       {/* Recommendation rationale — bullets shown only when backed by real data */}
       <RecommendationRationale
         storedReason={stored?.reason ?? null}
@@ -1041,6 +1085,11 @@ function LenderCard({
         coverageCount={coverageItems.length}
         processingTimeDays={stored?.processingTimeDays ?? null}
       />
+
+      {/* Score breakdown — collapsible, collapsed by default */}
+      {Array.isArray(l.score_breakdown) && l.score_breakdown.length > 0 && (
+        <ScoreBreakdown rows={l.score_breakdown} />
+      )}
     </li>
   );
 }
@@ -1375,6 +1424,186 @@ function ResolutionNotes({ resolution }: { resolution: BuildProfileResolution | 
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+// ============================================================================
+// Layer 2 — Lender-specific BRE display helpers (UI-only, additive).
+// No mutation of engine output, ranking, fit, or stored data.
+// ============================================================================
+
+type ProvTag = "source_backed" | "inferred" | "proposed" | "needs_business_validation";
+
+function ProvenancePill({ tag }: { tag: ProvTag | null | undefined }) {
+  if (!tag) return null;
+  const map: Record<ProvTag, { label: string; cls: string }> = {
+    source_backed: {
+      label: "Source-backed",
+      cls: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+    },
+    inferred: {
+      label: "Inferred",
+      cls: "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300",
+    },
+    proposed: {
+      label: "Proposed",
+      cls: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+    },
+    needs_business_validation: {
+      label: "Needs validation",
+      cls: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+    },
+  };
+  const m = map[tag];
+  return (
+    <span className={`inline-flex items-center rounded-md border px-1.5 py-0 text-[10px] ${m.cls}`}>
+      {m.label}
+    </span>
+  );
+}
+
+function RiskBandBadge({
+  band,
+}: {
+  band: BreResult["eligible_lenders"][number]["lender_risk_band"] | null;
+}) {
+  if (!band) return null;
+  const map = {
+    "Low Risk": "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+    "Medium Risk": "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+    "High Risk": "border-destructive/40 bg-destructive/10 text-destructive",
+    "Needs Review": "border-muted-foreground/30 bg-muted/40 text-muted-foreground",
+    "Not Eligible": "border-destructive/40 bg-destructive/10 text-destructive",
+  } as const;
+  const cls = map[band as keyof typeof map] ?? map["Needs Review"];
+  return (
+    <Badge variant="outline" className={`text-[10px] px-1.5 py-0 shrink-0 ${cls}`}>
+      {band}
+    </Badge>
+  );
+}
+
+function LenderSpecificRationaleChips({
+  chips,
+  existingPhase3,
+  coverageCount,
+  loanFitsRange,
+  showCollateralReviewChip,
+}: {
+  chips: Array<{
+    key: string;
+    label: string;
+    tone: "positive" | "neutral" | "negative";
+    provenance: ProvTag;
+  }>;
+  existingPhase3: string[];
+  coverageCount: number;
+  loanFitsRange: boolean;
+  showCollateralReviewChip: boolean;
+}) {
+  if (!chips || chips.length === 0) return null;
+
+  // Build dedup set: normalized labels of chips/bullets already shown elsewhere.
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const taken = new Set<string>();
+  existingPhase3.forEach((r) => taken.add(norm(r)));
+  if (loanFitsRange) taken.add(norm("Loan amount fits lender range"));
+  if (coverageCount > 0) taken.add(norm(`Covers ${coverageCount} expense categories`));
+  if (showCollateralReviewChip) taken.add(norm("Collateral review needed"));
+
+  const filtered = chips.filter((c) => !taken.has(norm(c.label)));
+  if (filtered.length === 0) return null;
+
+  const toneCls: Record<"positive" | "neutral" | "negative", string> = {
+    positive: "border-emerald-500/30 bg-emerald-500/5 text-foreground/90",
+    neutral: "border-border bg-muted/40 text-foreground/80",
+    negative: "border-destructive/30 bg-destructive/5 text-foreground/90",
+  };
+
+  return (
+    <div className="space-y-1 pt-0.5">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+        Lender-specific factors
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        {filtered.map((c) => (
+          <span
+            key={c.key}
+            className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] ${toneCls[c.tone]}`}
+            title={c.provenance.replace(/_/g, " ")}
+          >
+            {c.label}
+            <ProvenancePill tag={c.provenance} />
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const FACTOR_LABELS: Record<string, string> = {
+  academics: "Academics",
+  backlogs: "Backlogs",
+  university_course: "University / course",
+  cibil: "CIBIL",
+  income: "Income",
+  emi_foir: "EMI / FOIR",
+  income_stability: "Income stability",
+  collateral_route: "Collateral / route",
+  loan_amount_fit: "Loan amount fit",
+  coverage: "Coverage",
+  processing_ops: "Processing / ops",
+};
+
+function ScoreBreakdown({
+  rows,
+}: {
+  rows: NonNullable<BreResult["eligible_lenders"][number]["score_breakdown"]>;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="pt-0.5">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="text-[11px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+        aria-expanded={open}
+      >
+        {open ? "Hide" : "View"} lender-specific score breakdown
+      </button>
+      {open && (
+        <div className="mt-1.5 rounded-md border border-border bg-muted/20 overflow-hidden">
+          <table className="w-full text-[11px]">
+            <thead className="bg-muted/40 text-muted-foreground">
+              <tr>
+                <th className="text-left px-2 py-1 font-medium">Factor</th>
+                <th className="text-right px-2 py-1 font-medium">Score</th>
+                <th className="text-right px-2 py-1 font-medium">Weighted</th>
+                <th className="text-left px-2 py-1 font-medium">Reason</th>
+                <th className="text-left px-2 py-1 font-medium">Source</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.factor} className="border-t border-border/60">
+                  <td className="px-2 py-1 text-foreground/90">
+                    {FACTOR_LABELS[r.factor] ?? r.factor}
+                  </td>
+                  <td className="px-2 py-1 text-right tabular-nums">{Math.round(r.raw_score)}</td>
+                  <td className="px-2 py-1 text-right tabular-nums text-muted-foreground">
+                    {round2(r.weighted)}
+                  </td>
+                  <td className="px-2 py-1 text-muted-foreground">{r.note ?? "—"}</td>
+                  <td className="px-2 py-1">
+                    <ProvenancePill tag={r.provenance} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
