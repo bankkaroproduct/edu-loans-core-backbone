@@ -1589,7 +1589,7 @@ export type Database = {
           collateral_notes: string | null
           country_of_residence: string | null
           course_category: string | null
-          course_name: string
+          course_name: string | null
           created_at: string
           current_stage: Database["public"]["Enums"]["lead_stage_enum"]
           current_status: Database["public"]["Enums"]["lead_status_enum"]
@@ -1598,9 +1598,9 @@ export type Database = {
           fraud_flag: boolean
           highest_qualification: string | null
           id: string
-          intake_term: string
-          intake_year: number
-          intended_study_country: string
+          intake_term: string | null
+          intake_year: number | null
+          intended_study_country: string | null
           is_archived: boolean
           lead_authenticity: string
           lead_id: string | null
@@ -1645,7 +1645,7 @@ export type Database = {
           collateral_notes?: string | null
           country_of_residence?: string | null
           course_category?: string | null
-          course_name: string
+          course_name?: string | null
           created_at?: string
           current_stage?: Database["public"]["Enums"]["lead_stage_enum"]
           current_status?: Database["public"]["Enums"]["lead_status_enum"]
@@ -1654,9 +1654,9 @@ export type Database = {
           fraud_flag?: boolean
           highest_qualification?: string | null
           id?: string
-          intake_term: string
-          intake_year: number
-          intended_study_country: string
+          intake_term?: string | null
+          intake_year?: number | null
+          intended_study_country?: string | null
           is_archived?: boolean
           lead_authenticity?: string
           lead_id?: string | null
@@ -1701,7 +1701,7 @@ export type Database = {
           collateral_notes?: string | null
           country_of_residence?: string | null
           course_category?: string | null
-          course_name?: string
+          course_name?: string | null
           created_at?: string
           current_stage?: Database["public"]["Enums"]["lead_stage_enum"]
           current_status?: Database["public"]["Enums"]["lead_status_enum"]
@@ -1710,9 +1710,9 @@ export type Database = {
           fraud_flag?: boolean
           highest_qualification?: string | null
           id?: string
-          intake_term?: string
-          intake_year?: number
-          intended_study_country?: string
+          intake_term?: string | null
+          intake_year?: number | null
+          intended_study_country?: string | null
           is_archived?: boolean
           lead_authenticity?: string
           lead_id?: string | null
