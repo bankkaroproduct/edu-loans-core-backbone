@@ -1109,7 +1109,15 @@ function LenderCard({
 
       {/* Score breakdown — collapsible, collapsed by default */}
       {Array.isArray(l.score_breakdown) && l.score_breakdown.length > 0 && (
-        <ScoreBreakdown rows={l.score_breakdown} />
+        <ScoreBreakdown
+          rows={l.score_breakdown}
+          lenderName={l.lender_name}
+          lenderCode={l.lender_code}
+          score={l.lender_specific_score ?? null}
+          riskBand={l.lender_risk_band ?? null}
+          provenance={l.scorecard_provenance ?? null}
+          version={l.scorecard_version ?? null}
+        />
       )}
     </li>
   );
