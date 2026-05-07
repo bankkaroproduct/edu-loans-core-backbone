@@ -114,7 +114,7 @@ export default function Login() {
 }
 
 function LoginForm() {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -123,6 +123,21 @@ function LoginForm() {
     e.preventDefault();
     setErrorMsg(null);
     setSubmitting(true);
+
+    // Resolve username -> email if needed. Emails fall through unchanged.
+    let email = identifier.trim();
+    if (email && !email.includes("@")) {
+      const { data: resolved, error: resolveErr } = await supabase.rpc(
+        "resolve_login_email",
+        { _identifier: email }
+      );
+      if (resolveErr || !resolved) {
+        setErrorMsg("Invalid username or password.");
+        setSubmitting(false);
+        return;
+      }
+      email = resolved as string;
+    }
 
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
@@ -169,8 +184,15 @@ function LoginForm() {
         </Alert>
       )}
       <div className="space-y-2">
-        <Label htmlFor="login-email">Email</Label>
-        <Input id="login-email" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required />
+        <Label htmlFor="login-identifier">Email / Username</Label>
+        <Input
+          id="login-identifier"
+          type="text"
+          autoComplete="username"
+          value={identifier}
+          onChange={e => setIdentifier(e.target.value)}
+          required
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="login-password">Password</Label>

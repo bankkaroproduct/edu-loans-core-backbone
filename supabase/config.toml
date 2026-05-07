@@ -1,1 +1,4 @@
 project_id = "jswmojgsemfskbyrtpps"
+
+[functions.bootstrap-partner-accounts]
+verify_jwt = false
