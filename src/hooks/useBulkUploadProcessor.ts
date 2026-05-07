@@ -711,7 +711,7 @@ export async function processBulkUpload(
 
   for (let i = 0; i < validatedRows.length; i++) {
     onProgress(i + 1, totalRows);
-    const { parsed: row, errors } = validatedRows[i];
+    const { parsed: row, errors, warnings } = validatedRows[i];
 
     // Validation failures
     if (errors.length > 0) {
