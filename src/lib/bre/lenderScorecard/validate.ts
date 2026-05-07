@@ -3,12 +3,9 @@
 
 import type { ProvenanceTag, ScorecardFactorKey } from "./types";
 import type { NormalizedScorecard } from "./normalizeScorecard";
+import type { ValidationError } from "../validate";
 
-export interface ScorecardValidationError {
-  bucket?: string;
-  param_key?: string;
-  message: string;
-}
+export type ScorecardValidationError = ValidationError;
 
 const VALID_PROV: ProvenanceTag[] = [
   "source_backed",
