@@ -27,6 +27,7 @@ import type {
   ScoringParameter,
 } from "./types";
 import { REASON, getMaxCapForRoute } from "./reasons";
+import { ENABLE_LENDER_SCORECARD, evaluateLenderScorecard } from "./lenderScorecard";
 
 /**
  * Universal business cap for co-applicant age. Applied before per-lender
@@ -509,6 +510,32 @@ export function evaluate(
     if (eligibility_status !== "Rejected") {
       rejection_reasons.unshift(REASON.hard_gate_failed());
       eligibility_status = "Rejected";
+    }
+  }
+
+  // ---- Layer 2: Lender-specific BRE scorecard (ADDITIVE) ----
+  // Attaches per-lender risk score / band / rationale / risk-based ROI to each
+  // result. Does NOT change ranking, recommendation_rank, fit_category,
+  // eligibility, projected_rate, projected_loan_amount, or any persisted data.
+  if (ENABLE_LENDER_SCORECARD) {
+    const lenderById = new Map(lenderRules.map((l) => [l.lender_id, l] as const));
+    for (const r of eligible_lenders) {
+      const lender = lenderById.get(r.lender_id);
+      if (!lender) continue;
+      try {
+        const sc = evaluateLenderScorecard(profile, lender, r);
+        r.lender_specific_score = sc.lender_specific_score;
+        r.lender_risk_band = r.eligible ? sc.lender_risk_band : "Not Eligible";
+        r.risk_based_indicative_roi = sc.risk_based_indicative_roi;
+        r.lender_indicative_roi = sc.lender_indicative_roi;
+        r.lender_specific_rationale = sc.lender_specific_rationale;
+        r.lender_rationale_chips = sc.lender_rationale_chips;
+        r.score_breakdown = sc.score_breakdown;
+        r.scorecard_provenance = sc.scorecard_provenance;
+        r.scorecard_version = sc.scorecard_version;
+      } catch {
+        // Layer 2 must never break Layer 1 output.
+      }
     }
   }
 

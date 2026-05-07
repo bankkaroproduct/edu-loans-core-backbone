@@ -76,6 +76,7 @@ export type Database = {
           lender_id: string
           loan_caps: Json
           policy: Json
+          scorecard: Json | null
           version_number: number
         }
         Insert: {
@@ -92,6 +93,7 @@ export type Database = {
           lender_id: string
           loan_caps?: Json
           policy?: Json
+          scorecard?: Json | null
           version_number: number
         }
         Update: {
@@ -108,6 +110,7 @@ export type Database = {
           lender_id?: string
           loan_caps?: Json
           policy?: Json
+          scorecard?: Json | null
           version_number?: number
         }
         Relationships: []

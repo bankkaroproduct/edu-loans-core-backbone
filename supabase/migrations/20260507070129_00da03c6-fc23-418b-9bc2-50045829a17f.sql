@@ -1,0 +1,2 @@
+ALTER TABLE public.bre_lender_rules ADD COLUMN IF NOT EXISTS scorecard JSONB NULL;
+COMMENT ON COLUMN public.bre_lender_rules.scorecard IS 'Optional lender-specific BRE scorecard config (Layer 2). Nullable. Versioned with the lender rule row. Engine reads this additively without changing Generic BRE behavior or ranking.';
