@@ -347,11 +347,11 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
     pincodeValid = pincodeRaw;
   }
 
-  // intended_study_country: optional. If provided, must match master.
+  // intended_study_country: optional. If provided but not in master → warning, save raw.
   if (!country) {
     warnings.push("intended_study_country missing");
   } else if (!master.countries.includes(country.toLowerCase())) {
-    errors.push(`Country "${country}" not found in master data`);
+    warnings.push(`Country "${country}" not matched with master — saved as-is for admin review`);
   }
 
   // intake_session: optional. If provided, must match master.
@@ -462,7 +462,8 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
   if (qualification) {
     const match = matchHighestQualification(qualification, master.qualifications);
     if (!match) {
-      errors.push(`highest_qualification must be one of: ${master.qualifications.join(" | ")}`);
+      warnings.push(`highest_qualification "${qualification}" not matched with master — saved as-is for admin review`);
+      qualificationNormalized = qualification.trim();
     } else {
       qualificationNormalized = match;
     }
@@ -472,7 +473,8 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
   if (coapplicantEmploymentTypeRaw) {
     const match = matchEmploymentType(coapplicantEmploymentTypeRaw, master.employmentTypes);
     if (!match) {
-      errors.push(`coapplicant_employment_type must be one of: ${master.employmentTypes.join(" | ")}`);
+      warnings.push(`coapplicant_employment_type "${coapplicantEmploymentTypeRaw}" not matched with master — saved as-is for admin review`);
+      employmentTypeNormalized = coapplicantEmploymentTypeRaw.trim();
     } else {
       employmentTypeNormalized = match;
     }
