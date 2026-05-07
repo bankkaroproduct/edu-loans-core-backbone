@@ -857,9 +857,11 @@ export async function processBulkUpload(
     });
 
     successCount++;
+    const allWarnings = [...warnings];
+    if (loc.warning) allWarnings.push(loc.warning);
     results.push({
       rowNumber: row.rowNumber, raw: row.raw, status: "success", reason: "Lead created successfully",
-      warning: loc.warning ?? undefined,
+      warning: allWarnings.length > 0 ? allWarnings.join("; ") : undefined,
       createdLeadId: leadData.id, createdLeadDisplayId: leadData.lead_id ?? undefined,
     });
     await supabase.from("bulk_upload_row_results").insert({
