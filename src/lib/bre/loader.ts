@@ -101,6 +101,7 @@ export async function loadActiveLenderRules(): Promise<BreLenderRule[]> {
       moratorium_months: null,
       notes: null,
     },
+    scorecard: (r as { scorecard?: unknown }).scorecard ?? null,
   }));
 }
 
