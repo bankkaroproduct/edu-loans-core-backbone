@@ -84,12 +84,14 @@ export interface RowResult {
 
 export type ProcessingStage = "idle" | "parsing" | "validating" | "processing" | "completed" | "error";
 
-/** Required-fields contract — unchanged business rules. */
+/**
+ * Required-fields contract for partial-lead uploads.
+ * Only these two columns must contain a value on each row.
+ * All other template columns may be left blank and will be saved as NULL
+ * (with a non-blocking warning surfaced in the row result).
+ */
 const REQUIRED_HEADERS = [
-  "student_first_name", "student_last_name", "student_phone",
-  "pincode",
-  "intended_study_country", "intake_session",
-  "course_name", "loan_amount_required",
+  "student_first_name", "student_phone",
 ];
 
 /**
