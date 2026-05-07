@@ -300,6 +300,43 @@ export interface LenderMatchResult {
   pf_pct_max?: number | null;
   pf_flat?: number | null;
   pf_gst_applicable?: boolean | null;
+  /**
+   * Layer 2 — Lender-specific BRE scorecard output. Additive only.
+   * NEVER used by Generic BRE ranking, recommendation_rank, fit_category,
+   * eligibility, or persisted lead data.
+   */
+  lender_specific_score?: number | null;
+  lender_risk_band?:
+    | "Low Risk"
+    | "Medium Risk"
+    | "High Risk"
+    | "Needs Review"
+    | "Not Eligible"
+    | null;
+  risk_based_indicative_roi?: number | null;
+  lender_indicative_roi?: number | null;
+  lender_specific_rationale?: Array<{
+    key: string;
+    label: string;
+    tone: "positive" | "neutral" | "negative";
+    provenance: "source_backed" | "inferred" | "proposed" | "needs_business_validation";
+  }>;
+  lender_rationale_chips?: Array<{
+    key: string;
+    label: string;
+    tone: "positive" | "neutral" | "negative";
+    provenance: "source_backed" | "inferred" | "proposed" | "needs_business_validation";
+  }>;
+  score_breakdown?: Array<{
+    factor: string;
+    weight: number;
+    raw_score: number;
+    weighted: number;
+    provenance: "source_backed" | "inferred" | "proposed" | "needs_business_validation";
+    note?: string;
+  }>;
+  scorecard_provenance?: "source_backed" | "inferred" | "proposed" | "needs_business_validation";
+  scorecard_version?: string;
 }
 
 export interface BreResult {
