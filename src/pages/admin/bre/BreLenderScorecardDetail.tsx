@@ -334,6 +334,31 @@ export default function BreLenderScorecardDetail() {
         </CardContent>
       </Card>
 
+      {/* Inline validation summary — visible so admins see exactly what blocks save. */}
+      {canEdit && validation.length > 0 && (
+        <Card className="border-destructive/40 bg-destructive/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-4 w-4" />
+              {validation.length} issue{validation.length === 1 ? "" : "s"} blocking save
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Fix these to enable <strong>Save as new version</strong> and <strong>Save &amp; activate</strong>.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-1 text-sm text-destructive">
+              {validation.map((e, i) => (
+                <li key={i}>
+                  • {e.param_key ? <span className="font-medium">{factorLabel(e.param_key as ScorecardFactorKey)}: </span> : null}
+                  {e.message}
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Factor weight groups */}
       {FACTOR_GROUPS.map((group) => (
         <Card key={group.title}>
