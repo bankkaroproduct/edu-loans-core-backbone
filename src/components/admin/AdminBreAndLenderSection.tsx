@@ -904,8 +904,22 @@ function LenderCard({
             <div className="text-[10px] font-mono text-muted-foreground mt-0.5">{codeSubtitle}</div>
           )}
         </div>
-        <FitBadge badge={l.badge} storedFit={stored?.fit ?? null} liveFit={ranking?.fitLabel ?? null} />
+        <div className="flex items-center gap-1.5 shrink-0">
+          <RiskBandBadge band={l.lender_risk_band ?? null} />
+          <FitBadge badge={l.badge} storedFit={stored?.fit ?? null} liveFit={ranking?.fitLabel ?? null} />
+        </div>
       </div>
+
+      {/* Lender-specific score (Layer 2 — additive, display only) */}
+      {typeof l.lender_specific_score === "number" && (
+        <div className="flex items-center gap-2 flex-wrap text-xs">
+          <span className="text-muted-foreground">Lender score:</span>
+          <span className="font-semibold text-foreground tabular-nums">
+            {Math.round(l.lender_specific_score)}/100
+          </span>
+          <ProvenancePill tag={l.scorecard_provenance ?? null} />
+        </div>
+      )}
 
       {/* Primary visible rate: source-backed route ROI range from the lender sheet.
           Indicative midpoint (formerly "Projected ROI") is shown as a smaller
