@@ -619,7 +619,7 @@ export async function processBulkUpload(
   onStageChange("validating");
   const master = await loadMasterData();
 
-  const validatedRows: { parsed: ParsedRow; errors: string[] }[] = [];
+  const validatedRows: { parsed: ParsedRow; errors: string[]; warnings: string[] }[] = [];
   for (let i = 0; i < parsed.rows.length; i++) {
     const result = validateRow(parsed.rows[i], master);
     result.parsed.rowNumber = i + 1;
