@@ -207,6 +207,9 @@ export interface BreLenderRule {
   collateral_ltv: LenderCollateralLtv;
   coverage: LenderCoverage;
   policy: LenderPolicy;
+  // Layer 2 — lender-specific scorecard config (read-only passthrough from DB JSONB).
+  // Optional: when null/undefined, callers should fall back to the seed catalog.
+  scorecard?: unknown;
 }
 
 // ---------- Profile input ----------

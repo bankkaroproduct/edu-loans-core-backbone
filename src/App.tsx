@@ -27,6 +27,7 @@ import BreDashboard from "./pages/admin/bre/BreDashboard";
 import BreLenderRulesList from "./pages/admin/bre/BreLenderRulesList";
 import BreLenderRuleEditor from "./pages/admin/bre/BreLenderRuleEditor";
 import BreScoringConfigEditor from "./pages/admin/bre/BreScoringConfigEditor";
+import BreLenderScorecardDetail from "./pages/admin/bre/BreLenderScorecardDetail";
 import BreVersionHistory from "./pages/admin/bre/BreVersionHistory";
 import BreAuditLog from "./pages/admin/bre/BreAuditLog";
 import BreSimulate from "./pages/admin/bre/BreSimulate";
@@ -118,6 +119,7 @@ const App = () => (
             {/* BRE Engine — Admin only, additionally gated by bre_permission */}
             <Route path="/admin/bre" element={<AdminRoute><BreAccessGate><BreDashboard /></BreAccessGate></AdminRoute>} />
             <Route path="/admin/bre/scoring" element={<AdminRoute><BreAccessGate><BreScoringConfigEditor /></BreAccessGate></AdminRoute>} />
+            <Route path="/admin/bre/scoring/lenders/:lenderId" element={<AdminRoute><BreAccessGate><BreLenderScorecardDetail /></BreAccessGate></AdminRoute>} />
             <Route path="/admin/bre/lenders" element={<AdminRoute><BreAccessGate><BreLenderRulesList /></BreAccessGate></AdminRoute>} />
             <Route path="/admin/bre/lenders/:lenderId" element={<AdminRoute><BreAccessGate><BreLenderRuleEditor /></BreAccessGate></AdminRoute>} />
             <Route path="/admin/bre/versions" element={<AdminRoute><BreAccessGate><BreVersionHistory /></BreAccessGate></AdminRoute>} />
