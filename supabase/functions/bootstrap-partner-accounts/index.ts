@@ -50,19 +50,13 @@ Deno.serve(async (req) => {
     const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // 1) Verify caller is admin / super_admin
+    // 1) Auth: accept either an admin user JWT, or the service-role key
+    //    (used for the one-time bootstrap). Both paths require explicit credentials.
     const authHeader = req.headers.get("Authorization") ?? "";
-    if (!authHeader.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const userClient = createClient(SUPABASE_URL, ANON, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: userData, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !userData.user) {
+    const bearer = authHeader.startsWith("Bearer ")
+      ? authHeader.slice(7)
+      : "";
+    if (!bearer) {
       return new Response(JSON.stringify({ error: "unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -70,16 +64,33 @@ Deno.serve(async (req) => {
     }
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
-    const { data: profile } = await admin
-      .from("users")
-      .select("id, role")
-      .eq("auth_user_id", userData.user.id)
-      .maybeSingle();
-    if (!profile || (profile.role !== "admin" && profile.role !== "super_admin")) {
-      return new Response(JSON.stringify({ error: "forbidden: admin only" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    let profile: { id: string | null; role: string };
+
+    if (bearer === SERVICE_ROLE) {
+      profile = { id: null, role: "super_admin" };
+    } else {
+      const userClient = createClient(SUPABASE_URL, ANON, {
+        global: { headers: { Authorization: authHeader } },
       });
+      const { data: userData, error: userErr } = await userClient.auth.getUser();
+      if (userErr || !userData.user) {
+        return new Response(JSON.stringify({ error: "unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: p } = await admin
+        .from("users")
+        .select("id, role")
+        .eq("auth_user_id", userData.user.id)
+        .maybeSingle();
+      if (!p || (p.role !== "admin" && p.role !== "super_admin")) {
+        return new Response(JSON.stringify({ error: "forbidden: admin only" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      profile = { id: p.id, role: p.role };
     }
 
     const body = await req.json().catch(() => ({}));
