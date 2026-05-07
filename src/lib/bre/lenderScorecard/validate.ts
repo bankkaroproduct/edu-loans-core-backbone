@@ -47,23 +47,23 @@ export function validateLenderScorecard(sc: NormalizedScorecard): ScorecardValid
       continue;
     }
     if (typeof w.weight !== "number" || !Number.isFinite(w.weight)) {
-      errors.push({ bucket: "weights", param_key: w.factor, message: `Weight must be a number` });
+      errors.push({ bucket: "weights", param_key: w.factor, message: `Factor weight cannot be blank — enter a number 0–100.` });
       continue;
     }
     if (w.weight < 0 || w.weight > 100) {
-      errors.push({ bucket: "weights", param_key: w.factor, message: `Weight must be between 0 and 100` });
+      errors.push({ bucket: "weights", param_key: w.factor, message: `Factor weight must be between 0 and 100.` });
     }
     if (!Number.isInteger(w.weight)) {
-      errors.push({ bucket: "weights", param_key: w.factor, message: `Weight must be a whole number` });
+      errors.push({ bucket: "weights", param_key: w.factor, message: `Factor weight must be a whole number.` });
     }
     if (!VALID_PROV.includes(w.provenance)) {
-      errors.push({ bucket: "weights", param_key: w.factor, message: `Invalid provenance` });
+      errors.push({ bucket: "weights", param_key: w.factor, message: `Invalid provenance selected.` });
     }
-    sum += w.weight;
+    sum += Number.isFinite(w.weight) ? w.weight : 0;
   }
 
   if (sum !== 100) {
-    errors.push({ bucket: "weights", message: `Weights must sum to 100 (got ${sum})` });
+    errors.push({ bucket: "weights", message: `Weights must total 100. Current total: ${sum}.` });
   }
 
   // Income floor
