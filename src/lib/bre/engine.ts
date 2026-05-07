@@ -27,6 +27,7 @@ import type {
   ScoringParameter,
 } from "./types";
 import { REASON, getMaxCapForRoute } from "./reasons";
+import { ENABLE_LENDER_SCORECARD, evaluateLenderScorecard } from "./lenderScorecard";
 
 /**
  * Universal business cap for co-applicant age. Applied before per-lender
