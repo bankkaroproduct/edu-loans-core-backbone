@@ -1068,6 +1068,15 @@ function LenderCard({
         </div>
       )}
 
+      {/* Lender-specific rationale chips (Layer 2) — deduped against existing chips */}
+      <LenderSpecificRationaleChips
+        chips={l.lender_specific_rationale ?? l.lender_rationale_chips ?? []}
+        existingPhase3={ranking?.rationale ?? []}
+        coverageCount={coverageItems.length}
+        loanFitsRange={l.projected_loan_amount != null && l.projected_loan_amount > 0}
+        showCollateralReviewChip={showCollateralReviewChip}
+      />
+
       {/* Recommendation rationale — bullets shown only when backed by real data */}
       <RecommendationRationale
         storedReason={stored?.reason ?? null}
@@ -1076,6 +1085,11 @@ function LenderCard({
         coverageCount={coverageItems.length}
         processingTimeDays={stored?.processingTimeDays ?? null}
       />
+
+      {/* Score breakdown — collapsible, collapsed by default */}
+      {Array.isArray(l.score_breakdown) && l.score_breakdown.length > 0 && (
+        <ScoreBreakdown rows={l.score_breakdown} />
+      )}
     </li>
   );
 }
