@@ -948,28 +948,49 @@ function LenderCard({
         </div>
       )}
 
-      {l.projected_rate != null && (
+      {(l.risk_based_indicative_roi != null || l.projected_rate != null) && (
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <span>
-            Indicative midpoint:{" "}
-            <span className="font-medium tabular-nums text-foreground">~{l.projected_rate}%</span>
-          </span>
+          {l.risk_based_indicative_roi != null ? (
+            <span>
+              Profile-based indicative ROI:{" "}
+              <span className="font-medium tabular-nums text-foreground">
+                ~{round2(l.risk_based_indicative_roi)}%
+              </span>
+            </span>
+          ) : (
+            <span>
+              Indicative midpoint:{" "}
+              <span className="font-medium tabular-nums text-foreground">~{l.projected_rate}%</span>
+            </span>
+          )}
           <TooltipProvider delayDuration={150}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   type="button"
                   className="inline-flex items-center text-muted-foreground hover:text-foreground"
-                  aria-label="About indicative midpoint"
+                  aria-label="About indicative ROI"
                 >
                   <Info className="h-3 w-3" />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-xs text-xs">
-                <p>
-                  Calculated as the midpoint of the selected route ROI range. Use the
-                  source-backed ROI range for decisioning. Final lender offer may vary.
-                </p>
+                {l.risk_based_indicative_roi != null ? (
+                  <p>
+                    Calculated within the source-backed ROI range using lender-specific risk
+                    factors. This is not a final lender offer.
+                  </p>
+                ) : (
+                  <p>
+                    Calculated as the midpoint of the selected route ROI range. Use the
+                    source-backed ROI range for decisioning. Final lender offer may vary.
+                  </p>
+                )}
+                {l.risk_based_indicative_roi != null && l.projected_rate != null && (
+                  <p className="mt-1.5 opacity-90">
+                    Simple midpoint reference: ~{l.projected_rate}%.
+                  </p>
+                )}
                 {l.effective_rate_min != null && l.effective_rate_max != null && (
                   <p className="mt-1.5 opacity-90">
                     Effective ROI from lender sheet, for reference only:{" "}
