@@ -549,12 +549,17 @@ function detectIntraFileDuplicates(rows: ParsedRow[]): Map<number, { matchRow: n
     }
     if (email) emailMap.set(email, row.rowNumber);
 
-    const nameKey = `${(row.student_first_name ?? "").toLowerCase()} ${(row.student_last_name ?? "").toLowerCase()}|${row.intake_term?.toLowerCase()}|${row.intake_year}`;
-    if (nameKey.length > 5 && nameIntakeMap.has(nameKey)) {
-      dups.set(row.rowNumber, { matchRow: nameIntakeMap.get(nameKey)!, reason: `Duplicate name+intake matches row ${nameIntakeMap.get(nameKey)}` });
-      continue;
+    // Only run name+intake dedup when intake_term AND intake_year are present;
+    // otherwise two unrelated rows with the same name and blank intake would
+    // be falsely flagged as duplicates.
+    if (row.intake_term && row.intake_year) {
+      const nameKey = `${(row.student_first_name ?? "").toLowerCase()} ${(row.student_last_name ?? "").toLowerCase()}|${row.intake_term.toLowerCase()}|${row.intake_year}`;
+      if (nameKey.length > 5 && nameIntakeMap.has(nameKey)) {
+        dups.set(row.rowNumber, { matchRow: nameIntakeMap.get(nameKey)!, reason: `Duplicate name+intake matches row ${nameIntakeMap.get(nameKey)}` });
+        continue;
+      }
+      if (nameKey.length > 5) nameIntakeMap.set(nameKey, row.rowNumber);
     }
-    if (nameKey.length > 5) nameIntakeMap.set(nameKey, row.rowNumber);
   }
 
   return dups;
