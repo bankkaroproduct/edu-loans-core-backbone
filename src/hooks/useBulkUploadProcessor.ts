@@ -347,11 +347,11 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
     pincodeValid = pincodeRaw;
   }
 
-  // intended_study_country: optional. If provided, must match master.
+  // intended_study_country: optional. If provided but not in master → warning, save raw.
   if (!country) {
     warnings.push("intended_study_country missing");
   } else if (!master.countries.includes(country.toLowerCase())) {
-    errors.push(`Country "${country}" not found in master data`);
+    warnings.push(`Country "${country}" not matched with master — saved as-is for admin review`);
   }
 
   // intake_session: optional. If provided, must match master.
