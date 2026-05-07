@@ -53,6 +53,7 @@ import {
   type DisplayRankingOutput,
 } from "@/lib/bre/displayRanking";
 import { getPremiereMatches } from "@/lib/premiere/lookup";
+import { getSeedForLender } from "@/lib/bre/lenderScorecard/seeds";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Lead = Tables<"student_leads">;
