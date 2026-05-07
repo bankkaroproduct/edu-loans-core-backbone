@@ -1587,10 +1587,26 @@ const FACTOR_LABELS: Record<string, string> = {
 
 function ScoreBreakdown({
   rows,
+  lenderName,
+  lenderCode,
+  score,
+  riskBand,
+  provenance,
+  version,
 }: {
   rows: NonNullable<BreResult["eligible_lenders"][number]["score_breakdown"]>;
+  lenderName: string;
+  lenderCode: string;
+  score: number | null;
+  riskBand: BreResult["eligible_lenders"][number]["lender_risk_band"] | null;
+  provenance: ProvTag | null;
+  version: string | null;
 }) {
   const [open, setOpen] = useState(false);
+  // seeds.ts is a fallback only — used here for display label/notes when DB
+  // scorecard metadata isn't surfaced in the result object yet.
+  const seed = getSeedForLender(lenderCode);
+  const totalWeighted = rows.reduce((sum, r) => sum + (r.weighted ?? 0), 0);
   return (
     <div className="pt-0.5">
       <button
@@ -1599,14 +1615,39 @@ function ScoreBreakdown({
         className="text-[11px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
         aria-expanded={open}
       >
-        {open ? "Hide" : "View"} lender-specific score breakdown
+        {open ? "Hide" : "View"} how this lender score was calculated
       </button>
       {open && (
         <div className="mt-1.5 rounded-md border border-border bg-muted/20 overflow-hidden">
+          {/* Summary header */}
+          <div className="px-2.5 py-2 bg-muted/40 border-b border-border space-y-1.5">
+            <div className="flex items-center gap-2 flex-wrap text-[11px]">
+              <span className="text-muted-foreground">{lenderName}-specific score:</span>
+              {score != null && (
+                <span className="font-semibold text-foreground tabular-nums">
+                  {Math.round(score)}/100
+                </span>
+              )}
+              <RiskBandBadge band={riskBand} />
+              <ProvenancePill tag={provenance} />
+            </div>
+            <div className="text-[10px] text-muted-foreground">
+              Scorecard: <span className="text-foreground/80">{seed.display_label}</span>
+              {version ? <span className="ml-1 font-mono">· v{version}</span> : null}
+            </div>
+            {seed.notes && (
+              <div className="text-[10px] text-muted-foreground italic">{seed.notes}</div>
+            )}
+            <div className="text-[10px] text-muted-foreground leading-snug pt-1 border-t border-border/60">
+              Global BRE checks base eligibility. This lender-specific score
+              shows how this profile fits this lender's own scorecard.
+            </div>
+          </div>
           <table className="w-full text-[11px]">
-            <thead className="bg-muted/40 text-muted-foreground">
+            <thead className="bg-muted/30 text-muted-foreground">
               <tr>
                 <th className="text-left px-2 py-1 font-medium">Factor</th>
+                <th className="text-right px-2 py-1 font-medium">Weight</th>
                 <th className="text-right px-2 py-1 font-medium">Score</th>
                 <th className="text-right px-2 py-1 font-medium">Weighted</th>
                 <th className="text-left px-2 py-1 font-medium">Reason</th>
@@ -1619,6 +1660,9 @@ function ScoreBreakdown({
                   <td className="px-2 py-1 text-foreground/90">
                     {FACTOR_LABELS[r.factor] ?? r.factor}
                   </td>
+                  <td className="px-2 py-1 text-right tabular-nums text-muted-foreground">
+                    {r.weight}%
+                  </td>
                   <td className="px-2 py-1 text-right tabular-nums">{Math.round(r.raw_score)}</td>
                   <td className="px-2 py-1 text-right tabular-nums text-muted-foreground">
                     {round2(r.weighted)}
@@ -1630,6 +1674,17 @@ function ScoreBreakdown({
                 </tr>
               ))}
             </tbody>
+            <tfoot>
+              <tr className="border-t border-border bg-muted/30">
+                <td className="px-2 py-1 text-[10px] text-muted-foreground" colSpan={3}>
+                  Total = sum of weighted contributions
+                </td>
+                <td className="px-2 py-1 text-right tabular-nums font-semibold text-foreground">
+                  {round2(totalWeighted)}
+                </td>
+                <td className="px-2 py-1" colSpan={2} />
+              </tr>
+            </tfoot>
           </table>
         </div>
       )}
