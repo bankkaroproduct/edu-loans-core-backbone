@@ -19,6 +19,8 @@ import {
   createNewScoringConfigVersion,
   activateScoringConfigVersion,
 } from "@/lib/bre/versioning";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BreLenderScorecardList } from "@/components/bre/lender-scorecard/BreLenderScorecardList";
 
 export default function BreScoringConfigEditor() {
   const { appUser } = useAuth();
