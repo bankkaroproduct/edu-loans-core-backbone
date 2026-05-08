@@ -768,7 +768,7 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
                   <p className="text-muted-foreground mb-1">No upload history yet</p>
                   <p className="text-xs text-muted-foreground mb-4">Download the template and upload your first batch.</p>
                   <div className="flex justify-center gap-2">
-                    <Button variant="outline" size="sm" onClick={downloadTemplate}><Download className="mr-1 h-3.5 w-3.5" /> Download Template</Button>
+                    <Button variant="outline" size="sm" onClick={downloadTemplate}><Download className="mr-1 h-3.5 w-3.5" /> Download XLSX Template</Button>
                     <Button size="sm" onClick={() => setActiveTab("upload")}><Upload className="mr-1 h-3.5 w-3.5" /> Upload File</Button>
                   </div>
                 </div>
