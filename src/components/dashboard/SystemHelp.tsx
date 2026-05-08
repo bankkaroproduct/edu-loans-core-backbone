@@ -2,17 +2,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, FileText, HelpCircle, Info, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { getTemplateCSV } from "@/hooks/useBulkUploadProcessor";
 
 function downloadBulkTemplate() {
-  const csv = getTemplateCSV();
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url;
-  a.download = "lead_upload_template.csv";
+  a.href = "/Bulk_Upload_Template_File.xlsx";
+  a.download = "Bulk_Upload_Template_File.xlsx";
   a.click();
-  URL.revokeObjectURL(url);
 }
 
 export function SystemHelp() {
