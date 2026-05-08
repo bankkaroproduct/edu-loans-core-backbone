@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
-import { resolvePincodeEnrichment } from "@/lib/pincodeEnrichment";
+
 
 interface Props {
   leadId: string;
@@ -108,8 +108,54 @@ export function InlineEditField({
     let updatePayload: Record<string, unknown>;
     let auditOld: Record<string, unknown>;
     let auditNew: Record<string, unknown>;
+    let pincodeWarning: string | null = null;
+    let pincodeEnriched = false;
 
-    if (jsonbColumn) {
+    // ─── Pincode branch (handled FIRST and atomically) ──────────────────
+    // When admin edits the `pincode` field, build a single multi-field
+    // updatePayload that includes city/district/state/tier from
+    // pincode_master. This must run before the generic builders below so
+    // the enrichment is guaranteed to land in one .update() call.
+    if (!jsonbColumn && field === "pincode") {
+      if (trimmed === "") {
+        // Blank → clear pincode only; do NOT wipe location fields.
+        updatePayload = { pincode: null };
+        auditOld = { pincode: oldVal };
+        auditNew = { pincode: null };
+      } else {
+        if (!/^\d{6}$/.test(trimmed)) {
+          setSaving(false);
+          toast.error("Pincode must be exactly 6 digits");
+          return;
+        }
+        const { data: pinRow, error: pinErr } = await supabase
+          .from("pincode_master")
+          .select("district, state, tier, has_conflict")
+          .eq("pincode", trimmed)
+          .maybeSingle();
+        if (pinErr) {
+          console.warn("[InlineEditField] pincode_master lookup failed", pinErr);
+        }
+        if (pinRow) {
+          updatePayload = {
+            pincode: trimmed,
+            city: pinRow.district ?? null,
+            district: pinRow.district ?? null,
+            state: pinRow.state ?? null,
+            tier: pinRow.tier ?? null,
+          };
+          pincodeEnriched = true;
+          if (pinRow.has_conflict) {
+            pincodeWarning = "This pincode maps to multiple areas — please verify city/state.";
+          }
+        } else {
+          updatePayload = { pincode: trimmed };
+          pincodeWarning = "Pincode not found in master. City/state were not auto-filled.";
+        }
+        auditOld = { pincode: oldVal };
+        auditNew = { ...updatePayload };
+      }
+    } else if (jsonbColumn) {
       // Read existing JSONB, merge/delete the key, write whole object back
       const { data: row, error: readErr } = await supabase
         .from("student_leads")
@@ -137,29 +183,6 @@ export function InlineEditField({
       auditNew = { [field]: writeValue };
     }
 
-    // Centralized pincode enrichment: when admin edits the pincode field,
-    // auto-populate city/district/state/tier from pincode_master.
-    let pincodeWarning: string | null = null;
-    if (!jsonbColumn && field === "pincode") {
-      const raw = typeof writeValue === "string" ? writeValue : trimmed;
-      if (raw && !/^\d{6}$/.test(raw)) {
-        setSaving(false);
-        toast.error("Pincode must be exactly 6 digits");
-        return;
-      }
-      const enrichment = await resolvePincodeEnrichment(raw);
-      if (enrichment.status === "found") {
-        updatePayload = { ...updatePayload, ...enrichment.patch };
-        auditNew = { ...auditNew, ...enrichment.patch };
-        if (enrichment.hasConflict) pincodeWarning = enrichment.warning;
-      } else if (enrichment.status === "not_found") {
-        pincodeWarning = enrichment.warning;
-      } else if (enrichment.status === "blank") {
-        // pincode cleared → set null but do NOT wipe city/state/etc.
-        updatePayload = { ...updatePayload, pincode: null };
-      }
-    }
-
     const { error } = await supabase
       .from("student_leads")
       .update(updatePayload as never)
@@ -179,7 +202,13 @@ export function InlineEditField({
         actor_role: appUser.role,
         old_value: auditOld as never,
         new_value: auditNew as never,
-        meta: { field_count: 1, source: "admin_inline_edit", field, jsonb_column: jsonbColumn ?? null } as never,
+        meta: {
+          field_count: Object.keys(updatePayload).length,
+          source: "admin_inline_edit",
+          field,
+          jsonb_column: jsonbColumn ?? null,
+          pincode_enriched: pincodeEnriched,
+        } as never,
       } as never);
     } catch (e) {
       console.warn("[InlineEditField] audit log insert failed", e);
@@ -189,7 +218,11 @@ export function InlineEditField({
     setEditing(false);
     setConfirming(false);
     setDraft("");
-    toast.success(`${label} updated`);
+    if (field === "pincode" && pincodeEnriched) {
+      toast.success("Pincode saved — city/state auto-filled from master");
+    } else {
+      toast.success(`${label} updated`);
+    }
     if (pincodeWarning) toast.warning(pincodeWarning);
     onSaved?.(trimmed);
   };
