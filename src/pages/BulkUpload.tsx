@@ -442,12 +442,12 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
             </Button>
             <PageHeader
               title="Bulk Upload Leads"
-              description="Upload multiple student leads using the standard CSV template"
+              description="Upload multiple student leads using the standard XLSX → CSV template workflow."
             />
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={downloadTemplate}>
-              <Download className="mr-1 h-4 w-4" /> Download Template
+              <Download className="mr-1 h-4 w-4" /> Download XLSX Template
             </Button>
             <Button variant="outline" size="sm" onClick={() => navigate(leadsTarget)}>
               <FileText className="mr-1 h-4 w-4" /> View Submitted Leads
@@ -458,7 +458,7 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
       {hideOwnHeader && (
         <div className="flex items-center gap-2 justify-end">
           <Button variant="outline" size="sm" onClick={downloadTemplate}>
-            <Download className="mr-1 h-4 w-4" /> Download Template
+            <Download className="mr-1 h-4 w-4" /> Download XLSX Template
           </Button>
           <Button variant="outline" size="sm" onClick={() => navigate(leadsTarget)}>
             <FileText className="mr-1 h-4 w-4" /> View Submitted Leads
