@@ -21,7 +21,6 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import {
   processBulkUpload,
   generateErrorReportCSV,
-  getTemplateCSV,
   type RowResult,
   type ProcessingStage,
 } from "@/hooks/useBulkUploadProcessor";
