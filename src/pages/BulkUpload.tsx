@@ -487,12 +487,24 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
               <CardDescription>Read carefully before uploading to avoid validation errors.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
+              {/* Workflow callout */}
+              <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-xs text-foreground">
+                <p className="font-medium mb-1">XLSX → CSV workflow</p>
+                <p className="text-muted-foreground">
+                  Please use the Excel template to fill lead details easily using dropdowns and validation rules.
+                  After completing the file, save/export the <strong>first sheet</strong> as CSV and upload only the CSV file here.
+                  <br />
+                  <span className="mt-1 inline-block">Accepted upload format: <strong>.csv</strong> only · Template format: <strong>.xlsx</strong></span>
+                </p>
+              </div>
+
               {/* Quick rules */}
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <p className="font-medium text-foreground">Format & Limits</p>
                   <ul className="list-disc pl-4 text-muted-foreground space-y-0.5">
-                    <li>Supported format: <strong>CSV</strong> only</li>
+                    <li>Template format: <strong>XLSX</strong> (with dropdowns &amp; validation rules)</li>
+                    <li>Accepted upload format: <strong>CSV</strong> only — export Sheet 1 as CSV before uploading</li>
                     <li>Maximum <strong>1,000 rows</strong> per file</li>
                     <li>Maximum file size: <strong>5 MB</strong></li>
                     <li>Use <strong>exact header names</strong> from the template — headers are case-insensitive and spaces are normalized to underscores</li>
