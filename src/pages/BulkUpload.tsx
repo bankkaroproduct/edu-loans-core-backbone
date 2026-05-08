@@ -596,15 +596,17 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
           {stage !== "completed" && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Upload CSV File</CardTitle>
-                <CardDescription>Select a file prepared using the template above.</CardDescription>
+                <CardTitle className="text-lg">Upload Completed CSV File Only</CardTitle>
+                <CardDescription>
+                  Use the XLSX template to fill details. Before uploading, save/export the completed data sheet as CSV. Only CSV files are accepted for upload.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {!selectedFile ? (
                   <label className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-10 cursor-pointer hover:bg-muted/30 transition-colors">
                     <Upload className="h-10 w-10 text-muted-foreground mb-3" />
-                    <p className="text-sm font-medium text-muted-foreground mb-1">Click to select a CSV file or drag and drop</p>
-                    <p className="text-xs text-muted-foreground">CSV format only • Max 1,000 rows • Max 5 MB</p>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Click to select your completed CSV file or drag and drop</p>
+                    <p className="text-xs text-muted-foreground">CSV only • Export Sheet 1 of the XLSX template as CSV • Max 1,000 rows • Max 5 MB</p>
                     <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleFileSelect} />
                   </label>
                 ) : (
