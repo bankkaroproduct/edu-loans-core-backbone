@@ -137,6 +137,29 @@ export function InlineEditField({
       auditNew = { [field]: writeValue };
     }
 
+    // Centralized pincode enrichment: when admin edits the pincode field,
+    // auto-populate city/district/state/tier from pincode_master.
+    let pincodeWarning: string | null = null;
+    if (!jsonbColumn && field === "pincode") {
+      const raw = typeof writeValue === "string" ? writeValue : trimmed;
+      if (raw && !/^\d{6}$/.test(raw)) {
+        setSaving(false);
+        toast.error("Pincode must be exactly 6 digits");
+        return;
+      }
+      const enrichment = await resolvePincodeEnrichment(raw);
+      if (enrichment.status === "found") {
+        updatePayload = { ...updatePayload, ...enrichment.patch };
+        auditNew = { ...auditNew, ...enrichment.patch };
+        if (enrichment.hasConflict) pincodeWarning = enrichment.warning;
+      } else if (enrichment.status === "not_found") {
+        pincodeWarning = enrichment.warning;
+      } else if (enrichment.status === "blank") {
+        // pincode cleared → set null but do NOT wipe city/state/etc.
+        updatePayload = { ...updatePayload, pincode: null };
+      }
+    }
+
     const { error } = await supabase
       .from("student_leads")
       .update(updatePayload as never)
