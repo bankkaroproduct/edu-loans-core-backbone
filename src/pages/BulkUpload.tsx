@@ -21,7 +21,6 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import {
   processBulkUpload,
   generateErrorReportCSV,
-  getTemplateCSV,
   type RowResult,
   type ProcessingStage,
 } from "@/hooks/useBulkUploadProcessor";
@@ -147,22 +146,24 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
   };
 
   const downloadTemplate = () => {
-    const csv = getTemplateCSV();
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = "lead_upload_template.csv";
+    a.href = "/Bulk_Upload_Template_File.xlsx";
+    a.download = "Bulk_Upload_Template_File.xlsx";
     a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Template downloaded successfully");
+    toast.success("XLSX template downloaded — fill it in, then save Sheet 1 as CSV before uploading");
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.name.endsWith(".csv")) {
-      toast.error("Only CSV files are supported");
+    const lower = file.name.toLowerCase();
+    if (lower.endsWith(".xlsx") || lower.endsWith(".xls")) {
+      toast.error("Please export/save the completed template as CSV before uploading. XLSX is for data entry only.");
+      e.target.value = "";
+      return;
+    }
+    if (!lower.endsWith(".csv")) {
+      toast.error("Only CSV files are supported. Save your XLSX template's data sheet as CSV before uploading.");
       e.target.value = "";
       return;
     }
@@ -440,12 +441,12 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
             </Button>
             <PageHeader
               title="Bulk Upload Leads"
-              description="Upload multiple student leads using the standard CSV template"
+              description="Upload multiple student leads using the standard XLSX → CSV template workflow."
             />
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={downloadTemplate}>
-              <Download className="mr-1 h-4 w-4" /> Download Template
+              <Download className="mr-1 h-4 w-4" /> Download XLSX Template
             </Button>
             <Button variant="outline" size="sm" onClick={() => navigate(leadsTarget)}>
               <FileText className="mr-1 h-4 w-4" /> View Submitted Leads
@@ -456,7 +457,7 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
       {hideOwnHeader && (
         <div className="flex items-center gap-2 justify-end">
           <Button variant="outline" size="sm" onClick={downloadTemplate}>
-            <Download className="mr-1 h-4 w-4" /> Download Template
+            <Download className="mr-1 h-4 w-4" /> Download XLSX Template
           </Button>
           <Button variant="outline" size="sm" onClick={() => navigate(leadsTarget)}>
             <FileText className="mr-1 h-4 w-4" /> View Submitted Leads
@@ -485,12 +486,24 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
               <CardDescription>Read carefully before uploading to avoid validation errors.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
+              {/* Workflow callout */}
+              <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-xs text-foreground">
+                <p className="font-medium mb-1">XLSX → CSV workflow</p>
+                <p className="text-muted-foreground">
+                  Please use the Excel template to fill lead details easily using dropdowns and validation rules.
+                  After completing the file, save/export the <strong>first sheet</strong> as CSV and upload only the CSV file here.
+                  <br />
+                  <span className="mt-1 inline-block">Accepted upload format: <strong>.csv</strong> only · Template format: <strong>.xlsx</strong></span>
+                </p>
+              </div>
+
               {/* Quick rules */}
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <p className="font-medium text-foreground">Format & Limits</p>
                   <ul className="list-disc pl-4 text-muted-foreground space-y-0.5">
-                    <li>Supported format: <strong>CSV</strong> only</li>
+                    <li>Template format: <strong>XLSX</strong> (with dropdowns &amp; validation rules)</li>
+                    <li>Accepted upload format: <strong>CSV</strong> only — export Sheet 1 as CSV before uploading</li>
                     <li>Maximum <strong>1,000 rows</strong> per file</li>
                     <li>Maximum file size: <strong>5 MB</strong></li>
                     <li>Use <strong>exact header names</strong> from the template — headers are case-insensitive and spaces are normalized to underscores</li>
@@ -582,15 +595,17 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
           {stage !== "completed" && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Upload CSV File</CardTitle>
-                <CardDescription>Select a file prepared using the template above.</CardDescription>
+                <CardTitle className="text-lg">Upload Completed CSV File Only</CardTitle>
+                <CardDescription>
+                  Use the XLSX template to fill details. Before uploading, save/export the completed data sheet as CSV. Only CSV files are accepted for upload.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {!selectedFile ? (
                   <label className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-10 cursor-pointer hover:bg-muted/30 transition-colors">
                     <Upload className="h-10 w-10 text-muted-foreground mb-3" />
-                    <p className="text-sm font-medium text-muted-foreground mb-1">Click to select a CSV file or drag and drop</p>
-                    <p className="text-xs text-muted-foreground">CSV format only • Max 1,000 rows • Max 5 MB</p>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Click to select your completed CSV file or drag and drop</p>
+                    <p className="text-xs text-muted-foreground">CSV only • Export Sheet 1 of the XLSX template as CSV • Max 1,000 rows • Max 5 MB</p>
                     <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleFileSelect} />
                   </label>
                 ) : (
@@ -752,7 +767,7 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
                   <p className="text-muted-foreground mb-1">No upload history yet</p>
                   <p className="text-xs text-muted-foreground mb-4">Download the template and upload your first batch.</p>
                   <div className="flex justify-center gap-2">
-                    <Button variant="outline" size="sm" onClick={downloadTemplate}><Download className="mr-1 h-3.5 w-3.5" /> Download Template</Button>
+                    <Button variant="outline" size="sm" onClick={downloadTemplate}><Download className="mr-1 h-3.5 w-3.5" /> Download XLSX Template</Button>
                     <Button size="sm" onClick={() => setActiveTab("upload")}><Upload className="mr-1 h-3.5 w-3.5" /> Upload File</Button>
                   </div>
                 </div>

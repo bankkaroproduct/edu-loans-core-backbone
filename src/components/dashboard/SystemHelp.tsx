@@ -2,17 +2,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, FileText, HelpCircle, Info, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { getTemplateCSV } from "@/hooks/useBulkUploadProcessor";
 
 function downloadBulkTemplate() {
-  const csv = getTemplateCSV();
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url;
-  a.download = "lead_upload_template.csv";
+  a.href = "/Bulk_Upload_Template_File.xlsx";
+  a.download = "Bulk_Upload_Template_File.xlsx";
   a.click();
-  URL.revokeObjectURL(url);
 }
 
 export function SystemHelp() {
@@ -31,11 +26,11 @@ export function SystemHelp() {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium">Bulk Upload Template</p>
             <p className="text-xs text-muted-foreground">
-              Download the standard CSV template for bulk lead uploads.
+              Download the XLSX template (with dropdowns). Save Sheet 1 as CSV before uploading.
             </p>
           </div>
           <Button variant="outline" size="sm" className="text-xs shrink-0" onClick={downloadBulkTemplate}>
-            Download
+            Download XLSX
           </Button>
         </div>
 
