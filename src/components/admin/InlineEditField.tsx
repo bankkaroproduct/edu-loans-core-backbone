@@ -190,6 +190,7 @@ export function InlineEditField({
     setConfirming(false);
     setDraft("");
     toast.success(`${label} updated`);
+    if (pincodeWarning) toast.warning(pincodeWarning);
     onSaved?.(trimmed);
   };
 
