@@ -147,22 +147,24 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
   };
 
   const downloadTemplate = () => {
-    const csv = getTemplateCSV();
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = "lead_upload_template.csv";
+    a.href = "/Bulk_Upload_Template_File.xlsx";
+    a.download = "Bulk_Upload_Template_File.xlsx";
     a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Template downloaded successfully");
+    toast.success("XLSX template downloaded — fill it in, then save Sheet 1 as CSV before uploading");
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.name.endsWith(".csv")) {
-      toast.error("Only CSV files are supported");
+    const lower = file.name.toLowerCase();
+    if (lower.endsWith(".xlsx") || lower.endsWith(".xls")) {
+      toast.error("Please export/save the completed template as CSV before uploading. XLSX is for data entry only.");
+      e.target.value = "";
+      return;
+    }
+    if (!lower.endsWith(".csv")) {
+      toast.error("Only CSV files are supported. Save your XLSX template's data sheet as CSV before uploading.");
       e.target.value = "";
       return;
     }
