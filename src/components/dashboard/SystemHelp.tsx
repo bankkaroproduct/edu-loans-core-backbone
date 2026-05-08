@@ -26,11 +26,11 @@ export function SystemHelp() {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium">Bulk Upload Template</p>
             <p className="text-xs text-muted-foreground">
-              Download the standard CSV template for bulk lead uploads.
+              Download the XLSX template (with dropdowns). Save Sheet 1 as CSV before uploading.
             </p>
           </div>
           <Button variant="outline" size="sm" className="text-xs shrink-0" onClick={downloadBulkTemplate}>
-            Download
+            Download XLSX
           </Button>
         </div>
 
