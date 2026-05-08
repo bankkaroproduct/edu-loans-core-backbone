@@ -202,7 +202,13 @@ export function InlineEditField({
         actor_role: appUser.role,
         old_value: auditOld as never,
         new_value: auditNew as never,
-        meta: { field_count: 1, source: "admin_inline_edit", field, jsonb_column: jsonbColumn ?? null } as never,
+        meta: {
+          field_count: Object.keys(updatePayload).length,
+          source: "admin_inline_edit",
+          field,
+          jsonb_column: jsonbColumn ?? null,
+          pincode_enriched: pincodeEnriched,
+        } as never,
       } as never);
     } catch (e) {
       console.warn("[InlineEditField] audit log insert failed", e);
@@ -212,7 +218,11 @@ export function InlineEditField({
     setEditing(false);
     setConfirming(false);
     setDraft("");
-    toast.success(`${label} updated`);
+    if (field === "pincode" && pincodeEnriched) {
+      toast.success("Pincode saved — city/state auto-filled from master");
+    } else {
+      toast.success(`${label} updated`);
+    }
     if (pincodeWarning) toast.warning(pincodeWarning);
     onSaved?.(trimmed);
   };
