@@ -60,10 +60,13 @@ export function DocumentSummaryStrip({ requirements, hideNudge = false }: Props)
     { label: "Total Required", value: counts.total, icon: FileQuestion, color: "text-foreground" },
     { label: "Pending Upload", value: counts.pending, icon: FileUp, color: "text-orange-600", highlight: counts.pending > 0 },
     { label: "Uploaded", value: counts.uploaded, icon: FileClock, color: "text-blue-600" },
-    { label: "Under Review", value: counts.underReview, icon: FileClock, color: "text-amber-600" },
-    { label: "Verified", value: counts.verified, icon: FileCheck, color: "text-green-600" },
-    { label: "Rejected", value: counts.rejected, icon: FileX, color: "text-destructive", highlight: counts.rejected > 0 },
-    { label: "Reupload Needed", value: counts.reupload, icon: FileX, color: "text-orange-600", highlight: counts.reupload > 0 },
+    {
+      label: "Under Review",
+      value: counts.underReview + counts.rejected + counts.reupload,
+      icon: FileClock,
+      color: "text-amber-600",
+      highlight: counts.rejected > 0 || counts.reupload > 0,
+    },
   ];
 
   return (
@@ -100,7 +103,7 @@ export function DocumentSummaryStrip({ requirements, hideNudge = false }: Props)
         </div>
 
         {/* Count cards */}
-        <div className="grid grid-cols-3 sm:grid-cols-7 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {items.map(item => {
             const Icon = item.icon;
             return (
