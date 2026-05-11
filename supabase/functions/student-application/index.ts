@@ -27,6 +27,45 @@ function sanitizeRemark(remark: string | null): string | null {
   return remark;
 }
 
+// ─── Numeric sanitation for test_scores JSONB ────────────────────────────────
+// Strips any non-numeric value (e.g. "wjjrjrj") for keys that are expected to
+// be numeric. Free-text keys (e.g. raw_text) are passed through unchanged.
+// Mirror of src/lib/numericValidation.ts but inlined for edge runtime.
+const STRICT_NUMERIC = /^\d+(\.\d{1,3})?$/;
+const NUMERIC_TEST_SCORE_KEYS = new Set([
+  "tenth", "tenth_total",
+  "twelfth", "twelfth_total",
+  "graduation", "graduation_total",
+  "highest_qualification_score", "highest_qualification_total",
+  "ielts", "toefl", "pte", "duolingo", "gre", "gmat", "sat",
+  "work_experience_years",
+  "coapplicant_age",
+  "coapplicant_work_experience_years",
+  "coapplicant_work_experience_months",
+]);
+
+function sanitizeNumericTestScores(input: Record<string, unknown>): {
+  cleaned: Record<string, unknown>;
+  invalidKeys: string[];
+} {
+  const cleaned: Record<string, unknown> = {};
+  const invalidKeys: string[] = [];
+  for (const [k, v] of Object.entries(input ?? {})) {
+    if (!NUMERIC_TEST_SCORE_KEYS.has(k)) {
+      cleaned[k] = v;
+      continue;
+    }
+    if (v === null || v === undefined || v === "") continue;
+    const s = String(v).replace(/,/g, "").trim();
+    if (!STRICT_NUMERIC.test(s)) {
+      invalidKeys.push(k);
+      continue;
+    }
+    cleaned[k] = Number(s);
+  }
+  return { cleaned, invalidKeys };
+}
+
 // Normalize phone to canonical +91XXXXXXXXXX form (mirrors DB normalize_phone()).
 function normalizePhone(input: string | null | undefined): string | null {
   if (!input) return null;
