@@ -87,6 +87,11 @@ export default function StudentEducationDetails() {
       const err = validateScoreTotalPair(s, t);
       if (err) { toast({ title: `${label}: ${err}`, variant: "destructive" }); return; }
     }
+    // Test-score range validation (IELTS 0–9, TOEFL 0–120, etc.)
+    {
+      const testErr = validateTestScoresMap(formData.test_scores as Record<string, unknown>);
+      if (testErr) { toast({ title: testErr, variant: "destructive" }); return; }
+    }
     const result = await saveStep("save_education");
     if (result) {
       toast({ title: "Education details saved" });
