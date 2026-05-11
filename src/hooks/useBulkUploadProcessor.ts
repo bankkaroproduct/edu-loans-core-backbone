@@ -802,9 +802,10 @@ export async function processBulkUpload(
         coapplicant_name: row.coapplicant_name ?? null,
         coapplicant_relation: row.coapplicant_relation ?? null,
         coapplicant_income: row.coapplicant_income ?? null,
-        coapplicant_existing_emi: row.coapplicant_existing_emi ?? null,
         coapplicant_employment_type: row.coapplicant_employment_type ?? null,
-        coapplicant_employer: row.coapplicant_employer ?? null,
+        // coapplicant_employer + coapplicant_existing_emi are deprecated for new
+        // leads — silently ignored if present in old templates. Historical
+        // values on existing rows are preserved.
         collateral_available: row.collateral_available ?? null,
         collateral_notes: row.collateral_notes ?? null,
         // Academic + co-applicant extension — mirror Add Lead conventions:
