@@ -1776,8 +1776,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   nudgeStep="financial"
                   nudgeField="loan_amount_required"
                 />
-                {/* Canonical co-applicant order: Name, Age, Relation, Mobile, Email,
-                    Employment Type, Employer, Income, Existing EMI, CIBIL. */}
+                {/* Canonical co-applicant order: Name, Age, Relation, Mobile,
+                    Email, Employment Type, Income. */}
                 <ReviewRow label="Co-Applicant Name" value={form.coapplicant_name} nudgeStep="financial" nudgeField="coapplicant_name" />
                 <ReviewRow label="Age" value={form.coapplicant_age} nudgeStep="financial" nudgeField="coapplicant_age" />
                 <ReviewRow label="Relation" value={form.coapplicant_relation} nudgeStep="financial" nudgeField="coapplicant_relation" />
