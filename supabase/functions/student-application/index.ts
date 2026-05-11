@@ -633,7 +633,10 @@ Deno.serve(async (req) => {
       // Merge test_scores: preserve any keys saved on other steps (e.g. coapplicant_age,
       // coapplicant_cibil saved during the Co-applicant step) by reading current then spreading.
       const incomingScoresRaw = (data?.test_scores as Record<string, unknown>) || {};
-      const { cleaned: incomingScores, invalidKeys } = sanitizeNumericTestScores(incomingScoresRaw);
+      const { cleaned: incomingScores, invalidKeys, rangeErrors } = sanitizeNumericTestScores(incomingScoresRaw);
+      if (rangeErrors.length > 0) {
+        return jsonResponse({ error: rangeErrors[0] }, 400);
+      }
       if (invalidKeys.length > 0) {
         return jsonResponse({ error: `Only numeric values are allowed for: ${invalidKeys.join(", ")}` }, 400);
       }
