@@ -18,6 +18,7 @@ import {
   parseCoappWorkExpShorthand,
   validateCoappWorkExpShorthand,
 } from "@/lib/academicScore";
+import { TEST_SCORE_RANGES, BULK_NUMERIC_MAX } from "@/lib/leadScoreRanges";
 
 type AppUser = Tables<"users">;
 
