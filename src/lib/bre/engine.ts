@@ -211,18 +211,10 @@ function checkLenderKnockouts(
     }
   }
 
-  // 6. CIBIL — co-applicant (split-aware: prefer min_cibil_coapplicant if set, else legacy min_cibil)
-  const cibil = profile.coapplicant?.cibil_score as number | null | undefined;
-  const coCibilMin = lender.hard_thresholds.min_cibil_coapplicant ?? lender.hard_thresholds.min_cibil;
-  if (coCibilMin != null && cibil != null && cibil < coCibilMin) {
-    reasons.push(REASON.cibil_too_low(coCibilMin));
-  }
-  // 6b. CIBIL — student (only when explicit min_cibil_student set + student.cibil_score available)
-  const studentCibil = profile.student?.cibil_score as number | null | undefined;
-  const studentCibilMin = lender.hard_thresholds.min_cibil_student;
-  if (studentCibilMin != null && studentCibil != null && Number(studentCibil) < studentCibilMin) {
-    reasons.push(REASON.cibil_too_low(studentCibilMin));
-  }
+  // 6. CIBIL knockouts intentionally disabled.
+  //    Co-applicant Existing EMI and CIBIL Score were removed from intake.
+  //    Historical lender_rules may still set min_cibil / min_cibil_student /
+  //    min_cibil_coapplicant — these are ignored by the engine on purpose.
 
   // 7. co-applicant age (legacy min_age/max_age + new coapplicant_min_age/coapplicant_max_age)
   const age = profile.coapplicant?.age as number | null | undefined;
