@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Check, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -46,6 +53,13 @@ interface Props {
    * enforced separately by the existing "cannot be empty" check.
    */
   numericKind?: NumericKind;
+  /**
+   * How to render `options` in edit mode.
+   *  - "buttons" (default): existing pill-button toggle behavior (e.g. Gender, Yes/No).
+   *  - "dropdown": shadcn <Select> menu — free text is impossible.
+   * Has no effect when `options` is not provided.
+   */
+  optionsRenderAs?: "buttons" | "dropdown";
 }
 
 /**
@@ -73,6 +87,7 @@ export function InlineEditField({
   parseValue,
   jsonbColumn,
   numericKind,
+  optionsRenderAs = "buttons",
 }: Props) {
   const { appUser } = useAuth();
   const { isAdmin } = useRoleAccess();
@@ -282,21 +297,36 @@ export function InlineEditField({
     return (
       <span className={`flex flex-col gap-1.5 w-full min-w-0 ${className ?? ""}`}>
         {options && options.length > 0 ? (
-          <span className="flex flex-wrap items-center gap-1">
-            {options.map((opt) => (
-              <Button
-                key={opt.value}
-                size="sm"
-                type="button"
-                variant={draft === opt.value ? "default" : "outline"}
-                className="h-7 px-2 text-xs"
-                onClick={() => setDraft(opt.value)}
-                disabled={saving}
-              >
-                {opt.label}
-              </Button>
-            ))}
-          </span>
+          optionsRenderAs === "dropdown" ? (
+            <Select value={draft} onValueChange={(v) => setDraft(v)} disabled={saving}>
+              <SelectTrigger className="h-8 text-sm w-full">
+                <SelectValue placeholder={placeholder ?? `Select ${label}`} />
+              </SelectTrigger>
+              <SelectContent>
+                {options.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <span className="flex flex-wrap items-center gap-1">
+              {options.map((opt) => (
+                <Button
+                  key={opt.value}
+                  size="sm"
+                  type="button"
+                  variant={draft === opt.value ? "default" : "outline"}
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setDraft(opt.value)}
+                  disabled={saving}
+                >
+                  {opt.label}
+                </Button>
+              ))}
+            </span>
+          )
         ) : (
           <Input
             autoFocus

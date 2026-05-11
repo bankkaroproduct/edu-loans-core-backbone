@@ -60,9 +60,7 @@ const PARTNER_STEPS: StepId[] = ["student", "study", "financial", "notes", "revi
 const ADMIN_STEPS: StepId[] = ["student", "study", "financial", "notes", "review"];
 const ADMIN_EDIT_STEPS: StepId[] = ["student", "study", "financial", "notes", "assign", "review"];
 
-const CO_APPLICANT_RELATIONS = [
-  "Father", "Mother", "Spouse", "Guardian", "Brother", "Sister", "Uncle", "Other",
-];
+import { CO_APPLICANT_RELATIONS } from "@/lib/coapplicantRelations";
 
 // Employment-type options come from `employment_type_master` (admin-managed)
 // with a hard-coded fallback. See `useEmploymentTypeOptions`.
