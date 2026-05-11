@@ -85,13 +85,23 @@ function scoreBucket(
   inputs: Record<string, unknown>,
   threshold: number,
 ): BucketResult {
+  // Universal exclusion: drop deprecated params (e.g. cibil_score, existing_emi_burden_pct)
+  // BEFORE scoring so legacy DB configs behave identically to the new defaults.
+  const activeParams = params.filter((p) => !BRE_DEPRECATED_PARAM_KEYS.has(p.param_key));
+
+  // Renormalize remaining weights so the bucket still maxes out at 100.
+  // If the active params already sum to 100 (new defaults) this is a no-op.
+  const rawWeightSum = activeParams.reduce((s, p) => s + (Number(p.weight) || 0), 0);
+  const scaleFactor = rawWeightSum > 0 ? 100 / rawWeightSum : 1;
+
   const trace: ParameterTrace[] = [];
   let total = 0;
-  for (const p of params) {
+  for (const p of activeParams) {
     const raw = inputs[p.param_key];
     const band = findMatchingBand(p, raw);
     const bandScore = band ? band.score : 0;
-    const contribution = (p.weight * bandScore) / 100;
+    const effectiveWeight = round2((Number(p.weight) || 0) * scaleFactor);
+    const contribution = (effectiveWeight * bandScore) / 100;
     total += contribution;
     trace.push({
       bucket,
@@ -99,7 +109,7 @@ function scoreBucket(
       label: p.label,
       input: raw as ParameterTrace["input"],
       matched_band: band,
-      weight: p.weight,
+      weight: effectiveWeight,
       band_score: bandScore,
       contribution: round2(contribution),
     });
