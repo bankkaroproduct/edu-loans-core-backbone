@@ -166,8 +166,9 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
   const hqEditable = (() => {
     const hasMarks = lead.marks_gpa && String(lead.marks_gpa).trim() !== "";
     const hasTS = tsStr("highest_qualification_score") !== null;
-    if (hasTS && !hasMarks) return edTS("highest_qualification_score");
-    return ed("marks_gpa");
+    const range = { min: 0, max: ACADEMIC_TOTAL_RANGE.max, label: "Highest Qualification Score" };
+    if (hasTS && !hasMarks) return edTS("highest_qualification_score", { numericRange: range, siblingMaxKey: "highest_qualification_total" });
+    return ed("marks_gpa", { numericRange: range });
   })();
 
   const numericParse = (raw: string) => {
