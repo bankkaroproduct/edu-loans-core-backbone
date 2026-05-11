@@ -342,7 +342,10 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
           <Field
             label="Co-Applicant Employment Type"
             value={lead.coapplicant_employment_type}
-            editable={ed("coapplicant_employment_type")}
+            editable={ed("coapplicant_employment_type", {
+              options: COAPP_EMPLOYMENT_TYPES.map((v) => ({ value: v, label: v })),
+              optionsRenderAs: "dropdown",
+            })}
             onSaved={onSaved}
           />
           <Field
