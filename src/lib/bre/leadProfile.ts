@@ -858,7 +858,9 @@ function buildProfileCore(
   finalResolution.coapplicant_work_experience = {
     years: coYearsRaw == null || coYearsRaw === "" ? null : Number(coYearsRaw),
     months: coMonthsRaw == null || coMonthsRaw === "" ? null : Number(coMonthsRaw),
+    total_years: coTotalRaw == null || coTotalRaw === "" ? null : Number(coTotalRaw),
     decimal_years: coWorkExpYears,
+    source: coWorkExpSource,
     mapped_to: incomeStabilityYears != null ? "income_stability_years" : "none",
   };
 
