@@ -550,18 +550,16 @@ export default function BulkUpload({ hideOwnHeader = false }: BulkUploadProps = 
                             <TableCell className="text-xs text-muted-foreground">
                               {c.name === "collateral_available" ? (
                                 <span><strong>yes</strong> / <strong>no</strong> / true / false / 1 / 0</span>
-                              ) : c.name === "coapplicant_income" || c.name === "coapplicant_existing_emi" || c.name === "loan_amount_required" ? (
+                              ) : c.name === "coapplicant_income" || c.name === "loan_amount_required" ? (
                                 <span>{c.example} <em>(numeric, ≥ 0)</em></span>
                               ) : c.name === "10th_score" || c.name === "12th_score" || c.name === "graduation_score" || c.name === "highest_qualification_score" ? (
                                 <span>{c.example} <em>(numeric score, ≥ 0)</em></span>
                               ) : c.name === "work_experience" ? (
                                 <span>{c.example} <em>(years, 0–60; use 0 for fresher)</em></span>
                               ) : c.name === "test_scores" ? (
-                                <span>e.g. <strong>GRE 320, IELTS 7.5</strong> or <strong>TOEFL 105, GMAT 680</strong> <em>(free-text — stored as raw notes; structured scores are not overwritten)</em></span>
+                                <span>e.g. <strong>GRE 320, IELTS 7.5, PTE 65</strong> or <strong>TOEFL 105, GMAT 680</strong> <em>(free-text — stored as raw notes; structured scores are not overwritten)</em></span>
                               ) : c.name === "coapplicant_age" ? (
                                 <span>{c.example} <em>(18–100)</em></span>
-                              ) : c.name === "coapplicant_cibil" ? (
-                                <span>{c.example} <em>(CIBIL score, 300–900)</em></span>
                               ) : c.name === "coapplicant_employment_type" ? (
                                 <span>{c.example} <em>(must match Master Data — Employment Types)</em></span>
                               ) : c.name === "highest_qualification" ? (
