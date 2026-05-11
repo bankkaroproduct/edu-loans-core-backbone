@@ -48,8 +48,6 @@ const strongProfile: BreProfileInput = {
     age: 50,
     employment_type: "salaried_govt",
     monthly_income: 200000,
-    cibil_score: 780,
-    existing_emi_burden_pct: 10,
     income_stability_years: 10,
   },
 };
@@ -92,14 +90,15 @@ describe("BRE — lender knockouts", () => {
     expect(r.eligible_lenders[0].reasons.some((s) => s.includes("not serviced"))).toBe(true);
   });
 
-  it("knocks out a lender whose CIBIL minimum exceeds the co-applicant CIBIL", () => {
+  it("ignores lender CIBIL minimum since CIBIL is universally excluded from BRE", () => {
     const r = evaluate(strongProfile, DEFAULT_SCORING_CONFIG_V1, [
       lenderRule({
         hard_thresholds: { ...lenderRule().hard_thresholds, min_cibil: 800 },
       }),
     ]);
-    expect(r.eligible_lenders[0].eligible).toBe(false);
-    expect(r.eligible_lenders[0].reasons.some((s) => s.includes("CIBIL"))).toBe(true);
+    // CIBIL knockouts are intentionally disabled — lender remains eligible.
+    expect(r.eligible_lenders[0].eligible).toBe(true);
+    expect(r.eligible_lenders[0].reasons.every((s) => !/CIBIL/i.test(s))).toBe(true);
   });
 
   it("knocks out a lender when the loan amount exceeds caps", () => {
