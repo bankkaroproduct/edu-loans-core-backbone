@@ -25,7 +25,16 @@ import type {
   ProvenanceTag,
 } from "./types";
 
-const SCORECARD_VERSION = "lender-scorecard@v1";
+const SCORECARD_VERSION = "lender-scorecard@v2";
+
+/**
+ * Layer-2 factors universally excluded from lender scorecard scoring.
+ * CIBIL and Existing EMI Burden (emi_foir) were removed from intake at the
+ * product level; historical values remain in the DB but are never used in
+ * scoring or rationale. Weights are renormalized below so the remaining
+ * factors still total their configured weights.
+ */
+const LAYER2_DEPRECATED_FACTORS: ReadonlySet<string> = new Set(["cibil", "emi_foir"]);
 
 function pickScorecardConfig(lender: BreLenderRule): ScorecardSeed {
   // If lender row carries a stored scorecard, prefer it (shape-checked best-effort).
@@ -71,7 +80,9 @@ export function evaluateLenderScorecard(
   match: LenderMatchResult,
 ): LenderScorecardOutput {
   const cfg = pickScorecardConfig(lender);
-  const weights = cfg.weights.length > 0 ? cfg.weights : DEFAULT_WEIGHTS;
+  const rawWeights = cfg.weights.length > 0 ? cfg.weights : DEFAULT_WEIGHTS;
+  // Universal exclusion: drop deprecated factors (cibil, emi_foir).
+  const weights = rawWeights.filter((w) => !LAYER2_DEPRECATED_FACTORS.has(w.factor));
 
   // Inputs
   const co = profile.coapplicant ?? {};
