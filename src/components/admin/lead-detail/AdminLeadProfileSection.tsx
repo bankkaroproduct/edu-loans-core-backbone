@@ -250,13 +250,9 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
           <Field label="University" value={lead.university_name_raw} editable={ed("university_name_raw")} onSaved={onSaved} />
           <Field label="Course" value={lead.course_name} editable={ed("course_name")} onSaved={onSaved} />
           <Field label="Course Category" value={lead.course_category} editable={ed("course_category")} onSaved={onSaved} />
-          <Field label="Intake Term" value={lead.intake_term} editable={ed("intake_term")} onSaved={onSaved} />
-          <Field
-            label="Intake Year"
-            value={lead.intake_year ? String(lead.intake_year) : null}
-            editable={ed("intake_year", { inputType: "number", parseValue: numericParse, numericKind: "year" })}
-            onSaved={onSaved}
-          />
+          {/* Intake Term + Intake Year intentionally omitted here — the Intake
+              Session tile in AdminLeadSummaryStrip is the single source of truth
+              for editing intake. */}
           <Field
             label="Loan Amount"
             value={lead.loan_amount_required ? String(lead.loan_amount_required) : null}
