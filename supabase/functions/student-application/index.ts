@@ -578,7 +578,11 @@ Deno.serve(async (req) => {
       if (!existingLeadId) return jsonResponse({ error: "No existing application found. Complete basic details first." }, 400);
       // Merge test_scores: preserve any keys saved on other steps (e.g. coapplicant_age,
       // coapplicant_cibil saved during the Co-applicant step) by reading current then spreading.
-      const incomingScores = (data?.test_scores as Record<string, unknown>) || {};
+      const incomingScoresRaw = (data?.test_scores as Record<string, unknown>) || {};
+      const { cleaned: incomingScores, invalidKeys } = sanitizeNumericTestScores(incomingScoresRaw);
+      if (invalidKeys.length > 0) {
+        return jsonResponse({ error: `Only numeric values are allowed for: ${invalidKeys.join(", ")}` }, 400);
+      }
       const { data: existingEdu, error: fetchEduErr } = await supabaseAdmin
         .from("student_leads")
         .select("test_scores")
@@ -586,9 +590,6 @@ Deno.serve(async (req) => {
         .single();
       if (fetchEduErr) return jsonResponse({ error: fetchEduErr.message }, 500);
       const currentEdu = (existingEdu?.test_scores as Record<string, unknown>) || {};
-      // Preserve keys that are saved on OTHER steps (co-applicant), so the
-      // education save never silently wipes them. New keys: co-applicant work
-      // experience years/months are saved on the co-applicant step.
       const preservedKeys = [
         "coapplicant_age",
         "coapplicant_cibil",
