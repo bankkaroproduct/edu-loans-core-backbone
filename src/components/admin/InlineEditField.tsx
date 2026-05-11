@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,8 +16,11 @@ import { useRoleAccess } from "@/hooks/useRoleAccess";
 import {
   type NumericKind,
   validateNumeric,
+  validateNumericRange,
+  isPurelyNumericText,
   sanitizeNumericInput,
 } from "@/lib/numericValidation";
+import { MasterCombobox, type MasterOption } from "@/components/ui/master-combobox";
 
 
 interface Props {
