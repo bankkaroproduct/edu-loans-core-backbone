@@ -107,7 +107,7 @@ export function buildSimulationPdf(opts: {
       head: [[`${b.charAt(0).toUpperCase() + b.slice(1)} parameter trace`, "Input", "Band score", "Weight", "Contribution"]],
       body: result.buckets[b].trace.map((t) => [
         t.label,
-        t.input == null || t.input === "" ? "—" : String(t.input),
+        t.input == null || t.input === "" ? "—" : formatTraceInput(t),
         `${t.band_score}`,
         `${t.weight}`,
         `${t.contribution}`,
