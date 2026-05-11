@@ -135,8 +135,7 @@ const NEW_TEMPLATE_HEADERS = [
   "graduation_score", "graduation_total_marks",
   "highest_qualification", "highest_qualification_score", "highest_qualification_total_marks",
   "work_experience", "test_scores",
-  "coapplicant_age", "coapplicant_employment_type", "coapplicant_employer",
-  "coapplicant_existing_emi", "coapplicant_cibil",
+  "coapplicant_age", "coapplicant_employment_type",
   "co_applicant_work_experience",
 ];
 
