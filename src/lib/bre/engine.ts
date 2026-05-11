@@ -49,6 +49,10 @@ export const COAPPLICANT_AGE_CAP = 60;
 export const BRE_DEPRECATED_PARAM_KEYS: ReadonlySet<string> = new Set([
   "cibil_score",
   "existing_emi_burden_pct",
+  // Employability Outlook is universally excluded from BRE scoring. Historical
+  // values in universities_master remain intact for audit, but the engine never
+  // reads them. University-bucket weights are auto-renormalized to 100.
+  "employability_outlook",
 ]);
 
 const BUCKETS: { key: BucketKey; field: keyof BreScoringConfig }[] = [
