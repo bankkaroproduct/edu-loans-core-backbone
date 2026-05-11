@@ -26,6 +26,8 @@ const AUTHENTICITY_LABEL: Record<
   fraudulent: { label: "Fraudulent", tone: "destructive" },
 };
 
+import type { NumericKind } from "@/lib/numericValidation";
+
 interface EditableConfig {
   leadId: string;
   field: string;
@@ -34,6 +36,7 @@ interface EditableConfig {
   options?: { value: string; label: string }[];
   parseValue?: (raw: string) => unknown;
   formatDisplay?: (v: string) => string;
+  numericKind?: NumericKind;
 }
 
 function Field({
