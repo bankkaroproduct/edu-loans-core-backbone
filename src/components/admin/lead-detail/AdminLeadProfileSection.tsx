@@ -333,7 +333,7 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
               Saves the exact decimal into the new key only; legacy keys are
               preserved untouched for backward compatibility. */}
           <Field
-            label="Co-Applicant Work Experience"
+            label="Co-applicant Work Experience (In years)"
             value={formatCoappWorkExpDecimal(resolveCoappWorkExpDecimalYears(ts))}
             editable={edTS("coapplicant_work_experience_total_years", {
               inputType: "number",
