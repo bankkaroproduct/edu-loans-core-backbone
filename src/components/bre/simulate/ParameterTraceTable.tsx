@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { BreResult, ParameterTrace } from "@/lib/bre/types";
+import { formatTraceInput } from "@/lib/bre/displayLabels";
 
 function TraceTable({ trace }: { trace: ParameterTrace[] }) {
   return (
