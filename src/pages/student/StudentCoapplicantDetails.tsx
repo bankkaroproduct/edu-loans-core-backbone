@@ -67,20 +67,9 @@ export default function StudentCoapplicantDetails() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.coapplicant_email.trim())) return "Co-applicant Email format is invalid";
     // 6. Employment Type
     if (!formData.coapplicant_employment_type?.trim()) return "Employment Type is required";
-    // 7. Employer / Occupation
-    if (!formData.coapplicant_employer?.trim()) return "Employer / Occupation is required";
-    // 8. Monthly Income
+    // 7. Monthly Income
     const income = parseFloat(formData.coapplicant_income);
     if (!formData.coapplicant_income || isNaN(income) || income <= 0) return "Monthly Income is required and must be a positive number";
-    // 9. Existing EMI
-    if (formData.coapplicant_existing_emi === "" || formData.coapplicant_existing_emi == null) return "Existing EMI is required (enter 0 if none)";
-    const emi = parseFloat(String(formData.coapplicant_existing_emi));
-    if (isNaN(emi) || emi < 0) return "Existing EMI must be a non-negative number";
-    // 10. CIBIL Score
-    const cibilStr = String(formData.test_scores.coapplicant_cibil ?? "").trim();
-    if (!cibilStr) return "CIBIL Score is required";
-    const cibil = parseInt(cibilStr, 10);
-    if (!Number.isFinite(cibil) || cibil < 300 || cibil > 900) return "CIBIL Score must be between 300 and 900";
     // Co-applicant work experience (optional but validated when present)
     const wErr = validateCoappWorkExpShorthand(coWorkExp);
     if (wErr) return `Co-applicant Work Experience: ${wErr}`;
@@ -189,13 +178,9 @@ export default function StudentCoapplicantDetails() {
                 <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
                 <SelectContent>{EMPLOYMENT_TYPES.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">Used by BRE to gate salaried vs self-employed income rules.</p>
             </div>
-            {/* 7. Employer / Occupation */}
-            <div className="space-y-1.5">
-              <Label>Employer / Occupation *</Label>
-              <Input value={formData.coapplicant_employer} onChange={e => updateField("coapplicant_employer", e.target.value)} placeholder="e.g. Tata Consultancy Services" />
-            </div>
-            {/* 8. Monthly Income */}
+            {/* 7. Monthly Income */}
             <div className="space-y-1.5">
               <Label>Monthly Income (₹) *</Label>
               <MoneyInput
@@ -203,26 +188,6 @@ export default function StudentCoapplicantDetails() {
                 onChange={d => updateField("coapplicant_income", d)}
                 placeholder="e.g. 80,000"
               />
-            </div>
-            {/* 9. Existing EMI */}
-            <div className="space-y-1.5">
-              <Label>Existing EMI (₹/month) *</Label>
-              <MoneyInput
-                value={formData.coapplicant_existing_emi}
-                onChange={d => updateField("coapplicant_existing_emi", d)}
-                placeholder="Enter 0 if none"
-              />
-            </div>
-            {/* 10. CIBIL Score */}
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label>CIBIL Score *</Label>
-              <Input
-                inputMode="numeric"
-                value={formData.test_scores.coapplicant_cibil || ""}
-                onChange={e => updateTestScore("coapplicant_cibil", e.target.value.replace(/\D/g, "").slice(0, 3))}
-                placeholder="e.g. 750"
-              />
-              <p className="text-xs text-muted-foreground">Range 300–900. Required to improve lender match accuracy.</p>
             </div>
             {/* 11. Co-applicant Work Experience — single shorthand input
                 ("years.months", e.g. 3.6 = 3y 6m). Feeds BRE
