@@ -171,7 +171,8 @@ export function deriveCourseCategoryFromName(
     { keyword: "cloud", category: "stem", re: /cloud/ },
     { keyword: "networking", category: "stem", re: /network(?:ing)?/ },
     { keyword: "robotics", category: "stem", re: /robotics|mechatronics/ },
-    { keyword: "ms / msc", category: "stem", re: /\b(ms|m\.s\.?|msc|m\.sc)\b/ },
+    // (Generic MS/MSc moved to bottom — see end of list — so explicit business
+    // keywords like "MS Finance" map to management rather than STEM.)
 
     // Healthcare (before management so "pharma management" stays healthcare)
     { keyword: "medical", category: "healthcare", re: /medic/ },
