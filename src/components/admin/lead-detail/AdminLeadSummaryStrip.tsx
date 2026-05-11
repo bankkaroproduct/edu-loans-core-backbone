@@ -344,6 +344,7 @@ export function AdminLeadSummaryStrip({ lead, onSaved }: Props) {
               value={lead.loan_amount_required ? String(lead.loan_amount_required) : null}
               allowEditExisting
               inputType="number"
+              numericKind="amount"
               formatDisplay={(v) => formatINR(v)}
               onSaved={() => onSaved?.()}
             />
