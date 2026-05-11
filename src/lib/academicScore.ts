@@ -69,18 +69,36 @@ export function normalizeAcademicScore(
  * accepted (legacy single-value path). Returns null on success, or a short
  * inline error message describing the first violation.
  */
+/** Realistic hard ceiling — anything bigger is junk like "77777777777". */
+export const ACADEMIC_HARD_MAX = 1000;
+
 export function validateScoreTotalPair(rawScore: string, rawTotal: string): string | null {
   const sTrim = (rawScore ?? "").toString().trim();
   const tTrim = (rawTotal ?? "").toString().trim();
   if (!sTrim && !tTrim) return null;
+  // Reject obviously-junk strings like "77777777777" before numeric parsing,
+  // because parseNum() greedily extracts the first numeric token and would
+  // accept a 100-digit "score".
+  if (sTrim && !/^\d+(\.\d{1,3})?$/.test(sTrim)) return "Score must be a realistic numeric value";
+  if (tTrim && !/^\d+(\.\d{1,3})?$/.test(tTrim)) return "Total marks must be a realistic numeric value";
   const scoreNum = parseNum(sTrim);
   const totalNum = parseNum(tTrim);
   if (sTrim && scoreNum == null) return "Score must be a number";
   if (tTrim && totalNum == null) return "Total marks must be a number";
   if (totalNum != null && totalNum <= 0) return "Total marks must be greater than 0";
+  if (totalNum != null && totalNum > ACADEMIC_HARD_MAX) {
+    return `Total marks must be at most ${ACADEMIC_HARD_MAX}`;
+  }
   if (scoreNum != null && scoreNum < 0) return "Score cannot be negative";
+  if (scoreNum != null && scoreNum > ACADEMIC_HARD_MAX) {
+    return `Score must be a realistic numeric value (at most ${ACADEMIC_HARD_MAX})`;
+  }
+  // When total is blank, score is interpreted as a percentage and cannot exceed 100.
+  if (scoreNum != null && totalNum == null && scoreNum > 100) {
+    return "Score cannot exceed 100 when total marks are not provided";
+  }
   if (scoreNum != null && totalNum != null && scoreNum > totalNum) {
-    return "Score cannot exceed total marks";
+    return "Score cannot exceed total marks / scale";
   }
   return null;
 }
