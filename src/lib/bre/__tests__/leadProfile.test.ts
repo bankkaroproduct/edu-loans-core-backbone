@@ -135,11 +135,11 @@ describe("employability_outlook universal exclusion", () => {
     const uni = r.buckets.university;
 
     // No trace entry for employability_outlook
-    expect(uni.parameter_trace.some((t) => t.param_key === "employability_outlook")).toBe(false);
+    expect(uni.trace.some((t) => t.param_key === "employability_outlook")).toBe(false);
 
     // Weights of remaining 4 university params (40+25+20+10 = 95) must be
     // renormalized to ~100 — sum of weights in the trace equals 100 (±0.5).
-    const traceWeightSum = uni.parameter_trace.reduce((s, t) => s + (t.weight ?? 0), 0);
+    const traceWeightSum = uni.trace.reduce((s, t) => s + (t.weight ?? 0), 0);
     expect(traceWeightSum).toBeGreaterThanOrEqual(99.5);
     expect(traceWeightSum).toBeLessThanOrEqual(100.5);
 
