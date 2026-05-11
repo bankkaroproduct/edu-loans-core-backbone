@@ -273,7 +273,7 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
             {/* Single decimal field. Reads new exact key first; falls back to
                 legacy years+months. Saves into the new key only. */}
             <Field
-              label="Co-Applicant Work Experience"
+              label="Co-applicant Work Experience (In years)"
               value={formatCoappWorkExpDecimal(resolveCoappWorkExpDecimalYears(ts))}
               editable={edTS("coapplicant_work_experience_total_years", {
                 inputType: "number",
