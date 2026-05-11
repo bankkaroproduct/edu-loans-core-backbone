@@ -213,9 +213,13 @@ export function InlineEditField({
       auditOld = { [jsonbColumn]: { [field]: current?.[field] ?? null } };
       auditNew = { [jsonbColumn]: { [field]: trimmed === "" ? null : writeValue } };
     } else {
-      updatePayload = { [field]: writeValue };
+      // For numeric fields, blank → null (not empty string) to satisfy
+      // numeric DB columns and to avoid silent "" coercion to 0.
+      const finalValue =
+        numericKind && trimmed === "" ? null : writeValue;
+      updatePayload = { [field]: finalValue };
       auditOld = { [field]: oldVal };
-      auditNew = { [field]: writeValue };
+      auditNew = { [field]: finalValue };
     }
 
     const { error } = await supabase
