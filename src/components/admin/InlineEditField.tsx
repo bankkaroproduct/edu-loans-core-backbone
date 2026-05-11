@@ -208,11 +208,33 @@ export function InlineEditField({
     }
     const trimmed = draft.trim();
     // Re-validate before any DB write to guarantee invalid text never reaches storage.
+    if (masterCombobox) {
+      if (!trimmed) {
+        toast.error(`${label} cannot be empty`);
+        return;
+      }
+      const isMaster = masterCombobox.options.some((o) => o.label === trimmed);
+      if (!isMaster && isPurelyNumericText(trimmed)) {
+        toast.error("Please enter a valid name.");
+        return;
+      }
+    }
     if (numericKind && trimmed !== "") {
       const res = validateNumeric(numericKind, trimmed);
       if (res.ok === false) {
         toast.error(res.message);
         return;
+      }
+      if (numericRange) {
+        const r = validateNumericRange(numericKind, trimmed, {
+          min: numericRange.min,
+          max: numericRange.max,
+          label: numericRange.label ?? label,
+        });
+        if (r.ok === false) {
+          toast.error(r.message);
+          return;
+        }
       }
     }
     setSaving(true);
