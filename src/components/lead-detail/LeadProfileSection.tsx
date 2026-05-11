@@ -77,9 +77,14 @@ function Field({
             value={value ?? null}
             inputType={editable.inputType}
             options={editable.options}
+            optionsRenderAs={editable.optionsRenderAs}
             parseValue={editable.parseValue}
             formatDisplay={editable.formatDisplay}
             numericKind={editable.numericKind}
+            numericRange={editable.numericRange}
+            siblingMaxKey={editable.siblingMaxKey}
+            percentageMaxWhenNoSibling={editable.percentageMaxWhenNoSibling}
+            masterCombobox={editable.masterCombobox}
             allowEditExisting
             onSaved={onSaved ? () => onSaved() : undefined}
           />
