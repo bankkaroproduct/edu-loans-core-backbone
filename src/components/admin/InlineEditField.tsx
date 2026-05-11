@@ -302,7 +302,10 @@ export function InlineEditField({
             autoFocus
             type={inputType}
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value;
+              setDraft(numericKind ? sanitizeNumericInput(numericKind, v) : v);
+            }}
             placeholder={placeholder ?? label}
             className="h-7 text-sm w-full"
             disabled={saving}
