@@ -307,10 +307,60 @@ function normEmployment(raw: string | null | undefined): string | null {
   return EMPLOYMENT_MAP[k] ?? null;
 }
 
-function normCourseCategory(rawCat: string | null | undefined, courseName: string | null | undefined): string | null {
-  const fromCat = rawCat ? COURSE_CATEGORY_MAP[String(rawCat).trim().toLowerCase()] ?? null : null;
-  if (fromCat) return fromCat;
-  return deriveCourseCategoryFromName(courseName);
+export interface CourseCategoryResolution {
+  course_name: string | null;
+  original: string | null;
+  derived: string | null;
+  source: "explicit" | "course_name_keyword" | "default_other" | "none";
+  matched_keyword?: string;
+}
+
+function normCourseCategory(
+  rawCat: string | null | undefined,
+  courseName: string | null | undefined,
+): { value: string | null; resolution: CourseCategoryResolution } {
+  const original = rawCat ? String(rawCat).trim() : null;
+  const cn = courseName ? String(courseName).trim() : null;
+
+  // 1) Explicit mapping
+  const fromCat = original
+    ? COURSE_CATEGORY_MAP[original.toLowerCase()] ?? null
+    : null;
+  if (fromCat) {
+    return {
+      value: fromCat,
+      resolution: { course_name: cn, original, derived: fromCat, source: "explicit" },
+    };
+  }
+
+  // 2) Keyword from course_name
+  const fromName = deriveCourseCategoryFromName(cn);
+  if (fromName) {
+    return {
+      value: fromName.category,
+      resolution: {
+        course_name: cn,
+        original,
+        derived: fromName.category,
+        source: "course_name_keyword",
+        matched_keyword: fromName.keyword,
+      },
+    };
+  }
+
+  // 3) Course name exists but nothing matched → default `other`
+  if (cn && cn.length > 0) {
+    return {
+      value: "other",
+      resolution: { course_name: cn, original, derived: "other", source: "default_other" },
+    };
+  }
+
+  // 4) Nothing to go on
+  return {
+    value: null,
+    resolution: { course_name: cn, original, derived: null, source: "none" },
+  };
 }
 
 function parseGpa(raw: string | null | undefined): number | null {
