@@ -117,3 +117,38 @@ export function validateNumeric(kind: NumericKind, raw: unknown): NumericResult 
 export function numericKindLabel(kind: NumericKind): string {
   return MSG[kind];
 }
+
+/**
+ * Range validator layered on top of `validateNumeric`. Blank stays valid
+ * (clean: null). Returns ok:false when the parsed number is outside [min, max].
+ */
+export function validateNumericRange(
+  kind: NumericKind,
+  raw: unknown,
+  opts: { min?: number; max?: number; label?: string },
+): NumericResult {
+  const base = validateNumeric(kind, raw);
+  if (!base.ok) return base;
+  if (base.clean === null) return base;
+  const n = typeof base.clean === "number" ? base.clean : Number(base.clean);
+  if (!Number.isFinite(n)) return base;
+  const label = opts.label ?? "Value";
+  if (opts.min !== undefined && n < opts.min) {
+    return { ok: false, message: `${label} must be at least ${opts.min}.` };
+  }
+  if (opts.max !== undefined && n > opts.max) {
+    return { ok: false, message: `${label} must be at most ${opts.max}.` };
+  }
+  return base;
+}
+
+/**
+ * For master-fallback free-text fields (manual country/university/course).
+ * Rejects purely-numeric junk like "12345" or "77.7" while allowing real
+ * names that may contain digits (e.g. "Course 101", "BITS Pilani").
+ */
+export function isPurelyNumericText(raw: string): boolean {
+  const s = (raw ?? "").trim();
+  if (!s) return false;
+  return /^[\d.,\s]+$/.test(s);
+}
