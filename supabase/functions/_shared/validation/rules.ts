@@ -125,6 +125,24 @@ export const DOCUMENT_RULES: Record<string, DocRule> = {
     nameStrength: "medium",
     tier: "strict",
   },
+  PG_MARK: {
+    keywords: ["university", "master", "post graduate", "post-graduate", "postgraduate", "marksheet", "grade card", "transcript", "semester", "cgpa", "sgpa", "m.a", "m.sc", "m.com", "m.tech", "mba", "pgdm"],
+    regexes: [],
+    requiredKeywordHits: 1,
+    nameSubject: "student",
+    typeStrength: "strong",
+    nameStrength: "medium",
+    tier: "strict",
+  },
+  PG_DEGREE: {
+    keywords: ["university", "master", "post graduate", "post-graduate", "postgraduate", "degree", "conferred", "awarded", "convocation", "provisional", "pgdm", "diploma"],
+    regexes: [],
+    requiredKeywordHits: 1,
+    nameSubject: "student",
+    typeStrength: "strong",
+    nameStrength: "medium",
+    tier: "strict",
+  },
 
   // ---- Strict admission (type strong, name medium) ----
   ADMIT_LETTER: {
