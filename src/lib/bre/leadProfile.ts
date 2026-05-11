@@ -713,6 +713,7 @@ function buildProfileCore(
     course_level_derivation: derivedCourseLevel
       ? { source: "course_name", raw: lead.course_name ?? "", derived: derivedCourseLevel }
       : { kind: "none" },
+    course_category_derivation: courseCategoryResult.resolution,
     english_proficiency: englishResult.resolution,
     collateral_state: collateralState,
   };
