@@ -4,6 +4,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { BreProfileInput, BreResult, BreScoringConfig } from "./types";
+import { formatEmploymentLabel, isEmploymentTypeParam } from "./employmentDisplay";
 
 function formatNumber(n: number | null | undefined): string {
   if (n == null) return "—";

@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { BreResult, ParameterTrace } from "@/lib/bre/types";
+import { formatEmploymentLabel, isEmploymentTypeParam } from "@/lib/bre/employmentDisplay";
 
 function TraceTable({ trace }: { trace: ParameterTrace[] }) {
   return (
@@ -18,15 +19,22 @@ function TraceTable({ trace }: { trace: ParameterTrace[] }) {
       </TableHeader>
       <TableBody>
         {trace.map((t) => {
+          const isEmp = isEmploymentTypeParam(t.param_key);
           const bandLabel = t.matched_band
             ? "value" in t.matched_band
-              ? (t.matched_band.label ?? t.matched_band.value)
+              ? (isEmp ? formatEmploymentLabel(t.matched_band.value) : (t.matched_band.label ?? t.matched_band.value))
               : `${t.matched_band.from}–${t.matched_band.to}${t.matched_band.label ? ` · ${t.matched_band.label}` : ""}`
             : "— no match";
+          const inputDisplay =
+            t.input == null || t.input === ""
+              ? "—"
+              : isEmp
+                ? formatEmploymentLabel(t.input)
+                : String(t.input);
           return (
             <TableRow key={t.param_key}>
               <TableCell className="font-medium text-xs">{t.label}</TableCell>
-              <TableCell className="text-xs">{t.input == null || t.input === "" ? "—" : String(t.input)}</TableCell>
+              <TableCell className="text-xs">{inputDisplay}</TableCell>
               <TableCell className="text-xs text-muted-foreground">{bandLabel}</TableCell>
               <TableCell className="text-right tabular-nums text-xs">{t.band_score}</TableCell>
               <TableCell className="text-right tabular-nums text-xs">{t.weight}</TableCell>
