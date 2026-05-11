@@ -52,8 +52,9 @@ export const ADMIN_EDITABLE_FIELDS: AdminFieldDef[] = [
   { key: "coapplicant_email", label: "Co-applicant email" },
   { key: "coapplicant_income", label: "Co-applicant income" },
   { key: "coapplicant_employment_type", label: "Co-applicant employment type" },
-  { key: "coapplicant_employer", label: "Co-applicant employer" },
-  { key: "coapplicant_existing_emi", label: "Co-applicant existing EMI" },
+  // NOTE: coapplicant_employer, coapplicant_existing_emi, and CIBIL removed
+  // from active editing scope. Historical values remain visible read-only
+  // in the Legacy Data block on Admin Lead Detail.
 
   // Collateral
   { key: "collateral_available", label: "Collateral available" },
