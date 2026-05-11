@@ -282,7 +282,7 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
         <div className="grid grid-cols-2 gap-x-4 gap-y-3.5">
           <Field label="Co-Applicant" value={lead.coapplicant_name} editable={ed("coapplicant_name")} onSaved={onSaved} />
           <Field label="Relation" value={lead.coapplicant_relation} editable={ed("coapplicant_relation")} onSaved={onSaved} />
-          <Field label="Co-Applicant Mobile" value={lead.coapplicant_mobile} editable={ed("coapplicant_mobile")} onSaved={onSaved} />
+          <Field label="Co-Applicant Mobile" value={lead.coapplicant_mobile} editable={ed("coapplicant_mobile", { numericKind: "phone" })} onSaved={onSaved} />
           <Field
             label="Co-Applicant Email"
             value={lead.coapplicant_email}
@@ -292,19 +292,19 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
           <Field
             label="Co-Applicant Age"
             value={tsStr("coapplicant_age")}
-            editable={edTS("coapplicant_age", { inputType: "number", parseValue: numericParse })}
+            editable={edTS("coapplicant_age", { inputType: "number", parseValue: numericParse, numericKind: "integer" })}
             onSaved={onSaved}
           />
           <Field
             label="Co-Applicant Work Exp (years)"
             value={tsStr("coapplicant_work_experience_years")}
-            editable={edTS("coapplicant_work_experience_years", { inputType: "number", parseValue: numericParse })}
+            editable={edTS("coapplicant_work_experience_years", { inputType: "number", parseValue: numericParse, numericKind: "integer" })}
             onSaved={onSaved}
           />
           <Field
             label="Co-Applicant Work Exp (months)"
             value={tsStr("coapplicant_work_experience_months")}
-            editable={edTS("coapplicant_work_experience_months", { inputType: "number", parseValue: numericParse })}
+            editable={edTS("coapplicant_work_experience_months", { inputType: "number", parseValue: numericParse, numericKind: "integer" })}
             onSaved={onSaved}
           />
           <Field
@@ -326,6 +326,7 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
               inputType: "number",
               formatDisplay: (v) => formatINR(v),
               parseValue: numericParse,
+              numericKind: "amount",
             })}
             onSaved={onSaved}
           />
