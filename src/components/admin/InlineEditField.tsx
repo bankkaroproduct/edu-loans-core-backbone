@@ -117,6 +117,10 @@ export function InlineEditField({
   jsonbColumn,
   numericKind,
   optionsRenderAs = "buttons",
+  numericRange,
+  siblingMaxKey,
+  percentageMaxWhenNoSibling,
+  masterCombobox,
 }: Props) {
   const { appUser } = useAuth();
   const { isAdmin } = useRoleAccess();
@@ -135,6 +139,15 @@ export function InlineEditField({
 
   const hasValue = localValue !== null && localValue !== undefined && localValue !== "";
 
+  // Whether the current draft matches a master-combobox option (label match).
+  const masterSelectedId = useMemo(() => {
+    if (!masterCombobox) return "";
+    const d = draft.trim();
+    if (!d) return "";
+    const m = masterCombobox.options.find((o) => o.label === d);
+    return m?.id ?? "";
+  }, [masterCombobox, draft]);
+
   const startEdit = () => {
     setDraft(hasValue ? String(localValue) : "");
     setEditing(true);
@@ -147,13 +160,39 @@ export function InlineEditField({
   };
   const askConfirm = () => {
     const trimmedDraft = draft.trim();
+    // Master-combobox fields: blank cancels (no save); manual values cannot be
+    // purely numeric junk (e.g. "12345"). Real names with digits are allowed.
+    if (masterCombobox) {
+      if (!trimmedDraft) {
+        toast.error(`${label} cannot be empty`);
+        return;
+      }
+      const isMaster = masterCombobox.options.some((o) => o.label === trimmedDraft);
+      if (!isMaster && isPurelyNumericText(trimmedDraft)) {
+        toast.error("Please enter a valid name.");
+        return;
+      }
+      setConfirming(true);
+      return;
+    }
     // Numeric fields: blank is allowed (clears the value); non-blank must be valid.
     if (numericKind) {
       if (trimmedDraft !== "") {
-        const res = validateNumeric(numericKind, trimmedDraft);
-        if (res.ok === false) {
-          toast.error(res.message);
+        const baseRes = validateNumeric(numericKind, trimmedDraft);
+        if (baseRes.ok === false) {
+          toast.error(baseRes.message);
           return;
+        }
+        if (numericRange) {
+          const r = validateNumericRange(numericKind, trimmedDraft, {
+            min: numericRange.min,
+            max: numericRange.max,
+            label: numericRange.label ?? label,
+          });
+          if (r.ok === false) {
+            toast.error(r.message);
+            return;
+          }
         }
       }
     } else if (!trimmedDraft) {
