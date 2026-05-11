@@ -489,7 +489,12 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
           <Field
             label="Co-Applicant Age"
             value={tsStr("coapplicant_age")}
-            editable={edTS("coapplicant_age", { inputType: "number", parseValue: numericParse, numericKind: "integer" })}
+            editable={edTS("coapplicant_age", {
+              inputType: "number",
+              parseValue: numericParse,
+              numericKind: "integer",
+              numericRange: { min: 18, max: 100, label: "Co-Applicant Age" },
+            })}
             onSaved={onSaved}
           />
           {/* Single decimal field. Reads from
