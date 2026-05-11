@@ -296,7 +296,9 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
             <Field
               label="Work Experience (years)"
               value={tsStr("work_experience_years")}
-              editable={edTS("work_experience_years")}
+              editable={edTS("work_experience_years", {
+                numericRange: { min: WORK_EXPERIENCE_YEARS_RANGE.min, max: WORK_EXPERIENCE_YEARS_RANGE.max, label: WORK_EXPERIENCE_YEARS_RANGE.label },
+              })}
               onSaved={onSaved}
             />
             <Field label="10th Score" value={tsStr("tenth")} editable={edTS("tenth")}  onSaved={onSaved} />
