@@ -36,6 +36,21 @@ import { ENABLE_LENDER_SCORECARD, evaluateLenderScorecard } from "./lenderScorec
  */
 export const COAPPLICANT_AGE_CAP = 60;
 
+/**
+ * Parameter keys that are universally excluded from BRE scoring.
+ * Applies to every scoring config (default + DB-stored) so legacy rows that
+ * still contain these params no longer contribute to bucket scores or
+ * rejection reasons. Lender-side CIBIL knockouts are also disabled below.
+ *
+ * Historical co-applicant data (Employer / Occupation, Existing EMI, CIBIL)
+ * remains intact in the database for audit visibility but is never fed to
+ * the engine.
+ */
+export const BRE_DEPRECATED_PARAM_KEYS: ReadonlySet<string> = new Set([
+  "cibil_score",
+  "existing_emi_burden_pct",
+]);
+
 const BUCKETS: { key: BucketKey; field: keyof BreScoringConfig }[] = [
   { key: "student", field: "student_params" },
   { key: "university", field: "university_params" },
