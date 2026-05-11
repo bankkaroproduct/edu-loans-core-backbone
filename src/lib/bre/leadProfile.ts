@@ -683,7 +683,8 @@ function buildProfileCore(
   const loanAmount = lead.loan_amount_required != null ? Number(lead.loan_amount_required) : 0;
   if (!loanAmount || loanAmount <= 0) missing.push({ field: "loan_amount_required", label: "Loan amount" });
 
-  const courseCategory = normCourseCategory(lead.course_category, lead.course_name);
+  const courseCategoryResult = normCourseCategory(lead.course_category, lead.course_name);
+  const courseCategory = courseCategoryResult.value;
 
   // Course level: derived from course_name when not explicitly captured on the lead.
   const derivedCourseLevel = deriveCourseLevelFromName(lead.course_name);
