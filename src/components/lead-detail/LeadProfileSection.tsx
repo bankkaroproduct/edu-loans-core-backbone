@@ -270,16 +270,16 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
               editable={edTS("coapplicant_age", { inputType: "number", parseValue: numericParse })}
               onSaved={onSaved}
             />
+            {/* Single decimal field. Reads new exact key first; falls back to
+                legacy years+months. Saves into the new key only. */}
             <Field
-              label="Co-Applicant Work Exp (years)"
-              value={tsStr("coapplicant_work_experience_years")}
-              editable={edTS("coapplicant_work_experience_years", { inputType: "number", parseValue: numericParse })}
-              onSaved={onSaved}
-            />
-            <Field
-              label="Co-Applicant Work Exp (months)"
-              value={tsStr("coapplicant_work_experience_months")}
-              editable={edTS("coapplicant_work_experience_months", { inputType: "number", parseValue: numericParse })}
+              label="Co-Applicant Work Experience"
+              value={formatCoappWorkExpDecimal(resolveCoappWorkExpDecimalYears(ts))}
+              editable={edTS("coapplicant_work_experience_total_years", {
+                inputType: "number",
+                parseValue: numericParse,
+                numericKind: "decimal",
+              })}
               onSaved={onSaved}
             />
             <Field
@@ -288,12 +288,8 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
               editable={ed("coapplicant_employment_type")}
               onSaved={onSaved}
             />
-            <Field
-              label="Co-Applicant Income Source"
-              value={lead.coapplicant_income_source}
-              editable={ed("coapplicant_income_source")}
-              onSaved={onSaved}
-            />
+            {/* Co-Applicant Income Source removed from Financial Snapshot
+                display. DB column and write paths are preserved. */}
             <Field
               label="Co-Applicant Income"
               value={lead.coapplicant_income ? String(lead.coapplicant_income) : null}
