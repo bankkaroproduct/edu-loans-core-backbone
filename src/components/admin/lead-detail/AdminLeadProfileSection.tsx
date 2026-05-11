@@ -172,8 +172,8 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
   const hqEditable = (() => {
     const hasMarks = lead.marks_gpa && String(lead.marks_gpa).trim() !== "";
     const hasTS = tsStr("highest_qualification_score") !== null;
-    if (hasTS && !hasMarks) return edTS("highest_qualification_score");
-    return ed("marks_gpa");
+    if (hasTS && !hasMarks) return edTS("highest_qualification_score", { numericKind: "decimal" });
+    return ed("marks_gpa", { numericKind: "decimal" });
   })();
 
   const numericParse = (raw: string) => {
