@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { BreResult, ParameterTrace } from "@/lib/bre/types";
+import { formatTraceInput } from "@/lib/bre/displayLabels";
 
 function TraceTable({ trace }: { trace: ParameterTrace[] }) {
   return (
@@ -26,7 +27,7 @@ function TraceTable({ trace }: { trace: ParameterTrace[] }) {
           return (
             <TableRow key={t.param_key}>
               <TableCell className="font-medium text-xs">{t.label}</TableCell>
-              <TableCell className="text-xs">{t.input == null || t.input === "" ? "—" : String(t.input)}</TableCell>
+              <TableCell className="text-xs">{formatTraceInput(t)}</TableCell>
               <TableCell className="text-xs text-muted-foreground">{bandLabel}</TableCell>
               <TableCell className="text-right tabular-nums text-xs">{t.band_score}</TableCell>
               <TableCell className="text-right tabular-nums text-xs">{t.weight}</TableCell>

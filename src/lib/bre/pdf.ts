@@ -4,6 +4,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { BreProfileInput, BreResult, BreScoringConfig } from "./types";
+import { formatTraceInput } from "./displayLabels";
 
 function formatNumber(n: number | null | undefined): string {
   if (n == null) return "—";
@@ -106,7 +107,7 @@ export function buildSimulationPdf(opts: {
       head: [[`${b.charAt(0).toUpperCase() + b.slice(1)} parameter trace`, "Input", "Band score", "Weight", "Contribution"]],
       body: result.buckets[b].trace.map((t) => [
         t.label,
-        t.input == null || t.input === "" ? "—" : String(t.input),
+        t.input == null || t.input === "" ? "—" : formatTraceInput(t),
         `${t.band_score}`,
         `${t.weight}`,
         `${t.contribution}`,
