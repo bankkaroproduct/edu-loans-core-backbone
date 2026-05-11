@@ -129,25 +129,99 @@ const COURSE_CATEGORY_MAP: Record<string, string> = {
   "arts / humanities": "arts",
 };
 
-// Free-text course-name keyword fallback when course_category is null.
+// Free-text course-name keyword fallback when explicit course_category is null
+// or unmapped. Returns the matched category AND the keyword that triggered it
+// so the BRE trace can document the decision.
 //
-// High-confidence STEM keywords include modern tech/security/analytics/AI tracks
-// that the original regex did not capture (cyber security, analytics, AI/ML,
-// software, IT, cloud, networking, robotics, mechatronics). A common typo
-// ("secuirity") is also tolerated so legitimate STEM leads aren't misclassified.
-function deriveCourseCategoryFromName(name: string | null | undefined): string | null {
+// Categories follow the active scoring config bands:
+//   stem / mba / management / healthcare / arts / other
+// Accounting, commerce, banking, finance, audit, taxation, fintech, supply
+// chain, project/operations management, business analytics all map to
+// `management` (no separate finance/commerce band exists; management is the
+// closest business/commerce discipline per product decision).
+export function deriveCourseCategoryFromName(
+  name: string | null | undefined,
+): { category: string; keyword: string } | null {
   if (!name) return null;
   const n = name.toLowerCase();
-  if (/\bmba\b|master of business|\bpgdm\b|post[- ]?graduate diploma in management/.test(n)) return "mba";
-  if (
-    /\b(ms|m\.s\.?|msc|m\.sc)\b|engineer|computer|data|information|tech|stem|physics|chem|math|bio|cyber ?sec(?:u(?:i)?r)?ity|infosec|information security|analytics|\bai\b|artificial intelligence|\bml\b|machine learning|deep learning|software|\bit\b|cloud|network(?:ing)?|robotics|mechatronics/.test(
-      n,
-    )
-  )
-    return "stem";
-  if (/management|business|finance|economic|marketing|hr/.test(n)) return "management";
-  if (/medic|nurs|health|pharma|dental|clinic/.test(n)) return "healthcare";
-  if (/arts|humanit|literat|history|philosop|design|music/.test(n)) return "arts";
+
+  // Ordered list: most-specific first. First match wins.
+  const patterns: Array<{ keyword: string; category: string; re: RegExp }> = [
+    // MBA / management graduate programs
+    { keyword: "mba", category: "mba", re: /\bmba\b/ },
+    { keyword: "master of business", category: "mba", re: /master of business/ },
+    { keyword: "pgdm", category: "mba", re: /\bpgdm\b/ },
+    { keyword: "post graduate diploma in management", category: "mba", re: /post[- ]?graduate diploma in management/ },
+
+    // STEM
+    { keyword: "engineering", category: "stem", re: /engineer/ },
+    { keyword: "computer", category: "stem", re: /computer/ },
+    { keyword: "data science", category: "stem", re: /data ?science|\bdata\b/ },
+    { keyword: "information technology", category: "stem", re: /information|\bit\b/ },
+    { keyword: "stem", category: "stem", re: /\bstem\b/ },
+    { keyword: "physics", category: "stem", re: /physics/ },
+    { keyword: "chemistry", category: "stem", re: /chem/ },
+    { keyword: "mathematics", category: "stem", re: /math/ },
+    { keyword: "biology", category: "stem", re: /bio/ },
+    { keyword: "cyber security", category: "stem", re: /cyber ?sec(?:u(?:i)?r)?ity|infosec|information security/ },
+    { keyword: "analytics", category: "stem", re: /(?<!business )analytics/ },
+    { keyword: "ai", category: "stem", re: /\bai\b|artificial intelligence/ },
+    { keyword: "machine learning", category: "stem", re: /\bml\b|machine learning|deep learning/ },
+    { keyword: "software", category: "stem", re: /software/ },
+    { keyword: "cloud", category: "stem", re: /cloud/ },
+    { keyword: "networking", category: "stem", re: /network(?:ing)?/ },
+    { keyword: "robotics", category: "stem", re: /robotics|mechatronics/ },
+    // (Generic MS/MSc moved to bottom — see end of list — so explicit business
+    // keywords like "MS Finance" map to management rather than STEM.)
+
+    // Healthcare (before management so "pharma management" stays healthcare)
+    { keyword: "medical", category: "healthcare", re: /medic/ },
+    { keyword: "nursing", category: "healthcare", re: /nurs/ },
+    { keyword: "health", category: "healthcare", re: /health/ },
+    { keyword: "pharma", category: "healthcare", re: /pharma/ },
+    { keyword: "dental", category: "healthcare", re: /dental/ },
+    { keyword: "clinical", category: "healthcare", re: /clinic/ },
+
+    // Management / Business / Commerce / Finance (mapped to `management`)
+    { keyword: "professional accounting", category: "management", re: /professional accounting/ },
+    { keyword: "accounting", category: "management", re: /accounting|accountancy/ },
+    { keyword: "commerce", category: "management", re: /commerce/ },
+    { keyword: "banking", category: "management", re: /banking/ },
+    { keyword: "financial management", category: "management", re: /financial management/ },
+    { keyword: "finance", category: "management", re: /finance|financial/ },
+    { keyword: "economics", category: "management", re: /economic/ },
+    { keyword: "investment", category: "management", re: /investment/ },
+    { keyword: "audit", category: "management", re: /\baudit/ },
+    { keyword: "taxation", category: "management", re: /taxation|\btax\b/ },
+    { keyword: "fintech", category: "management", re: /fintech/ },
+    { keyword: "actuarial", category: "management", re: /actuarial/ },
+    { keyword: "business analytics", category: "management", re: /business analytics/ },
+    { keyword: "supply chain", category: "management", re: /supply chain/ },
+    { keyword: "operations management", category: "management", re: /operations management|operations/ },
+    { keyword: "project management", category: "management", re: /project management/ },
+    { keyword: "marketing", category: "management", re: /marketing/ },
+    { keyword: "hr", category: "management", re: /\bhr\b|human resource/ },
+    { keyword: "management", category: "management", re: /management/ },
+    { keyword: "business", category: "management", re: /business/ },
+
+    // Arts / Humanities
+    { keyword: "arts", category: "arts", re: /\barts?\b/ },
+    { keyword: "humanities", category: "arts", re: /humanit/ },
+    { keyword: "literature", category: "arts", re: /literat/ },
+    { keyword: "history", category: "arts", re: /history/ },
+    { keyword: "philosophy", category: "arts", re: /philosop/ },
+    { keyword: "design", category: "arts", re: /design/ },
+    { keyword: "music", category: "arts", re: /music/ },
+
+    // Generic MS/MSc fallback — only triggers if no specific business/health/
+    // arts keyword matched above (so "MS Finance" → management, but "MS" alone
+    // or "MSc Robotics" → stem).
+    { keyword: "ms / msc", category: "stem", re: /\b(ms|m\.s\.?|msc|m\.sc)\b/ },
+  ];
+
+  for (const p of patterns) {
+    if (p.re.test(n)) return { category: p.category, keyword: p.keyword };
+  }
   return null;
 }
 
@@ -239,10 +313,60 @@ function normEmployment(raw: string | null | undefined): string | null {
   return EMPLOYMENT_MAP[k] ?? null;
 }
 
-function normCourseCategory(rawCat: string | null | undefined, courseName: string | null | undefined): string | null {
-  const fromCat = rawCat ? COURSE_CATEGORY_MAP[String(rawCat).trim().toLowerCase()] ?? null : null;
-  if (fromCat) return fromCat;
-  return deriveCourseCategoryFromName(courseName);
+export interface CourseCategoryResolution {
+  course_name: string | null;
+  original: string | null;
+  derived: string | null;
+  source: "explicit" | "course_name_keyword" | "default_other" | "none";
+  matched_keyword?: string;
+}
+
+function normCourseCategory(
+  rawCat: string | null | undefined,
+  courseName: string | null | undefined,
+): { value: string | null; resolution: CourseCategoryResolution } {
+  const original = rawCat ? String(rawCat).trim() : null;
+  const cn = courseName ? String(courseName).trim() : null;
+
+  // 1) Explicit mapping
+  const fromCat = original
+    ? COURSE_CATEGORY_MAP[original.toLowerCase()] ?? null
+    : null;
+  if (fromCat) {
+    return {
+      value: fromCat,
+      resolution: { course_name: cn, original, derived: fromCat, source: "explicit" },
+    };
+  }
+
+  // 2) Keyword from course_name
+  const fromName = deriveCourseCategoryFromName(cn);
+  if (fromName) {
+    return {
+      value: fromName.category,
+      resolution: {
+        course_name: cn,
+        original,
+        derived: fromName.category,
+        source: "course_name_keyword",
+        matched_keyword: fromName.keyword,
+      },
+    };
+  }
+
+  // 3) Course name exists but nothing matched → default `other`
+  if (cn && cn.length > 0) {
+    return {
+      value: "other",
+      resolution: { course_name: cn, original, derived: "other", source: "default_other" },
+    };
+  }
+
+  // 4) Nothing to go on
+  return {
+    value: null,
+    resolution: { course_name: cn, original, derived: null, source: "none" },
+  };
 }
 
 function parseGpa(raw: string | null | undefined): number | null {
@@ -433,6 +557,8 @@ export interface BuildProfileResolution {
     | { kind: "no_match"; raw: string }
     | { kind: "none" };
   course_level_derivation?: { source: "course_name"; raw: string; derived: string } | { kind: "none" };
+  /** Course-category derivation trace (explicit / keyword / default_other / none). */
+  course_category_derivation?: CourseCategoryResolution;
   english_proficiency?: EnglishProficiencyResolution;
   /**
    * Derived collateral state for UI display.
@@ -563,7 +689,8 @@ function buildProfileCore(
   const loanAmount = lead.loan_amount_required != null ? Number(lead.loan_amount_required) : 0;
   if (!loanAmount || loanAmount <= 0) missing.push({ field: "loan_amount_required", label: "Loan amount" });
 
-  const courseCategory = normCourseCategory(lead.course_category, lead.course_name);
+  const courseCategoryResult = normCourseCategory(lead.course_category, lead.course_name);
+  const courseCategory = courseCategoryResult.value;
 
   // Course level: derived from course_name when not explicitly captured on the lead.
   const derivedCourseLevel = deriveCourseLevelFromName(lead.course_name);
@@ -592,6 +719,7 @@ function buildProfileCore(
     course_level_derivation: derivedCourseLevel
       ? { source: "course_name", raw: lead.course_name ?? "", derived: derivedCourseLevel }
       : { kind: "none" },
+    course_category_derivation: courseCategoryResult.resolution,
     english_proficiency: englishResult.resolution,
     collateral_state: collateralState,
   };
