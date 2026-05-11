@@ -5,7 +5,12 @@ import type { Tables } from "@/integrations/supabase/types";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { InlineEditField } from "@/components/admin/InlineEditField";
 import { formatINR } from "@/lib/formatCurrency";
-import { normalizeAcademicScore } from "@/lib/academicScore";
+import {
+  normalizeAcademicScore,
+  resolveCoappWorkExpDecimalYears,
+  formatCoappWorkExpDecimal,
+} from "@/lib/academicScore";
+import type { NumericKind } from "@/lib/numericValidation";
 
 type Lead = Tables<"student_leads"> & {
   district?: string | null;
@@ -28,6 +33,7 @@ interface EditableConfig {
   options?: { value: string; label: string }[];
   parseValue?: (raw: string) => unknown;
   formatDisplay?: (v: string) => string;
+  numericKind?: NumericKind;
 }
 
 function Field({
@@ -59,6 +65,7 @@ function Field({
             options={editable.options}
             parseValue={editable.parseValue}
             formatDisplay={editable.formatDisplay}
+            numericKind={editable.numericKind}
             allowEditExisting
             onSaved={onSaved ? () => onSaved() : undefined}
           />
@@ -196,13 +203,8 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
             <Field label="University" value={lead.university_name_raw} editable={ed("university_name_raw")}  onSaved={onSaved} />
             <Field label="Course" value={lead.course_name} editable={ed("course_name")}  onSaved={onSaved} />
             <Field label="Course Category" value={lead.course_category} editable={ed("course_category")}  onSaved={onSaved} />
-            <Field label="Intake Term" value={lead.intake_term} editable={ed("intake_term")}  onSaved={onSaved} />
-            <Field
-              label="Intake Year"
-              value={lead.intake_year ? String(lead.intake_year) : null}
-              editable={ed("intake_year", { inputType: "number", parseValue: numericParse })}
-              onSaved={onSaved}
-            />
+            {/* Intake Term + Intake Year intentionally omitted here — Intake
+                in LeadSummaryStrip is the single source of truth for display. */}
             <Field
               label="Loan Amount"
               value={lead.loan_amount_required ? String(lead.loan_amount_required) : null}
@@ -268,16 +270,16 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
               editable={edTS("coapplicant_age", { inputType: "number", parseValue: numericParse })}
               onSaved={onSaved}
             />
+            {/* Single decimal field. Reads new exact key first; falls back to
+                legacy years+months. Saves into the new key only. */}
             <Field
-              label="Co-Applicant Work Exp (years)"
-              value={tsStr("coapplicant_work_experience_years")}
-              editable={edTS("coapplicant_work_experience_years", { inputType: "number", parseValue: numericParse })}
-              onSaved={onSaved}
-            />
-            <Field
-              label="Co-Applicant Work Exp (months)"
-              value={tsStr("coapplicant_work_experience_months")}
-              editable={edTS("coapplicant_work_experience_months", { inputType: "number", parseValue: numericParse })}
+              label="Co-Applicant Work Experience"
+              value={formatCoappWorkExpDecimal(resolveCoappWorkExpDecimalYears(ts))}
+              editable={edTS("coapplicant_work_experience_total_years", {
+                inputType: "number",
+                parseValue: numericParse,
+                numericKind: "decimal",
+              })}
               onSaved={onSaved}
             />
             <Field
@@ -286,12 +288,8 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
               editable={ed("coapplicant_employment_type")}
               onSaved={onSaved}
             />
-            <Field
-              label="Co-Applicant Income Source"
-              value={lead.coapplicant_income_source}
-              editable={ed("coapplicant_income_source")}
-              onSaved={onSaved}
-            />
+            {/* Co-Applicant Income Source removed from Financial Snapshot
+                display. DB column and write paths are preserved. */}
             <Field
               label="Co-Applicant Income"
               value={lead.coapplicant_income ? String(lead.coapplicant_income) : null}

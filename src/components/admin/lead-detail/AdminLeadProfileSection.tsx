@@ -8,7 +8,11 @@ import type { Tables } from "@/integrations/supabase/types";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { InlineEditField } from "@/components/admin/InlineEditField";
 import { formatINR } from "@/lib/formatCurrency";
-import { normalizeAcademicScore } from "@/lib/academicScore";
+import {
+  normalizeAcademicScore,
+  resolveCoappWorkExpDecimalYears,
+  formatCoappWorkExpDecimal,
+} from "@/lib/academicScore";
 import { useHighestQualificationOptions } from "@/hooks/useHighestQualificationOptions";
 import { CO_APPLICANT_RELATIONS } from "@/lib/coapplicantRelations";
 
@@ -246,13 +250,9 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
           <Field label="University" value={lead.university_name_raw} editable={ed("university_name_raw")} onSaved={onSaved} />
           <Field label="Course" value={lead.course_name} editable={ed("course_name")} onSaved={onSaved} />
           <Field label="Course Category" value={lead.course_category} editable={ed("course_category")} onSaved={onSaved} />
-          <Field label="Intake Term" value={lead.intake_term} editable={ed("intake_term")} onSaved={onSaved} />
-          <Field
-            label="Intake Year"
-            value={lead.intake_year ? String(lead.intake_year) : null}
-            editable={ed("intake_year", { inputType: "number", parseValue: numericParse, numericKind: "year" })}
-            onSaved={onSaved}
-          />
+          {/* Intake Term + Intake Year intentionally omitted here — the Intake
+              Session tile in AdminLeadSummaryStrip is the single source of truth
+              for editing intake. */}
           <Field
             label="Loan Amount"
             value={lead.loan_amount_required ? String(lead.loan_amount_required) : null}
@@ -327,16 +327,19 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
             editable={edTS("coapplicant_age", { inputType: "number", parseValue: numericParse, numericKind: "integer" })}
             onSaved={onSaved}
           />
+          {/* Single decimal field. Reads from
+              test_scores.coapplicant_work_experience_total_years when present
+              (exact decimal), else falls back to legacy years + months/12.
+              Saves the exact decimal into the new key only; legacy keys are
+              preserved untouched for backward compatibility. */}
           <Field
-            label="Co-Applicant Work Exp (years)"
-            value={tsStr("coapplicant_work_experience_years")}
-            editable={edTS("coapplicant_work_experience_years", { inputType: "number", parseValue: numericParse, numericKind: "integer" })}
-            onSaved={onSaved}
-          />
-          <Field
-            label="Co-Applicant Work Exp (months)"
-            value={tsStr("coapplicant_work_experience_months")}
-            editable={edTS("coapplicant_work_experience_months", { inputType: "number", parseValue: numericParse, numericKind: "integer" })}
+            label="Co-Applicant Work Experience"
+            value={formatCoappWorkExpDecimal(resolveCoappWorkExpDecimalYears(ts))}
+            editable={edTS("coapplicant_work_experience_total_years", {
+              inputType: "number",
+              parseValue: numericParse,
+              numericKind: "decimal",
+            })}
             onSaved={onSaved}
           />
           <Field
@@ -348,12 +351,9 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
             })}
             onSaved={onSaved}
           />
-          <Field
-            label="Co-Applicant Income Source"
-            value={lead.coapplicant_income_source}
-            editable={ed("coapplicant_income_source")}
-            onSaved={onSaved}
-          />
+          {/* Co-Applicant Income Source removed from Financial Snapshot display.
+              DB column and writers (Add Lead, student-application edge fn) are
+              intentionally preserved. */}
           <Field
             label="Co-Applicant Income"
             value={lead.coapplicant_income ? String(lead.coapplicant_income) : null}
