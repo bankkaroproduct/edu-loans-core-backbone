@@ -61,8 +61,8 @@ export const EDITABLE_FIELDS: EditFieldDef[] = [
   { key: "coapplicant_email", label: "Co-applicant email", group: "Co-applicant", type: "text" },
   { key: "coapplicant_income", label: "Co-applicant income", group: "Co-applicant", type: "number" },
   { key: "coapplicant_employment_type", label: "Employment type", group: "Co-applicant", type: "text" },
-  { key: "coapplicant_employer", label: "Employer", group: "Co-applicant", type: "text" },
-  { key: "coapplicant_existing_emi", label: "Existing EMI", group: "Co-applicant", type: "number" },
+  // Employer, Existing EMI, and CIBIL are excluded from partner edit-requests.
+  // They are no longer used in BRE; legacy values are read-only on admin detail.
 
   // Collateral
   { key: "collateral_available", label: "Collateral available", group: "Collateral", type: "boolean" },

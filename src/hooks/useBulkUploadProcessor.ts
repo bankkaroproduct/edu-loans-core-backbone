@@ -135,8 +135,7 @@ const NEW_TEMPLATE_HEADERS = [
   "graduation_score", "graduation_total_marks",
   "highest_qualification", "highest_qualification_score", "highest_qualification_total_marks",
   "work_experience", "test_scores",
-  "coapplicant_age", "coapplicant_employment_type", "coapplicant_employer",
-  "coapplicant_existing_emi", "coapplicant_cibil",
+  "coapplicant_age", "coapplicant_employment_type",
   "co_applicant_work_experience",
 ];
 
@@ -802,9 +801,10 @@ export async function processBulkUpload(
         coapplicant_name: row.coapplicant_name ?? null,
         coapplicant_relation: row.coapplicant_relation ?? null,
         coapplicant_income: row.coapplicant_income ?? null,
-        coapplicant_existing_emi: row.coapplicant_existing_emi ?? null,
         coapplicant_employment_type: row.coapplicant_employment_type ?? null,
-        coapplicant_employer: row.coapplicant_employer ?? null,
+        // coapplicant_employer + coapplicant_existing_emi are deprecated for new
+        // leads — silently ignored if present in old templates. Historical
+        // values on existing rows are preserved.
         collateral_available: row.collateral_available ?? null,
         collateral_notes: row.collateral_notes ?? null,
         // Academic + co-applicant extension — mirror Add Lead conventions:
@@ -827,7 +827,8 @@ export async function processBulkUpload(
           if (row.highest_qualification_total != null) ts.highest_qualification_total = row.highest_qualification_total;
           if (row.work_experience != null) ts.work_experience_years = row.work_experience;
           if (row.coapplicant_age != null) ts.coapplicant_age = row.coapplicant_age;
-          if (row.coapplicant_cibil != null) ts.coapplicant_cibil = row.coapplicant_cibil;
+          // coapplicant_cibil deprecated — not written for new leads. Legacy
+          // values on existing rows remain readable from test_scores JSONB.
           if (row.coapplicant_work_experience_years != null) ts.coapplicant_work_experience_years = row.coapplicant_work_experience_years;
           if (row.coapplicant_work_experience_months != null) ts.coapplicant_work_experience_months = row.coapplicant_work_experience_months;
           if (row.test_scores_raw) ts.raw_text = row.test_scores_raw;

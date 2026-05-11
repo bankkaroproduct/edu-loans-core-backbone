@@ -934,9 +934,9 @@ function LenderCard({
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-xs text-xs leading-snug">
                 This score is calculated using this lender's own scorecard.
-                Different lenders may weigh academics, CIBIL, income, FOIR,
-                collateral, university/course, and loan fit differently. This
-                is separate from the Global BRE score.
+                Different lenders may weigh academics, income, collateral,
+                university/course, and loan fit differently. This is separate
+                from the Global BRE score.
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
