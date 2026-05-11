@@ -177,7 +177,7 @@ export default function BreScoringConfigEditor() {
           />
           <BucketEditor
             title="Co-applicant bucket"
-            description="Income, CIBIL, employment. Weights must sum to 100."
+            description="Income, employment, age, relationship. Weights must sum to 100."
             params={draft.coapplicant_params}
             onChange={(p) => setDraft({ ...draft, coapplicant_params: p })}
             readOnly={!canEdit}
