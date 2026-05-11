@@ -513,6 +513,21 @@ Deno.serve(async (req) => {
         ? canonicalPhone
         : (rawWhatsapp ? (normalizePhone(rawWhatsapp) ?? null) : null);
 
+      // Validate loan_amount_required (column is numeric — reject alphabets).
+      let loanAmountClean: number | null = null;
+      if (data?.loan_amount_required !== null && data?.loan_amount_required !== undefined && data?.loan_amount_required !== "") {
+        const s = String(data.loan_amount_required).replace(/,/g, "").trim();
+        if (!STRICT_NUMERIC.test(s)) {
+          return jsonResponse({ error: "Only numeric values are allowed for loan amount." }, 400);
+        }
+        loanAmountClean = Number(s);
+      }
+      // Validate pincode if provided.
+      const pincodeIncoming = data?.pincode as string | null;
+      if (pincodeIncoming && !/^\d{6}$/.test(String(pincodeIncoming).trim())) {
+        return jsonResponse({ error: "Please enter a valid pincode." }, 400);
+      }
+
       const basicFields: Record<string, unknown> = {
         student_first_name: firstName,
         student_last_name: lastName,
@@ -529,7 +544,7 @@ Deno.serve(async (req) => {
         pincode: data?.pincode as string || null,
         intended_study_country: data?.intended_study_country as string,
         course_category: data?.course_category as string || null,
-        loan_amount_required: data?.loan_amount_required ? Number(data.loan_amount_required) : null,
+        loan_amount_required: loanAmountClean,
         // Country of residence: only persist what the caller explicitly sent.
         // Do NOT default to "India" — admins handle that downstream and a blanket
         // default has caused incorrect attribution in past audits.
