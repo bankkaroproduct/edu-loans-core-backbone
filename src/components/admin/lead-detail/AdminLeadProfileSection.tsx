@@ -14,7 +14,11 @@ import {
   formatCoappWorkExpDecimal,
 } from "@/lib/academicScore";
 import { useHighestQualificationOptions } from "@/hooks/useHighestQualificationOptions";
+import { useLeadMasterData } from "@/hooks/useLeadMasterData";
 import { CO_APPLICANT_RELATIONS } from "@/lib/coapplicantRelations";
+import { COURSE_CATEGORY_OPTIONS } from "@/lib/courseCategoryOptions";
+import { TEST_SCORE_RANGES, ACADEMIC_TOTAL_RANGE, ACADEMIC_PERCENTAGE_MAX, WORK_EXPERIENCE_YEARS_RANGE } from "@/lib/leadScoreRanges";
+import type { MasterOption } from "@/components/ui/master-combobox";
 
 type Lead = Tables<"student_leads"> & {
   district?: string | null;
@@ -44,6 +48,15 @@ interface EditableConfig {
   formatDisplay?: (v: string) => string;
   numericKind?: NumericKind;
   optionsRenderAs?: "buttons" | "dropdown";
+  numericRange?: { min?: number; max?: number; label?: string };
+  siblingMaxKey?: string;
+  percentageMaxWhenNoSibling?: number;
+  masterCombobox?: {
+    options: MasterOption[];
+    placeholder?: string;
+    manualPlaceholder?: string;
+    helperText?: string;
+  };
 }
 
 function Field({
@@ -86,6 +99,10 @@ function Field({
             parseValue={editable.parseValue}
             formatDisplay={editable.formatDisplay}
             numericKind={editable.numericKind}
+            numericRange={editable.numericRange}
+            siblingMaxKey={editable.siblingMaxKey}
+            percentageMaxWhenNoSibling={editable.percentageMaxWhenNoSibling}
+            masterCombobox={editable.masterCombobox}
             allowEditExisting
             onSaved={onSaved ? () => onSaved() : undefined}
           />
@@ -157,6 +174,17 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
   const { isAdmin } = useRoleAccess();
   const ts = (lead.test_scores ?? {}) as Record<string, unknown>;
   const { options: highestQualOptions } = useHighestQualificationOptions();
+  const { countries, universities, courses } = useLeadMasterData();
+
+  const countryOptions: MasterOption[] = countries.map((c) => ({ id: c.country_name, label: c.country_name }));
+  const universityOptions: MasterOption[] = (() => {
+    const country = (lead.intended_study_country ?? "").trim().toLowerCase();
+    const filtered = country
+      ? universities.filter((u) => (u.country ?? "").trim().toLowerCase() === country)
+      : universities;
+    return filtered.map((u) => ({ id: u.id, label: u.university_name, hint: u.country ?? undefined }));
+  })();
+  const courseOptions: MasterOption[] = courses.map((c) => ({ id: c.id, label: c.course_name, hint: c.course_category ?? undefined }));
 
   // Fixed product labels for Co-applicant Employment Type. Saved value must use
   // these exact strings (not the master table's hyphenated variants) so the
@@ -246,10 +274,56 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
 
       <SectionCard icon={GraduationCap} title="Education & Study Intent">
         <div className="grid grid-cols-2 gap-x-4 gap-y-3.5">
-          <Field label="Study Country" value={lead.intended_study_country} editable={ed("intended_study_country")} onSaved={onSaved} />
-          <Field label="University" value={lead.university_name_raw} editable={ed("university_name_raw")} onSaved={onSaved} />
-          <Field label="Course" value={lead.course_name} editable={ed("course_name")} onSaved={onSaved} />
-          <Field label="Course Category" value={lead.course_category} editable={ed("course_category")} onSaved={onSaved} />
+          <Field
+            label="Study Country"
+            value={lead.intended_study_country}
+            editable={ed("intended_study_country", {
+              masterCombobox: {
+                options: countryOptions,
+                placeholder: "Search & select country…",
+                manualPlaceholder: "Type the country name",
+                helperText: "Search the master list, or pick 'Not available in list' to type manually.",
+              },
+            })}
+            onSaved={onSaved}
+          />
+          <Field
+            label="University"
+            value={lead.university_name_raw}
+            editable={ed("university_name_raw", {
+              masterCombobox: {
+                options: universityOptions,
+                placeholder: lead.intended_study_country
+                  ? `Search universities in ${lead.intended_study_country}…`
+                  : "Search universities…",
+                manualPlaceholder: "Type the university name",
+                helperText: "Search the master list, or pick 'Not available in list' to type manually.",
+              },
+            })}
+            onSaved={onSaved}
+          />
+          <Field
+            label="Course"
+            value={lead.course_name}
+            editable={ed("course_name", {
+              masterCombobox: {
+                options: courseOptions,
+                placeholder: "Search courses…",
+                manualPlaceholder: "Type the course name",
+                helperText: "Search the master list, or pick 'Not available in list' to type manually.",
+              },
+            })}
+            onSaved={onSaved}
+          />
+          <Field
+            label="Course Category"
+            value={lead.course_category}
+            editable={ed("course_category", {
+              options: COURSE_CATEGORY_OPTIONS.map((v) => ({ value: v, label: v })),
+              optionsRenderAs: "dropdown",
+            })}
+            onSaved={onSaved}
+          />
           {/* Intake Term + Intake Year intentionally omitted here — the Intake
               Session tile in AdminLeadSummaryStrip is the single source of truth
               for editing intake. */}
@@ -273,31 +347,122 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
             })}
             onSaved={onSaved}
           />
-          <Field label="Highest Qualification Score" value={hqScore} editable={hqEditable} onSaved={onSaved} />
+          <Field
+            label="Highest Qualification Score"
+            value={hqScore}
+            editable={
+              hqEditable
+                ? {
+                    ...hqEditable,
+                    numericRange: { min: 0, max: ACADEMIC_TOTAL_RANGE.max, label: "Score" },
+                    ...(hqEditable.jsonbColumn === "test_scores"
+                      ? {
+                          siblingMaxKey: "highest_qualification_total",
+                          percentageMaxWhenNoSibling: ACADEMIC_PERCENTAGE_MAX,
+                        }
+                      : {}),
+                  }
+                : undefined
+            }
+            onSaved={onSaved}
+          />
           <Field
             label="Work Experience (years)"
             value={tsStr("work_experience_years")}
-            editable={edTS("work_experience_years", { numericKind: "integer" })}
+            editable={edTS("work_experience_years", {
+              numericKind: "integer",
+              numericRange: { min: WORK_EXPERIENCE_YEARS_RANGE.min, max: WORK_EXPERIENCE_YEARS_RANGE.max, label: WORK_EXPERIENCE_YEARS_RANGE.label },
+            })}
             onSaved={onSaved}
           />
-          <Field label="10th Score" value={tsStr("tenth")} editable={edTS("tenth", { numericKind: "decimal" })} onSaved={onSaved} />
-          <Field label="10th Total Marks" value={tsStr("tenth_total")} editable={edTS("tenth_total", { numericKind: "decimal" })} onSaved={onSaved} />
+          <Field
+            label="10th Score"
+            value={tsStr("tenth")}
+            editable={edTS("tenth", {
+              numericKind: "decimal",
+              numericRange: { min: 0, max: ACADEMIC_TOTAL_RANGE.max, label: "10th Score" },
+              siblingMaxKey: "tenth_total",
+              percentageMaxWhenNoSibling: ACADEMIC_PERCENTAGE_MAX,
+            })}
+            onSaved={onSaved}
+          />
+          <Field
+            label="10th Total Marks"
+            value={tsStr("tenth_total")}
+            editable={edTS("tenth_total", {
+              numericKind: "decimal",
+              numericRange: { min: ACADEMIC_TOTAL_RANGE.min, max: ACADEMIC_TOTAL_RANGE.max, label: "10th Total Marks" },
+            })}
+            onSaved={onSaved}
+          />
           <NormalizedField label="10th Normalized" score={tsStr("tenth")} total={tsStr("tenth_total")} />
-          <Field label="12th Score" value={tsStr("twelfth")} editable={edTS("twelfth", { numericKind: "decimal" })} onSaved={onSaved} />
-          <Field label="12th Total Marks" value={tsStr("twelfth_total")} editable={edTS("twelfth_total", { numericKind: "decimal" })} onSaved={onSaved} />
+          <Field
+            label="12th Score"
+            value={tsStr("twelfth")}
+            editable={edTS("twelfth", {
+              numericKind: "decimal",
+              numericRange: { min: 0, max: ACADEMIC_TOTAL_RANGE.max, label: "12th Score" },
+              siblingMaxKey: "twelfth_total",
+              percentageMaxWhenNoSibling: ACADEMIC_PERCENTAGE_MAX,
+            })}
+            onSaved={onSaved}
+          />
+          <Field
+            label="12th Total Marks"
+            value={tsStr("twelfth_total")}
+            editable={edTS("twelfth_total", {
+              numericKind: "decimal",
+              numericRange: { min: ACADEMIC_TOTAL_RANGE.min, max: ACADEMIC_TOTAL_RANGE.max, label: "12th Total Marks" },
+            })}
+            onSaved={onSaved}
+          />
           <NormalizedField label="12th Normalized" score={tsStr("twelfth")} total={tsStr("twelfth_total")} />
-          <Field label="Graduation Score" value={tsStr("graduation")} editable={edTS("graduation", { numericKind: "decimal" })} onSaved={onSaved} />
-          <Field label="Graduation Total / CGPA Scale" value={tsStr("graduation_total")} editable={edTS("graduation_total", { numericKind: "decimal" })} onSaved={onSaved} />
+          <Field
+            label="Graduation Score"
+            value={tsStr("graduation")}
+            editable={edTS("graduation", {
+              numericKind: "decimal",
+              numericRange: { min: 0, max: ACADEMIC_TOTAL_RANGE.max, label: "Graduation Score" },
+              siblingMaxKey: "graduation_total",
+              percentageMaxWhenNoSibling: ACADEMIC_PERCENTAGE_MAX,
+            })}
+            onSaved={onSaved}
+          />
+          <Field
+            label="Graduation Total / CGPA Scale"
+            value={tsStr("graduation_total")}
+            editable={edTS("graduation_total", {
+              numericKind: "decimal",
+              numericRange: { min: ACADEMIC_TOTAL_RANGE.min, max: ACADEMIC_TOTAL_RANGE.max, label: "Graduation Total / CGPA Scale" },
+            })}
+            onSaved={onSaved}
+          />
           <NormalizedField label="Graduation Normalized" score={tsStr("graduation")} total={tsStr("graduation_total")} />
-          <Field label="Highest Qual. Total / CGPA Scale" value={tsStr("highest_qualification_total")} editable={edTS("highest_qualification_total", { numericKind: "decimal" })} onSaved={onSaved} />
+          <Field
+            label="Highest Qual. Total / CGPA Scale"
+            value={tsStr("highest_qualification_total")}
+            editable={edTS("highest_qualification_total", {
+              numericKind: "decimal",
+              numericRange: { min: ACADEMIC_TOTAL_RANGE.min, max: ACADEMIC_TOTAL_RANGE.max, label: "Highest Qual. Total / CGPA Scale" },
+            })}
+            onSaved={onSaved}
+          />
           <NormalizedField label="Highest Qual. Normalized" score={hqScore} total={tsStr("highest_qualification_total")} />
-          <Field label="IELTS" value={tsStr("ielts")} editable={edTS("ielts", { numericKind: "decimal" })} onSaved={onSaved} />
-          <Field label="TOEFL" value={tsStr("toefl")} editable={edTS("toefl", { numericKind: "decimal" })} onSaved={onSaved} />
-          <Field label="PTE" value={tsStr("pte")} editable={edTS("pte", { numericKind: "decimal" })} onSaved={onSaved} />
-          <Field label="Duolingo" value={tsStr("duolingo")} editable={edTS("duolingo", { numericKind: "decimal" })} onSaved={onSaved} />
-          <Field label="GRE" value={tsStr("gre")} editable={edTS("gre", { numericKind: "decimal" })} onSaved={onSaved} />
-          <Field label="GMAT" value={tsStr("gmat")} editable={edTS("gmat", { numericKind: "decimal" })} onSaved={onSaved} />
-          <Field label="SAT" value={tsStr("sat")} editable={edTS("sat", { numericKind: "decimal" })} onSaved={onSaved} />
+          {(["ielts","toefl","pte","duolingo","gre","gmat","sat"] as const).map((k) => {
+            const r = TEST_SCORE_RANGES[k];
+            return (
+              <Field
+                key={k}
+                label={r.label}
+                value={tsStr(k)}
+                editable={edTS(k, {
+                  numericKind: "decimal",
+                  numericRange: { min: r.min, max: r.max, label: r.label },
+                })}
+                onSaved={onSaved}
+              />
+            );
+          })}
           <Field label="Other Test Scores" value={tsStr("raw_text")} editable={edTS("raw_text")} onSaved={onSaved} />
         </div>
       </SectionCard>

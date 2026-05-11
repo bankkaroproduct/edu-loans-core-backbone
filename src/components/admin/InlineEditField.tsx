@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,8 +16,11 @@ import { useRoleAccess } from "@/hooks/useRoleAccess";
 import {
   type NumericKind,
   validateNumeric,
+  validateNumericRange,
+  isPurelyNumericText,
   sanitizeNumericInput,
 } from "@/lib/numericValidation";
+import { MasterCombobox, type MasterOption } from "@/components/ui/master-combobox";
 
 
 interface Props {
@@ -60,6 +63,32 @@ interface Props {
    * Has no effect when `options` is not provided.
    */
   optionsRenderAs?: "buttons" | "dropdown";
+  /**
+   * Range validation for numeric fields. Applied AFTER `numericKind` passes.
+   * Optional — when omitted, default `numericKind` semantics are unchanged.
+   */
+  numericRange?: { min?: number; max?: number; label?: string };
+  /**
+   * Cross-field guard for numeric fields stored in the same `jsonbColumn`:
+   * blocks save when the drafted score exceeds the sibling key's value
+   * (e.g. tenth score must be ≤ tenth_total). When the sibling is blank,
+   * caller may also set `percentageMaxWhenNoSibling` to enforce a 0–100
+   * cap (interprets the score as a percentage).
+   */
+  siblingMaxKey?: string;
+  percentageMaxWhenNoSibling?: number;
+  /**
+   * When provided, edit mode renders a MasterCombobox bound to the draft.
+   * The saved value is the chosen option's `label` (master) or the typed
+   * manual text. Manual purely-numeric input is rejected at save time.
+   * `numericKind` is ignored while this prop is active.
+   */
+  masterCombobox?: {
+    options: MasterOption[];
+    placeholder?: string;
+    manualPlaceholder?: string;
+    helperText?: string;
+  };
 }
 
 /**
@@ -88,6 +117,10 @@ export function InlineEditField({
   jsonbColumn,
   numericKind,
   optionsRenderAs = "buttons",
+  numericRange,
+  siblingMaxKey,
+  percentageMaxWhenNoSibling,
+  masterCombobox,
 }: Props) {
   const { appUser } = useAuth();
   const { isAdmin } = useRoleAccess();
@@ -106,6 +139,15 @@ export function InlineEditField({
 
   const hasValue = localValue !== null && localValue !== undefined && localValue !== "";
 
+  // Whether the current draft matches a master-combobox option (label match).
+  const masterSelectedId = useMemo(() => {
+    if (!masterCombobox) return "";
+    const d = draft.trim();
+    if (!d) return "";
+    const m = masterCombobox.options.find((o) => o.label === d);
+    return m?.id ?? "";
+  }, [masterCombobox, draft]);
+
   const startEdit = () => {
     setDraft(hasValue ? String(localValue) : "");
     setEditing(true);
@@ -118,13 +160,39 @@ export function InlineEditField({
   };
   const askConfirm = () => {
     const trimmedDraft = draft.trim();
+    // Master-combobox fields: blank cancels (no save); manual values cannot be
+    // purely numeric junk (e.g. "12345"). Real names with digits are allowed.
+    if (masterCombobox) {
+      if (!trimmedDraft) {
+        toast.error(`${label} cannot be empty`);
+        return;
+      }
+      const isMaster = masterCombobox.options.some((o) => o.label === trimmedDraft);
+      if (!isMaster && isPurelyNumericText(trimmedDraft)) {
+        toast.error("Please enter a valid name.");
+        return;
+      }
+      setConfirming(true);
+      return;
+    }
     // Numeric fields: blank is allowed (clears the value); non-blank must be valid.
     if (numericKind) {
       if (trimmedDraft !== "") {
-        const res = validateNumeric(numericKind, trimmedDraft);
-        if (res.ok === false) {
-          toast.error(res.message);
+        const baseRes = validateNumeric(numericKind, trimmedDraft);
+        if (baseRes.ok === false) {
+          toast.error(baseRes.message);
           return;
+        }
+        if (numericRange) {
+          const r = validateNumericRange(numericKind, trimmedDraft, {
+            min: numericRange.min,
+            max: numericRange.max,
+            label: numericRange.label ?? label,
+          });
+          if (r.ok === false) {
+            toast.error(r.message);
+            return;
+          }
         }
       }
     } else if (!trimmedDraft) {
@@ -140,11 +208,33 @@ export function InlineEditField({
     }
     const trimmed = draft.trim();
     // Re-validate before any DB write to guarantee invalid text never reaches storage.
+    if (masterCombobox) {
+      if (!trimmed) {
+        toast.error(`${label} cannot be empty`);
+        return;
+      }
+      const isMaster = masterCombobox.options.some((o) => o.label === trimmed);
+      if (!isMaster && isPurelyNumericText(trimmed)) {
+        toast.error("Please enter a valid name.");
+        return;
+      }
+    }
     if (numericKind && trimmed !== "") {
       const res = validateNumeric(numericKind, trimmed);
       if (res.ok === false) {
         toast.error(res.message);
         return;
+      }
+      if (numericRange) {
+        const r = validateNumericRange(numericKind, trimmed, {
+          min: numericRange.min,
+          max: numericRange.max,
+          label: numericRange.label ?? label,
+        });
+        if (r.ok === false) {
+          toast.error(r.message);
+          return;
+        }
       }
     }
     setSaving(true);
@@ -218,6 +308,29 @@ export function InlineEditField({
         return;
       }
       const current = ((row as unknown as Record<string, unknown> | null)?.[jsonbColumn] ?? {}) as Record<string, unknown>;
+      // Cross-field score/total guard (e.g. tenth ≤ tenth_total). Run only
+      // when we have a numeric draft + a configured sibling key.
+      if (trimmed !== "" && numericKind && (siblingMaxKey || percentageMaxWhenNoSibling)) {
+        const draftNum = Number(typeof writeValue === "number" ? writeValue : trimmed);
+        if (Number.isFinite(draftNum)) {
+          const sibRaw = siblingMaxKey ? current?.[siblingMaxKey] : undefined;
+          const sibNum =
+            sibRaw === null || sibRaw === undefined || sibRaw === ""
+              ? null
+              : Number(sibRaw);
+          if (sibNum !== null && Number.isFinite(sibNum)) {
+            if (draftNum > sibNum) {
+              setSaving(false);
+              toast.error("Score obtained cannot be greater than total marks / scale.");
+              return;
+            }
+          } else if (percentageMaxWhenNoSibling !== undefined && draftNum > percentageMaxWhenNoSibling) {
+            setSaving(false);
+            toast.error(`Percentage cannot be greater than ${percentageMaxWhenNoSibling}.`);
+            return;
+          }
+        }
+      }
       const next = { ...(typeof current === "object" && current ? current : {}) };
       if (trimmed === "") {
         delete next[field];
@@ -296,7 +409,20 @@ export function InlineEditField({
   if (editing) {
     return (
       <span className={`flex flex-col gap-1.5 w-full min-w-0 ${className ?? ""}`}>
-        {options && options.length > 0 ? (
+        {masterCombobox ? (
+          <MasterCombobox
+            options={masterCombobox.options}
+            selectedId={masterSelectedId}
+            manualValue={masterSelectedId ? "" : draft}
+            onSelectMaster={(opt) => setDraft(opt.label)}
+            onSelectManual={() => setDraft("")}
+            onChangeManual={(t) => setDraft(t)}
+            placeholder={masterCombobox.placeholder ?? `Search ${label.toLowerCase()}…`}
+            manualPlaceholder={masterCombobox.manualPlaceholder ?? `Type the ${label.toLowerCase()}`}
+            helperText={masterCombobox.helperText}
+            disabled={saving}
+          />
+        ) : options && options.length > 0 ? (
           optionsRenderAs === "dropdown" ? (
             <Select value={draft} onValueChange={(v) => setDraft(v)} disabled={saving}>
               <SelectTrigger className="h-8 text-sm w-full">

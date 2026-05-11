@@ -11,6 +11,10 @@ import {
   formatCoappWorkExpDecimal,
 } from "@/lib/academicScore";
 import type { NumericKind } from "@/lib/numericValidation";
+import { useLeadMasterData } from "@/hooks/useLeadMasterData";
+import { COURSE_CATEGORY_OPTIONS } from "@/lib/courseCategoryOptions";
+import { TEST_SCORE_RANGES, ACADEMIC_TOTAL_RANGE, ACADEMIC_PERCENTAGE_MAX, WORK_EXPERIENCE_YEARS_RANGE } from "@/lib/leadScoreRanges";
+import type { MasterOption } from "@/components/ui/master-combobox";
 
 type Lead = Tables<"student_leads"> & {
   district?: string | null;
@@ -34,6 +38,16 @@ interface EditableConfig {
   parseValue?: (raw: string) => unknown;
   formatDisplay?: (v: string) => string;
   numericKind?: NumericKind;
+  optionsRenderAs?: "buttons" | "dropdown";
+  numericRange?: { min?: number; max?: number; label?: string };
+  siblingMaxKey?: string;
+  percentageMaxWhenNoSibling?: number;
+  masterCombobox?: {
+    options: MasterOption[];
+    placeholder?: string;
+    manualPlaceholder?: string;
+    helperText?: string;
+  };
 }
 
 function Field({
@@ -63,9 +77,14 @@ function Field({
             value={value ?? null}
             inputType={editable.inputType}
             options={editable.options}
+            optionsRenderAs={editable.optionsRenderAs}
             parseValue={editable.parseValue}
             formatDisplay={editable.formatDisplay}
             numericKind={editable.numericKind}
+            numericRange={editable.numericRange}
+            siblingMaxKey={editable.siblingMaxKey}
+            percentageMaxWhenNoSibling={editable.percentageMaxWhenNoSibling}
+            masterCombobox={editable.masterCombobox}
             allowEditExisting
             onSaved={onSaved ? () => onSaved() : undefined}
           />
@@ -108,6 +127,17 @@ interface Props {
 export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
   const { isAdmin } = useRoleAccess();
   const ts = (lead.test_scores ?? {}) as Record<string, unknown>;
+
+  const { countries, universities, courses } = useLeadMasterData();
+  const countryOptions: MasterOption[] = countries.map((c) => ({ id: c.country_name, label: c.country_name }));
+  const universityOptions: MasterOption[] = (() => {
+    const country = (lead.intended_study_country ?? "").trim().toLowerCase();
+    const filtered = country
+      ? universities.filter((u) => (u.country ?? "").trim().toLowerCase() === country)
+      : universities;
+    return filtered.map((u) => ({ id: u.id, label: u.university_name, hint: u.country ?? undefined }));
+  })();
+  const courseOptions: MasterOption[] = courses.map((c) => ({ id: c.id, label: c.course_name, hint: c.course_category ?? undefined }));
 
   const ed = (
     field: string,
@@ -199,10 +229,56 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Study Country" value={lead.intended_study_country} editable={ed("intended_study_country")}  onSaved={onSaved} />
-            <Field label="University" value={lead.university_name_raw} editable={ed("university_name_raw")}  onSaved={onSaved} />
-            <Field label="Course" value={lead.course_name} editable={ed("course_name")}  onSaved={onSaved} />
-            <Field label="Course Category" value={lead.course_category} editable={ed("course_category")}  onSaved={onSaved} />
+            <Field
+              label="Study Country"
+              value={lead.intended_study_country}
+              editable={ed("intended_study_country", {
+                masterCombobox: {
+                  options: countryOptions,
+                  placeholder: "Search & select country…",
+                  manualPlaceholder: "Type the country name",
+                  helperText: "Search the master list, or pick 'Not available in list' to type manually.",
+                },
+              })}
+              onSaved={onSaved}
+            />
+            <Field
+              label="University"
+              value={lead.university_name_raw}
+              editable={ed("university_name_raw", {
+                masterCombobox: {
+                  options: universityOptions,
+                  placeholder: lead.intended_study_country
+                    ? `Search universities in ${lead.intended_study_country}…`
+                    : "Search universities…",
+                  manualPlaceholder: "Type the university name",
+                  helperText: "Search the master list, or pick 'Not available in list' to type manually.",
+                },
+              })}
+              onSaved={onSaved}
+            />
+            <Field
+              label="Course"
+              value={lead.course_name}
+              editable={ed("course_name", {
+                masterCombobox: {
+                  options: courseOptions,
+                  placeholder: "Search courses…",
+                  manualPlaceholder: "Type the course name",
+                  helperText: "Search the master list, or pick 'Not available in list' to type manually.",
+                },
+              })}
+              onSaved={onSaved}
+            />
+            <Field
+              label="Course Category"
+              value={lead.course_category}
+              editable={ed("course_category", {
+                options: COURSE_CATEGORY_OPTIONS.map((v) => ({ value: v, label: v })),
+                optionsRenderAs: "dropdown",
+              })}
+              onSaved={onSaved}
+            />
             {/* Intake Term + Intake Year intentionally omitted here — Intake
                 in LeadSummaryStrip is the single source of truth for display. */}
             <Field
