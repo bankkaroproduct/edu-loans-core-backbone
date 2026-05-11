@@ -6,6 +6,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
+import {
+  type NumericKind,
+  validateNumeric,
+  sanitizeNumericInput,
+} from "@/lib/numericValidation";
 
 
 interface Props {
@@ -34,6 +39,13 @@ interface Props {
    * Empty/blank trimmed string deletes the key from the JSONB.
    */
   jsonbColumn?: string;
+  /**
+   * When set, the field is treated as numeric: input is sanitized live,
+   * and Save is blocked (no DB write, no audit log) if the value fails
+   * `validateNumeric`. Blank values are still allowed — required-ness is
+   * enforced separately by the existing "cannot be empty" check.
+   */
+  numericKind?: NumericKind;
 }
 
 /**
@@ -60,6 +72,7 @@ export function InlineEditField({
   options,
   parseValue,
   jsonbColumn,
+  numericKind,
 }: Props) {
   const { appUser } = useAuth();
   const { isAdmin } = useRoleAccess();
@@ -89,7 +102,17 @@ export function InlineEditField({
     setDraft("");
   };
   const askConfirm = () => {
-    if (!draft.trim()) {
+    const trimmedDraft = draft.trim();
+    // Numeric fields: blank is allowed (clears the value); non-blank must be valid.
+    if (numericKind) {
+      if (trimmedDraft !== "") {
+        const res = validateNumeric(numericKind, trimmedDraft);
+        if (res.ok === false) {
+          toast.error(res.message);
+          return;
+        }
+      }
+    } else if (!trimmedDraft) {
       toast.error(`${label} cannot be empty`);
       return;
     }
@@ -100,10 +123,22 @@ export function InlineEditField({
       toast.error("Not authenticated");
       return;
     }
-    setSaving(true);
     const trimmed = draft.trim();
+    // Re-validate before any DB write to guarantee invalid text never reaches storage.
+    if (numericKind && trimmed !== "") {
+      const res = validateNumeric(numericKind, trimmed);
+      if (res.ok === false) {
+        toast.error(res.message);
+        return;
+      }
+    }
+    setSaving(true);
     const oldVal = localValue ?? null;
-    const writeValue = parseValue ? parseValue(trimmed) : trimmed;
+    let writeValue: unknown = parseValue ? parseValue(trimmed) : trimmed;
+    if (numericKind && trimmed !== "") {
+      const res = validateNumeric(numericKind, trimmed);
+      if (res.ok) writeValue = res.clean;
+    }
 
     let updatePayload: Record<string, unknown>;
     let auditOld: Record<string, unknown>;
@@ -178,9 +213,13 @@ export function InlineEditField({
       auditOld = { [jsonbColumn]: { [field]: current?.[field] ?? null } };
       auditNew = { [jsonbColumn]: { [field]: trimmed === "" ? null : writeValue } };
     } else {
-      updatePayload = { [field]: writeValue };
+      // For numeric fields, blank → null (not empty string) to satisfy
+      // numeric DB columns and to avoid silent "" coercion to 0.
+      const finalValue =
+        numericKind && trimmed === "" ? null : writeValue;
+      updatePayload = { [field]: finalValue };
       auditOld = { [field]: oldVal };
-      auditNew = { [field]: writeValue };
+      auditNew = { [field]: finalValue };
     }
 
     const { error } = await supabase
@@ -263,7 +302,10 @@ export function InlineEditField({
             autoFocus
             type={inputType}
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value;
+              setDraft(numericKind ? sanitizeNumericInput(numericKind, v) : v);
+            }}
             placeholder={placeholder ?? label}
             className="h-7 text-sm w-full"
             disabled={saving}

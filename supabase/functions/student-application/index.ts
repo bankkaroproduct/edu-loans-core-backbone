@@ -27,6 +27,45 @@ function sanitizeRemark(remark: string | null): string | null {
   return remark;
 }
 
+// ─── Numeric sanitation for test_scores JSONB ────────────────────────────────
+// Strips any non-numeric value (e.g. "wjjrjrj") for keys that are expected to
+// be numeric. Free-text keys (e.g. raw_text) are passed through unchanged.
+// Mirror of src/lib/numericValidation.ts but inlined for edge runtime.
+const STRICT_NUMERIC = /^\d+(\.\d{1,3})?$/;
+const NUMERIC_TEST_SCORE_KEYS = new Set([
+  "tenth", "tenth_total",
+  "twelfth", "twelfth_total",
+  "graduation", "graduation_total",
+  "highest_qualification_score", "highest_qualification_total",
+  "ielts", "toefl", "pte", "duolingo", "gre", "gmat", "sat",
+  "work_experience_years",
+  "coapplicant_age",
+  "coapplicant_work_experience_years",
+  "coapplicant_work_experience_months",
+]);
+
+function sanitizeNumericTestScores(input: Record<string, unknown>): {
+  cleaned: Record<string, unknown>;
+  invalidKeys: string[];
+} {
+  const cleaned: Record<string, unknown> = {};
+  const invalidKeys: string[] = [];
+  for (const [k, v] of Object.entries(input ?? {})) {
+    if (!NUMERIC_TEST_SCORE_KEYS.has(k)) {
+      cleaned[k] = v;
+      continue;
+    }
+    if (v === null || v === undefined || v === "") continue;
+    const s = String(v).replace(/,/g, "").trim();
+    if (!STRICT_NUMERIC.test(s)) {
+      invalidKeys.push(k);
+      continue;
+    }
+    cleaned[k] = Number(s);
+  }
+  return { cleaned, invalidKeys };
+}
+
 // Normalize phone to canonical +91XXXXXXXXXX form (mirrors DB normalize_phone()).
 function normalizePhone(input: string | null | undefined): string | null {
   if (!input) return null;
@@ -474,6 +513,21 @@ Deno.serve(async (req) => {
         ? canonicalPhone
         : (rawWhatsapp ? (normalizePhone(rawWhatsapp) ?? null) : null);
 
+      // Validate loan_amount_required (column is numeric — reject alphabets).
+      let loanAmountClean: number | null = null;
+      if (data?.loan_amount_required !== null && data?.loan_amount_required !== undefined && data?.loan_amount_required !== "") {
+        const s = String(data.loan_amount_required).replace(/,/g, "").trim();
+        if (!STRICT_NUMERIC.test(s)) {
+          return jsonResponse({ error: "Only numeric values are allowed for loan amount." }, 400);
+        }
+        loanAmountClean = Number(s);
+      }
+      // Validate pincode if provided.
+      const pincodeIncoming = data?.pincode as string | null;
+      if (pincodeIncoming && !/^\d{6}$/.test(String(pincodeIncoming).trim())) {
+        return jsonResponse({ error: "Please enter a valid pincode." }, 400);
+      }
+
       const basicFields: Record<string, unknown> = {
         student_first_name: firstName,
         student_last_name: lastName,
@@ -490,7 +544,7 @@ Deno.serve(async (req) => {
         pincode: data?.pincode as string || null,
         intended_study_country: data?.intended_study_country as string,
         course_category: data?.course_category as string || null,
-        loan_amount_required: data?.loan_amount_required ? Number(data.loan_amount_required) : null,
+        loan_amount_required: loanAmountClean,
         // Country of residence: only persist what the caller explicitly sent.
         // Do NOT default to "India" — admins handle that downstream and a blanket
         // default has caused incorrect attribution in past audits.
@@ -539,7 +593,11 @@ Deno.serve(async (req) => {
       if (!existingLeadId) return jsonResponse({ error: "No existing application found. Complete basic details first." }, 400);
       // Merge test_scores: preserve any keys saved on other steps (e.g. coapplicant_age,
       // coapplicant_cibil saved during the Co-applicant step) by reading current then spreading.
-      const incomingScores = (data?.test_scores as Record<string, unknown>) || {};
+      const incomingScoresRaw = (data?.test_scores as Record<string, unknown>) || {};
+      const { cleaned: incomingScores, invalidKeys } = sanitizeNumericTestScores(incomingScoresRaw);
+      if (invalidKeys.length > 0) {
+        return jsonResponse({ error: `Only numeric values are allowed for: ${invalidKeys.join(", ")}` }, 400);
+      }
       const { data: existingEdu, error: fetchEduErr } = await supabaseAdmin
         .from("student_leads")
         .select("test_scores")
@@ -547,9 +605,6 @@ Deno.serve(async (req) => {
         .single();
       if (fetchEduErr) return jsonResponse({ error: fetchEduErr.message }, 500);
       const currentEdu = (existingEdu?.test_scores as Record<string, unknown>) || {};
-      // Preserve keys that are saved on OTHER steps (co-applicant), so the
-      // education save never silently wipes them. New keys: co-applicant work
-      // experience years/months are saved on the co-applicant step.
       const preservedKeys = [
         "coapplicant_age",
         "coapplicant_cibil",
@@ -631,16 +686,32 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Validate numeric co-applicant fields server-side (defense in depth).
+      const validateOptionalAmount = (v: unknown, label: string): number | null | { err: string } => {
+        if (v === null || v === undefined || v === "") return null;
+        const s = String(v).replace(/,/g, "").trim();
+        if (!STRICT_NUMERIC.test(s)) return { err: `Only numeric values are allowed for ${label}.` };
+        return Number(s);
+      };
+      const incomeCheck = validateOptionalAmount(data?.coapplicant_income, "co-applicant income");
+      if (incomeCheck && typeof incomeCheck === "object" && "err" in incomeCheck) {
+        return jsonResponse({ error: incomeCheck.err }, 400);
+      }
+      const emiCheck = validateOptionalAmount(data?.coapplicant_existing_emi, "co-applicant existing EMI");
+      if (emiCheck && typeof emiCheck === "object" && "err" in emiCheck) {
+        return jsonResponse({ error: emiCheck.err }, 400);
+      }
+
       const coFields: Record<string, unknown> = {
         coapplicant_name: data?.coapplicant_name as string || null,
         coapplicant_relation: data?.coapplicant_relation as string || null,
         coapplicant_mobile: data?.coapplicant_mobile as string || null,
         coapplicant_email: data?.coapplicant_email as string || null,
-        coapplicant_income: data?.coapplicant_income ? Number(data.coapplicant_income) : null,
+        coapplicant_income: incomeCheck as number | null,
         coapplicant_income_source: data?.coapplicant_income_source as string || null,
         coapplicant_employment_type: data?.coapplicant_employment_type as string || null,
         coapplicant_employer: data?.coapplicant_employer as string || null,
-        coapplicant_existing_emi: data?.coapplicant_existing_emi ? Number(data.coapplicant_existing_emi) : null,
+        coapplicant_existing_emi: emiCheck as number | null,
         collateral_available: data?.collateral_available as boolean ?? null,
         collateral_notes: data?.collateral_notes as string || null,
       };

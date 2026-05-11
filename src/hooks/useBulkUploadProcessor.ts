@@ -372,14 +372,21 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
 
   if (!courseName) warnings.push("course_name missing");
 
+  // Strict numeric regex — rejects "82abc" / "abc" / "12.3.4" (parseFloat
+  // tolerates "82abc" → 82 which silently corrupts data).
+  const STRICT_NUMERIC = /^\d+(\.\d+)?$/;
+
   // loan_amount_required: optional. If provided, must parse and be positive.
   let loanAmount: number = NaN;
   if (!loanStr) {
     warnings.push("loan_amount_required missing");
   } else {
-    loanAmount = parseFloat(loanStr.replace(/,/g, ""));
-    if (isNaN(loanAmount) || loanAmount <= 0) {
-      errors.push("loan_amount_required must be a positive number");
+    const cleaned = loanStr.replace(/,/g, "").trim();
+    if (!STRICT_NUMERIC.test(cleaned)) {
+      errors.push("Loan Amount must be numeric");
+    } else {
+      loanAmount = parseFloat(cleaned);
+      if (loanAmount <= 0) errors.push("loan_amount_required must be a positive number");
     }
   }
 
@@ -394,15 +401,23 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
 
   let coapplicantIncome: number | undefined;
   if (coapplicantIncomeStr) {
-    coapplicantIncome = parseFloat(coapplicantIncomeStr.replace(/,/g, ""));
-    if (isNaN(coapplicantIncome)) errors.push("coapplicant_income must be numeric");
+    const cleaned = coapplicantIncomeStr.replace(/,/g, "").trim();
+    if (!STRICT_NUMERIC.test(cleaned)) {
+      errors.push("Co-applicant Income must be numeric");
+    } else {
+      coapplicantIncome = parseFloat(cleaned);
+    }
   }
 
   // ─── Numeric helpers ───
   const parseNumeric = (s: string, label: string, opts: { min?: number; max?: number } = {}): number | undefined => {
     if (!s) return undefined;
-    const n = parseFloat(s.replace(/,/g, ""));
-    if (isNaN(n)) { errors.push(`${label} must be numeric (got "${s}")`); return undefined; }
+    const cleaned = s.replace(/,/g, "").trim();
+    if (!STRICT_NUMERIC.test(cleaned)) {
+      errors.push(`${label} must be numeric (got "${s}")`);
+      return undefined;
+    }
+    const n = parseFloat(cleaned);
     if (opts.min !== undefined && n < opts.min) { errors.push(`${label} must be ≥ ${opts.min}`); return undefined; }
     if (opts.max !== undefined && n > opts.max) { errors.push(`${label} must be ≤ ${opts.max}`); return undefined; }
     return n;
