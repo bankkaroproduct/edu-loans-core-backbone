@@ -460,7 +460,21 @@ export function InlineEditField({
             value={draft}
             onChange={(e) => {
               const v = e.target.value;
-              setDraft(numericKind ? sanitizeNumericInput(numericKind, v) : v);
+              const sanitized = numericKind ? sanitizeNumericInput(numericKind, v) : v;
+              // Live max-cap: prevent entering a value greater than numericRange.max
+              if (
+                numericKind &&
+                numericRange?.max !== undefined &&
+                sanitized !== "" &&
+                sanitized !== "."
+              ) {
+                const n = Number(sanitized.replace(/,/g, ""));
+                if (Number.isFinite(n) && n > numericRange.max) {
+                  // Reject the keystroke — keep previous draft
+                  return;
+                }
+              }
+              setDraft(sanitized);
             }}
             placeholder={placeholder ?? label}
             className="h-7 text-sm w-full"
