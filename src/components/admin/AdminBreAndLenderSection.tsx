@@ -222,6 +222,12 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
           <p className="text-xs text-muted-foreground">
             Internal eligibility diagnostic and the lenders we can move forward with.
           </p>
+          {!result && (
+            <p className="text-xs text-muted-foreground">
+              Run BRE to see the diagnostic and recommended lender options. Read-only — does not change
+              the assigned lender.
+            </p>
+          )}
         </div>
         <Button size="sm" onClick={handleRun} disabled={running}>
           {running ? (
@@ -232,13 +238,6 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
           {result ? "Re-run" : "Run BRE"}
         </Button>
       </div>
-
-      {!result && (
-        <p className="text-xs text-muted-foreground">
-          Run BRE to see the diagnostic and recommended lender options. Read-only — does not change
-          the assigned lender.
-        </p>
-      )}
 
       {result && derived && (
         <>
