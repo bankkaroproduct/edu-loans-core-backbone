@@ -11,6 +11,10 @@ import {
   formatCoappWorkExpDecimal,
 } from "@/lib/academicScore";
 import type { NumericKind } from "@/lib/numericValidation";
+import { useLeadMasterData } from "@/hooks/useLeadMasterData";
+import { COURSE_CATEGORY_OPTIONS } from "@/lib/courseCategoryOptions";
+import { TEST_SCORE_RANGES, ACADEMIC_TOTAL_RANGE, ACADEMIC_PERCENTAGE_MAX, WORK_EXPERIENCE_YEARS_RANGE } from "@/lib/leadScoreRanges";
+import type { MasterOption } from "@/components/ui/master-combobox";
 
 type Lead = Tables<"student_leads"> & {
   district?: string | null;
@@ -34,6 +38,16 @@ interface EditableConfig {
   parseValue?: (raw: string) => unknown;
   formatDisplay?: (v: string) => string;
   numericKind?: NumericKind;
+  optionsRenderAs?: "buttons" | "dropdown";
+  numericRange?: { min?: number; max?: number; label?: string };
+  siblingMaxKey?: string;
+  percentageMaxWhenNoSibling?: number;
+  masterCombobox?: {
+    options: MasterOption[];
+    placeholder?: string;
+    manualPlaceholder?: string;
+    helperText?: string;
+  };
 }
 
 function Field({
