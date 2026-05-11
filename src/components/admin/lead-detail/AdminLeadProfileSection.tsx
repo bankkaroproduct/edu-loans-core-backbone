@@ -152,6 +152,18 @@ interface Props {
 export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Props) {
   const { isAdmin } = useRoleAccess();
   const ts = (lead.test_scores ?? {}) as Record<string, unknown>;
+  const { options: highestQualOptions } = useHighestQualificationOptions();
+
+  // Fixed product labels for Co-applicant Employment Type. Saved value must use
+  // these exact strings (not the master table's hyphenated variants) so the
+  // BRE display mapping in `formatEmploymentLabel` continues to recognize them.
+  const COAPP_EMPLOYMENT_TYPES = [
+    "Salaried",
+    "Self Employed",
+    "Business Owner",
+    "Retired",
+    "Other",
+  ] as const;
 
   const ed = (
     field: string,
@@ -252,7 +264,15 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
             })}
             onSaved={onSaved}
           />
-          <Field label="Highest Qualification" value={lead.highest_qualification} editable={ed("highest_qualification")} onSaved={onSaved} />
+          <Field
+            label="Highest Qualification"
+            value={lead.highest_qualification}
+            editable={ed("highest_qualification", {
+              options: highestQualOptions.map((o) => ({ value: o, label: o })),
+              optionsRenderAs: "dropdown",
+            })}
+            onSaved={onSaved}
+          />
           <Field label="Highest Qualification Score" value={hqScore} editable={hqEditable} onSaved={onSaved} />
           <Field
             label="Work Experience (years)"
@@ -285,7 +305,15 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
       <SectionCard icon={Wallet} title="Financial Snapshot">
         <div className="grid grid-cols-2 gap-x-4 gap-y-3.5">
           <Field label="Co-Applicant" value={lead.coapplicant_name} editable={ed("coapplicant_name")} onSaved={onSaved} />
-          <Field label="Relation" value={lead.coapplicant_relation} editable={ed("coapplicant_relation")} onSaved={onSaved} />
+          <Field
+            label="Relation"
+            value={lead.coapplicant_relation}
+            editable={ed("coapplicant_relation", {
+              options: CO_APPLICANT_RELATIONS.map((r) => ({ value: r, label: r })),
+              optionsRenderAs: "dropdown",
+            })}
+            onSaved={onSaved}
+          />
           <Field label="Co-Applicant Mobile" value={lead.coapplicant_mobile} editable={ed("coapplicant_mobile", { numericKind: "phone" })} onSaved={onSaved} />
           <Field
             label="Co-Applicant Email"
