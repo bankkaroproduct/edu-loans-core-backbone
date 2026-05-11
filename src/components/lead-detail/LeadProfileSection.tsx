@@ -128,6 +128,17 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
   const { isAdmin } = useRoleAccess();
   const ts = (lead.test_scores ?? {}) as Record<string, unknown>;
 
+  const { countries, universities, courses } = useLeadMasterData();
+  const countryOptions: MasterOption[] = countries.map((c) => ({ id: c.country_name, label: c.country_name }));
+  const universityOptions: MasterOption[] = (() => {
+    const country = (lead.intended_study_country ?? "").trim().toLowerCase();
+    const filtered = country
+      ? universities.filter((u) => (u.country ?? "").trim().toLowerCase() === country)
+      : universities;
+    return filtered.map((u) => ({ id: u.id, label: u.university_name, hint: u.country ?? undefined }));
+  })();
+  const courseOptions: MasterOption[] = courses.map((c) => ({ id: c.id, label: c.course_name, hint: c.course_category ?? undefined }));
+
   const ed = (
     field: string,
     extras?: Omit<EditableConfig, "leadId" | "field">,
