@@ -324,6 +324,26 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
             })}
             onSaved={onSaved}
           />
+          <Field
+            label="Collateral"
+            value={
+              lead.collateral_available === null || lead.collateral_available === undefined
+                ? null
+                : lead.collateral_available
+                ? "true"
+                : "false"
+            }
+            editable={ed("collateral_available", {
+              options: [
+                { value: "true", label: "Yes" },
+                { value: "false", label: "No" },
+              ],
+              parseValue: (raw) => raw === "true",
+              formatDisplay: (v) => (v === "true" ? "Yes" : "No"),
+            })}
+            onSaved={onSaved}
+          />
+          <Field label="Collateral Notes" value={lead.collateral_notes} editable={ed("collateral_notes")} onSaved={onSaved} />
         </div>
         {/* Legacy Data — Not Used in BRE.
             Historical CIBIL/EMI/Employer values are preserved read-only for audit
@@ -346,27 +366,6 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
             </div>
           </div>
         )}
-          <Field
-            label="Collateral"
-            value={
-              lead.collateral_available === null || lead.collateral_available === undefined
-                ? null
-                : lead.collateral_available
-                ? "true"
-                : "false"
-            }
-            editable={ed("collateral_available", {
-              options: [
-                { value: "true", label: "Yes" },
-                { value: "false", label: "No" },
-              ],
-              parseValue: (raw) => raw === "true",
-              formatDisplay: (v) => (v === "true" ? "Yes" : "No"),
-            })}
-            onSaved={onSaved}
-          />
-          <Field label="Collateral Notes" value={lead.collateral_notes} editable={ed("collateral_notes")} onSaved={onSaved} />
-        </div>
       </SectionCard>
 
       <SectionCard icon={FolderInput} title="Source & Creation Context">
