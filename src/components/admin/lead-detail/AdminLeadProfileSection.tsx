@@ -77,6 +77,7 @@ function Field({
             options={editable.options}
             parseValue={editable.parseValue}
             formatDisplay={editable.formatDisplay}
+            numericKind={editable.numericKind}
             allowEditExisting
             onSaved={onSaved ? () => onSaved() : undefined}
           />
