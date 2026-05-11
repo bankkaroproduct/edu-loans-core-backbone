@@ -103,7 +103,7 @@ export function DocumentSummaryStrip({ requirements, hideNudge = false }: Props)
         </div>
 
         {/* Count cards */}
-        <div className="grid grid-cols-3 sm:grid-cols-7 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {items.map(item => {
             const Icon = item.icon;
             return (
