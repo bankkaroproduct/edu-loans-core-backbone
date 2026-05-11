@@ -212,6 +212,11 @@ export function deriveCourseCategoryFromName(
     { keyword: "philosophy", category: "arts", re: /philosop/ },
     { keyword: "design", category: "arts", re: /design/ },
     { keyword: "music", category: "arts", re: /music/ },
+
+    // Generic MS/MSc fallback — only triggers if no specific business/health/
+    // arts keyword matched above (so "MS Finance" → management, but "MS" alone
+    // or "MSc Robotics" → stem).
+    { keyword: "ms / msc", category: "stem", re: /\b(ms|m\.s\.?|msc|m\.sc)\b/ },
   ];
 
   for (const p of patterns) {
