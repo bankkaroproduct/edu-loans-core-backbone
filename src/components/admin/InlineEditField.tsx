@@ -131,6 +131,11 @@ export function InlineEditField({
   const [saving, setSaving] = useState(false);
   const [localValue, setLocalValue] = useState<string | null | undefined>(value);
 
+  // Live pincode preview: subscribes to pincode_master while admin is typing
+  // a 6-digit value into the inline editor. Inert for non-pincode fields.
+  const isPincodeField = !jsonbColumn && field === "pincode";
+  const pincodePreview = usePincodeLookup(isPincodeField && editing ? draft : null);
+
   // Re-sync display when parent refreshes the lead, but never blow away an active edit session.
   useEffect(() => {
     if (!editing && !confirming && !saving) {
