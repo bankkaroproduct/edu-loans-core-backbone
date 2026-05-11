@@ -795,19 +795,28 @@ function buildProfileCore(
   const coAge = numFromTestScores(ts, "coapplicant_age");
 
   // Co-applicant work experience (NEW). Pure co-applicant signal — does not
-  // borrow from the student's work experience anymore. Stored in test_scores
-  // as `coapplicant_work_experience_years` (integer years) +
-  // `coapplicant_work_experience_months` (0–11).
+  // borrow from the student's work experience anymore. Read precedence:
+  //   1. test_scores.coapplicant_work_experience_total_years (exact decimal,
+  //      source of truth written by Admin/Partner Lead Detail).
+  //   2. Legacy test_scores.coapplicant_work_experience_years +
+  //      coapplicant_work_experience_months (integer years + 0–11 months).
   const coYearsRaw = tsObj.coapplicant_work_experience_years;
   const coMonthsRaw = tsObj.coapplicant_work_experience_months;
-  const coWorkExpYears = coapplicantWorkExperienceToYears(
-    coYearsRaw as number | string | null | undefined,
-    coMonthsRaw as number | string | null | undefined,
-  );
+  const coTotalRaw = tsObj.coapplicant_work_experience_total_years;
+  const coWorkExpYears = resolveCoappWorkExpDecimalYears(tsObj);
+  const coWorkExpSource: "exact" | "legacy" | "none" =
+    coTotalRaw != null && coTotalRaw !== "" && Number.isFinite(Number(coTotalRaw))
+      ? "exact"
+      : coapplicantWorkExperienceToYears(
+            coYearsRaw as number | string | null | undefined,
+            coMonthsRaw as number | string | null | undefined,
+          ) != null
+        ? "legacy"
+        : "none";
 
   // Income stability: maps directly from co-applicant work experience when
   // captured. Employment-type normalization no longer gates this — if the
-  // user entered years/months for the co-applicant, BRE consumes them.
+  // user entered work experience for the co-applicant, BRE consumes them.
   // Student work experience NEVER feeds this.
   const incomeStabilityYears = coWorkExpYears != null ? coWorkExpYears : null;
 
