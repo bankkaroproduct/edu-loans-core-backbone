@@ -284,6 +284,7 @@ export function InlineEditField({
             district: pinRow.district ?? null,
             state: pinRow.state ?? null,
             tier: pinRow.tier ?? null,
+            country_of_residence: "India",
           };
           pincodeEnriched = true;
           if (pinRow.has_conflict) {
