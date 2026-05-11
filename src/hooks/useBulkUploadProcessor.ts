@@ -457,6 +457,21 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
     if (err) errors.push(`${label}: ${err}`);
   }
 
+  // Test-score range validation — parse free-text `test_scores` column for
+  // recognised exam keywords and reject the row if any numeric value is out of range.
+  if (testScoresRaw && testScoresRaw.trim()) {
+    for (const [key, range] of Object.entries(TEST_SCORE_RANGES)) {
+      const pattern = new RegExp(`\\b${key}\\b\\s*[:=\\-]?\\s*([0-9]+(?:\\.[0-9]+)?)`, "ig");
+      let m: RegExpExecArray | null;
+      while ((m = pattern.exec(testScoresRaw)) !== null) {
+        const n = Number(m[1]);
+        if (!Number.isFinite(n) || n < range.min || n > range.max) {
+          errors.push(`${range.label} must be between ${range.min} and ${range.max} (got "${m[1]}")`);
+        }
+      }
+    }
+  }
+
   // Co-applicant work experience shorthand ("3.6" => 3y 6m, etc.)
   let coappWorkExpYears: number | undefined;
   let coappWorkExpMonths: number | undefined;
