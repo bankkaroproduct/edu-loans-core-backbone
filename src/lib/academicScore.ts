@@ -239,6 +239,38 @@ export function coapplicantWorkExperienceToYears(
   return Math.round((yi + mi / 12) * 10000) / 10000;
 }
 
+/**
+ * Resolve co-applicant work experience as exact decimal years from a test_scores
+ * JSONB object. Precedence:
+ *   1. `coapplicant_work_experience_total_years` (exact decimal, source of truth
+ *      written by Admin/Partner Lead Detail).
+ *   2. Legacy `coapplicant_work_experience_years` + `_months` → years + months/12.
+ *   3. null when none present.
+ * Used by both the Lead Detail UI (display) and BRE leadProfile mapping (read).
+ */
+export function resolveCoappWorkExpDecimalYears(
+  ts: Record<string, unknown> | null | undefined,
+): number | null {
+  if (!ts) return null;
+  const exact = ts.coapplicant_work_experience_total_years;
+  const exactNum = parseNum(exact as number | string | null | undefined);
+  if (exactNum != null && Number.isFinite(exactNum)) {
+    return Math.max(0, exactNum);
+  }
+  return coapplicantWorkExperienceToYears(
+    ts.coapplicant_work_experience_years as number | string | null | undefined,
+    ts.coapplicant_work_experience_months as number | string | null | undefined,
+  );
+}
+
+/** Format a decimal year value for the single Co-applicant Work Experience field. */
+export function formatCoappWorkExpDecimal(value: number | null): string | null {
+  if (value == null || !Number.isFinite(value)) return null;
+  // Trim trailing zeros: 3 → "3", 3.5 → "3.5", 4.2 → "4.2", 10.75 → "10.75".
+  const rounded = Math.round(value * 10000) / 10000;
+  return String(rounded);
+}
+
 /** Validate co-applicant work-exp inputs. Returns null on success. */
 export function validateCoapplicantWorkExperience(
   rawYears: string,
