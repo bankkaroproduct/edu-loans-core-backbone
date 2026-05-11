@@ -346,6 +346,7 @@ export default function StudentEducationDetails() {
               { key: "ielts", label: "IELTS", placeholder: "e.g. 7.5" },
               { key: "toefl", label: "TOEFL", placeholder: "e.g. 105" },
               { key: "duolingo", label: "Duolingo", placeholder: "e.g. 120" },
+              { key: "pte", label: "PTE", placeholder: "e.g. 65" },
               { key: "gre", label: "GRE", placeholder: "e.g. 325" },
               { key: "gmat", label: "GMAT", placeholder: "e.g. 720" },
             ].map(t => (

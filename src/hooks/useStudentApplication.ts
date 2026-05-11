@@ -33,6 +33,8 @@ export interface StudentFormData {
     ielts?: string;
     toefl?: string;
     duolingo?: string;
+    /** PTE Academic — optional English proficiency score. */
+    pte?: string;
     gre?: string;
     gmat?: string;
     // Academic Profile (aligned with Bulk Upload):
@@ -40,19 +42,17 @@ export interface StudentFormData {
     twelfth?: string;
     graduation?: string;
     highest_qualification_score?: string;
-    // Total Marks / Scale denominators for academic scores. Stored alongside
-    // the score so BRE can normalize as score/total*100. Optional — when
-    // missing, BRE falls back to the legacy parse so old leads still work.
+    // Total Marks / Scale denominators for academic scores.
     tenth_total?: string;
     twelfth_total?: string;
     graduation_total?: string;
     highest_qualification_total?: string;
-    // Extended (Student portal only — persisted in test_scores JSONB to avoid schema change):
+    // Extended (Student portal only — persisted in test_scores JSONB):
     coapplicant_age?: string;
+    /** @deprecated CIBIL is no longer collected; historical values may exist
+     *  in DB but are never read by BRE. Kept for back-compat type safety. */
     coapplicant_cibil?: string;
     work_experience_years?: string;
-    // Co-applicant work experience — feeds BRE coapplicant.income_stability_years.
-    // Stored as separate years/months keys; never confused with student WE.
     coapplicant_work_experience_years?: string;
     coapplicant_work_experience_months?: string;
   };
@@ -233,6 +233,7 @@ export function useStudentApplication() {
         ielts: ts.ielts?.toString() || prev.test_scores.ielts || "",
         toefl: ts.toefl?.toString() || prev.test_scores.toefl || "",
         duolingo: ts.duolingo?.toString() || prev.test_scores.duolingo || "",
+        pte: ts.pte?.toString() || prev.test_scores.pte || "",
         gre: ts.gre?.toString() || prev.test_scores.gre || "",
         gmat: ts.gmat?.toString() || prev.test_scores.gmat || "",
         tenth: ts.tenth?.toString() || prev.test_scores.tenth || "",
@@ -310,6 +311,7 @@ export function useStudentApplication() {
           ielts: formData.test_scores.ielts,
           toefl: formData.test_scores.toefl,
           duolingo: formData.test_scores.duolingo,
+          pte: formData.test_scores.pte,
           gre: formData.test_scores.gre,
           gmat: formData.test_scores.gmat,
           tenth: formData.test_scores.tenth,
@@ -344,24 +346,18 @@ export function useStudentApplication() {
           test_scores: scores,
         };
       } else if (action === "save_coapplicant") {
-        // Co-applicant Age + CIBIL persist from THIS step (not Education).
-        // We send them as `test_scores_extension` so the edge function can merge
-        // them into the existing test_scores JSONB without clobbering academic/test keys.
+        // Co-applicant Age persists from THIS step via test_scores_extension.
+        // CIBIL is intentionally NOT persisted anymore (universally excluded
+        // from BRE). Historical values remain untouched in the DB.
         const ext: Record<string, number | string> = {};
         const ageRaw = (formData.test_scores.coapplicant_age ?? "").toString().trim();
         if (ageRaw) {
           const n = parseInt(ageRaw, 10);
           if (Number.isFinite(n)) ext.coapplicant_age = n;
         }
-        const cibilRaw = (formData.test_scores.coapplicant_cibil ?? "").toString().trim();
-        if (cibilRaw) {
-          const n = parseInt(cibilRaw, 10);
-          if (Number.isFinite(n)) ext.coapplicant_cibil = n;
-        }
         // Co-applicant Work Experience (years/months) — feeds BRE
-        // coapplicant.income_stability_years. Stored as separate keys so
-        // it never collides with the student's `work_experience_years`.
-        // Use numeric-validity checks so explicit "0" is preserved (NOT dropped).
+        // coapplicant.income_stability_years. Use numeric-validity checks so
+        // explicit "0" is preserved (NOT dropped).
         const cwOverride = options?.coapplicantWorkExperience;
         if (cwOverride !== undefined) {
           const parsed = parseCoappWorkExpShorthand(cwOverride);
@@ -382,6 +378,9 @@ export function useStudentApplication() {
           }
         }
 
+        // NOTE: coapplicant_employer and coapplicant_existing_emi are
+        // intentionally omitted from the payload — historical values in the
+        // DB are preserved unchanged; new leads simply do not write them.
         payload = {
           coapplicant_name: formData.coapplicant_name || null,
           coapplicant_relation: formData.coapplicant_relation || null,
@@ -390,8 +389,6 @@ export function useStudentApplication() {
           coapplicant_income: formData.coapplicant_income || null,
           coapplicant_income_source: formData.coapplicant_income_source || null,
           coapplicant_employment_type: formData.coapplicant_employment_type || null,
-          coapplicant_employer: formData.coapplicant_employer || null,
-          coapplicant_existing_emi: formData.coapplicant_existing_emi || null,
           collateral_available: formData.collateral_available,
           collateral_notes: formData.collateral_notes || null,
           test_scores_extension: ext,

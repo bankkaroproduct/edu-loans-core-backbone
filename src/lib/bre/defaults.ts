@@ -1,15 +1,17 @@
 // Default scoring config — single source of truth shared with the DB seed.
 // Keep this file in sync with the active row in `bre_scoring_configs`.
 //
-// v2 (current): Test scores (entrance_rank, english_proficiency) are excluded
-// from Student scoring. Remaining Student weights renormalized to sum to 100.
-// University, Co-applicant, bucket threshold, and overall band mapping are
-// unchanged from v1.
+// v3 (current): CIBIL Score and Existing EMI Burden permanently removed from
+// the Co-applicant bucket (universal product-level decision). Remaining
+// Co-applicant weights renormalized to sum to 100. Student/University buckets,
+// bucket threshold, and overall band mapping unchanged from v2.
+// Historical co-applicant CIBIL/EMI/Employer data remains in the DB but is
+// never read by the engine — see engine.ts BRE_DEPRECATED_PARAM_KEYS.
 
 import type { BreScoringConfig } from "./types";
 
 export const DEFAULT_SCORING_CONFIG_V1: BreScoringConfig = {
-  version_number: 2,
+  version_number: 3,
   is_active: true,
   bucket_threshold: 60,
   student_params: [
@@ -130,7 +132,7 @@ export const DEFAULT_SCORING_CONFIG_V1: BreScoringConfig = {
       param_key: "relationship",
       label: "Relationship to student",
       input_type: "enum",
-      weight: 10,
+      weight: 15,
       bands: [
         { value: "parent", score: 100, label: "Parent" },
         { value: "sibling", score: 80, label: "Sibling" },
@@ -143,7 +145,7 @@ export const DEFAULT_SCORING_CONFIG_V1: BreScoringConfig = {
       param_key: "age",
       label: "Co-applicant age (years)",
       input_type: "number",
-      weight: 10,
+      weight: 15,
       bands: [
         { from: 35, to: 55, score: 100, label: "Prime" },
         { from: 25, to: 34.99, score: 80, label: "Young earner" },
@@ -155,7 +157,7 @@ export const DEFAULT_SCORING_CONFIG_V1: BreScoringConfig = {
       param_key: "employment_type",
       label: "Employment type",
       input_type: "enum",
-      weight: 10,
+      weight: 15,
       bands: [
         { value: "salaried_govt", score: 100, label: "Salaried (Govt / PSU)" },
         { value: "salaried_private", score: 85, label: "Salaried (Private)" },
@@ -169,7 +171,7 @@ export const DEFAULT_SCORING_CONFIG_V1: BreScoringConfig = {
       param_key: "monthly_income",
       label: "Monthly income (INR)",
       input_type: "number",
-      weight: 30,
+      weight: 45,
       bands: [
         { from: 150000, to: 99999999, score: 100, label: "₹1.5L+" },
         { from: 75000, to: 149999.99, score: 85, label: "₹75K-1.5L" },
@@ -179,35 +181,10 @@ export const DEFAULT_SCORING_CONFIG_V1: BreScoringConfig = {
       ],
     },
     {
-      param_key: "cibil_score",
-      label: "CIBIL score",
-      input_type: "number",
-      weight: 25,
-      bands: [
-        { from: 750, to: 900, score: 100, label: "Excellent" },
-        { from: 700, to: 749, score: 80, label: "Good" },
-        { from: 650, to: 699, score: 55, label: "Fair" },
-        { from: 600, to: 649, score: 30, label: "Poor" },
-        { from: 0, to: 599, score: 10, label: "Very poor" },
-      ],
-    },
-    {
-      param_key: "existing_emi_burden_pct",
-      label: "Existing EMI burden (% of income)",
-      input_type: "number",
-      weight: 10,
-      bands: [
-        { from: 0, to: 20, score: 100, label: "Light" },
-        { from: 20.01, to: 40, score: 70, label: "Moderate" },
-        { from: 40.01, to: 60, score: 40, label: "Heavy" },
-        { from: 60.01, to: 100, score: 15, label: "Overstretched" },
-      ],
-    },
-    {
       param_key: "income_stability_years",
       label: "Income stability (years)",
       input_type: "number",
-      weight: 5,
+      weight: 10,
       bands: [
         { from: 5, to: 99, score: 100, label: "5+ years" },
         { from: 2, to: 4.99, score: 75, label: "2-5 years" },

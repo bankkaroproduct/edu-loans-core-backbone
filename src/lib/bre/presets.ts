@@ -34,7 +34,6 @@ const EMPTY: BreProfileInput = {
   university: {},
   coapplicant: {
     age: null,
-    cibil_score: null,
     relationship: null,
   },
 };
@@ -68,8 +67,6 @@ export function getPreset(key: PresetKey): BreProfileInput {
           age: 48,
           employment_type: "salaried_private",
           monthly_income: 200000,
-          cibil_score: 800,
-          existing_emi_burden_pct: 15,
           income_stability_years: 18,
         },
       };
@@ -101,8 +98,6 @@ export function getPreset(key: PresetKey): BreProfileInput {
           age: 50,
           employment_type: "salaried_private",
           monthly_income: 85000,
-          cibil_score: 720,
-          existing_emi_burden_pct: 25,
           income_stability_years: 10,
         },
       };
@@ -134,8 +129,6 @@ export function getPreset(key: PresetKey): BreProfileInput {
           age: 32,
           employment_type: "self_employed_business",
           monthly_income: 28000,
-          cibil_score: 640,
-          existing_emi_burden_pct: 55,
           income_stability_years: 1,
         },
       };
@@ -167,8 +160,6 @@ export function getPreset(key: PresetKey): BreProfileInput {
           age: 52,
           employment_type: "salaried_govt",
           monthly_income: 120000,
-          cibil_score: 760,
-          existing_emi_burden_pct: 20,
           income_stability_years: 20,
         },
       };

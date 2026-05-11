@@ -234,6 +234,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     ielts: "",
     toefl: "",
     duolingo: "",
+    pte: "",
     gre: "",
     gmat: "",
   });
@@ -359,6 +360,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         ielts: ((data as any).test_scores?.ielts ?? "").toString(),
         toefl: ((data as any).test_scores?.toefl ?? "").toString(),
         duolingo: ((data as any).test_scores?.duolingo ?? "").toString(),
+        pte: ((data as any).test_scores?.pte ?? "").toString(),
         gre: ((data as any).test_scores?.gre ?? "").toString(),
         gmat: ((data as any).test_scores?.gmat ?? "").toString(),
       });
@@ -534,21 +536,9 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         return { message: "Co-Applicant Email format is invalid", step: "financial", field: "coapplicant_email" };
       // 6. Employment Type
       if (!form.coapplicant_employment_type) return { message: "Employment Type is required", step: "financial", field: "coapplicant_employment_type" };
-      // 7. Employer / Occupation
-      if (!form.coapplicant_employer.trim()) return { message: "Employer / Occupation is required", step: "financial", field: "coapplicant_employer" };
-      // 8. Monthly Income
+      // 7. Monthly Income
       if (!form.coapplicant_income || Number(form.coapplicant_income) <= 0)
         return { message: "Monthly Income is required", step: "financial", field: "coapplicant_income" };
-      // 9. Existing EMI
-      if (form.coapplicant_existing_emi === "" || isNaN(Number(form.coapplicant_existing_emi)) || Number(form.coapplicant_existing_emi) < 0)
-        return { message: "Existing EMI is required (enter 0 if none)", step: "financial", field: "coapplicant_existing_emi" };
-      // 10. CIBIL Score
-      if (!form.coapplicant_cibil.trim()) return { message: "CIBIL Score is required", step: "financial", field: "coapplicant_cibil" };
-      {
-        const c = parseInt(form.coapplicant_cibil, 10);
-        if (!Number.isFinite(c) || c < 300 || c > 900)
-          return { message: "CIBIL Score must be between 300 and 900", step: "financial", field: "coapplicant_cibil" };
-      }
       if (form.work_experience_years.trim() && !isValidWorkExp(form.work_experience_years))
         return { message: "Work experience must be a number with at most one decimal (e.g. 3 or 3.2)", step: "study", field: "work_experience_years" };
       // Co-applicant work experience (optional) — single shorthand input "years.months"
@@ -766,16 +756,17 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     setOrDelete("graduation_total", form.graduation_total);
     setOrDelete("highest_qualification_total", form.highest_qualification_total);
 
-    // Standardized test scores (aligned with Student portal: ielts/toefl/duolingo/gre/gmat)
+    // Standardized test scores (aligned with Student portal: ielts/toefl/duolingo/pte/gre/gmat)
     setOrDelete("ielts", form.ielts);
     setOrDelete("toefl", form.toefl);
     setOrDelete("duolingo", form.duolingo);
+    setOrDelete("pte", form.pte);
     setOrDelete("gre", form.gre);
     setOrDelete("gmat", form.gmat);
 
-    // Co-applicant extension (Student parity: numeric)
+    // Co-applicant extension (Student parity: numeric). CIBIL is intentionally
+    // NOT persisted anymore — historical values remain untouched in test_scores.
     setIntOrDelete("coapplicant_age", form.coapplicant_age);
-    setIntOrDelete("coapplicant_cibil", form.coapplicant_cibil);
 
     // Work experience: same shorthand & coercion as Student. "0" → number 0 (Fresher).
     setOrDelete("work_experience_years", form.work_experience_years);
@@ -803,8 +794,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     originalLead,
     form.tenth_score, form.twelfth_score, form.graduation_score, form.highest_qualification_score,
     form.tenth_total, form.twelfth_total, form.graduation_total, form.highest_qualification_total,
-    form.ielts, form.toefl, form.duolingo, form.gre, form.gmat,
-    form.coapplicant_age, form.coapplicant_cibil, form.work_experience_years,
+    form.ielts, form.toefl, form.duolingo, form.pte, form.gre, form.gmat,
+    form.coapplicant_age, form.work_experience_years,
     form.coapplicant_work_experience,
   ]);
 
@@ -848,8 +839,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       coapplicant_income: form.coapplicant_income ? Number(form.coapplicant_income) : null,
       coapplicant_income_source: form.coapplicant_income_source || null,
       coapplicant_employment_type: form.coapplicant_employment_type || null,
-      coapplicant_employer: form.coapplicant_employer.trim() || null,
-      coapplicant_existing_emi: form.coapplicant_existing_emi !== "" ? Number(form.coapplicant_existing_emi) : null,
+      // coapplicant_employer and coapplicant_existing_emi intentionally omitted —
+      // historical DB values preserved unchanged; new leads do not write these fields.
       collateral_available: collateralStateToBool(form.collateral_state),
       collateral_notes: form.collateral_state === "likely" ? (form.collateral_notes.trim() || null) : null,
       highest_qualification: form.highest_qualification || null,
@@ -1459,6 +1450,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 { key: "ielts", label: "IELTS", placeholder: "e.g. 7.5" },
                 { key: "toefl", label: "TOEFL", placeholder: "e.g. 105" },
                 { key: "duolingo", label: "Duolingo", placeholder: "e.g. 120" },
+                { key: "pte", label: "PTE", placeholder: "e.g. 65" },
                 { key: "gre", label: "GRE", placeholder: "e.g. 320" },
                 { key: "gmat", label: "GMAT", placeholder: "e.g. 700" },
               ] as const).map((t) => (
@@ -1556,31 +1548,10 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   </SelectContent>
                 </Select>
               </div>
-              {/* 7. Employer / Occupation */}
-              <div className="space-y-2" data-field="coapplicant_employer">
-                <Label>Employer / Occupation *</Label>
-                <Input value={form.coapplicant_employer} onChange={(e) => set("coapplicant_employer", e.target.value)} placeholder="Company / occupation" />
-              </div>
-              {/* 8. Monthly Income */}
+              {/* 7. Monthly Income */}
               <div className="space-y-2" data-field="coapplicant_income">
                 <Label>Monthly Income (₹) *</Label>
                 <MoneyInput value={form.coapplicant_income} onChange={(d) => set("coapplicant_income", d)} placeholder="e.g. 1,25,000" />
-              </div>
-              {/* 9. Existing EMI */}
-              <div className="space-y-2" data-field="coapplicant_existing_emi">
-                <Label>Existing EMI (₹) *</Label>
-                <MoneyInput value={form.coapplicant_existing_emi} onChange={(d) => set("coapplicant_existing_emi", d)} placeholder="Enter 0 if none" />
-              </div>
-              {/* 10. CIBIL Score */}
-              <div className="space-y-2 md:col-span-2" data-field="coapplicant_cibil">
-                <Label>CIBIL Score *</Label>
-                <Input
-                  inputMode="numeric"
-                  value={form.coapplicant_cibil}
-                  onChange={(e) => set("coapplicant_cibil", e.target.value.replace(/\D/g, "").slice(0, 3))}
-                  placeholder="e.g. 750"
-                />
-                <p className="text-xs text-muted-foreground">Range 300–900. Required to improve lender match accuracy.</p>
               </div>
               {/* Co-applicant Work Experience — single shorthand input "years.months"
                   (e.g. 3.6 = 3y 6m). Feeds BRE coapplicant.income_stability_years. */}
@@ -1813,20 +1784,12 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 <ReviewRow label="Mobile Number" value={form.coapplicant_mobile} nudgeStep="financial" nudgeField="coapplicant_mobile" />
                 <ReviewRow label="Email" value={form.coapplicant_email} nudgeStep="financial" nudgeField="coapplicant_email" />
                 <ReviewRow label="Employment Type" value={form.coapplicant_employment_type} nudgeStep="financial" nudgeField="coapplicant_employment_type" />
-                <ReviewRow label="Employer / Occupation" value={form.coapplicant_employer} nudgeStep="financial" nudgeField="coapplicant_employer" />
                 <ReviewRow
                   label="Monthly Income (₹)"
                   value={form.coapplicant_income ? `₹${Number(form.coapplicant_income).toLocaleString("en-IN")}` : ""}
                   nudgeStep="financial"
                   nudgeField="coapplicant_income"
                 />
-                <ReviewRow
-                  label="Existing EMI (₹)"
-                  value={form.coapplicant_existing_emi !== "" ? `₹${Number(form.coapplicant_existing_emi).toLocaleString("en-IN")}` : ""}
-                  nudgeStep="financial"
-                  nudgeField="coapplicant_existing_emi"
-                />
-                <ReviewRow label="CIBIL Score" value={form.coapplicant_cibil} nudgeStep="financial" nudgeField="coapplicant_cibil" />
                 <ReviewRow label="Collateral" value={form.collateral_state === "likely" ? "Likely" : form.collateral_state === "unlikely" ? "Unlikely" : "Not sure"} />
                 {form.collateral_state === "likely" && form.collateral_notes && (
                   <ReviewRow label="Collateral Notes" value={form.collateral_notes} />

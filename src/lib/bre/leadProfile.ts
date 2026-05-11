@@ -642,17 +642,18 @@ function buildProfileCore(
   void englishResult;
 
   // ---- co-applicant bucket ----
+  // NOTE: Existing EMI (coapplicant_existing_emi) and CIBIL Score
+  // (test_scores.coapplicant_cibil) are intentionally NOT read here.
+  // Historical values remain in the DB but are universally excluded from BRE
+  // scoring (see engine.ts BRE_DEPRECATED_PARAM_KEYS). Employer/Occupation
+  // (coapplicant_employer) is captured-but-unused for BRE; not mapped.
   const coIncomeMonthly = lead.coapplicant_income != null ? Number(lead.coapplicant_income) : null;
-  const coEmi = lead.coapplicant_existing_emi != null ? Number(lead.coapplicant_existing_emi) : null;
-  const coEmiBurdenPct =
-    coIncomeMonthly && coIncomeMonthly > 0 && coEmi != null ? Math.round((coEmi / coIncomeMonthly) * 100) : null;
 
   if (coIncomeMonthly == null) missing.push({ field: "coapplicant_income", label: "Co-applicant income" });
   if (!lead.coapplicant_relation) missing.push({ field: "coapplicant_relation", label: "Co-applicant relationship" });
 
   const employmentType = normEmployment(lead.coapplicant_employment_type);
   const coAge = numFromTestScores(ts, "coapplicant_age");
-  const coCibil = numFromTestScores(ts, "coapplicant_cibil") ?? numFromTestScores(ts, "cibil_score");
 
   // Co-applicant work experience (NEW). Pure co-applicant signal — does not
   // borrow from the student's work experience anymore. Stored in test_scores
@@ -697,10 +698,8 @@ function buildProfileCore(
       relationship: normRelationship(lead.coapplicant_relation),
       employment_type: employmentType,
       monthly_income: coIncomeMonthly,
-      existing_emi_burden_pct: coEmiBurdenPct,
       income_stability_years: incomeStabilityYears,
       age: coAge,
-      cibil_score: coCibil,
     },
   };
 
