@@ -591,7 +591,9 @@ export interface BuildProfileResolution {
   coapplicant_work_experience?: {
     years: number | null;
     months: number | null;
+    total_years: number | null;
     decimal_years: number | null;
+    source: "exact" | "legacy" | "none";
     mapped_to: "income_stability_years" | "none";
   };
 }
