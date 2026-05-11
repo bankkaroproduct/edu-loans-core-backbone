@@ -272,8 +272,6 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
               </div>
             )}
 
-            <ResolutionNotes resolution={resolution} />
-
             <div>
               <div className="text-xs font-medium text-foreground mb-1.5">Bucket scores</div>
               <div className="grid grid-cols-3 gap-2">
