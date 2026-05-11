@@ -107,7 +107,7 @@ export function InlineEditField({
     if (numericKind) {
       if (trimmedDraft !== "") {
         const res = validateNumeric(numericKind, trimmedDraft);
-        if (!res.ok) {
+        if (res.ok === false) {
           toast.error(res.message);
           return;
         }
