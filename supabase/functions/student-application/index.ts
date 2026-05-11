@@ -29,29 +29,46 @@ function sanitizeRemark(remark: string | null): string | null {
 
 // ─── Numeric sanitation for test_scores JSONB ────────────────────────────────
 // Strips any non-numeric value (e.g. "wjjrjrj") for keys that are expected to
-// be numeric. Free-text keys (e.g. raw_text) are passed through unchanged.
-// Mirror of src/lib/numericValidation.ts but inlined for edge runtime.
+// be numeric, AND enforces realistic ranges. Free-text keys (e.g. raw_text)
+// are passed through unchanged. Mirror of src/lib/numericValidation.ts /
+// leadScoreRanges.ts but inlined for edge runtime.
 const STRICT_NUMERIC = /^\d+(\.\d{1,3})?$/;
-const NUMERIC_TEST_SCORE_KEYS = new Set([
-  "tenth", "tenth_total",
-  "twelfth", "twelfth_total",
-  "graduation", "graduation_total",
-  "highest_qualification_score", "highest_qualification_total",
-  "ielts", "toefl", "pte", "duolingo", "gre", "gmat", "sat",
-  "work_experience_years",
-  "coapplicant_age",
-  "coapplicant_work_experience_years",
-  "coapplicant_work_experience_months",
-]);
+
+// label, min, max — keep in sync with src/lib/leadScoreRanges.ts.
+const NUMERIC_TEST_SCORE_RANGES: Record<string, { min: number; max: number; label: string; pairTotal?: string }> = {
+  tenth: { min: 0, max: 1000, label: "10th Score", pairTotal: "tenth_total" },
+  tenth_total: { min: 0.01, max: 1000, label: "10th Total Marks" },
+  twelfth: { min: 0, max: 1000, label: "12th Score", pairTotal: "twelfth_total" },
+  twelfth_total: { min: 0.01, max: 1000, label: "12th Total Marks" },
+  graduation: { min: 0, max: 1000, label: "Graduation Score", pairTotal: "graduation_total" },
+  graduation_total: { min: 0.01, max: 1000, label: "Graduation Total" },
+  highest_qualification_score: { min: 0, max: 1000, label: "Highest Qualification Score", pairTotal: "highest_qualification_total" },
+  highest_qualification_total: { min: 0.01, max: 1000, label: "Highest Qualification Total" },
+  ielts: { min: 0, max: 9, label: "IELTS" },
+  toefl: { min: 0, max: 120, label: "TOEFL" },
+  pte: { min: 10, max: 90, label: "PTE" },
+  duolingo: { min: 0, max: 160, label: "Duolingo" },
+  gre: { min: 260, max: 340, label: "GRE" },
+  gmat: { min: 200, max: 800, label: "GMAT" },
+  sat: { min: 400, max: 1600, label: "SAT" },
+  work_experience_years: { min: 0, max: 60, label: "Work Experience (years)" },
+  coapplicant_age: { min: 18, max: 100, label: "Co-applicant Age" },
+  coapplicant_work_experience_years: { min: 0, max: 60, label: "Co-applicant Work Experience (years)" },
+  coapplicant_work_experience_months: { min: 0, max: 11, label: "Co-applicant Work Experience (months)" },
+};
 
 function sanitizeNumericTestScores(input: Record<string, unknown>): {
   cleaned: Record<string, unknown>;
   invalidKeys: string[];
+  rangeErrors: string[];
 } {
   const cleaned: Record<string, unknown> = {};
   const invalidKeys: string[] = [];
+  const rangeErrors: string[] = [];
+  const parsed: Record<string, number> = {};
   for (const [k, v] of Object.entries(input ?? {})) {
-    if (!NUMERIC_TEST_SCORE_KEYS.has(k)) {
+    const range = NUMERIC_TEST_SCORE_RANGES[k];
+    if (!range) {
       cleaned[k] = v;
       continue;
     }
@@ -59,11 +76,33 @@ function sanitizeNumericTestScores(input: Record<string, unknown>): {
     const s = String(v).replace(/,/g, "").trim();
     if (!STRICT_NUMERIC.test(s)) {
       invalidKeys.push(k);
+      rangeErrors.push(`${range.label} must be a realistic numeric value.`);
       continue;
     }
-    cleaned[k] = Number(s);
+    const n = Number(s);
+    if (!Number.isFinite(n) || n < range.min || n > range.max) {
+      invalidKeys.push(k);
+      rangeErrors.push(`${range.label} must be between ${range.min} and ${range.max}.`);
+      continue;
+    }
+    cleaned[k] = n;
+    parsed[k] = n;
   }
-  return { cleaned, invalidKeys };
+  // Cross-field: academic score ≤ total when both present; score ≤ 100 otherwise.
+  for (const [k, range] of Object.entries(NUMERIC_TEST_SCORE_RANGES)) {
+    if (!range.pairTotal) continue;
+    const score = parsed[k];
+    if (score === undefined) continue;
+    const total = parsed[range.pairTotal];
+    if (total !== undefined) {
+      if (score > total) {
+        rangeErrors.push(`${range.label} cannot exceed total marks / scale.`);
+      }
+    } else if (score > 100) {
+      rangeErrors.push(`${range.label} cannot exceed 100 when total marks are not provided.`);
+    }
+  }
+  return { cleaned, invalidKeys, rangeErrors };
 }
 
 // Normalize phone to canonical +91XXXXXXXXXX form (mirrors DB normalize_phone()).
