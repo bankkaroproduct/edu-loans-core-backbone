@@ -409,7 +409,20 @@ export function InlineEditField({
   if (editing) {
     return (
       <span className={`flex flex-col gap-1.5 w-full min-w-0 ${className ?? ""}`}>
-        {options && options.length > 0 ? (
+        {masterCombobox ? (
+          <MasterCombobox
+            options={masterCombobox.options}
+            selectedId={masterSelectedId}
+            manualValue={masterSelectedId ? "" : draft}
+            onSelectMaster={(opt) => setDraft(opt.label)}
+            onSelectManual={() => setDraft("")}
+            onChangeManual={(t) => setDraft(t)}
+            placeholder={masterCombobox.placeholder ?? `Search ${label.toLowerCase()}…`}
+            manualPlaceholder={masterCombobox.manualPlaceholder ?? `Type the ${label.toLowerCase()}`}
+            helperText={masterCombobox.helperText}
+            disabled={saving}
+          />
+        ) : options && options.length > 0 ? (
           optionsRenderAs === "dropdown" ? (
             <Select value={draft} onValueChange={(v) => setDraft(v)} disabled={saving}>
               <SelectTrigger className="h-8 text-sm w-full">
