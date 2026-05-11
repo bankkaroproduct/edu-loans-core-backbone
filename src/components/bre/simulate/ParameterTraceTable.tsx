@@ -27,7 +27,7 @@ function TraceTable({ trace }: { trace: ParameterTrace[] }) {
           return (
             <TableRow key={t.param_key}>
               <TableCell className="font-medium text-xs">{t.label}</TableCell>
-              <TableCell className="text-xs">{t.input == null || t.input === "" ? "—" : String(t.input)}</TableCell>
+              <TableCell className="text-xs">{formatTraceInput(t)}</TableCell>
               <TableCell className="text-xs text-muted-foreground">{bandLabel}</TableCell>
               <TableCell className="text-right tabular-nums text-xs">{t.band_score}</TableCell>
               <TableCell className="text-right tabular-nums text-xs">{t.weight}</TableCell>
