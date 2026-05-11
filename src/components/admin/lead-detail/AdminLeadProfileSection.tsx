@@ -9,6 +9,8 @@ import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { InlineEditField } from "@/components/admin/InlineEditField";
 import { formatINR } from "@/lib/formatCurrency";
 import { normalizeAcademicScore } from "@/lib/academicScore";
+import { useHighestQualificationOptions } from "@/hooks/useHighestQualificationOptions";
+import { CO_APPLICANT_RELATIONS } from "@/lib/coapplicantRelations";
 
 type Lead = Tables<"student_leads"> & {
   district?: string | null;
@@ -37,6 +39,7 @@ interface EditableConfig {
   parseValue?: (raw: string) => unknown;
   formatDisplay?: (v: string) => string;
   numericKind?: NumericKind;
+  optionsRenderAs?: "buttons" | "dropdown";
 }
 
 function Field({
@@ -75,6 +78,7 @@ function Field({
             value={value ?? null}
             inputType={editable.inputType}
             options={editable.options}
+            optionsRenderAs={editable.optionsRenderAs}
             parseValue={editable.parseValue}
             formatDisplay={editable.formatDisplay}
             numericKind={editable.numericKind}
