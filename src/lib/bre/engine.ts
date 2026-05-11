@@ -53,13 +53,6 @@ export const BRE_DEPRECATED_PARAM_KEYS: ReadonlySet<string> = new Set([
   // values in universities_master remain intact for audit, but the engine never
   // reads them. University-bucket weights are auto-renormalized to 100.
   "employability_outlook",
-  // Co-applicant Employment Type is universally excluded from BRE scoring so
-  // that Salaried profiles get no artificial advantage and Business owner /
-  // Self-employed profiles are not penalised by the enum alone. The field is
-  // still captured in forms / bulk upload / lead detail for operational
-  // visibility, and lender hard checks based on actual income / ITR amounts
-  // continue to apply. Co-applicant bucket weights are auto-renormalized to 100.
-  "employment_type",
 ]);
 
 const BUCKETS: { key: BucketKey; field: keyof BreScoringConfig }[] = [
