@@ -510,6 +510,15 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         if (err) return { message: `${label}: ${err}`, step: "study", field };
       }
 
+      // Test-score range validation (IELTS/TOEFL/PTE/Duolingo/GRE/GMAT/SAT).
+      {
+        const testErr = validateTestScoresMap({
+          ielts: form.ielts, toefl: form.toefl, duolingo: form.duolingo,
+          pte: form.pte, gre: form.gre, gmat: form.gmat,
+        } as Record<string, unknown>);
+        if (testErr) return { message: testErr, step: "study", field: "test_scores" };
+      }
+
       // Financial Info — required in BOTH partner and admin modes (restored).
       if (!form.loan_amount_required) return { message: "Approx loan amount is required", step: "financial", field: "loan_amount_required" };
       if (isNaN(Number(form.loan_amount_required)) || Number(form.loan_amount_required) <= 0)
