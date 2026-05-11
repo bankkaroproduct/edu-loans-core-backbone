@@ -162,25 +162,27 @@ export function AdminLeadSummaryStrip({ lead, onSaved }: Props) {
             leadId={lead.id}
             label="Study Destination"
             display={lead.intended_study_country || null}
-            renderBody={() => (
-              <Select value={countryDraft} onValueChange={setCountryDraft}>
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Select country" />
-                </SelectTrigger>
-                <SelectContent>
-                  {countries.map((c) => (
-                    <SelectItem key={c.id} value={c.country_name}>
-                      {c.country_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-            validate={() => (!countryDraft ? "Please select a country" : null)}
-            buildPayload={() => ({ intended_study_country: countryDraft })}
+            renderBody={() => {
+              const opts: MasterOption[] = countries.map((c) => ({ id: c.country_name, label: c.country_name }));
+              const isMaster = !!countryDraft && opts.some((o) => o.id === countryDraft);
+              return (
+                <MasterCombobox
+                  options={opts}
+                  selectedId={isMaster ? countryDraft : ""}
+                  manualValue={isMaster ? "" : countryDraft}
+                  onSelectMaster={(opt) => setCountryDraft(opt.label)}
+                  onSelectManual={() => setCountryDraft("")}
+                  onChangeManual={(t) => setCountryDraft(t)}
+                  placeholder="Select country"
+                  manualPlaceholder="Type the country name"
+                />
+              );
+            }}
+            validate={() => (!countryDraft.trim() ? "Please select or type a country" : null)}
+            buildPayload={() => ({ intended_study_country: countryDraft.trim() })}
             buildAudit={() => ({
               old: { intended_study_country: lead.intended_study_country },
-              new: { intended_study_country: countryDraft },
+              new: { intended_study_country: countryDraft.trim() },
             })}
             onSaved={onSaved}
           />

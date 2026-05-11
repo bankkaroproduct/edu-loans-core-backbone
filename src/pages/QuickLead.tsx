@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MasterCombobox, type MasterOption } from "@/components/ui/master-combobox";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -376,10 +377,23 @@ export default function QuickLead() {
           <CardContent className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label>Study Country *</Label>
-              <Select value={form.intended_study_country} onValueChange={(v) => set("intended_study_country", v)}>
-                <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
-                <SelectContent>{countries.map((c) => <SelectItem key={c.id} value={c.country_name}>{c.country_name}</SelectItem>)}</SelectContent>
-              </Select>
+              {(() => {
+                const opts: MasterOption[] = countries.map(c => ({ id: c.country_name, label: c.country_name }));
+                const current = form.intended_study_country || "";
+                const isMaster = !!current && opts.some(o => o.id === current);
+                return (
+                  <MasterCombobox
+                    options={opts}
+                    selectedId={isMaster ? current : ""}
+                    manualValue={isMaster ? "" : current}
+                    onSelectMaster={(opt) => set("intended_study_country", opt.label)}
+                    onSelectManual={() => set("intended_study_country", "")}
+                    onChangeManual={(t) => set("intended_study_country", t)}
+                    placeholder="Select study country"
+                    manualPlaceholder="Type the country name"
+                  />
+                );
+              })()}
             </div>
             <div className="space-y-2">
               <Label>Course Name *</Label>

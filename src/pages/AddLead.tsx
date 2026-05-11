@@ -172,7 +172,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   const [partnerPickerOpen, setPartnerPickerOpen] = useState(false);
   const [originalPartnerId, setOriginalPartnerId] = useState<string | null>(null);
   const [partnerIdAssignment, setPartnerIdAssignment] = useState<string>("");
-  const [countryPickerOpen, setCountryPickerOpen] = useState(false);
+  // (country picker now uses MasterCombobox; no separate open state needed)
 
   const [form, setForm] = useState({
     student_first_name: "",
@@ -1203,54 +1203,43 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
             <CardContent className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2 md:col-span-2" data-field="intended_study_country">
                 <Label>Intended Study Country *</Label>
-                <Popover open={countryPickerOpen} onOpenChange={setCountryPickerOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={countryPickerOpen}
-                      className={cn(
-                        "w-full justify-between font-normal h-10",
-                        !form.intended_study_country && "text-muted-foreground",
-                      )}
-                    >
-                      <span className="truncate text-left">
-                        {form.intended_study_country || "Search & select intended country…"}
-                      </span>
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                    <Command>
-                      <CommandInput placeholder="Type a country name…" />
-                      <CommandList>
-                        <CommandEmpty>No countries match that search.</CommandEmpty>
-                        <CommandGroup>
-                          {sortedCountries.map((c) => (
-                            <CommandItem
-                              key={c.id}
-                              value={c.country_name}
-                              onSelect={() => {
-                                // Switching country must clear stale university selection
-                                // (master id + manual fallback) so partners aren't shown a
-                                // university from a different country in review.
-                                setMany({
-                                  intended_study_country: c.country_name,
-                                  university_id: "",
-                                  university_name_raw: "",
-                                });
-                                setCountryPickerOpen(false);
-                              }}
-                            >
-                              <Check className={cn("mr-2 h-4 w-4", form.intended_study_country === c.country_name ? "opacity-100" : "opacity-0")} />
-                              <span className="truncate">{c.country_name}</span>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                {(() => {
+                  const opts: MasterOption[] = sortedCountries.map((c) => ({ id: c.country_name, label: c.country_name }));
+                  const current = form.intended_study_country || "";
+                  const isMaster = !!current && opts.some((o) => o.id === current);
+                  return (
+                    <MasterCombobox
+                      options={opts}
+                      selectedId={isMaster ? current : ""}
+                      manualValue={isMaster ? "" : current}
+                      onSelectMaster={(opt) => {
+                        // Switching country must clear stale university selection so
+                        // partners aren't shown a university from a different country.
+                        setMany({
+                          intended_study_country: opt.label,
+                          university_id: "",
+                          university_name_raw: "",
+                        });
+                      }}
+                      onSelectManual={() => {
+                        setMany({
+                          intended_study_country: "",
+                          university_id: "",
+                          university_name_raw: "",
+                        });
+                      }}
+                      onChangeManual={(t) => {
+                        setMany({
+                          intended_study_country: t,
+                          university_id: "",
+                          university_name_raw: "",
+                        });
+                      }}
+                      placeholder="Search & select intended country…"
+                      manualPlaceholder="Type the country name"
+                    />
+                  );
+                })()}
               </div>
               <div className="space-y-2 md:col-span-2" data-field="university">
                 <Label>University *</Label>
