@@ -487,6 +487,26 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     if (!isValidIndianPhone(form.student_phone)) return { message: "Mobile must be a valid 10-digit Indian number (with or without +91)", step: "student", field: "student_phone" };
     if (form.student_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.student_email.trim())) return { message: "Email format is invalid", step: "student", field: "student_email" };
 
+    // Score-range / numeric-sanity checks run on BOTH draft and submit paths.
+    // Required-ness checks remain submit-only below.
+    {
+      const pairs: Array<[string, string, string, string]> = [
+        ["10th", form.tenth_score, form.tenth_total, "tenth_total"],
+        ["12th", form.twelfth_score, form.twelfth_total, "twelfth_total"],
+        ["Graduation", form.graduation_score, form.graduation_total, "graduation_total"],
+        ["Highest Qualification", form.highest_qualification_score, form.highest_qualification_total, "highest_qualification_total"],
+      ];
+      for (const [label, s, t, field] of pairs) {
+        const err = validateScoreTotalPair(s, t);
+        if (err) return { message: `${label}: ${err}`, step: "study", field };
+      }
+      const testErr = validateTestScoresMap({
+        ielts: form.ielts, toefl: form.toefl, duolingo: form.duolingo,
+        pte: form.pte, gre: form.gre, gmat: form.gmat,
+      } as Record<string, unknown>);
+      if (testErr) return { message: testErr, step: "study", field: "test_scores" };
+    }
+
     if (!isDraft) {
       if (!form.intended_study_country) return { message: "Intended study country is required", step: "study", field: "intended_study_country" };
       if (!resolvedUniversityName.trim()) return { message: "University is required (pick from list or type manually)", step: "study", field: "university" };
@@ -498,26 +518,6 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       if (!form.highest_qualification) return { message: "Highest qualification is required", step: "study", field: "highest_qualification" };
       if (!form.tenth_score.trim()) return { message: "10th score is required", step: "study", field: "tenth_score" };
       if (!form.twelfth_score.trim()) return { message: "12th score is required", step: "study", field: "twelfth_score" };
-      // Score / total pair validation (totals are optional, legacy compat)
-      const pairs: Array<[string, string, string, string]> = [
-        ["10th", form.tenth_score, form.tenth_total, "tenth_total"],
-        ["12th", form.twelfth_score, form.twelfth_total, "twelfth_total"],
-        ["Graduation", form.graduation_score, form.graduation_total, "graduation_total"],
-        ["Highest Qualification", form.highest_qualification_score, form.highest_qualification_total, "highest_qualification_total"],
-      ];
-      for (const [label, s, t, field] of pairs) {
-        const err = validateScoreTotalPair(s, t);
-        if (err) return { message: `${label}: ${err}`, step: "study", field };
-      }
-
-      // Test-score range validation (IELTS/TOEFL/PTE/Duolingo/GRE/GMAT/SAT).
-      {
-        const testErr = validateTestScoresMap({
-          ielts: form.ielts, toefl: form.toefl, duolingo: form.duolingo,
-          pte: form.pte, gre: form.gre, gmat: form.gmat,
-        } as Record<string, unknown>);
-        if (testErr) return { message: testErr, step: "study", field: "test_scores" };
-      }
 
       // Financial Info — required in BOTH partner and admin modes (restored).
       if (!form.loan_amount_required) return { message: "Approx loan amount is required", step: "financial", field: "loan_amount_required" };
