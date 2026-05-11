@@ -39,6 +39,13 @@ interface Props {
    * Empty/blank trimmed string deletes the key from the JSONB.
    */
   jsonbColumn?: string;
+  /**
+   * When set, the field is treated as numeric: input is sanitized live,
+   * and Save is blocked (no DB write, no audit log) if the value fails
+   * `validateNumeric`. Blank values are still allowed — required-ness is
+   * enforced separately by the existing "cannot be empty" check.
+   */
+  numericKind?: NumericKind;
 }
 
 /**
