@@ -234,7 +234,7 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
           <Field
             label="Intake Year"
             value={lead.intake_year ? String(lead.intake_year) : null}
-            editable={ed("intake_year", { inputType: "number", parseValue: numericParse })}
+            editable={ed("intake_year", { inputType: "number", parseValue: numericParse, numericKind: "year" })}
             onSaved={onSaved}
           />
           <Field
@@ -244,6 +244,7 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
               inputType: "number",
               formatDisplay: (v) => formatINR(v),
               parseValue: numericParse,
+              numericKind: "amount",
             })}
             onSaved={onSaved}
           />
@@ -252,27 +253,27 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
           <Field
             label="Work Experience (years)"
             value={tsStr("work_experience_years")}
-            editable={edTS("work_experience_years")}
+            editable={edTS("work_experience_years", { numericKind: "integer" })}
             onSaved={onSaved}
           />
-          <Field label="10th Score" value={tsStr("tenth")} editable={edTS("tenth")} onSaved={onSaved} />
-          <Field label="10th Total Marks" value={tsStr("tenth_total")} editable={edTS("tenth_total")} onSaved={onSaved} />
+          <Field label="10th Score" value={tsStr("tenth")} editable={edTS("tenth", { numericKind: "decimal" })} onSaved={onSaved} />
+          <Field label="10th Total Marks" value={tsStr("tenth_total")} editable={edTS("tenth_total", { numericKind: "decimal" })} onSaved={onSaved} />
           <NormalizedField label="10th Normalized" score={tsStr("tenth")} total={tsStr("tenth_total")} />
-          <Field label="12th Score" value={tsStr("twelfth")} editable={edTS("twelfth")} onSaved={onSaved} />
-          <Field label="12th Total Marks" value={tsStr("twelfth_total")} editable={edTS("twelfth_total")} onSaved={onSaved} />
+          <Field label="12th Score" value={tsStr("twelfth")} editable={edTS("twelfth", { numericKind: "decimal" })} onSaved={onSaved} />
+          <Field label="12th Total Marks" value={tsStr("twelfth_total")} editable={edTS("twelfth_total", { numericKind: "decimal" })} onSaved={onSaved} />
           <NormalizedField label="12th Normalized" score={tsStr("twelfth")} total={tsStr("twelfth_total")} />
-          <Field label="Graduation Score" value={tsStr("graduation")} editable={edTS("graduation")} onSaved={onSaved} />
-          <Field label="Graduation Total / CGPA Scale" value={tsStr("graduation_total")} editable={edTS("graduation_total")} onSaved={onSaved} />
+          <Field label="Graduation Score" value={tsStr("graduation")} editable={edTS("graduation", { numericKind: "decimal" })} onSaved={onSaved} />
+          <Field label="Graduation Total / CGPA Scale" value={tsStr("graduation_total")} editable={edTS("graduation_total", { numericKind: "decimal" })} onSaved={onSaved} />
           <NormalizedField label="Graduation Normalized" score={tsStr("graduation")} total={tsStr("graduation_total")} />
-          <Field label="Highest Qual. Total / CGPA Scale" value={tsStr("highest_qualification_total")} editable={edTS("highest_qualification_total")} onSaved={onSaved} />
+          <Field label="Highest Qual. Total / CGPA Scale" value={tsStr("highest_qualification_total")} editable={edTS("highest_qualification_total", { numericKind: "decimal" })} onSaved={onSaved} />
           <NormalizedField label="Highest Qual. Normalized" score={hqScore} total={tsStr("highest_qualification_total")} />
-          <Field label="IELTS" value={tsStr("ielts")} editable={edTS("ielts")} onSaved={onSaved} />
-          <Field label="TOEFL" value={tsStr("toefl")} editable={edTS("toefl")} onSaved={onSaved} />
-          <Field label="PTE" value={tsStr("pte")} editable={edTS("pte")} onSaved={onSaved} />
-          <Field label="Duolingo" value={tsStr("duolingo")} editable={edTS("duolingo")} onSaved={onSaved} />
-          <Field label="GRE" value={tsStr("gre")} editable={edTS("gre")} onSaved={onSaved} />
-          <Field label="GMAT" value={tsStr("gmat")} editable={edTS("gmat")} onSaved={onSaved} />
-          <Field label="SAT" value={tsStr("sat")} editable={edTS("sat")} onSaved={onSaved} />
+          <Field label="IELTS" value={tsStr("ielts")} editable={edTS("ielts", { numericKind: "decimal" })} onSaved={onSaved} />
+          <Field label="TOEFL" value={tsStr("toefl")} editable={edTS("toefl", { numericKind: "decimal" })} onSaved={onSaved} />
+          <Field label="PTE" value={tsStr("pte")} editable={edTS("pte", { numericKind: "decimal" })} onSaved={onSaved} />
+          <Field label="Duolingo" value={tsStr("duolingo")} editable={edTS("duolingo", { numericKind: "decimal" })} onSaved={onSaved} />
+          <Field label="GRE" value={tsStr("gre")} editable={edTS("gre", { numericKind: "decimal" })} onSaved={onSaved} />
+          <Field label="GMAT" value={tsStr("gmat")} editable={edTS("gmat", { numericKind: "decimal" })} onSaved={onSaved} />
+          <Field label="SAT" value={tsStr("sat")} editable={edTS("sat", { numericKind: "decimal" })} onSaved={onSaved} />
           <Field label="Other Test Scores" value={tsStr("raw_text")} editable={edTS("raw_text")} onSaved={onSaved} />
         </div>
       </SectionCard>
