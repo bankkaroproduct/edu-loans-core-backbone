@@ -102,7 +102,17 @@ export function InlineEditField({
     setDraft("");
   };
   const askConfirm = () => {
-    if (!draft.trim()) {
+    const trimmedDraft = draft.trim();
+    // Numeric fields: blank is allowed (clears the value); non-blank must be valid.
+    if (numericKind) {
+      if (trimmedDraft !== "") {
+        const res = validateNumeric(numericKind, trimmedDraft);
+        if (!res.ok) {
+          toast.error(res.message);
+          return;
+        }
+      }
+    } else if (!trimmedDraft) {
       toast.error(`${label} cannot be empty`);
       return;
     }
@@ -113,10 +123,22 @@ export function InlineEditField({
       toast.error("Not authenticated");
       return;
     }
-    setSaving(true);
     const trimmed = draft.trim();
+    // Re-validate before any DB write to guarantee invalid text never reaches storage.
+    if (numericKind && trimmed !== "") {
+      const res = validateNumeric(numericKind, trimmed);
+      if (!res.ok) {
+        toast.error(res.message);
+        return;
+      }
+    }
+    setSaving(true);
     const oldVal = localValue ?? null;
-    const writeValue = parseValue ? parseValue(trimmed) : trimmed;
+    let writeValue: unknown = parseValue ? parseValue(trimmed) : trimmed;
+    if (numericKind && trimmed !== "") {
+      const res = validateNumeric(numericKind, trimmed);
+      if (res.ok) writeValue = res.clean;
+    }
 
     let updatePayload: Record<string, unknown>;
     let auditOld: Record<string, unknown>;
