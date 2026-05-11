@@ -33,6 +33,7 @@ interface EditableConfig {
   options?: { value: string; label: string }[];
   parseValue?: (raw: string) => unknown;
   formatDisplay?: (v: string) => string;
+  numericKind?: NumericKind;
 }
 
 function Field({
