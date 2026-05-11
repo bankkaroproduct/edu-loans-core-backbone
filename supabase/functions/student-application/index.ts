@@ -686,16 +686,32 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Validate numeric co-applicant fields server-side (defense in depth).
+      const validateOptionalAmount = (v: unknown, label: string): number | null | { err: string } => {
+        if (v === null || v === undefined || v === "") return null;
+        const s = String(v).replace(/,/g, "").trim();
+        if (!STRICT_NUMERIC.test(s)) return { err: `Only numeric values are allowed for ${label}.` };
+        return Number(s);
+      };
+      const incomeCheck = validateOptionalAmount(data?.coapplicant_income, "co-applicant income");
+      if (incomeCheck && typeof incomeCheck === "object" && "err" in incomeCheck) {
+        return jsonResponse({ error: incomeCheck.err }, 400);
+      }
+      const emiCheck = validateOptionalAmount(data?.coapplicant_existing_emi, "co-applicant existing EMI");
+      if (emiCheck && typeof emiCheck === "object" && "err" in emiCheck) {
+        return jsonResponse({ error: emiCheck.err }, 400);
+      }
+
       const coFields: Record<string, unknown> = {
         coapplicant_name: data?.coapplicant_name as string || null,
         coapplicant_relation: data?.coapplicant_relation as string || null,
         coapplicant_mobile: data?.coapplicant_mobile as string || null,
         coapplicant_email: data?.coapplicant_email as string || null,
-        coapplicant_income: data?.coapplicant_income ? Number(data.coapplicant_income) : null,
+        coapplicant_income: incomeCheck as number | null,
         coapplicant_income_source: data?.coapplicant_income_source as string || null,
         coapplicant_employment_type: data?.coapplicant_employment_type as string || null,
         coapplicant_employer: data?.coapplicant_employer as string || null,
-        coapplicant_existing_emi: data?.coapplicant_existing_emi ? Number(data.coapplicant_existing_emi) : null,
+        coapplicant_existing_emi: emiCheck as number | null,
         collateral_available: data?.collateral_available as boolean ?? null,
         collateral_notes: data?.collateral_notes as string || null,
       };
