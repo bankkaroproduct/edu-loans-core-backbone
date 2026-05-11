@@ -828,7 +828,8 @@ export async function processBulkUpload(
           if (row.highest_qualification_total != null) ts.highest_qualification_total = row.highest_qualification_total;
           if (row.work_experience != null) ts.work_experience_years = row.work_experience;
           if (row.coapplicant_age != null) ts.coapplicant_age = row.coapplicant_age;
-          if (row.coapplicant_cibil != null) ts.coapplicant_cibil = row.coapplicant_cibil;
+          // coapplicant_cibil deprecated — not written for new leads. Legacy
+          // values on existing rows remain readable from test_scores JSONB.
           if (row.coapplicant_work_experience_years != null) ts.coapplicant_work_experience_years = row.coapplicant_work_experience_years;
           if (row.coapplicant_work_experience_months != null) ts.coapplicant_work_experience_months = row.coapplicant_work_experience_months;
           if (row.test_scores_raw) ts.raw_text = row.test_scores_raw;
