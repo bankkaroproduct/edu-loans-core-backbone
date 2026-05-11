@@ -11,3 +11,17 @@ export const COURSE_CATEGORY_OPTIONS: ReadonlyArray<string> = [
   "Arts",
   "Other",
 ] as const;
+
+export type CourseCategoryOption = (typeof COURSE_CATEGORY_OPTIONS)[number];
+
+export function toBreSafeCourseCategory(value: unknown): CourseCategoryOption | null {
+  const raw = String(value ?? "").trim().toLowerCase();
+  if (!raw) return null;
+  if (raw.includes("stem") || raw.includes("engineering") || raw.includes("tech")) return "STEM";
+  if (raw === "mba" || raw.includes("executive mba")) return "MBA";
+  if (raw.includes("management") || raw.includes("business") || raw.includes("commerce") || raw.includes("finance")) return "Management";
+  if (raw.includes("health") || raw.includes("medical") || raw.includes("medicine") || raw.includes("nursing") || raw.includes("pharma")) return "Healthcare";
+  if (raw.includes("arts") || raw.includes("humanities") || raw.includes("law")) return "Arts";
+  if (raw.includes("other")) return "Other";
+  return null;
+}
