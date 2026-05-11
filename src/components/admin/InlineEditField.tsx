@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Check, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -46,6 +53,13 @@ interface Props {
    * enforced separately by the existing "cannot be empty" check.
    */
   numericKind?: NumericKind;
+  /**
+   * How to render `options` in edit mode.
+   *  - "buttons" (default): existing pill-button toggle behavior (e.g. Gender, Yes/No).
+   *  - "dropdown": shadcn <Select> menu — free text is impossible.
+   * Has no effect when `options` is not provided.
+   */
+  optionsRenderAs?: "buttons" | "dropdown";
 }
 
 /**
