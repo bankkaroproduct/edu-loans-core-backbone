@@ -12,6 +12,8 @@ export const DOC_DISPLAY_NAMES: Record<string, string> = {
   MARK_12: "12th marksheet",
   GRAD_MARK: "Graduation marksheet",
   GRAD_DEGREE: "Graduation degree",
+  PG_MARK: "Post-Graduation marksheet",
+  PG_DEGREE: "Post-Graduation degree",
   ADMIT_LETTER: "Admission/offer letter",
   I20_CAS: "I-20 / CAS",
   IELTS_TOEFL: "IELTS / TOEFL scorecard",
