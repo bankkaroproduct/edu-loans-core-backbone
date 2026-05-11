@@ -15,6 +15,7 @@ import {
   computeEffectiveAcademicScore,
   normalizeAcademicScore,
   coapplicantWorkExperienceToYears,
+  resolveCoappWorkExpDecimalYears,
   type EffectiveAcademicResult,
   type NormalizedScore,
 } from "@/lib/academicScore";
