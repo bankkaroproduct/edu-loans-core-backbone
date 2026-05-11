@@ -423,15 +423,15 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
     if (opts.max !== undefined && n > opts.max) { errors.push(`${label} must be ≤ ${opts.max}`); return undefined; }
     return n;
   };
-  const tenth = parseNumeric(tenthStr, "10th_score", { min: 0 });
-  const tenthTotal = parseNumeric(tenthTotalStr, "10th_total_marks", { min: 0 });
-  const twelfth = parseNumeric(twelfthStr, "12th_score", { min: 0 });
-  const twelfthTotal = parseNumeric(twelfthTotalStr, "12th_total_marks", { min: 0 });
-  const grad = parseNumeric(gradStr, "graduation_score", { min: 0 });
-  const gradTotal = parseNumeric(gradTotalStr, "graduation_total_marks", { min: 0 });
-  const qualScore = parseNumeric(qualificationScoreStr, "highest_qualification_score", { min: 0 });
-  const qualTotal = parseNumeric(qualificationTotalStr, "highest_qualification_total_marks", { min: 0 });
-  const coapplicantEmi = parseNumeric(coapplicantEmiStr, "coapplicant_existing_emi", { min: 0 });
+  const tenth = parseNumeric(tenthStr, "10th_score", { min: 0, max: BULK_NUMERIC_MAX.score_obtained });
+  const tenthTotal = parseNumeric(tenthTotalStr, "10th_total_marks", { min: 0, max: BULK_NUMERIC_MAX.total_marks });
+  const twelfth = parseNumeric(twelfthStr, "12th_score", { min: 0, max: BULK_NUMERIC_MAX.score_obtained });
+  const twelfthTotal = parseNumeric(twelfthTotalStr, "12th_total_marks", { min: 0, max: BULK_NUMERIC_MAX.total_marks });
+  const grad = parseNumeric(gradStr, "graduation_score", { min: 0, max: BULK_NUMERIC_MAX.score_obtained });
+  const gradTotal = parseNumeric(gradTotalStr, "graduation_total_marks", { min: 0, max: BULK_NUMERIC_MAX.total_marks });
+  const qualScore = parseNumeric(qualificationScoreStr, "highest_qualification_score", { min: 0, max: BULK_NUMERIC_MAX.qual_score });
+  const qualTotal = parseNumeric(qualificationTotalStr, "highest_qualification_total_marks", { min: 0, max: BULK_NUMERIC_MAX.qual_total });
+  const coapplicantEmi = parseNumeric(coapplicantEmiStr, "coapplicant_existing_emi", { min: 0, max: BULK_NUMERIC_MAX.coapplicant_emi });
   const coapplicantAge = parseNumeric(coapplicantAgeStr, "coapplicant_age", { min: 18, max: 100 });
   const coapplicantCibil = parseNumeric(coapplicantCibilStr, "coapplicant_cibil", { min: 300, max: 900 });
   const workExp = parseNumeric(workExpStr, "work_experience", { min: 0, max: 60 });
