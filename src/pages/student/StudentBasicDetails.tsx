@@ -262,10 +262,24 @@ export default function StudentBasicDetails() {
             </div>
             <div className="space-y-1.5">
               <Label>Destination Country <span className="text-destructive">*</span></Label>
-              <Select value={formData.intended_study_country} onValueChange={v => updateField("intended_study_country", v)}>
-                <SelectTrigger><SelectValue placeholder="Select country" /></SelectTrigger>
-                <SelectContent>{sortByPriority(countries, c => c.country_name).map(c => <SelectItem key={c.id} value={c.country_name}>{c.country_name}</SelectItem>)}</SelectContent>
-              </Select>
+              {(() => {
+                const sorted = sortByPriority(countries, c => c.country_name);
+                const opts: MasterOption[] = sorted.map(c => ({ id: c.country_name, label: c.country_name }));
+                const current = formData.intended_study_country || "";
+                const isMaster = !!current && opts.some(o => o.id === current);
+                return (
+                  <MasterCombobox
+                    options={opts}
+                    selectedId={isMaster ? current : ""}
+                    manualValue={isMaster ? "" : current}
+                    onSelectMaster={(opt) => updateField("intended_study_country", opt.label)}
+                    onSelectManual={() => updateField("intended_study_country", "")}
+                    onChangeManual={(t) => updateField("intended_study_country", t)}
+                    placeholder="Select destination country"
+                    manualPlaceholder="Type the country name"
+                  />
+                );
+              })()}
             </div>
             <div className="space-y-1.5">
               <Label>Preferred Course Category</Label>
