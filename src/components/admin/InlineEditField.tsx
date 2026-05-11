@@ -21,6 +21,7 @@ import {
   sanitizeNumericInput,
 } from "@/lib/numericValidation";
 import { MasterCombobox, type MasterOption } from "@/components/ui/master-combobox";
+import { usePincodeLookup } from "@/hooks/usePincodeLookup";
 
 
 interface Props {
@@ -129,6 +130,11 @@ export function InlineEditField({
   const [confirming, setConfirming] = useState(false);
   const [saving, setSaving] = useState(false);
   const [localValue, setLocalValue] = useState<string | null | undefined>(value);
+
+  // Live pincode preview: subscribes to pincode_master while admin is typing
+  // a 6-digit value into the inline editor. Inert for non-pincode fields.
+  const isPincodeField = !jsonbColumn && field === "pincode";
+  const pincodePreview = usePincodeLookup(isPincodeField && editing ? draft : null);
 
   // Re-sync display when parent refreshes the lead, but never blow away an active edit session.
   useEffect(() => {
@@ -283,6 +289,7 @@ export function InlineEditField({
             district: pinRow.district ?? null,
             state: pinRow.state ?? null,
             tier: pinRow.tier ?? null,
+            country_of_residence: "India",
           };
           pincodeEnriched = true;
           if (pinRow.has_conflict) {
@@ -489,6 +496,54 @@ export function InlineEditField({
             }}
           />
         )}
+        {isPincodeField && editing && (() => {
+          const d = draft.trim();
+          if (d === "") return null;
+          if (!/^\d{6}$/.test(d)) {
+            return (
+              <span className="text-[11px] text-destructive">
+                Please enter a valid pincode.
+              </span>
+            );
+          }
+          if (pincodePreview.loading || pincodePreview.pincode !== d) {
+            return (
+              <span className="text-[11px] text-muted-foreground inline-flex items-center gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" /> Looking up pincode…
+              </span>
+            );
+          }
+          if (pincodePreview.found === false) {
+            return (
+              <span className="text-[11px] text-amber-600">
+                Pincode not found in master. City/State/Country will not be auto-filled.
+              </span>
+            );
+          }
+          if (pincodePreview.found === true) {
+            const district = pincodePreview.district ?? "—";
+            const state = pincodePreview.state ?? "—";
+            const tier = pincodePreview.tier ?? "—";
+            return (
+              <span className="flex flex-col gap-0.5 rounded border border-border bg-muted/40 p-1.5 text-[11px]">
+                <span className="font-semibold text-foreground">
+                  Will be saved with this pincode:
+                </span>
+                <span><span className="text-muted-foreground">City:</span> {district}</span>
+                <span><span className="text-muted-foreground">District:</span> {district}</span>
+                <span><span className="text-muted-foreground">State:</span> {state}</span>
+                <span><span className="text-muted-foreground">Tier:</span> {tier}</span>
+                <span><span className="text-muted-foreground">Country:</span> India</span>
+                {pincodePreview.hasConflict && (
+                  <span className="text-amber-600">
+                    This pincode maps to multiple areas — please verify city/state.
+                  </span>
+                )}
+              </span>
+            );
+          }
+          return null;
+        })()}
         {!confirming ? (
           <span className="flex flex-wrap items-center gap-1">
             <Button size="sm" className="h-6 px-2 text-[11px]" onClick={askConfirm} disabled={saving}>
