@@ -229,10 +229,56 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Study Country" value={lead.intended_study_country} editable={ed("intended_study_country")}  onSaved={onSaved} />
-            <Field label="University" value={lead.university_name_raw} editable={ed("university_name_raw")}  onSaved={onSaved} />
-            <Field label="Course" value={lead.course_name} editable={ed("course_name")}  onSaved={onSaved} />
-            <Field label="Course Category" value={lead.course_category} editable={ed("course_category")}  onSaved={onSaved} />
+            <Field
+              label="Study Country"
+              value={lead.intended_study_country}
+              editable={ed("intended_study_country", {
+                masterCombobox: {
+                  options: countryOptions,
+                  placeholder: "Search & select country…",
+                  manualPlaceholder: "Type the country name",
+                  helperText: "Search the master list, or pick 'Not available in list' to type manually.",
+                },
+              })}
+              onSaved={onSaved}
+            />
+            <Field
+              label="University"
+              value={lead.university_name_raw}
+              editable={ed("university_name_raw", {
+                masterCombobox: {
+                  options: universityOptions,
+                  placeholder: lead.intended_study_country
+                    ? `Search universities in ${lead.intended_study_country}…`
+                    : "Search universities…",
+                  manualPlaceholder: "Type the university name",
+                  helperText: "Search the master list, or pick 'Not available in list' to type manually.",
+                },
+              })}
+              onSaved={onSaved}
+            />
+            <Field
+              label="Course"
+              value={lead.course_name}
+              editable={ed("course_name", {
+                masterCombobox: {
+                  options: courseOptions,
+                  placeholder: "Search courses…",
+                  manualPlaceholder: "Type the course name",
+                  helperText: "Search the master list, or pick 'Not available in list' to type manually.",
+                },
+              })}
+              onSaved={onSaved}
+            />
+            <Field
+              label="Course Category"
+              value={lead.course_category}
+              editable={ed("course_category", {
+                options: COURSE_CATEGORY_OPTIONS.map((v) => ({ value: v, label: v })),
+                optionsRenderAs: "dropdown",
+              })}
+              onSaved={onSaved}
+            />
             {/* Intake Term + Intake Year intentionally omitted here — Intake
                 in LeadSummaryStrip is the single source of truth for display. */}
             <Field
