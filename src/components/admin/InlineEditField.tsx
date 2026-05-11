@@ -308,6 +308,29 @@ export function InlineEditField({
         return;
       }
       const current = ((row as unknown as Record<string, unknown> | null)?.[jsonbColumn] ?? {}) as Record<string, unknown>;
+      // Cross-field score/total guard (e.g. tenth ≤ tenth_total). Run only
+      // when we have a numeric draft + a configured sibling key.
+      if (trimmed !== "" && numericKind && (siblingMaxKey || percentageMaxWhenNoSibling)) {
+        const draftNum = Number(typeof writeValue === "number" ? writeValue : trimmed);
+        if (Number.isFinite(draftNum)) {
+          const sibRaw = siblingMaxKey ? current?.[siblingMaxKey] : undefined;
+          const sibNum =
+            sibRaw === null || sibRaw === undefined || sibRaw === ""
+              ? null
+              : Number(sibRaw);
+          if (sibNum !== null && Number.isFinite(sibNum)) {
+            if (draftNum > sibNum) {
+              setSaving(false);
+              toast.error("Score obtained cannot be greater than total marks / scale.");
+              return;
+            }
+          } else if (percentageMaxWhenNoSibling !== undefined && draftNum > percentageMaxWhenNoSibling) {
+            setSaving(false);
+            toast.error(`Percentage cannot be greater than ${percentageMaxWhenNoSibling}.`);
+            return;
+          }
+        }
+      }
       const next = { ...(typeof current === "object" && current ? current : {}) };
       if (trimmed === "") {
         delete next[field];
