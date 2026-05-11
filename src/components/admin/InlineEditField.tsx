@@ -297,21 +297,36 @@ export function InlineEditField({
     return (
       <span className={`flex flex-col gap-1.5 w-full min-w-0 ${className ?? ""}`}>
         {options && options.length > 0 ? (
-          <span className="flex flex-wrap items-center gap-1">
-            {options.map((opt) => (
-              <Button
-                key={opt.value}
-                size="sm"
-                type="button"
-                variant={draft === opt.value ? "default" : "outline"}
-                className="h-7 px-2 text-xs"
-                onClick={() => setDraft(opt.value)}
-                disabled={saving}
-              >
-                {opt.label}
-              </Button>
-            ))}
-          </span>
+          optionsRenderAs === "dropdown" ? (
+            <Select value={draft} onValueChange={(v) => setDraft(v)} disabled={saving}>
+              <SelectTrigger className="h-8 text-sm w-full">
+                <SelectValue placeholder={placeholder ?? `Select ${label}`} />
+              </SelectTrigger>
+              <SelectContent>
+                {options.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <span className="flex flex-wrap items-center gap-1">
+              {options.map((opt) => (
+                <Button
+                  key={opt.value}
+                  size="sm"
+                  type="button"
+                  variant={draft === opt.value ? "default" : "outline"}
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setDraft(opt.value)}
+                  disabled={saving}
+                >
+                  {opt.label}
+                </Button>
+              ))}
+            </span>
+          )
         ) : (
           <Input
             autoFocus
