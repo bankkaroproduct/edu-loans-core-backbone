@@ -100,6 +100,20 @@ export default function StudentEducationDetails() {
   };
 
   const handleSaveExit = async () => {
+    // Even on Save & Exit, refuse to persist out-of-range / junk numeric values.
+    // Required-ness is intentionally NOT enforced here.
+    const pairChecks: Array<[string, string, string]> = [
+      ["10th", formData.test_scores.tenth || "", formData.test_scores.tenth_total || ""],
+      ["12th", formData.test_scores.twelfth || "", formData.test_scores.twelfth_total || ""],
+      ["Graduation", formData.test_scores.graduation || "", formData.test_scores.graduation_total || ""],
+      ["Highest Qualification", formData.test_scores.highest_qualification_score || "", formData.test_scores.highest_qualification_total || ""],
+    ];
+    for (const [label, s, t] of pairChecks) {
+      const err = validateScoreTotalPair(s, t);
+      if (err) { toast({ title: `${label}: ${err}`, variant: "destructive" }); return; }
+    }
+    const testErr = validateTestScoresMap(formData.test_scores as Record<string, unknown>);
+    if (testErr) { toast({ title: testErr, variant: "destructive" }); return; }
     await saveStep("save_education");
     toast({ title: "Progress saved" });
     navigate("/student/continue");
