@@ -95,6 +95,8 @@ const RELATIONSHIP_MAP: Record<string, string> = {
 // Employment type → engine value. The BRE config only distinguishes salaried_govt
 // vs salaried_private — the lead form captures the broad "Salaried" label, so
 // without a Govt/PSU flag we can only honestly map to salaried_private.
+// Employment type → engine band value. Aligned with the 5 product values:
+// Salaried, Self Employed, Business Owner, Retired, Other.
 const EMPLOYMENT_MAP: Record<string, string> = {
   salaried: "salaried_private",
   "salaried (private)": "salaried_private",
@@ -102,15 +104,23 @@ const EMPLOYMENT_MAP: Record<string, string> = {
   "salaried (govt / psu)": "salaried_govt",
   "salaried govt": "salaried_govt",
   "salaried govt/psu": "salaried_govt",
-  "self-employed": "self_employed_business",
-  "self employed": "self_employed_business",
-  "self-employed business": "self_employed_business",
-  "business owner": "self_employed_business",
+  // Self Employed → professional band (score 75)
+  "self-employed": "self_employed_professional",
+  "self employed": "self_employed_professional",
+  self_employed: "self_employed_professional",
   "self-employed professional": "self_employed_professional",
   professional: "self_employed_professional",
+  // Business Owner → business band (score 65)
+  "business owner": "self_employed_business",
+  business_owner: "self_employed_business",
+  "self-employed business": "self_employed_business",
+  // Retired
   retired: "retired_with_pension",
   "retired (pension)": "retired_with_pension",
-  unemployed: "unemployed",
+  // Other (new band, score 40). Legacy `unemployed` form values also fold into Other.
+  other: "other",
+  others: "other",
+  unemployed: "other",
 };
 
 // Course category → engine value (stem / mba / management / healthcare / arts / other).
