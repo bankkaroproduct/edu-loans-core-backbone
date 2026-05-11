@@ -172,7 +172,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   const [partnerPickerOpen, setPartnerPickerOpen] = useState(false);
   const [originalPartnerId, setOriginalPartnerId] = useState<string | null>(null);
   const [partnerIdAssignment, setPartnerIdAssignment] = useState<string>("");
-  const [countryPickerOpen, setCountryPickerOpen] = useState(false);
+  // (country picker now uses MasterCombobox; no separate open state needed)
 
   const [form, setForm] = useState({
     student_first_name: "",
