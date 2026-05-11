@@ -48,6 +48,15 @@ interface EditableConfig {
   formatDisplay?: (v: string) => string;
   numericKind?: NumericKind;
   optionsRenderAs?: "buttons" | "dropdown";
+  numericRange?: { min?: number; max?: number; label?: string };
+  siblingMaxKey?: string;
+  percentageMaxWhenNoSibling?: number;
+  masterCombobox?: {
+    options: MasterOption[];
+    placeholder?: string;
+    manualPlaceholder?: string;
+    helperText?: string;
+  };
 }
 
 function Field({
