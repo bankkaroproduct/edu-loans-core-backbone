@@ -301,24 +301,23 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
               })}
               onSaved={onSaved}
             />
-            <Field label="10th Score" value={tsStr("tenth")} editable={edTS("tenth")}  onSaved={onSaved} />
-            <Field label="10th Total Marks" value={tsStr("tenth_total")} editable={edTS("tenth_total")} onSaved={onSaved} />
+            <Field label="10th Score" value={tsStr("tenth")} editable={edTS("tenth", { numericRange: { min: 0, max: ACADEMIC_TOTAL_RANGE.max, label: "10th Score" }, siblingMaxKey: "tenth_total" })} onSaved={onSaved} />
+            <Field label="10th Total Marks" value={tsStr("tenth_total")} editable={edTS("tenth_total", { numericRange: { min: ACADEMIC_TOTAL_RANGE.min, max: ACADEMIC_TOTAL_RANGE.max, label: "10th Total Marks" } })} onSaved={onSaved} />
             <NormalizedField label="10th Normalized" score={tsStr("tenth")} total={tsStr("tenth_total")} />
-            <Field label="12th Score" value={tsStr("twelfth")} editable={edTS("twelfth")}  onSaved={onSaved} />
-            <Field label="12th Total Marks" value={tsStr("twelfth_total")} editable={edTS("twelfth_total")} onSaved={onSaved} />
+            <Field label="12th Score" value={tsStr("twelfth")} editable={edTS("twelfth", { numericRange: { min: 0, max: ACADEMIC_TOTAL_RANGE.max, label: "12th Score" }, siblingMaxKey: "twelfth_total" })} onSaved={onSaved} />
+            <Field label="12th Total Marks" value={tsStr("twelfth_total")} editable={edTS("twelfth_total", { numericRange: { min: ACADEMIC_TOTAL_RANGE.min, max: ACADEMIC_TOTAL_RANGE.max, label: "12th Total Marks" } })} onSaved={onSaved} />
             <NormalizedField label="12th Normalized" score={tsStr("twelfth")} total={tsStr("twelfth_total")} />
-            <Field label="Graduation Score" value={tsStr("graduation")} editable={edTS("graduation")}  onSaved={onSaved} />
-            <Field label="Graduation Total / CGPA Scale" value={tsStr("graduation_total")} editable={edTS("graduation_total")} onSaved={onSaved} />
+            <Field label="Graduation Score" value={tsStr("graduation")} editable={edTS("graduation", { numericRange: { min: 0, max: ACADEMIC_TOTAL_RANGE.max, label: "Graduation Score" }, siblingMaxKey: "graduation_total" })} onSaved={onSaved} />
+            <Field label="Graduation Total / CGPA Scale" value={tsStr("graduation_total")} editable={edTS("graduation_total", { numericRange: { min: ACADEMIC_TOTAL_RANGE.min, max: ACADEMIC_TOTAL_RANGE.max, label: "Graduation Total / CGPA Scale" } })} onSaved={onSaved} />
             <NormalizedField label="Graduation Normalized" score={tsStr("graduation")} total={tsStr("graduation_total")} />
-            <Field label="Highest Qual. Total / CGPA Scale" value={tsStr("highest_qualification_total")} editable={edTS("highest_qualification_total")} onSaved={onSaved} />
+            <Field label="Highest Qual. Total / CGPA Scale" value={tsStr("highest_qualification_total")} editable={edTS("highest_qualification_total", { numericRange: { min: ACADEMIC_TOTAL_RANGE.min, max: ACADEMIC_TOTAL_RANGE.max, label: "Highest Qual. Total / CGPA Scale" } })} onSaved={onSaved} />
             <NormalizedField label="Highest Qual. Normalized" score={hqScore} total={tsStr("highest_qualification_total")} />
-            <Field label="IELTS" value={tsStr("ielts")} editable={edTS("ielts")}  onSaved={onSaved} />
-            <Field label="TOEFL" value={tsStr("toefl")} editable={edTS("toefl")}  onSaved={onSaved} />
-            <Field label="PTE" value={tsStr("pte")} editable={edTS("pte")}  onSaved={onSaved} />
-            <Field label="Duolingo" value={tsStr("duolingo")} editable={edTS("duolingo")}  onSaved={onSaved} />
-            <Field label="GRE" value={tsStr("gre")} editable={edTS("gre")}  onSaved={onSaved} />
-            <Field label="GMAT" value={tsStr("gmat")} editable={edTS("gmat")}  onSaved={onSaved} />
-            <Field label="SAT" value={tsStr("sat")} editable={edTS("sat")}  onSaved={onSaved} />
+            {(["ielts","toefl","pte","duolingo","gre","gmat","sat"] as const).map((k) => {
+              const r = TEST_SCORE_RANGES[k];
+              return (
+                <Field key={k} label={r.label} value={tsStr(k)} editable={edTS(k, { numericRange: { min: r.min, max: r.max, label: r.label } })} onSaved={onSaved} />
+              );
+            })}
             <Field label="Other Test Scores" value={tsStr("raw_text")} editable={edTS("raw_text")}  onSaved={onSaved} />
           </div>
         </CardContent>
