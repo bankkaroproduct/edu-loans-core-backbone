@@ -35,6 +35,7 @@ import { CollateralRadio, collateralBoolToState, collateralStateToBool, type Col
 import { sanitizeWorkExpInput, formatWorkExperience, isValidWorkExp } from "@/lib/workExperience";
 import { ScoreTotalPair } from "@/components/shared/ScoreTotalPair";
 import { validateScoreTotalPair, parseCoappWorkExpShorthand, validateCoappWorkExpShorthand, previewCoappWorkExpShorthand, buildCoappWorkExpShorthand } from "@/lib/academicScore";
+import { validateTestScoresMap } from "@/lib/leadScoreRanges";
 import { usePincodeLookup } from "@/hooks/usePincodeLookup";
 import { sortByPriority } from "@/lib/countryOrder";
 import { buildIntakeSessionOptions, intakeSessionValue, parseIntakeSessionValue } from "@/lib/intakeSession";
