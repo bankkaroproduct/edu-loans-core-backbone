@@ -61,7 +61,7 @@ describe("sanitizeNumericInput", () => {
   it("strips alphabets for integer/phone/pincode/year", () => {
     expect(sanitizeNumericInput("integer", "82abc")).toBe("82");
     expect(sanitizeNumericInput("phone", "+91 98abc 43210")).toBe("919843210");
-    expect(sanitizeNumericInput("pincode", "5600AB1")).toBe("560001");
+    expect(sanitizeNumericInput("pincode", "560A0B01")).toBe("560001");
   });
   it("keeps a single dot for decimal", () => {
     expect(sanitizeNumericInput("decimal", "8.2.5abc")).toBe("8.25");
