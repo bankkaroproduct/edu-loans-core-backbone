@@ -127,7 +127,7 @@ export function InlineEditField({
     // Re-validate before any DB write to guarantee invalid text never reaches storage.
     if (numericKind && trimmed !== "") {
       const res = validateNumeric(numericKind, trimmed);
-      if (!res.ok) {
+      if (res.ok === false) {
         toast.error(res.message);
         return;
       }
