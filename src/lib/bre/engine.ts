@@ -36,6 +36,21 @@ import { ENABLE_LENDER_SCORECARD, evaluateLenderScorecard } from "./lenderScorec
  */
 export const COAPPLICANT_AGE_CAP = 60;
 
+/**
+ * Parameter keys that are universally excluded from BRE scoring.
+ * Applies to every scoring config (default + DB-stored) so legacy rows that
+ * still contain these params no longer contribute to bucket scores or
+ * rejection reasons. Lender-side CIBIL knockouts are also disabled below.
+ *
+ * Historical co-applicant data (Employer / Occupation, Existing EMI, CIBIL)
+ * remains intact in the database for audit visibility but is never fed to
+ * the engine.
+ */
+export const BRE_DEPRECATED_PARAM_KEYS: ReadonlySet<string> = new Set([
+  "cibil_score",
+  "existing_emi_burden_pct",
+]);
+
 const BUCKETS: { key: BucketKey; field: keyof BreScoringConfig }[] = [
   { key: "student", field: "student_params" },
   { key: "university", field: "university_params" },
@@ -70,13 +85,23 @@ function scoreBucket(
   inputs: Record<string, unknown>,
   threshold: number,
 ): BucketResult {
+  // Universal exclusion: drop deprecated params (e.g. cibil_score, existing_emi_burden_pct)
+  // BEFORE scoring so legacy DB configs behave identically to the new defaults.
+  const activeParams = params.filter((p) => !BRE_DEPRECATED_PARAM_KEYS.has(p.param_key));
+
+  // Renormalize remaining weights so the bucket still maxes out at 100.
+  // If the active params already sum to 100 (new defaults) this is a no-op.
+  const rawWeightSum = activeParams.reduce((s, p) => s + (Number(p.weight) || 0), 0);
+  const scaleFactor = rawWeightSum > 0 ? 100 / rawWeightSum : 1;
+
   const trace: ParameterTrace[] = [];
   let total = 0;
-  for (const p of params) {
+  for (const p of activeParams) {
     const raw = inputs[p.param_key];
     const band = findMatchingBand(p, raw);
     const bandScore = band ? band.score : 0;
-    const contribution = (p.weight * bandScore) / 100;
+    const effectiveWeight = round2((Number(p.weight) || 0) * scaleFactor);
+    const contribution = (effectiveWeight * bandScore) / 100;
     total += contribution;
     trace.push({
       bucket,
@@ -84,7 +109,7 @@ function scoreBucket(
       label: p.label,
       input: raw as ParameterTrace["input"],
       matched_band: band,
-      weight: p.weight,
+      weight: effectiveWeight,
       band_score: bandScore,
       contribution: round2(contribution),
     });
@@ -186,18 +211,10 @@ function checkLenderKnockouts(
     }
   }
 
-  // 6. CIBIL — co-applicant (split-aware: prefer min_cibil_coapplicant if set, else legacy min_cibil)
-  const cibil = profile.coapplicant?.cibil_score as number | null | undefined;
-  const coCibilMin = lender.hard_thresholds.min_cibil_coapplicant ?? lender.hard_thresholds.min_cibil;
-  if (coCibilMin != null && cibil != null && cibil < coCibilMin) {
-    reasons.push(REASON.cibil_too_low(coCibilMin));
-  }
-  // 6b. CIBIL — student (only when explicit min_cibil_student set + student.cibil_score available)
-  const studentCibil = profile.student?.cibil_score as number | null | undefined;
-  const studentCibilMin = lender.hard_thresholds.min_cibil_student;
-  if (studentCibilMin != null && studentCibil != null && Number(studentCibil) < studentCibilMin) {
-    reasons.push(REASON.cibil_too_low(studentCibilMin));
-  }
+  // 6. CIBIL knockouts intentionally disabled.
+  //    Co-applicant Existing EMI and CIBIL Score were removed from intake.
+  //    Historical lender_rules may still set min_cibil / min_cibil_student /
+  //    min_cibil_coapplicant — these are ignored by the engine on purpose.
 
   // 7. co-applicant age (legacy min_age/max_age + new coapplicant_min_age/coapplicant_max_age)
   const age = profile.coapplicant?.age as number | null | undefined;
