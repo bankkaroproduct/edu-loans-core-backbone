@@ -551,6 +551,8 @@ export interface BuildProfileResolution {
     | { kind: "no_match"; raw: string }
     | { kind: "none" };
   course_level_derivation?: { source: "course_name"; raw: string; derived: string } | { kind: "none" };
+  /** Course-category derivation trace (explicit / keyword / default_other / none). */
+  course_category_derivation?: CourseCategoryResolution;
   english_proficiency?: EnglishProficiencyResolution;
   /**
    * Derived collateral state for UI display.
