@@ -8,7 +8,11 @@ import type { Tables } from "@/integrations/supabase/types";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { InlineEditField } from "@/components/admin/InlineEditField";
 import { formatINR } from "@/lib/formatCurrency";
-import { normalizeAcademicScore } from "@/lib/academicScore";
+import {
+  normalizeAcademicScore,
+  resolveCoappWorkExpDecimalYears,
+  formatCoappWorkExpDecimal,
+} from "@/lib/academicScore";
 import { useHighestQualificationOptions } from "@/hooks/useHighestQualificationOptions";
 import { CO_APPLICANT_RELATIONS } from "@/lib/coapplicantRelations";
 
