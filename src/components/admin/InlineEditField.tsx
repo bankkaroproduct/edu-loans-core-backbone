@@ -87,6 +87,7 @@ export function InlineEditField({
   parseValue,
   jsonbColumn,
   numericKind,
+  optionsRenderAs = "buttons",
 }: Props) {
   const { appUser } = useAuth();
   const { isAdmin } = useRoleAccess();
