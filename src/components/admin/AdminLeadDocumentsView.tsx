@@ -4,12 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import {
   AlertTriangle,
   CheckCircle,
-  FileCheck,
   FileClock,
   FileQuestion,
   FileText,
   FileUp,
-  FileX,
   Info,
 } from "lucide-react";
 import { AdminDocumentReviewPanel } from "@/components/admin/AdminDocumentReviewPanel";
@@ -90,10 +88,13 @@ export function AdminLeadDocumentsView({
     { label: "Total Required", value: counts.total, icon: FileQuestion, color: "text-foreground" },
     { label: "Pending Upload", value: counts.not_uploaded, icon: FileUp, color: "text-orange-600", highlight: counts.not_uploaded > 0 },
     { label: "Uploaded", value: counts.uploaded, icon: FileClock, color: "text-blue-600" },
-    { label: "Under Review", value: counts.under_review, icon: FileClock, color: "text-amber-600" },
-    { label: "Verified", value: counts.verified, icon: FileCheck, color: "text-green-600" },
-    { label: "Rejected", value: counts.rejected, icon: FileX, color: "text-destructive", highlight: counts.rejected > 0 },
-    { label: "Reupload Needed", value: counts.reupload_needed, icon: FileX, color: "text-orange-600", highlight: counts.reupload_needed > 0 },
+    {
+      label: "Under Review",
+      value: counts.under_review + counts.rejected + counts.reupload_needed,
+      icon: FileClock,
+      color: "text-amber-600",
+      highlight: counts.rejected > 0 || counts.reupload_needed > 0,
+    },
   ];
 
   return (
@@ -135,7 +136,7 @@ export function AdminLeadDocumentsView({
             />
           </div>
 
-          <div className="grid grid-cols-3 sm:grid-cols-7 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {tiles.map((tile) => {
               const Icon = tile.icon;
               return (
