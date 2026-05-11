@@ -99,6 +99,10 @@ function Field({
             parseValue={editable.parseValue}
             formatDisplay={editable.formatDisplay}
             numericKind={editable.numericKind}
+            numericRange={editable.numericRange}
+            siblingMaxKey={editable.siblingMaxKey}
+            percentageMaxWhenNoSibling={editable.percentageMaxWhenNoSibling}
+            masterCombobox={editable.masterCombobox}
             allowEditExisting
             onSaved={onSaved ? () => onSaved() : undefined}
           />
