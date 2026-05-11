@@ -47,6 +47,7 @@ import { evaluate } from "@/lib/bre/engine";
 import { loadActive } from "@/lib/bre/loader";
 import { buildBreProfileFromLeadAsync, type BuildProfileResolution } from "@/lib/bre/leadProfile";
 import type { BreResult, BucketKey, ParameterTrace } from "@/lib/bre/types";
+import { formatEmploymentLabel, isEmploymentTypeParam } from "@/lib/bre/employmentDisplay";
 import { displayLenderCode } from "@/lib/lenderDisplay";
 import {
   computeDisplayRanking,
@@ -546,7 +547,10 @@ function statusBadge(s: TraceStatus) {
 function bandLabel(t: ParameterTrace): string {
   const b = t.matched_band;
   if (!b) return "— no band matched";
-  if ("value" in b) return b.label ?? b.value;
+  if ("value" in b) {
+    if (isEmploymentTypeParam(t.param_key)) return formatEmploymentLabel(b.value);
+    return b.label ?? b.value;
+  }
   return `${b.from}–${b.to}${b.label ? ` · ${b.label}` : ""}`;
 }
 
@@ -616,6 +620,8 @@ function BucketTraceTable({
                   <TableCell className="text-[11px] py-1.5">
                     {t.input == null || t.input === "" ? (
                       <span className="text-muted-foreground italic">Not provided</span>
+                    ) : isEmploymentTypeParam(t.param_key) ? (
+                      formatEmploymentLabel(t.input)
                     ) : (
                       String(t.input)
                     )}

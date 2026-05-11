@@ -164,6 +164,7 @@ export const DEFAULT_SCORING_CONFIG_V1: BreScoringConfig = {
         { value: "self_employed_professional", score: 75, label: "Self-employed Professional" },
         { value: "self_employed_business", score: 65, label: "Self-employed Business" },
         { value: "retired_with_pension", score: 55, label: "Retired (Pension)" },
+        { value: "other", score: 40, label: "Other" },
         { value: "unemployed", score: 10, label: "Unemployed" },
       ],
     },
