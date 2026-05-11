@@ -73,6 +73,7 @@ export function InlineEditField({
   parseValue,
   jsonbColumn,
   numericKind,
+}: Props) {
   const { appUser } = useAuth();
   const { isAdmin } = useRoleAccess();
   const [editing, setEditing] = useState(false);
