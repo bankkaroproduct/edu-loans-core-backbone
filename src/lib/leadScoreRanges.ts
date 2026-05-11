@@ -43,3 +43,26 @@ export const BULK_NUMERIC_MAX = {
 export function rangeError(label: string, min: number, max: number): string {
   return `${label} must be between ${min} and ${max}.`;
 }
+
+/**
+ * Validate a map of test-score values (any keys; non-test keys are ignored).
+ * Returns the first error encountered, or null when all values are valid/blank.
+ */
+export function validateTestScoresMap(
+  scores: Record<string, unknown> | null | undefined,
+): string | null {
+  if (!scores) return null;
+  for (const [key, range] of Object.entries(TEST_SCORE_RANGES)) {
+    const raw = scores[key];
+    if (raw === null || raw === undefined || String(raw).trim() === "") continue;
+    const s = String(raw).replace(/,/g, "").trim();
+    if (!/^\d+(\.\d{1,3})?$/.test(s)) {
+      return `${range.label} must be a realistic numeric value.`;
+    }
+    const n = Number(s);
+    if (!Number.isFinite(n) || n < range.min || n > range.max) {
+      return `${range.label} must be between ${range.min} and ${range.max}.`;
+    }
+  }
+  return null;
+}

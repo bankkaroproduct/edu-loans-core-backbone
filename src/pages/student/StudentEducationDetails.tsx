@@ -16,6 +16,7 @@ import { buildIntakeSessionOptions, intakeSessionValue, parseIntakeSessionValue 
 import { sanitizeWorkExpInput, formatWorkExperience } from "@/lib/workExperience";
 import { Checkbox } from "@/components/ui/checkbox";
 import { normalizeAcademicScore, validateScoreTotalPair } from "@/lib/academicScore";
+import { validateTestScoresMap } from "@/lib/leadScoreRanges";
 import { ScoreTotalPair } from "@/components/shared/ScoreTotalPair";
 
 interface UniversityRow { id: string; university_name: string; country: string }
@@ -85,6 +86,11 @@ export default function StudentEducationDetails() {
     for (const [label, s, t] of pairChecks) {
       const err = validateScoreTotalPair(s, t);
       if (err) { toast({ title: `${label}: ${err}`, variant: "destructive" }); return; }
+    }
+    // Test-score range validation (IELTS 0–9, TOEFL 0–120, etc.)
+    {
+      const testErr = validateTestScoresMap(formData.test_scores as Record<string, unknown>);
+      if (testErr) { toast({ title: testErr, variant: "destructive" }); return; }
     }
     const result = await saveStep("save_education");
     if (result) {

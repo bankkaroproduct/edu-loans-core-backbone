@@ -35,6 +35,7 @@ import { CollateralRadio, collateralBoolToState, collateralStateToBool, type Col
 import { sanitizeWorkExpInput, formatWorkExperience, isValidWorkExp } from "@/lib/workExperience";
 import { ScoreTotalPair } from "@/components/shared/ScoreTotalPair";
 import { validateScoreTotalPair, parseCoappWorkExpShorthand, validateCoappWorkExpShorthand, previewCoappWorkExpShorthand, buildCoappWorkExpShorthand } from "@/lib/academicScore";
+import { validateTestScoresMap } from "@/lib/leadScoreRanges";
 import { usePincodeLookup } from "@/hooks/usePincodeLookup";
 import { sortByPriority } from "@/lib/countryOrder";
 import { buildIntakeSessionOptions, intakeSessionValue, parseIntakeSessionValue } from "@/lib/intakeSession";
@@ -507,6 +508,15 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       for (const [label, s, t, field] of pairs) {
         const err = validateScoreTotalPair(s, t);
         if (err) return { message: `${label}: ${err}`, step: "study", field };
+      }
+
+      // Test-score range validation (IELTS/TOEFL/PTE/Duolingo/GRE/GMAT/SAT).
+      {
+        const testErr = validateTestScoresMap({
+          ielts: form.ielts, toefl: form.toefl, duolingo: form.duolingo,
+          pte: form.pte, gre: form.gre, gmat: form.gmat,
+        } as Record<string, unknown>);
+        if (testErr) return { message: testErr, step: "study", field: "test_scores" };
       }
 
       // Financial Info — required in BOTH partner and admin modes (restored).

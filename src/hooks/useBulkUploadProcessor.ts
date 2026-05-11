@@ -18,6 +18,7 @@ import {
   parseCoappWorkExpShorthand,
   validateCoappWorkExpShorthand,
 } from "@/lib/academicScore";
+import { TEST_SCORE_RANGES, BULK_NUMERIC_MAX } from "@/lib/leadScoreRanges";
 
 type AppUser = Tables<"users">;
 
@@ -422,15 +423,15 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
     if (opts.max !== undefined && n > opts.max) { errors.push(`${label} must be ≤ ${opts.max}`); return undefined; }
     return n;
   };
-  const tenth = parseNumeric(tenthStr, "10th_score", { min: 0 });
-  const tenthTotal = parseNumeric(tenthTotalStr, "10th_total_marks", { min: 0 });
-  const twelfth = parseNumeric(twelfthStr, "12th_score", { min: 0 });
-  const twelfthTotal = parseNumeric(twelfthTotalStr, "12th_total_marks", { min: 0 });
-  const grad = parseNumeric(gradStr, "graduation_score", { min: 0 });
-  const gradTotal = parseNumeric(gradTotalStr, "graduation_total_marks", { min: 0 });
-  const qualScore = parseNumeric(qualificationScoreStr, "highest_qualification_score", { min: 0 });
-  const qualTotal = parseNumeric(qualificationTotalStr, "highest_qualification_total_marks", { min: 0 });
-  const coapplicantEmi = parseNumeric(coapplicantEmiStr, "coapplicant_existing_emi", { min: 0 });
+  const tenth = parseNumeric(tenthStr, "10th_score", { min: 0, max: BULK_NUMERIC_MAX.score_obtained });
+  const tenthTotal = parseNumeric(tenthTotalStr, "10th_total_marks", { min: 0, max: BULK_NUMERIC_MAX.total_marks });
+  const twelfth = parseNumeric(twelfthStr, "12th_score", { min: 0, max: BULK_NUMERIC_MAX.score_obtained });
+  const twelfthTotal = parseNumeric(twelfthTotalStr, "12th_total_marks", { min: 0, max: BULK_NUMERIC_MAX.total_marks });
+  const grad = parseNumeric(gradStr, "graduation_score", { min: 0, max: BULK_NUMERIC_MAX.score_obtained });
+  const gradTotal = parseNumeric(gradTotalStr, "graduation_total_marks", { min: 0, max: BULK_NUMERIC_MAX.total_marks });
+  const qualScore = parseNumeric(qualificationScoreStr, "highest_qualification_score", { min: 0, max: BULK_NUMERIC_MAX.qual_score });
+  const qualTotal = parseNumeric(qualificationTotalStr, "highest_qualification_total_marks", { min: 0, max: BULK_NUMERIC_MAX.qual_total });
+  const coapplicantEmi = parseNumeric(coapplicantEmiStr, "coapplicant_existing_emi", { min: 0, max: BULK_NUMERIC_MAX.coapplicant_emi });
   const coapplicantAge = parseNumeric(coapplicantAgeStr, "coapplicant_age", { min: 18, max: 100 });
   const coapplicantCibil = parseNumeric(coapplicantCibilStr, "coapplicant_cibil", { min: 300, max: 900 });
   const workExp = parseNumeric(workExpStr, "work_experience", { min: 0, max: 60 });
@@ -454,6 +455,21 @@ function validateRow(row: Record<string, string>, master: MasterData): { parsed:
   for (const [label, s, t] of pairChecks) {
     const err = validateScoreTotalPair(s, t);
     if (err) errors.push(`${label}: ${err}`);
+  }
+
+  // Test-score range validation — parse free-text `test_scores` column for
+  // recognised exam keywords and reject the row if any numeric value is out of range.
+  if (testScoresRaw && testScoresRaw.trim()) {
+    for (const [key, range] of Object.entries(TEST_SCORE_RANGES)) {
+      const pattern = new RegExp(`\\b${key}\\b\\s*[:=\\-]?\\s*([0-9]+(?:\\.[0-9]+)?)`, "ig");
+      let m: RegExpExecArray | null;
+      while ((m = pattern.exec(testScoresRaw)) !== null) {
+        const n = Number(m[1]);
+        if (!Number.isFinite(n) || n < range.min || n > range.max) {
+          errors.push(`${range.label} must be between ${range.min} and ${range.max} (got "${m[1]}")`);
+        }
+      }
+    }
   }
 
   // Co-applicant work experience shorthand ("3.6" => 3y 6m, etc.)
