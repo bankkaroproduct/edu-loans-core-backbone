@@ -291,12 +291,6 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
             onSaved={onSaved}
           />
           <Field
-            label="Co-Applicant CIBIL"
-            value={tsStr("coapplicant_cibil")}
-            editable={edTS("coapplicant_cibil", { inputType: "number", parseValue: numericParse })}
-            onSaved={onSaved}
-          />
-          <Field
             label="Co-Applicant Work Exp (years)"
             value={tsStr("coapplicant_work_experience_years")}
             editable={edTS("coapplicant_work_experience_years", { inputType: "number", parseValue: numericParse })}
@@ -315,12 +309,6 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
             onSaved={onSaved}
           />
           <Field
-            label="Co-Applicant Employer / Occupation"
-            value={lead.coapplicant_employer}
-            editable={ed("coapplicant_employer")}
-            onSaved={onSaved}
-          />
-          <Field
             label="Co-Applicant Income Source"
             value={lead.coapplicant_income_source}
             editable={ed("coapplicant_income_source")}
@@ -336,16 +324,28 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
             })}
             onSaved={onSaved}
           />
-          <Field
-            label="Co-Applicant Existing EMI"
-            value={lead.coapplicant_existing_emi != null ? String(lead.coapplicant_existing_emi) : null}
-            editable={ed("coapplicant_existing_emi", {
-              inputType: "number",
-              formatDisplay: (v) => formatINR(v),
-              parseValue: numericParse,
-            })}
-            onSaved={onSaved}
-          />
+        </div>
+        {/* Legacy Data — Not Used in BRE.
+            Historical CIBIL/EMI/Employer values are preserved read-only for audit
+            visibility. The current BRE engine ignores these fields universally. */}
+        {(tsStr("coapplicant_cibil") || lead.coapplicant_existing_emi != null || lead.coapplicant_employer) && (
+          <div className="mt-4 rounded-md border border-dashed bg-muted/30 p-3">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Legacy Data — Not Used in BRE
+            </div>
+            <p className="mb-3 text-xs text-muted-foreground">
+              These fields are historical only and are not used in current BRE scoring or lender recommendation.
+            </p>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3.5">
+              <Field label="Co-Applicant CIBIL (legacy)" value={tsStr("coapplicant_cibil")} />
+              <Field
+                label="Co-Applicant Existing EMI (legacy)"
+                value={lead.coapplicant_existing_emi != null ? formatINR(String(lead.coapplicant_existing_emi)) : null}
+              />
+              <Field label="Co-Applicant Employer / Occupation (legacy)" value={lead.coapplicant_employer} />
+            </div>
+          </div>
+        )}
           <Field
             label="Collateral"
             value={

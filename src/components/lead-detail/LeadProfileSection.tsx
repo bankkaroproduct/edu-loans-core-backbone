@@ -269,12 +269,6 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
               onSaved={onSaved}
             />
             <Field
-              label="Co-Applicant CIBIL"
-              value={tsStr("coapplicant_cibil")}
-              editable={edTS("coapplicant_cibil", { inputType: "number", parseValue: numericParse })}
-              onSaved={onSaved}
-            />
-            <Field
               label="Co-Applicant Work Exp (years)"
               value={tsStr("coapplicant_work_experience_years")}
               editable={edTS("coapplicant_work_experience_years", { inputType: "number", parseValue: numericParse })}
@@ -293,12 +287,6 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
               onSaved={onSaved}
             />
             <Field
-              label="Co-Applicant Employer / Occupation"
-              value={lead.coapplicant_employer}
-              editable={ed("coapplicant_employer")}
-              onSaved={onSaved}
-            />
-            <Field
               label="Co-Applicant Income Source"
               value={lead.coapplicant_income_source}
               editable={ed("coapplicant_income_source")}
@@ -308,16 +296,6 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
               label="Co-Applicant Income"
               value={lead.coapplicant_income ? String(lead.coapplicant_income) : null}
               editable={ed("coapplicant_income", {
-                inputType: "number",
-                formatDisplay: (v) => formatINR(v),
-                parseValue: numericParse,
-              })}
-              onSaved={onSaved}
-            />
-            <Field
-              label="Co-Applicant Existing EMI"
-              value={lead.coapplicant_existing_emi != null ? String(lead.coapplicant_existing_emi) : null}
-              editable={ed("coapplicant_existing_emi", {
                 inputType: "number",
                 formatDisplay: (v) => formatINR(v),
                 parseValue: numericParse,
