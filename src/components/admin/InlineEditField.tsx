@@ -63,6 +63,32 @@ interface Props {
    * Has no effect when `options` is not provided.
    */
   optionsRenderAs?: "buttons" | "dropdown";
+  /**
+   * Range validation for numeric fields. Applied AFTER `numericKind` passes.
+   * Optional — when omitted, default `numericKind` semantics are unchanged.
+   */
+  numericRange?: { min?: number; max?: number; label?: string };
+  /**
+   * Cross-field guard for numeric fields stored in the same `jsonbColumn`:
+   * blocks save when the drafted score exceeds the sibling key's value
+   * (e.g. tenth score must be ≤ tenth_total). When the sibling is blank,
+   * caller may also set `percentageMaxWhenNoSibling` to enforce a 0–100
+   * cap (interprets the score as a percentage).
+   */
+  siblingMaxKey?: string;
+  percentageMaxWhenNoSibling?: number;
+  /**
+   * When provided, edit mode renders a MasterCombobox bound to the draft.
+   * The saved value is the chosen option's `label` (master) or the typed
+   * manual text. Manual purely-numeric input is rejected at save time.
+   * `numericKind` is ignored while this prop is active.
+   */
+  masterCombobox?: {
+    options: MasterOption[];
+    placeholder?: string;
+    manualPlaceholder?: string;
+    helperText?: string;
+  };
 }
 
 /**
