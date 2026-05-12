@@ -688,27 +688,34 @@ function ResolutionNotes({ resolution }: { resolution: BuildProfileResolution | 
   const items: { label: string; tone: "ok" | "warn" | "muted"; text: import("react").ReactNode }[] = [];
 
   if (um && "kind" in um) {
-    if (um.kind === "fuzzy") {
+    const sourceLabel = (s: string | undefined): string => {
+      switch (s) {
+        case "global_rank": return "exact global rank";
+        case "ranking_bucket_fallback": return "ranking_bucket fallback";
+        case "unranked_fallback": return "unranked fallback";
+        case "no_match": return "no master match";
+        default: return "—";
+      }
+    };
+    if (um.kind === "fuzzy" || um.kind === "by_id") {
+      const u = um as Extract<typeof um, { kind: "fuzzy" | "by_id" }>;
+      const rankBits: string[] = [];
+      if (u.global_rank != null) rankBits.push(`Global Rank #${u.global_rank}`);
+      if (u.rank_band) rankBits.push(`band ${u.rank_band}`);
+      if (u.rank_score != null) rankBits.push(`score ${u.rank_score}`);
+      const rankSummary = rankBits.length > 0 ? rankBits.join(" · ") : "no rank in master";
+      const resolvedVia = `resolved via: ${sourceLabel(u.source)}`;
       items.push({
-        label: "University matched from raw name",
+        label: u.kind === "fuzzy" ? "University matched from raw name" : "University resolved from master",
         tone: "ok",
         text: (
           <>
-            <span className="italic">"{um.raw}"</span> → <span className="font-medium">{um.master_name}</span>
-            {" · "}ranking_bucket: <span className="font-mono">{um.ranking_bucket ?? "Unranked"}</span>
-            {" · "}employability_outlook: <span className="font-mono">{um.employability_outlook ?? "—"}</span>
-          </>
-        ),
-      });
-    } else if (um.kind === "by_id") {
-      items.push({
-        label: "University resolved from master",
-        tone: "ok",
-        text: (
-          <>
-            <span className="font-medium">{um.master_name}</span>
-            {" · "}ranking_bucket: <span className="font-mono">{um.ranking_bucket ?? "Unranked"}</span>
-            {" · "}employability_outlook: <span className="font-mono">{um.employability_outlook ?? "—"}</span>
+            {u.kind === "fuzzy" && (<><span className="italic">"{u.raw}"</span> → </>)}
+            <span className="font-medium">{u.master_name}</span>
+            {" · "}<span className="font-mono">{rankSummary}</span>
+            {" · "}ranking_bucket: <span className="font-mono">{u.ranking_bucket ?? "Unranked"}</span>
+            {" · "}employability_outlook: <span className="font-mono">{u.employability_outlook ?? "—"}</span>
+            {" · "}<span className="text-muted-foreground">{resolvedVia}</span>
           </>
         ),
       });
@@ -727,7 +734,12 @@ function ResolutionNotes({ resolution }: { resolution: BuildProfileResolution | 
       items.push({
         label: "University not found in master",
         tone: "warn",
-        text: <span className="italic">"{um.raw}"</span>,
+        text: (
+          <>
+            <span className="italic">"{um.raw}"</span>
+            {" · "}<span className="text-muted-foreground">resolved via: no master match</span>
+          </>
+        ),
       });
     }
   }
