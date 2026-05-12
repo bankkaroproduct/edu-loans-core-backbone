@@ -246,7 +246,7 @@ export function MasterBulkUploadDialog({ open, onOpenChange, masterKey, onComple
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<PreviewRow[] | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<{ inserted: number; updated: number; skipped: number; failed: number } | null>(null);
+  const [result, setResult] = useState<UploadResult | null>(null);
 
   const reset = () => {
     setPreview(null);
@@ -272,21 +272,28 @@ export function MasterBulkUploadDialog({ open, onOpenChange, masterKey, onComple
       return;
     }
 
-    // Fetch existing rows for matching
-    const { data: existing, error } = await (supabase as any).from(spec.table).select("*");
-    if (error) {
-      toast({ title: "Failed to read existing rows", description: error.message, variant: "destructive" });
+    // Fetch ALL existing rows for matching (paginated — Supabase caps default select at 1000)
+    let existing: any[] = [];
+    try {
+      existing = await fetchAllRows(spec.table);
+    } catch (e: any) {
+      toast({ title: "Failed to read existing rows", description: e?.message ?? "Unknown error", variant: "destructive" });
       return;
     }
-    const existingKeys = new Set((existing ?? []).map(spec.existingKey));
+    const existingKeys = new Set(existing.map(spec.existingKey));
 
+    // Track within-file duplicates
+    const seenInFile = new Set<string>();
     const items: PreviewRow[] = rows.map((raw, i) => {
       const built = spec.buildRow(raw);
       if (built.ok === false) {
-        const errMsg: string = built.error;
-        return { num: i + 2, status: "invalid" as const, data: null, error: errMsg };
+        return { num: i + 2, status: "invalid" as const, data: null, error: built.error };
       }
       const k = spec.matchKey(built.row);
+      if (seenInFile.has(k)) {
+        return { num: i + 2, status: "dup_in_file" as const, data: built.row, error: "Duplicate of an earlier row in this file (same name + country)" };
+      }
+      seenInFile.add(k);
       return {
         num: i + 2,
         status: existingKeys.has(k) ? "exists" : "new",
@@ -299,42 +306,70 @@ export function MasterBulkUploadDialog({ open, onOpenChange, masterKey, onComple
   const handleConfirm = async () => {
     if (!preview) return;
     setSubmitting(true);
-    let inserted = 0, updated = 0, skipped = 0, failed = 0;
+    let inserted = 0, updated = 0, failed = 0;
+    const errorMessages: string[] = [];
 
     try {
       const newRows = preview.filter((r) => r.status === "new" && r.data).map((r) => r.data!);
       const existsRows = preview.filter((r) => r.status === "exists" && r.data).map((r) => r.data!);
-      skipped = preview.filter((r) => r.status === "invalid").length;
+      const invalidCount = preview.filter((r) => r.status === "invalid").length;
+      const dupInFileCount = preview.filter((r) => r.status === "dup_in_file").length;
 
-      // Insert new rows in chunks of 50
+      // Insert new rows in chunks of 50 — on chunk failure, retry row-by-row so 1 bad row doesn't kill 49 good ones
       for (let i = 0; i < newRows.length; i += 50) {
         const chunk = newRows.slice(i, i + 50);
         const { error } = await (supabase as any).from(spec.table).insert(chunk);
-        if (error) failed += chunk.length;
-        else inserted += chunk.length;
+        if (!error) {
+          inserted += chunk.length;
+          continue;
+        }
+        // Chunk failed — retry per row to identify the bad ones
+        for (let j = 0; j < chunk.length; j++) {
+          const single = chunk[j];
+          const { error: rowErr } = await (supabase as any).from(spec.table).insert(single);
+          if (rowErr) {
+            failed += 1;
+            if (errorMessages.length < 20) {
+              errorMessages.push(`Row data ${JSON.stringify(single).slice(0, 80)}…: ${rowErr.message}`);
+            }
+          } else {
+            inserted += 1;
+          }
+        }
       }
 
       // Upsert mode → update existing rows by natural key
       if (spec.mode === "upsert" && existsRows.length > 0) {
         for (const row of existsRows) {
-          // Build match condition (e.g. iso_code or term+year)
           let q: any = (supabase as any).from(spec.table).update(row);
           if (masterKey === "countries") q = q.eq("iso_code", row.iso_code);
           else if (masterKey === "intakes") q = q.eq("intake_term", row.intake_term).eq("intake_year", row.intake_year);
           const { error } = await q;
-          if (error) failed += 1;
-          else updated += 1;
+          if (error) {
+            failed += 1;
+            if (errorMessages.length < 20) errorMessages.push(`Update failed: ${error.message}`);
+          } else {
+            updated += 1;
+          }
         }
-      } else {
-        // insert-only mode: existing rows are skipped (already counted above as skipped if invalid)
-        // Don't increment skipped here — already-existing rows are intentional, count separately
       }
 
       const skippedExisting = spec.mode === "insert-only" ? existsRows.length : 0;
-      setResult({ inserted, updated, skipped: skipped + skippedExisting, failed });
+      const finalResult: UploadResult = {
+        parsed: preview.length,
+        inserted,
+        updated,
+        skippedExisting,
+        skippedDupInFile: dupInFileCount,
+        invalid: invalidCount,
+        failed,
+        errors: errorMessages,
+      };
+      setResult(finalResult);
       toast({
-        title: "Upload complete",
-        description: `${inserted} new, ${updated} updated, ${skipped + skippedExisting} skipped, ${failed} failed.`,
+        title: failed > 0 ? "Upload completed with errors" : "Upload complete",
+        description: `${inserted} inserted, ${updated} updated, ${skippedExisting} skipped (exists), ${dupInFileCount} skipped (dup in file), ${invalidCount} invalid, ${failed} failed.`,
+        variant: failed > 0 ? "destructive" : undefined,
       });
       onCompleted();
     } catch (e: any) {
