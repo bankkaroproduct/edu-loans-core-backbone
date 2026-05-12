@@ -222,9 +222,10 @@ Deno.serve(async (req) => {
           "X-Connection-Api-Key": RESEND_API_KEY,
         },
         body: JSON.stringify({
-          from: "EduLoans <onboarding@resend.dev>",
+          from: EMAIL_FROM,
           to: [recipient],
           ...(sanitizedCc.length > 0 ? { cc: sanitizedCc } : {}),
+          reply_to: EMAIL_REPLY_TO,
           subject: renderedSubject ?? "(no subject)",
           html: `<pre style="font-family:system-ui,sans-serif;white-space:pre-wrap">${renderedBody.replace(/</g, "&lt;")}</pre>`,
         }),
