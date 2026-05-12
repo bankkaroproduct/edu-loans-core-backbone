@@ -934,12 +934,14 @@ function LenderCard({
   displayPosition,
   collateralState,
   ranking,
+  rankModifier,
 }: {
   l: BreResult["eligible_lenders"][number];
   stored: StoredMatchValue | null;
   displayPosition: number;
   collateralState: "secured" | "secured_review_needed" | "unsecured" | null;
   ranking: DisplayRankingOutput | null;
+  rankModifier: RankModifierResult | null;
 }) {
   const isSecured = l.product_type === "secured";
   const isUnsecured = l.product_type === "unsecured";
