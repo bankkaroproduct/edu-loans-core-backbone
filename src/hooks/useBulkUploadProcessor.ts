@@ -262,10 +262,11 @@ interface MasterData {
 }
 
 async function loadMasterData(): Promise<MasterData> {
-  const [cRes, iRes, uRes, qOpts, eOpts] = await Promise.all([
+  const [cRes, iRes, uRows, qOpts, eOpts] = await Promise.all([
     supabase.from("countries_master").select("country_name").eq("active_flag", true),
     supabase.from("intake_master").select("intake_term,intake_year,sort_order").eq("active_flag", true).order("sort_order", { ascending: true }),
-    supabase.from("universities_master").select("id,university_name").eq("active_flag", true),
+    // Paginated — universities_master exceeds PostgREST's 1000-row default.
+    fetchAllUniversitiesMaster<{ id: string; university_name: string }>("id,university_name", { activeOnly: true }),
     fetchHighestQualificationOptions(),
     fetchEmploymentTypeOptions(),
   ]);

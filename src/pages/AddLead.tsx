@@ -40,6 +40,7 @@ import { usePincodeLookup } from "@/hooks/usePincodeLookup";
 import { sortByPriority } from "@/lib/countryOrder";
 import { buildIntakeSessionOptions, intakeSessionValue, parseIntakeSessionValue } from "@/lib/intakeSession";
 import type { Tables } from "@/integrations/supabase/types";
+import { fetchAllUniversitiesMaster } from "@/lib/fetchAllUniversities";
 
 type Country = Tables<"countries_master">;
 type University = Tables<"universities_master">;
