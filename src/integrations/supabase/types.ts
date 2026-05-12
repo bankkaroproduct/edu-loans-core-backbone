@@ -1780,11 +1780,17 @@ export type Database = {
           country_normalized: string | null
           created_at: string
           employability_outlook: string | null
+          global_rank: number | null
           grade: string | null
           grade_source: string
           id: string
           points: number | null
           qs_rank: number | null
+          rank_band: string | null
+          rank_imported_at: string | null
+          rank_notes: string | null
+          rank_score: number | null
+          rank_source: string | null
           ranking_bucket: string | null
           university_name: string
           university_name_normalized: string | null
@@ -1797,11 +1803,17 @@ export type Database = {
           country_normalized?: string | null
           created_at?: string
           employability_outlook?: string | null
+          global_rank?: number | null
           grade?: string | null
           grade_source?: string
           id?: string
           points?: number | null
           qs_rank?: number | null
+          rank_band?: string | null
+          rank_imported_at?: string | null
+          rank_notes?: string | null
+          rank_score?: number | null
+          rank_source?: string | null
           ranking_bucket?: string | null
           university_name: string
           university_name_normalized?: string | null
@@ -1814,11 +1826,17 @@ export type Database = {
           country_normalized?: string | null
           created_at?: string
           employability_outlook?: string | null
+          global_rank?: number | null
           grade?: string | null
           grade_source?: string
           id?: string
           points?: number | null
           qs_rank?: number | null
+          rank_band?: string | null
+          rank_imported_at?: string | null
+          rank_notes?: string | null
+          rank_score?: number | null
+          rank_source?: string | null
           ranking_bucket?: string | null
           university_name?: string
           university_name_normalized?: string | null
