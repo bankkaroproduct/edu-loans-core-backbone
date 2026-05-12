@@ -187,6 +187,8 @@ Deno.serve(async (req) => {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
   const TWILIO_API_KEY = Deno.env.get("TWILIO_API_KEY");
+  const EMAIL_FROM = Deno.env.get("EMAIL_FROM") ?? "EduLoans <loan@eduvouchers.com>";
+  const EMAIL_REPLY_TO = Deno.env.get("EMAIL_REPLY_TO") ?? "loan@eduvouchers.com";
 
   if (tpl.channel === "email") {
     if (!LOVABLE_API_KEY || !RESEND_API_KEY) {
@@ -220,9 +222,10 @@ Deno.serve(async (req) => {
           "X-Connection-Api-Key": RESEND_API_KEY,
         },
         body: JSON.stringify({
-          from: "EduLoans <onboarding@resend.dev>",
+          from: EMAIL_FROM,
           to: [recipient],
           ...(sanitizedCc.length > 0 ? { cc: sanitizedCc } : {}),
+          reply_to: EMAIL_REPLY_TO,
           subject: renderedSubject ?? "(no subject)",
           html: `<pre style="font-family:system-ui,sans-serif;white-space:pre-wrap">${renderedBody.replace(/</g, "&lt;")}</pre>`,
         }),
