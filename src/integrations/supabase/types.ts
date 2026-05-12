@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      _tmp_uni_rank_import: {
+        Row: {
+          global_rank: number | null
+          id: string
+          rank_band: string | null
+          rank_score: number | null
+        }
+        Insert: {
+          global_rank?: number | null
+          id: string
+          rank_band?: string | null
+          rank_score?: number | null
+        }
+        Update: {
+          global_rank?: number | null
+          id?: string
+          rank_band?: string | null
+          rank_score?: number | null
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action_type: string
