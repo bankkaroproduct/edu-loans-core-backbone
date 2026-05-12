@@ -229,14 +229,30 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
             </p>
           )}
         </div>
-        <Button size="sm" onClick={handleRun} disabled={running}>
-          {running ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
-          ) : (
-            <Sparkles className="h-3.5 w-3.5 mr-1" />
-          )}
-          {result ? "Re-run" : "Run BRE"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" onClick={handleRun} disabled={running || refreshing}>
+            {running ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5 mr-1" />
+            )}
+            {result ? "Re-run" : "Run BRE"}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleRefreshSaved}
+            disabled={running || refreshing}
+            title="Overwrite saved lender recommendations with the live BRE result. Locked manual assignments are preserved."
+          >
+            {refreshing ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5 mr-1" />
+            )}
+            Refresh saved recommendations
+          </Button>
+        </div>
       </div>
 
       {result && derived && (
