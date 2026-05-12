@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllUniversitiesMaster } from "@/lib/fetchAllUniversities";
 import { createDownstreamRecords } from "@/hooks/useLeadWriteFlow";
 import type { Tables } from "@/integrations/supabase/types";
 import { normalizePhone } from "@/lib/phone";
@@ -262,10 +263,11 @@ interface MasterData {
 }
 
 async function loadMasterData(): Promise<MasterData> {
-  const [cRes, iRes, uRes, qOpts, eOpts] = await Promise.all([
+  const [cRes, iRes, uRows, qOpts, eOpts] = await Promise.all([
     supabase.from("countries_master").select("country_name").eq("active_flag", true),
     supabase.from("intake_master").select("intake_term,intake_year,sort_order").eq("active_flag", true).order("sort_order", { ascending: true }),
-    supabase.from("universities_master").select("id,university_name").eq("active_flag", true),
+    // Paginated — universities_master exceeds PostgREST's 1000-row default.
+    fetchAllUniversitiesMaster<{ id: string; university_name: string }>("id,university_name", { activeOnly: true }),
     fetchHighestQualificationOptions(),
     fetchEmploymentTypeOptions(),
   ]);
@@ -285,7 +287,7 @@ async function loadMasterData(): Promise<MasterData> {
   }
 
   const universityMap = new Map<string, string>();
-  (uRes.data ?? []).forEach((u) => universityMap.set(u.university_name.toLowerCase(), u.id));
+  uRows.forEach((u) => universityMap.set(u.university_name.toLowerCase(), u.id));
   const qualifications = qOpts.length > 0 ? qOpts : FALLBACK_QUALIFICATIONS;
   const employmentTypes = eOpts.length > 0 ? eOpts : [...FALLBACK_EMPLOYMENT_TYPES];
 
