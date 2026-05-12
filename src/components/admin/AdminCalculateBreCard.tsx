@@ -663,7 +663,20 @@ function LenderOptionsList({
       </div>
       <ol className="space-y-1.5">
         {[...eligibleLenders]
-          .sort((a, b) => (a.rank ?? Number.POSITIVE_INFINITY) - (b.rank ?? Number.POSITIVE_INFINITY))
+          .sort((a, b) => {
+            const ra = a.rank ?? Number.POSITIVE_INFINITY;
+            const rb = b.rank ?? Number.POSITIVE_INFINITY;
+            if (ra !== rb) return ra - rb;
+            // Display-only tiebreaker: rank-adjusted projection.
+            const ma = rankModifiers.get(a.lender_id);
+            const mb = rankModifiers.get(b.lender_id);
+            const la = ma?.adjustedProjectedLoan ?? a.projected_loan_amount ?? 0;
+            const lb = mb?.adjustedProjectedLoan ?? b.projected_loan_amount ?? 0;
+            if (lb !== la) return lb - la;
+            const rta = ma?.adjustedProjectedRate ?? a.projected_rate ?? Number.POSITIVE_INFINITY;
+            const rtb = mb?.adjustedProjectedRate ?? b.projected_rate ?? Number.POSITIVE_INFINITY;
+            return rta - rtb;
+          })
           .slice(0, 8)
           .map((l) => {
           const mod = rankModifiers.get(l.lender_id);
@@ -671,10 +684,21 @@ function LenderOptionsList({
           const adjRate = mod?.adjustedProjectedRate ?? l.projected_rate;
           const changedLoan = mod && adjLoan !== l.projected_loan_amount && l.projected_loan_amount != null;
           const changedRate = mod && adjRate !== l.projected_rate && l.projected_rate != null;
+          const fmtMoney = (n: number | null | undefined) =>
+            n == null ? "—" : `₹${Math.round(n).toLocaleString("en-IN")}`;
+          const fmtRate = (n: number | null | undefined) => (n == null ? "—" : `${n}%`);
+          const loanPctLabel =
+            mod && mod.loanModifierPct !== 0
+              ? `${mod.loanModifierPct > 0 ? "+" : ""}${(mod.loanModifierPct * 100).toFixed(0)}%`
+              : "0%";
+          const ratePctLabel =
+            mod && mod.rateModifierPct !== 0
+              ? `${mod.rateModifierPct > 0 ? "+" : ""}${mod.rateModifierPct.toFixed(2)}%`
+              : "0.00%";
           return (
           <li
             key={l.lender_id}
-            className="rounded-md border border-border/60 px-2.5 py-2 text-xs space-y-1"
+            className="rounded-md border border-border/60 px-2.5 py-2 text-xs space-y-1.5"
           >
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
@@ -703,15 +727,51 @@ function LenderOptionsList({
                 )}
               </div>
             </div>
-            {mod && (changedLoan || changedRate) && (
-              <div className="text-[10px] text-muted-foreground italic">{mod.explanation}</div>
+            {mod && (
+              <div className="rounded border border-border/50 bg-muted/30 px-2 py-1.5 space-y-1">
+                <div className="flex flex-wrap items-center gap-1">
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                    University rank impact
+                  </Badge>
+                  {mod.globalRank != null && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                      Rank #{mod.globalRank}
+                    </Badge>
+                  )}
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                    {mod.bandLabel}
+                  </Badge>
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                    loan {loanPctLabel}
+                  </Badge>
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                    rate {ratePctLabel}
+                  </Badge>
+                  {mod.clampApplied && (
+                    <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+                      Clamp: {mod.clampApplied}
+                    </Badge>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground tabular-nums">
+                  <div>
+                    Loan: {fmtMoney(mod.baseProjectedLoan)}
+                    {changedLoan ? <> → <span className="text-foreground font-medium">{fmtMoney(adjLoan)}</span></> : <span className="ml-1 italic">no change</span>}
+                  </div>
+                  <div>
+                    Rate: {fmtRate(mod.baseProjectedRate)}
+                    {changedRate ? <> → <span className="text-foreground font-medium">{fmtRate(adjRate)}</span></> : <span className="ml-1 italic">no change</span>}
+                  </div>
+                </div>
+                <div className="text-[10px] text-muted-foreground italic">{mod.explanation}</div>
+              </div>
             )}
           </li>
           );
         })}
       </ol>
       <p className="text-[11px] text-muted-foreground italic">
-        Estimates only. No lender is auto-assigned and lead stage is not changed.
+        Estimates only. Ordering uses engine rank; rank-adjusted projection breaks ties. No lender is auto-assigned and lead stage is not changed.
       </p>
     </div>
   );

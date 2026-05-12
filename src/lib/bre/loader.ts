@@ -46,12 +46,17 @@ export async function loadActiveScoringConfig(): Promise<BreScoringConfig> {
 }
 
 export async function loadActiveLenderRules(): Promise<BreLenderRule[]> {
-  const { data, error } = await supabase
-    .from("bre_lender_rules")
-    .select("*")
-    .eq("is_active", true);
-  if (error) throw error;
-  return (data ?? []).map((r) => ({
+  // Phase 2 fix: also exclude rules whose parent lender is inactive
+  // (e.g. Bank of Baroda has lenders.active_flag=false but a stale active rule).
+  const [rulesRes, activeLendersRes] = await Promise.all([
+    supabase.from("bre_lender_rules").select("*").eq("is_active", true),
+    supabase.from("lenders").select("id").eq("active_flag", true),
+  ]);
+  if (rulesRes.error) throw rulesRes.error;
+  if (activeLendersRes.error) throw activeLendersRes.error;
+  const activeLenderIds = new Set((activeLendersRes.data ?? []).map((l) => l.id));
+  const filtered = (rulesRes.data ?? []).filter((r) => activeLenderIds.has(r.lender_id));
+  return filtered.map((r) => ({
     id: r.id,
     lender_id: r.lender_id,
     version_number: r.version_number,
