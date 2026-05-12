@@ -241,8 +241,43 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
       /below threshold|age cap|destination country|loan amount/i.test(r),
     );
 
-    return { allBucketsPass, eligibleLenders, displayStatus, bucketReasons };
-  }, [result]);
+    // Phase 2 — university rank modifier overlay (display-only, post-eligibility).
+    // Computed per-lender so each card can show base → adjusted projected loan/rate.
+    // Does NOT affect sort order, eligibility, scores, or assignment.
+    const rankInfo = resolveRankBandFromResolution(resolution?.university_match);
+    const rankModifiers = new Map<string, RankModifierResult>();
+    for (const l of eligibleLenders) {
+      const rule = activeRules.find((rl) => rl.lender_id === l.lender_id) ?? null;
+      const mod = applyRankModifier({
+        band: rankInfo.band,
+        globalRank: rankInfo.globalRank,
+        baseProjectedLoan: l.projected_loan_amount,
+        baseProjectedRate: l.projected_rate,
+        requestedLoan:
+          lead.loan_amount_required != null ? Number(lead.loan_amount_required) : null,
+        productType: l.product_type,
+        rule,
+        roiRangeMin: l.roi_range_min ?? null,
+        roiRangeMax: l.roi_range_max ?? null,
+      });
+      rankModifiers.set(l.lender_id, mod);
+    }
+    // Headline modifier — band/rank are lead-level, so any eligible lender's
+    // explanation works as the section-level summary line.
+    const headlineModifier =
+      eligibleLenders.length > 0
+        ? rankModifiers.get(eligibleLenders[0].lender_id) ?? null
+        : null;
+
+    return {
+      allBucketsPass,
+      eligibleLenders,
+      displayStatus,
+      bucketReasons,
+      rankModifiers,
+      headlineModifier,
+    };
+  }, [result, resolution, activeRules, lead.loan_amount_required]);
 
   return (
     <div className="rounded-lg border border-border bg-card p-4 space-y-5">
