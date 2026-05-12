@@ -187,6 +187,8 @@ Deno.serve(async (req) => {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
   const TWILIO_API_KEY = Deno.env.get("TWILIO_API_KEY");
+  const EMAIL_FROM = Deno.env.get("EMAIL_FROM") ?? "EduLoans <loan@eduvouchers.com>";
+  const EMAIL_REPLY_TO = Deno.env.get("EMAIL_REPLY_TO") ?? "loan@eduvouchers.com";
 
   if (tpl.channel === "email") {
     if (!LOVABLE_API_KEY || !RESEND_API_KEY) {
