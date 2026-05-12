@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { sortByPriority } from "@/lib/countryOrder";
+import { fetchAllUniversitiesMaster } from "@/lib/fetchAllUniversities";
 
 export interface CountryRow {
   id: string;
@@ -49,7 +50,11 @@ export function useLeadMasterData(): State {
     (async () => {
       const [c, u, co, i] = await Promise.all([
         supabase.from("countries_master").select("id, country_name").eq("active_flag", true).order("country_name"),
-        supabase.from("universities_master").select("id, university_name, country").eq("active_flag", true).order("university_name"),
+        // Paginated fetch — universities_master exceeds PostgREST's 1000-row default.
+        fetchAllUniversitiesMaster<UniversityRow>("id, university_name, country", {
+          activeOnly: true,
+          orderBy: "university_name",
+        }),
         supabase.from("courses_master").select("id, course_name, course_category").eq("active_flag", true).order("course_name"),
         supabase.from("intake_master").select("id, intake_term, intake_year, sort_order").eq("active_flag", true).order("sort_order"),
       ]);
@@ -57,7 +62,7 @@ export function useLeadMasterData(): State {
       const countries = sortByPriority((c.data ?? []) as CountryRow[], (r) => r.country_name);
       setState({
         countries,
-        universities: (u.data ?? []) as UniversityRow[],
+        universities: u as UniversityRow[],
         courses: (co.data ?? []) as CourseRow[],
         intakes: (i.data ?? []) as IntakeRow[],
         loading: false,

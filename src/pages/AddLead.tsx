@@ -241,12 +241,13 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   useEffect(() => {
     Promise.all([
       supabase.from("countries_master").select("*").eq("active_flag", true).order("country_name"),
-      supabase.from("universities_master").select("*").eq("active_flag", true).order("university_name"),
+      // Paginated — universities_master exceeds PostgREST's 1000-row default.
+      fetchAllUniversitiesMaster<University>("*", { activeOnly: true, orderBy: "university_name" }),
       supabase.from("courses_master").select("*").eq("active_flag", true).order("course_name"),
       supabase.from("intake_master").select("*").eq("active_flag", true).order("sort_order"),
     ]).then(([c, u, co, i]) => {
       setCountries(c.data ?? []);
-      setUniversities(u.data ?? []);
+      setUniversities(u);
       setCourses(co.data ?? []);
       setIntakes(i.data ?? []);
     });
