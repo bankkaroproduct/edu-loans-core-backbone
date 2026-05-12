@@ -1,14 +1,15 @@
-// Run via bun in node-ish env: stub localStorage
 (globalThis as any).localStorage = { getItem: () => null, setItem: () => {}, removeItem: () => {} };
 (globalThis as any).window = { localStorage: (globalThis as any).localStorage, location: { href: "" } };
 
-const { createClient } = await import("@supabase/supabase-js");
-const url = process.env.VITE_SUPABASE_URL!;
-const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY!;
+import { createClient } from "@supabase/supabase-js";
+
+const url = process.env.SUPABASE_URL!;
+const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const sb = createClient(url, key);
 
-const clientMod: any = await import("../src/integrations/supabase/client");
-clientMod.supabase = sb;
+// Stub the module so lib code uses our service-role client
+import { mock } from "bun:test";
+await mock.module("../src/integrations/supabase/client", () => ({ supabase: sb }));
 
 const { evaluate } = await import("../src/lib/bre/engine");
 const { loadActive } = await import("../src/lib/bre/loader");
@@ -27,10 +28,15 @@ console.log("Status:", result.eligibility_status, "| Overall:", result.overall_s
 console.log("Buckets:", JSON.stringify(result.bucket_scores));
 console.log("Loan range:", JSON.stringify(result.eligible_loan_range));
 console.log("Rate range:", JSON.stringify(result.indicative_rate_range));
+console.log("Profile:", JSON.stringify({
+  loan: built.profile.loan_amount, country: built.profile.destination_country,
+  collateral: built.profile.collateral_route, coapp_income: built.profile.coapplicant_monthly_income,
+  emp: built.profile.coapplicant_employment_type,
+}));
 
 const rb = resolveRankBandFromResolution(built.resolution.university_match as any);
 console.log("\n=== UNIVERSITY ===");
-console.log("Match kind:", (built.resolution.university_match as any)?.kind);
+console.log("Match:", JSON.stringify(built.resolution.university_match));
 console.log("Resolved band:", JSON.stringify(rb));
 
 console.log(`\n=== ACTIVE RULES LOADED: ${rules.length} ===`);
