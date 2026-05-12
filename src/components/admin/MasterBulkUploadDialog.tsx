@@ -446,13 +446,18 @@ export function MasterBulkUploadDialog({ open, onOpenChange, masterKey, onComple
 
           {preview && counts && !result && (
             <>
-              <div className="flex items-center gap-3 text-sm">
+              <div className="flex items-center gap-3 text-sm flex-wrap">
                 <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
                   <CheckCircle2 className="h-3 w-3 mr-1" /> {counts.new} new
                 </Badge>
                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                   {counts.exists} {spec.mode === "upsert" ? "to update" : "skipped (exists)"}
                 </Badge>
+                {counts.dupInFile > 0 && (
+                  <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                    {counts.dupInFile} duplicate in file
+                  </Badge>
+                )}
                 {counts.invalid > 0 && (
                   <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200">
                     <XCircle className="h-3 w-3 mr-1" /> {counts.invalid} invalid
@@ -465,7 +470,7 @@ export function MasterBulkUploadDialog({ open, onOpenChange, masterKey, onComple
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-[60px]">Row</TableHead>
-                      <TableHead className="w-[100px]">Status</TableHead>
+                      <TableHead className="w-[110px]">Status</TableHead>
                       <TableHead>Preview</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -476,6 +481,7 @@ export function MasterBulkUploadDialog({ open, onOpenChange, masterKey, onComple
                         <TableCell>
                           {r.status === "new" && <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] px-1.5 py-0">NEW</Badge>}
                           {r.status === "exists" && <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] px-1.5 py-0">{spec.mode === "upsert" ? "UPDATE" : "SKIP"}</Badge>}
+                          {r.status === "dup_in_file" && <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] px-1.5 py-0">DUP IN FILE</Badge>}
                           {r.status === "invalid" && <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-[10px] px-1.5 py-0">INVALID</Badge>}
                         </TableCell>
                         <TableCell className="text-xs font-mono truncate max-w-[400px]">
@@ -495,11 +501,27 @@ export function MasterBulkUploadDialog({ open, onOpenChange, masterKey, onComple
           )}
 
           {result && (
-            <Alert className="bg-emerald-50 border-emerald-200 text-emerald-900 [&>svg]:text-emerald-600">
-              <CheckCircle2 className="h-4 w-4" />
-              <AlertDescription className="text-sm">
-                <strong>Import complete.</strong>{" "}
-                {result.inserted} inserted, {result.updated} updated, {result.skipped} skipped, {result.failed} failed.
+            <Alert className={result.failed > 0 ? "bg-amber-50 border-amber-200 text-amber-900 [&>svg]:text-amber-600" : "bg-emerald-50 border-emerald-200 text-emerald-900 [&>svg]:text-emerald-600"}>
+              {result.failed > 0 ? <AlertTriangle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+              <AlertDescription className="text-sm space-y-1">
+                <div><strong>Import complete.</strong></div>
+                <ul className="text-xs list-disc pl-5 space-y-0.5">
+                  <li>Total parsed: {result.parsed}</li>
+                  <li>Inserted: {result.inserted}</li>
+                  {spec.mode === "upsert" && <li>Updated: {result.updated}</li>}
+                  <li>Skipped (already exists): {result.skippedExisting}</li>
+                  <li>Skipped (duplicate within file): {result.skippedDupInFile}</li>
+                  <li>Invalid rows: {result.invalid}</li>
+                  <li>Failed: {result.failed}</li>
+                </ul>
+                {result.errors.length > 0 && (
+                  <details className="mt-2">
+                    <summary className="text-xs cursor-pointer font-medium">Failure reasons ({result.errors.length})</summary>
+                    <ul className="text-[11px] font-mono mt-1 space-y-0.5 max-h-32 overflow-auto">
+                      {result.errors.map((e, i) => <li key={i}>• {e}</li>)}
+                    </ul>
+                  </details>
+                )}
               </AlertDescription>
             </Alert>
           )}
