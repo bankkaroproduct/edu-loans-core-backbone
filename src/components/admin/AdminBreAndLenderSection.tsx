@@ -46,7 +46,12 @@ import { toast } from "sonner";
 import { evaluate } from "@/lib/bre/engine";
 import { loadActive } from "@/lib/bre/loader";
 import { buildBreProfileFromLeadAsync, type BuildProfileResolution } from "@/lib/bre/leadProfile";
-import type { BreResult, BucketKey, ParameterTrace } from "@/lib/bre/types";
+import {
+  applyRankModifier,
+  resolveRankBandFromResolution,
+  type RankModifierResult,
+} from "@/lib/bre/rankModifier";
+import type { BreLenderRule, BreResult, BucketKey, ParameterTrace } from "@/lib/bre/types";
 import { formatEmploymentLabel, isEmploymentTypeParam } from "@/lib/bre/employmentDisplay";
 import { displayLenderCode } from "@/lib/lenderDisplay";
 import {
@@ -119,6 +124,10 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
   // Phase 3 — live display ranking computed from engine output + premiere lookup.
   // Display-only. Does not mutate lead_lender_matches or stored ranks.
   const [displayRanking, setDisplayRanking] = useState<Map<string, DisplayRankingOutput>>(new Map());
+  // Phase 2 — keep active lender rules around so the rank modifier can read
+  // per-lender loan caps + ROI policy when adjusting projected loan/rate.
+  // Display-only; not used by sorting, eligibility, or any engine logic.
+  const [activeRules, setActiveRules] = useState<BreLenderRule[]>([]);
 
   // VERBATIM copy of AdminCalculateBreCard.handleRun — no logic changes.
   const handleRun = async () => {
@@ -134,6 +143,7 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
       setResult(r);
       setScoringVersion(cfg.version_number);
       setBucketThreshold(cfg.bucket_threshold);
+      setActiveRules(rules);
 
       // Fetch stored recommendation_rank + fit_category snapshot for display only.
       const { data: stored } = await supabase
@@ -231,8 +241,43 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
       /below threshold|age cap|destination country|loan amount/i.test(r),
     );
 
-    return { allBucketsPass, eligibleLenders, displayStatus, bucketReasons };
-  }, [result]);
+    // Phase 2 — university rank modifier overlay (display-only, post-eligibility).
+    // Computed per-lender so each card can show base → adjusted projected loan/rate.
+    // Does NOT affect sort order, eligibility, scores, or assignment.
+    const rankInfo = resolveRankBandFromResolution(resolution?.university_match);
+    const rankModifiers = new Map<string, RankModifierResult>();
+    for (const l of eligibleLenders) {
+      const rule = activeRules.find((rl) => rl.lender_id === l.lender_id) ?? null;
+      const mod = applyRankModifier({
+        band: rankInfo.band,
+        globalRank: rankInfo.globalRank,
+        baseProjectedLoan: l.projected_loan_amount,
+        baseProjectedRate: l.projected_rate,
+        requestedLoan:
+          lead.loan_amount_required != null ? Number(lead.loan_amount_required) : null,
+        productType: l.product_type,
+        rule,
+        roiRangeMin: l.roi_range_min ?? null,
+        roiRangeMax: l.roi_range_max ?? null,
+      });
+      rankModifiers.set(l.lender_id, mod);
+    }
+    // Headline modifier — band/rank are lead-level, so any eligible lender's
+    // explanation works as the section-level summary line.
+    const headlineModifier =
+      eligibleLenders.length > 0
+        ? rankModifiers.get(eligibleLenders[0].lender_id) ?? null
+        : null;
+
+    return {
+      allBucketsPass,
+      eligibleLenders,
+      displayStatus,
+      bucketReasons,
+      rankModifiers,
+      headlineModifier,
+    };
+  }, [result, resolution, activeRules, lead.loan_amount_required]);
 
   return (
     <div className="rounded-lg border border-border bg-card p-4 space-y-5">
@@ -384,6 +429,15 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
               Recommended Lender Options
             </div>
 
+            {/* Phase 2 — section-level university rank impact summary.
+                Display-only; same rank/band applies to every lender on this lead. */}
+            {derived.displayStatus === "passed_with_lenders" && derived.headlineModifier && (
+              <div className="rounded-md border border-sky-500/30 bg-sky-500/5 p-2 text-xs text-foreground flex gap-2">
+                <Info className="h-4 w-4 shrink-0 mt-0.5 text-sky-600 dark:text-sky-300" />
+                <div>{derived.headlineModifier.explanation}</div>
+              </div>
+            )}
+
             {derived.displayStatus === "rejected" ? (
               <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground flex gap-2">
                 <Info className="h-4 w-4 shrink-0 mt-0.5" />
@@ -405,6 +459,7 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
                 activeRuleCount={result.eligible_lenders.length}
                 collateralState={resolution?.collateral_state ?? null}
                 displayRanking={displayRanking}
+                rankModifiers={derived.rankModifiers}
               />
             )}
           </section>
@@ -760,6 +815,7 @@ function LenderOptionCards({
   activeRuleCount,
   collateralState,
   displayRanking,
+  rankModifiers,
 }: {
   eligibleLenders: BreResult["eligible_lenders"];
   loanRange: BreResult["eligible_loan_range"];
@@ -768,6 +824,7 @@ function LenderOptionCards({
   activeRuleCount: number;
   collateralState: "secured" | "secured_review_needed" | "unsecured" | null;
   displayRanking: Map<string, DisplayRankingOutput>;
+  rankModifiers: Map<string, RankModifierResult>;
 }) {
   // Keep live engine rank as the primary order. Adjusted display score is only
   // a deterministic tiebreaker when two lenders have the same engine rank.
@@ -854,6 +911,7 @@ function LenderOptionCards({
               displayPosition={idx + 1}
               collateralState={collateralState}
               ranking={displayRanking.get(l.lender_id) ?? null}
+              rankModifier={rankModifiers.get(l.lender_id) ?? null}
             />
           );
         })}
@@ -876,12 +934,14 @@ function LenderCard({
   displayPosition,
   collateralState,
   ranking,
+  rankModifier,
 }: {
   l: BreResult["eligible_lenders"][number];
   stored: StoredMatchValue | null;
   displayPosition: number;
   collateralState: "secured" | "secured_review_needed" | "unsecured" | null;
   ranking: DisplayRankingOutput | null;
+  rankModifier: RankModifierResult | null;
 }) {
   const isSecured = l.product_type === "secured";
   const isUnsecured = l.product_type === "unsecured";
@@ -1087,6 +1147,12 @@ function LenderCard({
         )}
       </div>
 
+      {/* Phase 2 — university rank impact (display-only).
+          Shows the resolved rank/band, the loan/rate modifier, base → adjusted
+          projected loan, base → adjusted projected rate, and any clamp applied.
+          Does NOT change ordering, eligibility, or engine output. */}
+      {rankModifier && <RankImpactPanel mod={rankModifier} />}
+
       {/* Coverage row — shown only when at least one expense is explicitly true */}
       {coverageItems.length > 0 && (
         <div className="space-y-1 pt-0.5">
@@ -1163,6 +1229,82 @@ function LenderCard({
         />
       )}
     </li>
+  );
+}
+
+function RankImpactPanel({ mod }: { mod: RankModifierResult }) {
+  const baseLoan = mod.baseProjectedLoan;
+  const adjLoan = mod.adjustedProjectedLoan;
+  const baseRate = mod.baseProjectedRate;
+  const adjRate = mod.adjustedProjectedRate;
+  const changedLoan = baseLoan != null && adjLoan != null && adjLoan !== baseLoan;
+  const changedRate = baseRate != null && adjRate != null && adjRate !== baseRate;
+
+  const fmtMoney = (n: number | null | undefined) =>
+    n == null ? "—" : `₹${Math.round(n).toLocaleString("en-IN")}`;
+  const fmtRate = (n: number | null | undefined) => (n == null ? "—" : `${n}%`);
+
+  const loanPctLabel =
+    mod.loanModifierPct === 0
+      ? "0%"
+      : `${mod.loanModifierPct > 0 ? "+" : ""}${(mod.loanModifierPct * 100).toFixed(0)}%`;
+  const ratePctLabel =
+    mod.rateModifierPct === 0
+      ? "0.00%"
+      : `${mod.rateModifierPct > 0 ? "+" : ""}${mod.rateModifierPct.toFixed(2)}%`;
+
+  // If neither rate nor loan moves AND there's no clamp, still surface the
+  // band/rank (e.g. Tier 5 = no adjustment) so admins can see why nothing changed.
+  return (
+    <div className="rounded-md border border-sky-500/25 bg-sky-500/5 p-2 space-y-1.5">
+      <div className="flex flex-wrap items-center gap-1">
+        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+          University rank impact
+        </Badge>
+        {mod.globalRank != null && (
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+            Rank #{mod.globalRank}
+          </Badge>
+        )}
+        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+          {mod.bandLabel}
+        </Badge>
+        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+          loan {loanPctLabel}
+        </Badge>
+        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+          rate {ratePctLabel}
+        </Badge>
+        {mod.clampApplied && (
+          <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+            Clamp: {mod.clampApplied}
+          </Badge>
+        )}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground tabular-nums">
+        <div>
+          Loan: {fmtMoney(baseLoan)}
+          {changedLoan ? (
+            <>
+              {" "}→ <span className="text-foreground font-medium">{fmtMoney(adjLoan)}</span>
+            </>
+          ) : (
+            <span className="ml-1 italic">no change</span>
+          )}
+        </div>
+        <div>
+          Rate: {fmtRate(baseRate)}
+          {changedRate ? (
+            <>
+              {" "}→ <span className="text-foreground font-medium">{fmtRate(adjRate)}</span>
+            </>
+          ) : (
+            <span className="ml-1 italic">no change</span>
+          )}
+        </div>
+      </div>
+      <div className="text-[10px] text-muted-foreground italic">{mod.explanation}</div>
+    </div>
   );
 }
 
