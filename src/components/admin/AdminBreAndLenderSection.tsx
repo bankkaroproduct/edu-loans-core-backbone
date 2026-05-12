@@ -766,15 +766,16 @@ function LenderOptionCards({
   collateralState: "secured" | "secured_review_needed" | "unsecured" | null;
   displayRanking: Map<string, DisplayRankingOutput>;
 }) {
-  // Phase 3 — sort by live displayScore-derived displayRank when available;
-  // fall back to engine rank for any lender not in the ranking map.
+  // Keep live engine rank as the primary order. Adjusted display score is only
+  // a deterministic tiebreaker when two lenders have the same engine rank.
   const ordered = [...eligibleLenders].sort((a, b) => {
-    const da = displayRanking.get(a.lender_id)?.displayRank ?? null;
-    const db = displayRanking.get(b.lender_id)?.displayRank ?? null;
-    if (da != null && db != null) return da - db;
-    if (da != null) return -1;
-    if (db != null) return 1;
-    return (a.rank ?? Number.POSITIVE_INFINITY) - (b.rank ?? Number.POSITIVE_INFINITY);
+    const ra = a.rank ?? Number.POSITIVE_INFINITY;
+    const rb = b.rank ?? Number.POSITIVE_INFINITY;
+    if (ra !== rb) return ra - rb;
+    const da = displayRanking.get(a.lender_id)?.displayRank ?? Number.POSITIVE_INFINITY;
+    const db = displayRanking.get(b.lender_id)?.displayRank ?? Number.POSITIVE_INFINITY;
+    if (da !== db) return da - db;
+    return a.lender_code.localeCompare(b.lender_code);
   });
 
   // Compare stored ranks to the new live display order and surface a single
@@ -826,8 +827,7 @@ function LenderOptionCards({
       <p className="text-[11px] text-muted-foreground italic flex items-start gap-1.5">
         <Info className="h-3 w-3 shrink-0 mt-0.5" />
         <span>
-          Order reflects live BRE recommendation score. Existing stored assignments and manual
-          ranks are not changed.
+          Order reflects live BRE engine rank. Adjusted projection is used only as a tiebreaker.
         </span>
       </p>
 
