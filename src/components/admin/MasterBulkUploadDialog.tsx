@@ -285,6 +285,23 @@ export function MasterBulkUploadDialog({ open, onOpenChange, masterKey, onComple
     // Track within-file duplicates
     const seenInFile = new Set<string>();
     const items: PreviewRow[] = rows.map((raw, i) => {
+      // Reject corrupted/unprintable characters before further validation.
+      // Blocks C0 controls (U+0000–U+001F), DEL + C1 controls (U+007F–U+009F),
+      // Unicode replacement char (U+FFFD), and non-characters (U+FFFE/U+FFFF).
+      // Allows all printable letters/accents/punctuation used in real names
+      // (apostrophe, hyphen, en/em dash, period, comma, &, (), /, digits, spaces).
+      const INVALID_CHAR_RE = /[\u0000-\u001F\u007F-\u009F\uFFFD\uFFFE\uFFFF]/;
+      const badField = Object.entries(raw).find(
+        ([, v]) => typeof v === "string" && INVALID_CHAR_RE.test(v)
+      );
+      if (badField) {
+        return {
+          num: i + 2,
+          status: "invalid" as const,
+          data: null,
+          error: `Field "${badField[0]}" contains invalid/unprintable characters (likely bad encoding). Please clean the text (re-save as UTF-8) and re-upload.`,
+        };
+      }
       const built = spec.buildRow(raw);
       if (built.ok === false) {
         return { num: i + 2, status: "invalid" as const, data: null, error: built.error };
