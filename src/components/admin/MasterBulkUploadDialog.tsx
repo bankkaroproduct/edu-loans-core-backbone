@@ -160,10 +160,16 @@ function parseBool(v: string | undefined, fallback: boolean): boolean {
   return ["true", "yes", "1", "y"].includes(v.trim().toLowerCase());
 }
 
+function stripBOM(s: string): string {
+  return s.replace(/^\uFEFF/, "");
+}
+
 function parseCSV(text: string): { headers: string[]; rows: Record<string, string>[] } {
-  const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+  const cleaned = stripBOM(text);
+  const lines = cleaned.split(/\r?\n/).filter((l) => l.trim().length > 0);
   if (lines.length === 0) return { headers: [], rows: [] };
-  const headers = splitCsvLine(lines[0]).map((h) => h.trim());
+  // Defensive: strip BOM from each header and trim
+  const headers = splitCsvLine(lines[0]).map((h) => stripBOM(h).trim());
   const rows: Record<string, string>[] = [];
   for (let i = 1; i < lines.length; i++) {
     const cells = splitCsvLine(lines[i]);
@@ -172,6 +178,26 @@ function parseCSV(text: string): { headers: string[]; rows: Record<string, strin
     rows.push(row);
   }
   return { headers, rows };
+}
+
+/** Paginated fetch — Supabase caps default select at 1000 rows. */
+async function fetchAllRows(table: string): Promise<any[]> {
+  const PAGE = 1000;
+  const all: any[] = [];
+  let from = 0;
+  // Hard cap of 50k to prevent runaway loops
+  for (let i = 0; i < 50; i++) {
+    const { data, error } = await (supabase as any)
+      .from(table)
+      .select("*")
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    const batch = data ?? [];
+    all.push(...batch);
+    if (batch.length < PAGE) break;
+    from += PAGE;
+  }
+  return all;
 }
 
 function splitCsvLine(line: string): string[] {
@@ -188,13 +214,24 @@ function splitCsvLine(line: string): string[] {
   return out;
 }
 
-type RowStatus = "new" | "exists" | "invalid";
+type RowStatus = "new" | "exists" | "invalid" | "dup_in_file";
 
 interface PreviewRow {
   num: number;
   status: RowStatus;
   data: Record<string, any> | null;
   error?: string;
+}
+
+interface UploadResult {
+  parsed: number;
+  inserted: number;
+  updated: number;
+  skippedExisting: number;
+  skippedDupInFile: number;
+  invalid: number;
+  failed: number;
+  errors: string[];
 }
 
 interface Props {
@@ -209,7 +246,7 @@ export function MasterBulkUploadDialog({ open, onOpenChange, masterKey, onComple
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<PreviewRow[] | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<{ inserted: number; updated: number; skipped: number; failed: number } | null>(null);
+  const [result, setResult] = useState<UploadResult | null>(null);
 
   const reset = () => {
     setPreview(null);
@@ -235,21 +272,28 @@ export function MasterBulkUploadDialog({ open, onOpenChange, masterKey, onComple
       return;
     }
 
-    // Fetch existing rows for matching
-    const { data: existing, error } = await (supabase as any).from(spec.table).select("*");
-    if (error) {
-      toast({ title: "Failed to read existing rows", description: error.message, variant: "destructive" });
+    // Fetch ALL existing rows for matching (paginated — Supabase caps default select at 1000)
+    let existing: any[] = [];
+    try {
+      existing = await fetchAllRows(spec.table);
+    } catch (e: any) {
+      toast({ title: "Failed to read existing rows", description: e?.message ?? "Unknown error", variant: "destructive" });
       return;
     }
-    const existingKeys = new Set((existing ?? []).map(spec.existingKey));
+    const existingKeys = new Set(existing.map(spec.existingKey));
 
+    // Track within-file duplicates
+    const seenInFile = new Set<string>();
     const items: PreviewRow[] = rows.map((raw, i) => {
       const built = spec.buildRow(raw);
       if (built.ok === false) {
-        const errMsg: string = built.error;
-        return { num: i + 2, status: "invalid" as const, data: null, error: errMsg };
+        return { num: i + 2, status: "invalid" as const, data: null, error: built.error };
       }
       const k = spec.matchKey(built.row);
+      if (seenInFile.has(k)) {
+        return { num: i + 2, status: "dup_in_file" as const, data: built.row, error: "Duplicate of an earlier row in this file (same name + country)" };
+      }
+      seenInFile.add(k);
       return {
         num: i + 2,
         status: existingKeys.has(k) ? "exists" : "new",
@@ -262,42 +306,70 @@ export function MasterBulkUploadDialog({ open, onOpenChange, masterKey, onComple
   const handleConfirm = async () => {
     if (!preview) return;
     setSubmitting(true);
-    let inserted = 0, updated = 0, skipped = 0, failed = 0;
+    let inserted = 0, updated = 0, failed = 0;
+    const errorMessages: string[] = [];
 
     try {
       const newRows = preview.filter((r) => r.status === "new" && r.data).map((r) => r.data!);
       const existsRows = preview.filter((r) => r.status === "exists" && r.data).map((r) => r.data!);
-      skipped = preview.filter((r) => r.status === "invalid").length;
+      const invalidCount = preview.filter((r) => r.status === "invalid").length;
+      const dupInFileCount = preview.filter((r) => r.status === "dup_in_file").length;
 
-      // Insert new rows in chunks of 50
+      // Insert new rows in chunks of 50 — on chunk failure, retry row-by-row so 1 bad row doesn't kill 49 good ones
       for (let i = 0; i < newRows.length; i += 50) {
         const chunk = newRows.slice(i, i + 50);
         const { error } = await (supabase as any).from(spec.table).insert(chunk);
-        if (error) failed += chunk.length;
-        else inserted += chunk.length;
+        if (!error) {
+          inserted += chunk.length;
+          continue;
+        }
+        // Chunk failed — retry per row to identify the bad ones
+        for (let j = 0; j < chunk.length; j++) {
+          const single = chunk[j];
+          const { error: rowErr } = await (supabase as any).from(spec.table).insert(single);
+          if (rowErr) {
+            failed += 1;
+            if (errorMessages.length < 20) {
+              errorMessages.push(`Row data ${JSON.stringify(single).slice(0, 80)}…: ${rowErr.message}`);
+            }
+          } else {
+            inserted += 1;
+          }
+        }
       }
 
       // Upsert mode → update existing rows by natural key
       if (spec.mode === "upsert" && existsRows.length > 0) {
         for (const row of existsRows) {
-          // Build match condition (e.g. iso_code or term+year)
           let q: any = (supabase as any).from(spec.table).update(row);
           if (masterKey === "countries") q = q.eq("iso_code", row.iso_code);
           else if (masterKey === "intakes") q = q.eq("intake_term", row.intake_term).eq("intake_year", row.intake_year);
           const { error } = await q;
-          if (error) failed += 1;
-          else updated += 1;
+          if (error) {
+            failed += 1;
+            if (errorMessages.length < 20) errorMessages.push(`Update failed: ${error.message}`);
+          } else {
+            updated += 1;
+          }
         }
-      } else {
-        // insert-only mode: existing rows are skipped (already counted above as skipped if invalid)
-        // Don't increment skipped here — already-existing rows are intentional, count separately
       }
 
       const skippedExisting = spec.mode === "insert-only" ? existsRows.length : 0;
-      setResult({ inserted, updated, skipped: skipped + skippedExisting, failed });
+      const finalResult: UploadResult = {
+        parsed: preview.length,
+        inserted,
+        updated,
+        skippedExisting,
+        skippedDupInFile: dupInFileCount,
+        invalid: invalidCount,
+        failed,
+        errors: errorMessages,
+      };
+      setResult(finalResult);
       toast({
-        title: "Upload complete",
-        description: `${inserted} new, ${updated} updated, ${skipped + skippedExisting} skipped, ${failed} failed.`,
+        title: failed > 0 ? "Upload completed with errors" : "Upload complete",
+        description: `${inserted} inserted, ${updated} updated, ${skippedExisting} skipped (exists), ${dupInFileCount} skipped (dup in file), ${invalidCount} invalid, ${failed} failed.`,
+        variant: failed > 0 ? "destructive" : undefined,
       });
       onCompleted();
     } catch (e: any) {
@@ -321,6 +393,7 @@ export function MasterBulkUploadDialog({ open, onOpenChange, masterKey, onComple
     new: preview.filter((r) => r.status === "new").length,
     exists: preview.filter((r) => r.status === "exists").length,
     invalid: preview.filter((r) => r.status === "invalid").length,
+    dupInFile: preview.filter((r) => r.status === "dup_in_file").length,
   } : null;
 
   return (
@@ -373,13 +446,18 @@ export function MasterBulkUploadDialog({ open, onOpenChange, masterKey, onComple
 
           {preview && counts && !result && (
             <>
-              <div className="flex items-center gap-3 text-sm">
+              <div className="flex items-center gap-3 text-sm flex-wrap">
                 <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
                   <CheckCircle2 className="h-3 w-3 mr-1" /> {counts.new} new
                 </Badge>
                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                   {counts.exists} {spec.mode === "upsert" ? "to update" : "skipped (exists)"}
                 </Badge>
+                {counts.dupInFile > 0 && (
+                  <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                    {counts.dupInFile} duplicate in file
+                  </Badge>
+                )}
                 {counts.invalid > 0 && (
                   <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200">
                     <XCircle className="h-3 w-3 mr-1" /> {counts.invalid} invalid
@@ -392,7 +470,7 @@ export function MasterBulkUploadDialog({ open, onOpenChange, masterKey, onComple
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-[60px]">Row</TableHead>
-                      <TableHead className="w-[100px]">Status</TableHead>
+                      <TableHead className="w-[110px]">Status</TableHead>
                       <TableHead>Preview</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -403,6 +481,7 @@ export function MasterBulkUploadDialog({ open, onOpenChange, masterKey, onComple
                         <TableCell>
                           {r.status === "new" && <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] px-1.5 py-0">NEW</Badge>}
                           {r.status === "exists" && <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] px-1.5 py-0">{spec.mode === "upsert" ? "UPDATE" : "SKIP"}</Badge>}
+                          {r.status === "dup_in_file" && <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] px-1.5 py-0">DUP IN FILE</Badge>}
                           {r.status === "invalid" && <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-[10px] px-1.5 py-0">INVALID</Badge>}
                         </TableCell>
                         <TableCell className="text-xs font-mono truncate max-w-[400px]">
@@ -422,11 +501,27 @@ export function MasterBulkUploadDialog({ open, onOpenChange, masterKey, onComple
           )}
 
           {result && (
-            <Alert className="bg-emerald-50 border-emerald-200 text-emerald-900 [&>svg]:text-emerald-600">
-              <CheckCircle2 className="h-4 w-4" />
-              <AlertDescription className="text-sm">
-                <strong>Import complete.</strong>{" "}
-                {result.inserted} inserted, {result.updated} updated, {result.skipped} skipped, {result.failed} failed.
+            <Alert className={result.failed > 0 ? "bg-amber-50 border-amber-200 text-amber-900 [&>svg]:text-amber-600" : "bg-emerald-50 border-emerald-200 text-emerald-900 [&>svg]:text-emerald-600"}>
+              {result.failed > 0 ? <AlertTriangle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+              <AlertDescription className="text-sm space-y-1">
+                <div><strong>Import complete.</strong></div>
+                <ul className="text-xs list-disc pl-5 space-y-0.5">
+                  <li>Total parsed: {result.parsed}</li>
+                  <li>Inserted: {result.inserted}</li>
+                  {spec.mode === "upsert" && <li>Updated: {result.updated}</li>}
+                  <li>Skipped (already exists): {result.skippedExisting}</li>
+                  <li>Skipped (duplicate within file): {result.skippedDupInFile}</li>
+                  <li>Invalid rows: {result.invalid}</li>
+                  <li>Failed: {result.failed}</li>
+                </ul>
+                {result.errors.length > 0 && (
+                  <details className="mt-2">
+                    <summary className="text-xs cursor-pointer font-medium">Failure reasons ({result.errors.length})</summary>
+                    <ul className="text-[11px] font-mono mt-1 space-y-0.5 max-h-32 overflow-auto">
+                      {result.errors.map((e, i) => <li key={i}>• {e}</li>)}
+                    </ul>
+                  </details>
+                )}
               </AlertDescription>
             </Alert>
           )}

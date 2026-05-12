@@ -131,14 +131,26 @@ function MasterDataTable({ schema, bulkUploadEnabled }: { schema: MasterSchema; 
     let cancelled = false;
     const load = async () => {
       setLoading(true);
-      const { data, error } = await (supabase as any)
-        .from(schema.table)
-        .select("*")
-        .order(schema.defaultSort.column, { ascending: schema.defaultSort.ascending })
-        .limit(1000);
+      // Paginated fetch — Supabase caps default select at 1000 rows
+      const PAGE = 1000;
+      let all: any[] = [];
+      let from = 0;
+      let lastError: any = null;
+      for (let i = 0; i < 50; i++) {
+        const { data, error } = await (supabase as any)
+          .from(schema.table)
+          .select("*")
+          .order(schema.defaultSort.column, { ascending: schema.defaultSort.ascending })
+          .range(from, from + PAGE - 1);
+        if (error) { lastError = error; break; }
+        const batch = data ?? [];
+        all = all.concat(batch);
+        if (batch.length < PAGE) break;
+        from += PAGE;
+      }
       if (!cancelled) {
-        if (error) toast({ title: "Failed to load", description: error.message, variant: "destructive" });
-        setRows(data ?? []);
+        if (lastError) toast({ title: "Failed to load", description: lastError.message, variant: "destructive" });
+        setRows(all);
         setLoading(false);
       }
     };
