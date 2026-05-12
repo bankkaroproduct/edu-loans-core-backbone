@@ -1284,27 +1284,45 @@ function ResolutionNotes({ resolution }: { resolution: BuildProfileResolution | 
   const items: { label: string; tone: "ok" | "warn" | "muted"; text: import("react").ReactNode }[] = [];
 
   if (um && "kind" in um) {
-    if (um.kind === "fuzzy") {
+    const sourceLabel = (s: string | undefined): string => {
+      switch (s) {
+        case "global_rank": return "exact global rank";
+        case "ranking_bucket_fallback": return "ranking_bucket fallback";
+        case "unranked_fallback": return "unranked fallback";
+        case "no_match": return "no master match";
+        default: return "—";
+      }
+    };
+    const formatBand = (b: string | null | undefined): string | null => {
+      if (!b) return null;
+      if (b === "premium") return "Premium";
+      if (b === "unranked") return "Unranked";
+      const m = /^tier_(\d+)$/.exec(b);
+      return m ? `Tier ${m[1]}` : b;
+    };
+
+    if (um.kind === "fuzzy" || um.kind === "by_id") {
+      const u = um as Extract<typeof um, { kind: "fuzzy" | "by_id" }>;
+      const bandLabel = formatBand(u.rank_band ?? u.effective_band);
       items.push({
-        label: "University matched from raw name",
+        label: u.kind === "fuzzy" ? "University matched from raw name" : "University resolved from master",
         tone: "ok",
         text: (
           <>
-            <span className="italic">"{um.raw}"</span> → <span className="font-medium">{um.master_name}</span>
-            {" · "}ranking_bucket: <span className="font-mono">{um.ranking_bucket ?? "Unranked"}</span>
-            {" · "}employability_outlook: <span className="font-mono">{um.employability_outlook ?? "—"}</span>
-          </>
-        ),
-      });
-    } else if (um.kind === "by_id") {
-      items.push({
-        label: "University resolved from master",
-        tone: "ok",
-        text: (
-          <>
-            <span className="font-medium">{um.master_name}</span>
-            {" · "}ranking_bucket: <span className="font-mono">{um.ranking_bucket ?? "Unranked"}</span>
-            {" · "}employability_outlook: <span className="font-mono">{um.employability_outlook ?? "—"}</span>
+            {u.kind === "fuzzy" && (<><span className="italic">"{u.raw}"</span> → </>)}
+            <span className="font-medium">{u.master_name}</span>
+            {u.global_rank != null && (
+              <>{" · "}<span className="font-mono">Global Rank #{u.global_rank}</span></>
+            )}
+            {bandLabel && (
+              <>{" · "}<span className="font-mono">{bandLabel}</span></>
+            )}
+            {u.rank_score != null && (
+              <>{" · "}<span className="font-mono">Score {u.rank_score}</span></>
+            )}
+            {" · "}<span className="text-muted-foreground">Resolved via: {sourceLabel(u.source)}</span>
+            {" · "}ranking_bucket fallback: <span className="font-mono">{u.ranking_bucket ?? "Unranked"}</span>
+            {" · "}employability_outlook: <span className="font-mono">{u.employability_outlook ?? "—"}</span>
           </>
         ),
       });
