@@ -143,6 +143,7 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
       setResult(r);
       setScoringVersion(cfg.version_number);
       setBucketThreshold(cfg.bucket_threshold);
+      setActiveRules(rules);
 
       // Fetch stored recommendation_rank + fit_category snapshot for display only.
       const { data: stored } = await supabase
