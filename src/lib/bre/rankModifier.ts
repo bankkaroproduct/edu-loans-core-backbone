@@ -245,8 +245,8 @@ export function applyRankModifier(input: RankModifierInput): RankModifierResult 
     baseProjectedRate,
     adjustedProjectedLoan: adjLoan,
     adjustedProjectedRate: adjRate,
-    lenderMaxCap,
-    lenderMinCap,
+    lenderMaxCap: lenderCapMax,
+    lenderMinCap: lenderCapMin,
     clampApplied: clamps.length > 0 ? Array.from(new Set(clamps)).join(",") : null,
     explanation,
   };
