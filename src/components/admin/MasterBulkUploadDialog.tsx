@@ -393,6 +393,7 @@ export function MasterBulkUploadDialog({ open, onOpenChange, masterKey, onComple
     new: preview.filter((r) => r.status === "new").length,
     exists: preview.filter((r) => r.status === "exists").length,
     invalid: preview.filter((r) => r.status === "invalid").length,
+    dupInFile: preview.filter((r) => r.status === "dup_in_file").length,
   } : null;
 
   return (
