@@ -157,14 +157,11 @@ export function AdminLeadDocumentsView({
           {guidanceMessage && guidanceVariant !== "blocker" && (
             <div
               className={`flex items-start gap-2 rounded-md p-3 text-sm ${
-                guidanceVariant === "blocker"
-                  ? "bg-destructive/10 text-destructive border border-destructive/20"
-                  : guidanceVariant === "success"
+                guidanceVariant === "success"
                   ? "bg-green-50 text-green-800 border border-green-200 dark:bg-green-950/20 dark:text-green-300 dark:border-green-800"
                   : "bg-blue-50 text-blue-800 border border-blue-200 dark:bg-blue-950/20 dark:text-blue-300 dark:border-blue-800"
               }`}
             >
-              {guidanceVariant === "blocker" && <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />}
               {guidanceVariant === "success" && <CheckCircle className="h-4 w-4 shrink-0 mt-0.5" />}
               {guidanceVariant === "info" && <Info className="h-4 w-4 shrink-0 mt-0.5" />}
               <span>{guidanceMessage}</span>
