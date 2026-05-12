@@ -295,6 +295,7 @@ export function AdminCalculateBreCard({ lead }: { lead: Lead }) {
               eligibleLenders={derived.eligibleLenders}
               loanRange={result.eligible_loan_range}
               rateRange={result.indicative_rate_range}
+              rankModifiers={derived.rankModifiers}
             />
           )}
         </div>
