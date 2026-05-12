@@ -699,12 +699,14 @@ function ResolutionNotes({ resolution }: { resolution: BuildProfileResolution | 
     };
     if (um.kind === "fuzzy" || um.kind === "by_id") {
       const u = um as Extract<typeof um, { kind: "fuzzy" | "by_id" }>;
-      const rankBits: string[] = [];
-      if (u.global_rank != null) rankBits.push(`Global Rank #${u.global_rank}`);
-      if (u.rank_band) rankBits.push(`band ${u.rank_band}`);
-      if (u.rank_score != null) rankBits.push(`score ${u.rank_score}`);
-      const rankSummary = rankBits.length > 0 ? rankBits.join(" · ") : "no rank in master";
-      const resolvedVia = `resolved via: ${sourceLabel(u.source)}`;
+      const formatBand = (b: string | null | undefined): string | null => {
+        if (!b) return null;
+        if (b === "premium") return "Premium";
+        if (b === "unranked") return "Unranked";
+        const m = /^tier_(\d+)$/.exec(b);
+        return m ? `Tier ${m[1]}` : b;
+      };
+      const bandLabel = formatBand(u.rank_band);
       items.push({
         label: u.kind === "fuzzy" ? "University matched from raw name" : "University resolved from master",
         tone: "ok",
@@ -712,10 +714,18 @@ function ResolutionNotes({ resolution }: { resolution: BuildProfileResolution | 
           <>
             {u.kind === "fuzzy" && (<><span className="italic">"{u.raw}"</span> → </>)}
             <span className="font-medium">{u.master_name}</span>
-            {" · "}<span className="font-mono">{rankSummary}</span>
-            {" · "}ranking_bucket: <span className="font-mono">{u.ranking_bucket ?? "Unranked"}</span>
+            {u.global_rank != null && (
+              <>{" · "}<span className="font-mono">Global Rank #{u.global_rank}</span></>
+            )}
+            {bandLabel && (
+              <>{" · "}<span className="font-mono">{bandLabel}</span></>
+            )}
+            {u.rank_score != null && (
+              <>{" · "}<span className="font-mono">Score {u.rank_score}</span></>
+            )}
+            {" · "}<span className="text-muted-foreground">Resolved via: {sourceLabel(u.source)}</span>
+            {" · "}ranking_bucket fallback: <span className="font-mono">{u.ranking_bucket ?? "Unranked"}</span>
             {" · "}employability_outlook: <span className="font-mono">{u.employability_outlook ?? "—"}</span>
-            {" · "}<span className="text-muted-foreground">{resolvedVia}</span>
           </>
         ),
       });
