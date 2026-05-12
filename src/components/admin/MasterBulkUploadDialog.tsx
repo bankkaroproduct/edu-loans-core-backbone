@@ -160,10 +160,16 @@ function parseBool(v: string | undefined, fallback: boolean): boolean {
   return ["true", "yes", "1", "y"].includes(v.trim().toLowerCase());
 }
 
+function stripBOM(s: string): string {
+  return s.replace(/^\uFEFF/, "");
+}
+
 function parseCSV(text: string): { headers: string[]; rows: Record<string, string>[] } {
-  const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+  const cleaned = stripBOM(text);
+  const lines = cleaned.split(/\r?\n/).filter((l) => l.trim().length > 0);
   if (lines.length === 0) return { headers: [], rows: [] };
-  const headers = splitCsvLine(lines[0]).map((h) => h.trim());
+  // Defensive: strip BOM from each header and trim
+  const headers = splitCsvLine(lines[0]).map((h) => stripBOM(h).trim());
   const rows: Record<string, string>[] = [];
   for (let i = 1; i < lines.length; i++) {
     const cells = splitCsvLine(lines[i]);
@@ -172,6 +178,26 @@ function parseCSV(text: string): { headers: string[]; rows: Record<string, strin
     rows.push(row);
   }
   return { headers, rows };
+}
+
+/** Paginated fetch — Supabase caps default select at 1000 rows. */
+async function fetchAllRows(table: string): Promise<any[]> {
+  const PAGE = 1000;
+  const all: any[] = [];
+  let from = 0;
+  // Hard cap of 50k to prevent runaway loops
+  for (let i = 0; i < 50; i++) {
+    const { data, error } = await (supabase as any)
+      .from(table)
+      .select("*")
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    const batch = data ?? [];
+    all.push(...batch);
+    if (batch.length < PAGE) break;
+    from += PAGE;
+  }
+  return all;
 }
 
 function splitCsvLine(line: string): string[] {
