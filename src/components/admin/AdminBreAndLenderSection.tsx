@@ -911,6 +911,7 @@ function LenderOptionCards({
               displayPosition={idx + 1}
               collateralState={collateralState}
               ranking={displayRanking.get(l.lender_id) ?? null}
+              rankModifier={rankModifiers.get(l.lender_id) ?? null}
             />
           );
         })}
