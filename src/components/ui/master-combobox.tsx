@@ -120,9 +120,13 @@ export function MasterCombobox({
                       setOpen(false);
                     }}
                   >
-                    <Check className={cn("mr-2 h-4 w-4", selectedId === opt.id ? "opacity-100" : "opacity-0")} />
-                    <span className="truncate">{opt.label}</span>
-                    {opt.hint && <span className="ml-2 text-xs text-muted-foreground">{opt.hint}</span>}
+                    <Check className={cn("mr-2 h-4 w-4 shrink-0", selectedId === opt.id ? "opacity-100" : "opacity-0")} />
+                    <span className="flex-1 min-w-0 truncate">{opt.label}</span>
+                    {opt.hint && (
+                      <span className="ml-auto pl-3 shrink-0 whitespace-nowrap text-xs text-muted-foreground">
+                        {opt.hint}
+                      </span>
+                    )}
                   </CommandItem>
                 ))}
               </CommandGroup>
