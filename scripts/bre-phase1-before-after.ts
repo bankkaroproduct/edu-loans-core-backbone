@@ -179,11 +179,12 @@ async function main() {
 
   function uniBucketFor(master: any | null, cfg: BreScoringConfig): { tier: string | null; effective_band: string | null; source: string } {
     if (!master) return { tier: null, effective_band: null, source: "no_match" };
-    const grBand = master.global_rank != null ? (master.rank_band ?? globalRankToBand(master.global_rank)) : null;
+    // Prefer rank_band if present; else derive from global_rank.
+    const grBand = master.rank_band ?? (master.global_rank != null ? globalRankToBand(master.global_rank) : null);
     const supported = tiersOf(cfg);
     if (grBand) {
       const t = supported.has(grBand) ? grBand : (COLLAPSE_TO_LEGACY[grBand] ?? "unranked");
-      return { tier: t, effective_band: grBand, source: "global_rank" };
+      return { tier: t, effective_band: grBand, source: master.global_rank != null ? "global_rank" : "rank_band_only" };
     }
     const bt = rankingBucketToTier(master.ranking_bucket);
     if (bt && bt !== "unranked") {
