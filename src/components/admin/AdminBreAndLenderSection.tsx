@@ -90,6 +90,9 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
           `Saved recommendations refreshed — ${r.inserted} lender${r.inserted === 1 ? "" : "s"} written` +
             (r.preservedLocks > 0 ? `, ${r.preservedLocks} locked row${r.preservedLocks === 1 ? "" : "s"} preserved.` : "."),
         );
+        // Refreshing saved rows should also refresh the visible card order; otherwise
+        // the page can keep showing the previous in-memory ranking until Re-run/page reload.
+        await handleRun();
       }
     } catch (e) {
       toast.error(`Refresh failed: ${e instanceof Error ? e.message : String(e)}`);
