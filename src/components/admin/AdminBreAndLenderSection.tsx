@@ -815,6 +815,7 @@ function LenderOptionCards({
   activeRuleCount,
   collateralState,
   displayRanking,
+  rankModifiers,
 }: {
   eligibleLenders: BreResult["eligible_lenders"];
   loanRange: BreResult["eligible_loan_range"];
@@ -823,6 +824,7 @@ function LenderOptionCards({
   activeRuleCount: number;
   collateralState: "secured" | "secured_review_needed" | "unsecured" | null;
   displayRanking: Map<string, DisplayRankingOutput>;
+  rankModifiers: Map<string, RankModifierResult>;
 }) {
   // Keep live engine rank as the primary order. Adjusted display score is only
   // a deterministic tiebreaker when two lenders have the same engine rank.
