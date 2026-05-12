@@ -214,13 +214,24 @@ function splitCsvLine(line: string): string[] {
   return out;
 }
 
-type RowStatus = "new" | "exists" | "invalid";
+type RowStatus = "new" | "exists" | "invalid" | "dup_in_file";
 
 interface PreviewRow {
   num: number;
   status: RowStatus;
   data: Record<string, any> | null;
   error?: string;
+}
+
+interface UploadResult {
+  parsed: number;
+  inserted: number;
+  updated: number;
+  skippedExisting: number;
+  skippedDupInFile: number;
+  invalid: number;
+  failed: number;
+  errors: string[];
 }
 
 interface Props {
