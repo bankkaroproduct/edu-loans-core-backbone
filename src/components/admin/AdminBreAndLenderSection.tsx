@@ -77,6 +77,26 @@ const BUCKET_LABEL: Record<BucketKey, string> = {
  */
 export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
   const [running, setRunning] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefreshSaved = async () => {
+    setRefreshing(true);
+    try {
+      const { refreshLeadRecommendations } = await import("@/lib/bre/refreshRecommendations");
+      const r = await refreshLeadRecommendations(lead.id);
+      if (r.skippedReason) {
+        toast.error(`Could not refresh: ${r.skippedReason.replaceAll("_", " ")}`);
+      } else {
+        toast.success(
+          `Saved recommendations refreshed — ${r.inserted} lender${r.inserted === 1 ? "" : "s"} written` +
+            (r.preservedLocks > 0 ? `, ${r.preservedLocks} locked row${r.preservedLocks === 1 ? "" : "s"} preserved.` : "."),
+        );
+      }
+    } catch (e) {
+      toast.error(`Refresh failed: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setRefreshing(false);
+    }
+  };
   const [result, setResult] = useState<BreResult | null>(null);
   const [missing, setMissing] = useState<{ field: string; label: string }[]>([]);
   const [resolution, setResolution] = useState<BuildProfileResolution | null>(null);
