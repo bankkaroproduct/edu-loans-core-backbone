@@ -1232,13 +1232,7 @@ function LenderCard({
   );
 }
 
-function RankImpactPanel({
-  mod,
-  l,
-}: {
-  mod: RankModifierResult;
-  l: BreResult["eligible_lenders"][number];
-}) {
+function RankImpactPanel({ mod }: { mod: RankModifierResult }) {
   const baseLoan = mod.baseProjectedLoan;
   const adjLoan = mod.adjustedProjectedLoan;
   const baseRate = mod.baseProjectedRate;
