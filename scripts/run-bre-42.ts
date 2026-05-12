@@ -1,33 +1,37 @@
 import { createClient } from "@supabase/supabase-js";
-import { evaluate } from "../dev-server/src/lib/bre/engine";
-import { loadActive } from "../dev-server/src/lib/bre/loader";
-import { buildBreProfileFromLeadAsync } from "../dev-server/src/lib/bre/leadProfile";
-import { applyRankModifier, resolveRankBandFromResolution } from "../dev-server/src/lib/bre/rankModifier";
 
-// Patch the supabase client used by the lib code
+// Override the shared client BEFORE importing modules that use it
 const url = process.env.VITE_SUPABASE_URL!;
-const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY!;
 const sb = createClient(url, key);
+const clientMod: any = await import("../src/integrations/supabase/client");
+clientMod.supabase = sb;
 
-// Monkey-patch the imported client
-const clientMod = await import("../dev-server/src/integrations/supabase/client");
-(clientMod as any).supabase = sb;
+const { evaluate } = await import("../src/lib/bre/engine");
+const { loadActive } = await import("../src/lib/bre/loader");
+const { buildBreProfileFromLeadAsync } = await import("../src/lib/bre/leadProfile");
+const { applyRankModifier, resolveRankBandFromResolution } = await import("../src/lib/bre/rankModifier");
 
-const { data: lead } = await sb.from("student_leads").select("*").eq("lead_id", "EL-PL-000042").single();
-console.log("Lead:", lead?.student_first_name, lead?.lead_id);
+const { data: lead, error } = await sb.from("student_leads").select("*").eq("lead_id", "EL-PL-000042").single();
+if (error) { console.error(error); process.exit(1); }
 
 const built = await buildBreProfileFromLeadAsync(lead as any);
 const { cfg, rules } = await loadActive();
 const result = evaluate(built.profile, cfg, rules);
 
-console.log("\n=== BRE OVERVIEW ===");
+console.log("=== BRE OVERVIEW ===");
 console.log("Status:", result.eligibility_status, "| Overall:", result.overall_score);
-console.log("Buckets:", result.bucket_scores);
+console.log("Buckets:", JSON.stringify(result.bucket_scores));
+console.log("Loan range:", JSON.stringify(result.eligible_loan_range));
+console.log("Rate range:", JSON.stringify(result.indicative_rate_range));
 
 const rb = resolveRankBandFromResolution(built.resolution.university_match as any);
 console.log("\n=== UNIVERSITY ===");
-console.log("Match:", built.resolution.university_match);
-console.log("Resolved band:", rb);
+console.log("Match kind:", (built.resolution.university_match as any)?.kind);
+console.log("Resolved band:", JSON.stringify(rb));
+
+console.log(`\n=== ACTIVE RULES LOADED: ${rules.length} ===`);
+console.log(rules.map(r => r.basic_info?.lender_name).join(", "));
 
 console.log("\n=== ELIGIBLE LENDERS (engine order) ===");
 const elig = result.eligible_lenders.filter(l => l.eligible).sort((a,b)=>(a.rank??99)-(b.rank??99));
@@ -39,10 +43,10 @@ for (const l of elig) {
     requestedLoan: built.profile.loan_amount, productType: l.product_type as any,
     rule, roiRangeMin: l.effective_rate_min, roiRangeMax: l.effective_rate_max,
   });
-  console.log(`#${l.rank} ${l.lender_name} [${l.product_type}] badge=${l.badge}`);
-  console.log(`   base loan=₹${l.projected_loan_amount} rate=${l.projected_rate}%`);
-  console.log(`   adj  loan=₹${mod.adjustedProjectedLoan} rate=${mod.adjustedProjectedRate}% clamp=${mod.clampApplied||"none"}`);
-  console.log(`   reasons: ${l.reasons.join(" | ")}`);
+  console.log(`\n#${l.rank} ${l.lender_name} [${l.product_type}] badge=${l.badge} payout=${l.payout_pct}%`);
+  console.log(`   base: loan=₹${l.projected_loan_amount}  rate=${l.projected_rate}%`);
+  console.log(`   adj : loan=₹${mod.adjustedProjectedLoan}  rate=${mod.adjustedProjectedRate}%  clamp=${mod.clampApplied||"none"}`);
+  console.log(`   why: ${l.reasons.join(" | ")}`);
 }
 
 console.log("\n=== INELIGIBLE ===");
