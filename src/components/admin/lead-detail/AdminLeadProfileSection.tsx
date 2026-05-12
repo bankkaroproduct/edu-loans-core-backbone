@@ -20,6 +20,7 @@ import { CO_APPLICANT_RELATIONS } from "@/lib/coapplicantRelations";
 import { COURSE_CATEGORY_OPTIONS } from "@/lib/courseCategoryOptions";
 import { TEST_SCORE_RANGES, ACADEMIC_TOTAL_RANGE, ACADEMIC_PERCENTAGE_MAX, WORK_EXPERIENCE_YEARS_RANGE } from "@/lib/leadScoreRanges";
 import type { MasterOption } from "@/components/ui/master-combobox";
+import { UniversityRankChip } from "@/components/admin/lead-detail/UniversityRankChip";
 
 type Lead = Tables<"student_leads"> & {
   district?: string | null;
