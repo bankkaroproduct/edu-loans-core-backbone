@@ -32,7 +32,12 @@ import { toast } from "sonner";
 import { evaluate } from "@/lib/bre/engine";
 import { loadActive } from "@/lib/bre/loader";
 import { buildBreProfileFromLeadAsync, type BuildProfileResolution } from "@/lib/bre/leadProfile";
-import type { BreResult, BucketKey, ParameterTrace } from "@/lib/bre/types";
+import {
+  applyRankModifier,
+  resolveRankBandFromResolution,
+  type RankModifierResult,
+} from "@/lib/bre/rankModifier";
+import type { BreLenderRule, BreResult, BucketKey, ParameterTrace } from "@/lib/bre/types";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Lead = Tables<"student_leads">;
