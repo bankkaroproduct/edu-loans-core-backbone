@@ -20,6 +20,7 @@ import { CO_APPLICANT_RELATIONS } from "@/lib/coapplicantRelations";
 import { COURSE_CATEGORY_OPTIONS } from "@/lib/courseCategoryOptions";
 import { TEST_SCORE_RANGES, ACADEMIC_TOTAL_RANGE, ACADEMIC_PERCENTAGE_MAX, WORK_EXPERIENCE_YEARS_RANGE } from "@/lib/leadScoreRanges";
 import type { MasterOption } from "@/components/ui/master-combobox";
+import { UniversityRankChip } from "@/components/admin/lead-detail/UniversityRankChip";
 
 type Lead = Tables<"student_leads"> & {
   district?: string | null;
@@ -346,21 +347,24 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
             })}
             onSaved={onSaved}
           />
-          <Field
-            label="University"
-            value={lead.university_name_raw}
-            editable={ed("university_name_raw", {
-              masterCombobox: {
-                options: universityOptions,
-                placeholder: lead.intended_study_country
-                  ? `Search universities in ${lead.intended_study_country}…`
-                  : "Search universities…",
-                manualPlaceholder: "Type the university name",
-                helperText: "Search the master list, or pick 'Not available in list' to type manually.",
-              },
-            })}
-            onSaved={onSaved}
-          />
+          <div>
+            <Field
+              label="University"
+              value={lead.university_name_raw}
+              editable={ed("university_name_raw", {
+                masterCombobox: {
+                  options: universityOptions,
+                  placeholder: lead.intended_study_country
+                    ? `Search universities in ${lead.intended_study_country}…`
+                    : "Search universities…",
+                  manualPlaceholder: "Type the university name",
+                  helperText: "Search the master list, or pick 'Not available in list' to type manually.",
+                },
+              })}
+              onSaved={onSaved}
+            />
+            <UniversityRankChip universityId={lead.university_id} />
+          </div>
           <Field
             label="Course"
             value={lead.course_name}
