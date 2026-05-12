@@ -99,7 +99,7 @@ export async function refreshLeadRecommendations(leadId: string): Promise<Refres
     lender_id: l.lender_id,
     recommendation_rank: l.rank ?? i + 1,
     fit_category: badgeToFit(l.badge),
-    score: l.score ?? null,
+    score: null,
     recommendation_reason_summary: (l.reasons ?? []).join(" | ") || null,
     bre_output_json: {
       product_type: l.product_type ?? null,
