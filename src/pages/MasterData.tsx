@@ -63,12 +63,25 @@ function MasterTable({ table, columns, searchKeys, orderBy, filterActive = true,
     let cancelled = false;
     const load = async () => {
       setLoading(true);
-      let query = supabase.from(table as any).select("*");
-      if (filterActive) query = query.eq("active_flag", true);
-      if (orderBy) query = query.order(orderBy.column, { ascending: orderBy.ascending });
-      const { data: rows } = await query.limit(1000);
+      // Paginate via .range() — some masters (universities_master) exceed
+      // PostgREST's 1000-row default. Cheap no-op for small tables.
+      const PAGE = 1000;
+      const SAFETY_CAP = 50_000;
+      const all: any[] = [];
+      let from = 0;
+      while (from < SAFETY_CAP) {
+        let q = supabase.from(table as any).select("*");
+        if (filterActive) q = q.eq("active_flag", true);
+        if (orderBy) q = q.order(orderBy.column, { ascending: orderBy.ascending });
+        const { data: rows, error } = await q.range(from, from + PAGE - 1);
+        if (error) break;
+        const chunk = rows ?? [];
+        all.push(...chunk);
+        if (chunk.length < PAGE) break;
+        from += PAGE;
+      }
       if (!cancelled) {
-        setData(rows ?? []);
+        setData(all);
         setLoading(false);
       }
     };
