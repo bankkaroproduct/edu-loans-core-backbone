@@ -884,9 +884,8 @@ function LenderCard({
   const isUnsecured = l.product_type === "unsecured";
 
   // Visible serial badge — always reflects the current visible order (#1, #2, #3, ...).
-  // Stored recommendation_rank is still used to ORDER the list (in LenderOptionCards),
-  // but is NOT mutated and not shown as the badge number. This avoids gaps caused by
-  // filtered-out lenders occupying low stored ranks.
+  // Stored recommendation_rank is not used for the visible order; this avoids stale
+  // saved rows showing a different first lender than the live BRE engine.
   const displayRank = displayPosition;
 
   // User-facing code subtitle: hide only the Credila/HDFC mismatch.
