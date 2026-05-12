@@ -124,6 +124,10 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
   // Phase 3 — live display ranking computed from engine output + premiere lookup.
   // Display-only. Does not mutate lead_lender_matches or stored ranks.
   const [displayRanking, setDisplayRanking] = useState<Map<string, DisplayRankingOutput>>(new Map());
+  // Phase 2 — keep active lender rules around so the rank modifier can read
+  // per-lender loan caps + ROI policy when adjusting projected loan/rate.
+  // Display-only; not used by sorting, eligibility, or any engine logic.
+  const [activeRules, setActiveRules] = useState<BreLenderRule[]>([]);
 
   // VERBATIM copy of AdminCalculateBreCard.handleRun — no logic changes.
   const handleRun = async () => {
