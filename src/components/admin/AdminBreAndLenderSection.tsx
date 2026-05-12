@@ -1147,6 +1147,12 @@ function LenderCard({
         )}
       </div>
 
+      {/* Phase 2 — university rank impact (display-only).
+          Shows the resolved rank/band, the loan/rate modifier, base → adjusted
+          projected loan, base → adjusted projected rate, and any clamp applied.
+          Does NOT change ordering, eligibility, or engine output. */}
+      {rankModifier && <RankImpactPanel mod={rankModifier} l={l} />}
+
       {/* Coverage row — shown only when at least one expense is explicitly true */}
       {coverageItems.length > 0 && (
         <div className="space-y-1 pt-0.5">
