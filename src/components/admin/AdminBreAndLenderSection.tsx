@@ -429,6 +429,15 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
               Recommended Lender Options
             </div>
 
+            {/* Phase 2 — section-level university rank impact summary.
+                Display-only; same rank/band applies to every lender on this lead. */}
+            {derived.displayStatus === "passed_with_lenders" && derived.headlineModifier && (
+              <div className="rounded-md border border-sky-500/30 bg-sky-500/5 p-2 text-xs text-foreground flex gap-2">
+                <Info className="h-4 w-4 shrink-0 mt-0.5 text-sky-600 dark:text-sky-300" />
+                <div>{derived.headlineModifier.explanation}</div>
+              </div>
+            )}
+
             {derived.displayStatus === "rejected" ? (
               <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground flex gap-2">
                 <Info className="h-4 w-4 shrink-0 mt-0.5" />
@@ -450,6 +459,7 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
                 activeRuleCount={result.eligible_lenders.length}
                 collateralState={resolution?.collateral_state ?? null}
                 displayRanking={displayRanking}
+                rankModifiers={derived.rankModifiers}
               />
             )}
           </section>
