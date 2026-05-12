@@ -346,21 +346,24 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
             })}
             onSaved={onSaved}
           />
-          <Field
-            label="University"
-            value={lead.university_name_raw}
-            editable={ed("university_name_raw", {
-              masterCombobox: {
-                options: universityOptions,
-                placeholder: lead.intended_study_country
-                  ? `Search universities in ${lead.intended_study_country}…`
-                  : "Search universities…",
-                manualPlaceholder: "Type the university name",
-                helperText: "Search the master list, or pick 'Not available in list' to type manually.",
-              },
-            })}
-            onSaved={onSaved}
-          />
+          <div>
+            <Field
+              label="University"
+              value={lead.university_name_raw}
+              editable={ed("university_name_raw", {
+                masterCombobox: {
+                  options: universityOptions,
+                  placeholder: lead.intended_study_country
+                    ? `Search universities in ${lead.intended_study_country}…`
+                    : "Search universities…",
+                  manualPlaceholder: "Type the university name",
+                  helperText: "Search the master list, or pick 'Not available in list' to type manually.",
+                },
+              })}
+              onSaved={onSaved}
+            />
+            <UniversityRankChip universityId={lead.university_id} />
+          </div>
           <Field
             label="Course"
             value={lead.course_name}
