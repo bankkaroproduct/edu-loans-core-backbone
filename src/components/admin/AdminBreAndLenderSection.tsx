@@ -102,8 +102,8 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
   const [resolution, setResolution] = useState<BuildProfileResolution | null>(null);
   const [scoringVersion, setScoringVersion] = useState<number | null>(null);
   const [bucketThreshold, setBucketThreshold] = useState<number | null>(null);
-  // Stored recommendation_rank + fit_category from lead_lender_matches (premiere-aware
-  // source of truth). Used only to display rank badge, fit label, and ORDER the cards.
+  // Stored recommendation_rank + fit_category from lead_lender_matches.
+  // Used only to display saved metadata; live card order remains engine rank first.
   // Does not affect BRE engine, scores, rates, loan amounts, coverage chips, or eligibility.
   type StoredMatch = {
     rank: number | null;
