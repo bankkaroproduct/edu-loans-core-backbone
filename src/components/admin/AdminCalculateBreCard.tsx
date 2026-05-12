@@ -632,10 +632,12 @@ function LenderOptionsList({
   eligibleLenders,
   loanRange,
   rateRange,
+  rankModifiers,
 }: {
   eligibleLenders: BreResult["eligible_lenders"];
   loanRange: BreResult["eligible_loan_range"];
   rateRange: BreResult["indicative_rate_range"];
+  rankModifiers: Map<string, RankModifierResult>;
 }) {
   return (
     <div className="space-y-2">
@@ -663,34 +665,50 @@ function LenderOptionsList({
         {[...eligibleLenders]
           .sort((a, b) => (a.rank ?? Number.POSITIVE_INFINITY) - (b.rank ?? Number.POSITIVE_INFINITY))
           .slice(0, 8)
-          .map((l) => (
+          .map((l) => {
+          const mod = rankModifiers.get(l.lender_id);
+          const adjLoan = mod?.adjustedProjectedLoan ?? l.projected_loan_amount;
+          const adjRate = mod?.adjustedProjectedRate ?? l.projected_rate;
+          const changedLoan = mod && adjLoan !== l.projected_loan_amount && l.projected_loan_amount != null;
+          const changedRate = mod && adjRate !== l.projected_rate && l.projected_rate != null;
+          return (
           <li
             key={l.lender_id}
-            className="flex items-center justify-between gap-2 rounded-md border border-border/60 px-2.5 py-2 text-xs"
+            className="rounded-md border border-border/60 px-2.5 py-2 text-xs space-y-1"
           >
-            <div className="flex items-center gap-2 min-w-0">
-              <span
-                className="inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded bg-muted px-1.5 text-[11px] font-mono font-semibold text-foreground"
-                aria-label={`Rank ${l.rank ?? "unranked"}`}
-              >
-                {l.rank != null ? `#${l.rank}` : "—"}
-              </span>
-              <span className="font-medium text-foreground truncate" title={l.lender_name}>{l.lender_name}</span>
-              <FitBadge badge={l.badge} />
-              {l.product_type && (
-                <Badge variant="outline" className="text-[10px] px-1 py-0">
-                  {l.product_type}
-                </Badge>
-              )}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <span
+                  className="inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded bg-muted px-1.5 text-[11px] font-mono font-semibold text-foreground"
+                  aria-label={`Rank ${l.rank ?? "unranked"}`}
+                >
+                  {l.rank != null ? `#${l.rank}` : "—"}
+                </span>
+                <span className="font-medium text-foreground truncate" title={l.lender_name}>{l.lender_name}</span>
+                <FitBadge badge={l.badge} />
+                {l.product_type && (
+                  <Badge variant="outline" className="text-[10px] px-1 py-0">
+                    {l.product_type}
+                  </Badge>
+                )}
+              </div>
+              <div className="text-muted-foreground tabular-nums whitespace-nowrap">
+                {adjRate != null && (
+                  <span className={changedRate ? "text-foreground font-medium" : ""}>{adjRate}%</span>
+                )}
+                {adjLoan != null && (
+                  <span className={changedLoan ? "text-foreground font-medium" : ""}>
+                    {" · "}₹{Math.round(adjLoan).toLocaleString("en-IN")}
+                  </span>
+                )}
+              </div>
             </div>
-            <div className="text-muted-foreground tabular-nums whitespace-nowrap">
-              {l.projected_rate != null && <>{l.projected_rate}%</>}
-              {l.projected_loan_amount != null && (
-                <> · ₹{Math.round(l.projected_loan_amount).toLocaleString("en-IN")}</>
-              )}
-            </div>
+            {mod && (changedLoan || changedRate) && (
+              <div className="text-[10px] text-muted-foreground italic">{mod.explanation}</div>
+            )}
           </li>
-        ))}
+          );
+        })}
       </ol>
       <p className="text-[11px] text-muted-foreground italic">
         Estimates only. No lender is auto-assigned and lead stage is not changed.
