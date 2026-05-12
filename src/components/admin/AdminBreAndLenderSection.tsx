@@ -90,6 +90,9 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
           `Saved recommendations refreshed — ${r.inserted} lender${r.inserted === 1 ? "" : "s"} written` +
             (r.preservedLocks > 0 ? `, ${r.preservedLocks} locked row${r.preservedLocks === 1 ? "" : "s"} preserved.` : "."),
         );
+        // Refreshing saved rows should also refresh the visible card order; otherwise
+        // the page can keep showing the previous in-memory ranking until Re-run/page reload.
+        await handleRun();
       }
     } catch (e) {
       toast.error(`Refresh failed: ${e instanceof Error ? e.message : String(e)}`);
@@ -102,8 +105,8 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
   const [resolution, setResolution] = useState<BuildProfileResolution | null>(null);
   const [scoringVersion, setScoringVersion] = useState<number | null>(null);
   const [bucketThreshold, setBucketThreshold] = useState<number | null>(null);
-  // Stored recommendation_rank + fit_category from lead_lender_matches (premiere-aware
-  // source of truth). Used only to display rank badge, fit label, and ORDER the cards.
+  // Stored recommendation_rank + fit_category from lead_lender_matches.
+  // Used only to display saved metadata; live card order remains engine rank first.
   // Does not affect BRE engine, scores, rates, loan amounts, coverage chips, or eligibility.
   type StoredMatch = {
     rank: number | null;
@@ -766,15 +769,16 @@ function LenderOptionCards({
   collateralState: "secured" | "secured_review_needed" | "unsecured" | null;
   displayRanking: Map<string, DisplayRankingOutput>;
 }) {
-  // Phase 3 — sort by live displayScore-derived displayRank when available;
-  // fall back to engine rank for any lender not in the ranking map.
+  // Keep live engine rank as the primary order. Adjusted display score is only
+  // a deterministic tiebreaker when two lenders have the same engine rank.
   const ordered = [...eligibleLenders].sort((a, b) => {
-    const da = displayRanking.get(a.lender_id)?.displayRank ?? null;
-    const db = displayRanking.get(b.lender_id)?.displayRank ?? null;
-    if (da != null && db != null) return da - db;
-    if (da != null) return -1;
-    if (db != null) return 1;
-    return (a.rank ?? Number.POSITIVE_INFINITY) - (b.rank ?? Number.POSITIVE_INFINITY);
+    const ra = a.rank ?? Number.POSITIVE_INFINITY;
+    const rb = b.rank ?? Number.POSITIVE_INFINITY;
+    if (ra !== rb) return ra - rb;
+    const da = displayRanking.get(a.lender_id)?.displayRank ?? Number.POSITIVE_INFINITY;
+    const db = displayRanking.get(b.lender_id)?.displayRank ?? Number.POSITIVE_INFINITY;
+    if (da !== db) return da - db;
+    return a.lender_code.localeCompare(b.lender_code);
   });
 
   // Compare stored ranks to the new live display order and surface a single
@@ -826,8 +830,7 @@ function LenderOptionCards({
       <p className="text-[11px] text-muted-foreground italic flex items-start gap-1.5">
         <Info className="h-3 w-3 shrink-0 mt-0.5" />
         <span>
-          Order reflects live BRE recommendation score. Existing stored assignments and manual
-          ranks are not changed.
+          Order reflects live BRE engine rank. Adjusted projection is used only as a tiebreaker.
         </span>
       </p>
 
@@ -884,9 +887,8 @@ function LenderCard({
   const isUnsecured = l.product_type === "unsecured";
 
   // Visible serial badge — always reflects the current visible order (#1, #2, #3, ...).
-  // Stored recommendation_rank is still used to ORDER the list (in LenderOptionCards),
-  // but is NOT mutated and not shown as the badge number. This avoids gaps caused by
-  // filtered-out lenders occupying low stored ranks.
+  // Stored recommendation_rank is not used for the visible order; this avoids stale
+  // saved rows showing a different first lender than the live BRE engine.
   const displayRank = displayPosition;
 
   // User-facing code subtitle: hide only the Credila/HDFC mismatch.
