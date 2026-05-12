@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS public._premiere_enrich_staging;

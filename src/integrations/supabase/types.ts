@@ -14,24 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      _premiere_enrich_staging: {
-        Row: {
-          city: string
-          college: string
-          country: string
-        }
-        Insert: {
-          city: string
-          college: string
-          country: string
-        }
-        Update: {
-          city?: string
-          college?: string
-          country?: string
-        }
-        Relationships: []
-      }
       audit_logs: {
         Row: {
           action_type: string
