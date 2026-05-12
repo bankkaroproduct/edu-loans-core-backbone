@@ -1151,7 +1151,7 @@ function LenderCard({
           Shows the resolved rank/band, the loan/rate modifier, base → adjusted
           projected loan, base → adjusted projected rate, and any clamp applied.
           Does NOT change ordering, eligibility, or engine output. */}
-      {rankModifier && <RankImpactPanel mod={rankModifier} l={l} />}
+      {rankModifier && <RankImpactPanel mod={rankModifier} />}
 
       {/* Coverage row — shown only when at least one expense is explicitly true */}
       {coverageItems.length > 0 && (
