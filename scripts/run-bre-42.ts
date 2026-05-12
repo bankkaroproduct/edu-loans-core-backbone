@@ -1,9 +1,12 @@
-import { createClient } from "@supabase/supabase-js";
+// Run via bun in node-ish env: stub localStorage
+(globalThis as any).localStorage = { getItem: () => null, setItem: () => {}, removeItem: () => {} };
+(globalThis as any).window = { localStorage: (globalThis as any).localStorage, location: { href: "" } };
 
-// Override the shared client BEFORE importing modules that use it
+const { createClient } = await import("@supabase/supabase-js");
 const url = process.env.VITE_SUPABASE_URL!;
 const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY!;
 const sb = createClient(url, key);
+
 const clientMod: any = await import("../src/integrations/supabase/client");
 clientMod.supabase = sb;
 
@@ -13,7 +16,7 @@ const { buildBreProfileFromLeadAsync } = await import("../src/lib/bre/leadProfil
 const { applyRankModifier, resolveRankBandFromResolution } = await import("../src/lib/bre/rankModifier");
 
 const { data: lead, error } = await sb.from("student_leads").select("*").eq("lead_id", "EL-PL-000042").single();
-if (error) { console.error(error); process.exit(1); }
+if (error || !lead) { console.error(error); process.exit(1); }
 
 const built = await buildBreProfileFromLeadAsync(lead as any);
 const { cfg, rules } = await loadActive();
