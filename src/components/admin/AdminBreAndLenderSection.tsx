@@ -84,7 +84,7 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
       const { refreshLeadRecommendations } = await import("@/lib/bre/refreshRecommendations");
       const r = await refreshLeadRecommendations(lead.id);
       if (r.skippedReason) {
-        toast.error(`Could not refresh: ${r.skippedReason.replaceAll("_", " ")}`);
+        toast.error(`Could not refresh: ${r.skippedReason.replace(/_/g, " ")}`);
       } else {
         toast.success(
           `Saved recommendations refreshed — ${r.inserted} lender${r.inserted === 1 ? "" : "s"} written` +
