@@ -154,7 +154,7 @@ export function AdminLeadDocumentsView({
             })}
           </div>
 
-          {guidanceMessage && (
+          {guidanceMessage && guidanceVariant !== "blocker" && (
             <div
               className={`flex items-start gap-2 rounded-md p-3 text-sm ${
                 guidanceVariant === "blocker"
