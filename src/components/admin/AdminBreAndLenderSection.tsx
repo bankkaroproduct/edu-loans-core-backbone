@@ -1232,6 +1232,88 @@ function LenderCard({
   );
 }
 
+function RankImpactPanel({
+  mod,
+  l,
+}: {
+  mod: RankModifierResult;
+  l: BreResult["eligible_lenders"][number];
+}) {
+  const baseLoan = mod.baseProjectedLoan;
+  const adjLoan = mod.adjustedProjectedLoan;
+  const baseRate = mod.baseProjectedRate;
+  const adjRate = mod.adjustedProjectedRate;
+  const changedLoan = baseLoan != null && adjLoan != null && adjLoan !== baseLoan;
+  const changedRate = baseRate != null && adjRate != null && adjRate !== baseRate;
+
+  const fmtMoney = (n: number | null | undefined) =>
+    n == null ? "—" : `₹${Math.round(n).toLocaleString("en-IN")}`;
+  const fmtRate = (n: number | null | undefined) => (n == null ? "—" : `${n}%`);
+
+  const loanPctLabel =
+    mod.loanModifierPct === 0
+      ? "0%"
+      : `${mod.loanModifierPct > 0 ? "+" : ""}${(mod.loanModifierPct * 100).toFixed(0)}%`;
+  const ratePctLabel =
+    mod.rateModifierPct === 0
+      ? "0.00%"
+      : `${mod.rateModifierPct > 0 ? "+" : ""}${mod.rateModifierPct.toFixed(2)}%`;
+
+  // If neither rate nor loan moves AND there's no clamp, still surface the
+  // band/rank (e.g. Tier 5 = no adjustment) so admins can see why nothing changed.
+  return (
+    <div className="rounded-md border border-sky-500/25 bg-sky-500/5 p-2 space-y-1.5">
+      <div className="flex flex-wrap items-center gap-1">
+        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+          University rank impact
+        </Badge>
+        {mod.globalRank != null && (
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+            Rank #{mod.globalRank}
+          </Badge>
+        )}
+        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+          {mod.bandLabel}
+        </Badge>
+        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+          loan {loanPctLabel}
+        </Badge>
+        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+          rate {ratePctLabel}
+        </Badge>
+        {mod.clampApplied && (
+          <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+            Clamp: {mod.clampApplied}
+          </Badge>
+        )}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground tabular-nums">
+        <div>
+          Loan: {fmtMoney(baseLoan)}
+          {changedLoan ? (
+            <>
+              {" "}→ <span className="text-foreground font-medium">{fmtMoney(adjLoan)}</span>
+            </>
+          ) : (
+            <span className="ml-1 italic">no change</span>
+          )}
+        </div>
+        <div>
+          Rate: {fmtRate(baseRate)}
+          {changedRate ? (
+            <>
+              {" "}→ <span className="text-foreground font-medium">{fmtRate(adjRate)}</span>
+            </>
+          ) : (
+            <span className="ml-1 italic">no change</span>
+          )}
+        </div>
+      </div>
+      <div className="text-[10px] text-muted-foreground italic">{mod.explanation}</div>
+    </div>
+  );
+}
+
 function RecommendationRationale({
   storedReason,
   projectedLoanAmount,
