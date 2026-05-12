@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllUniversitiesMaster } from "@/lib/fetchAllUniversities";
 import { createDownstreamRecords } from "@/hooks/useLeadWriteFlow";
 import type { Tables } from "@/integrations/supabase/types";
 import { normalizePhone } from "@/lib/phone";
@@ -286,7 +287,7 @@ async function loadMasterData(): Promise<MasterData> {
   }
 
   const universityMap = new Map<string, string>();
-  (uRes.data ?? []).forEach((u) => universityMap.set(u.university_name.toLowerCase(), u.id));
+  uRows.forEach((u) => universityMap.set(u.university_name.toLowerCase(), u.id));
   const qualifications = qOpts.length > 0 ? qOpts : FALLBACK_QUALIFICATIONS;
   const employmentTypes = eOpts.length > 0 ? eOpts : [...FALLBACK_EMPLOYMENT_TYPES];
 

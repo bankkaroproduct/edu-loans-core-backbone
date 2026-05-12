@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MasterCombobox, type MasterOption } from "@/components/ui/master-combobox";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllUniversitiesMaster } from "@/lib/fetchAllUniversities";
 import { toast } from "@/hooks/use-toast";
 import { Lightbulb } from "lucide-react";
 import { useHighestQualificationOptions } from "@/hooks/useHighestQualificationOptions";
@@ -39,9 +40,11 @@ export default function StudentEducationDetails() {
     supabase.from("intake_master").select("id, intake_term, intake_year").eq("active_flag", true).order("sort_order").then(({ data }) => {
       if (data) setIntakes(data);
     });
-    supabase.from("universities_master").select("id, university_name, country").eq("active_flag", true).order("university_name").then(({ data }) => {
-      if (data) setUniversities(data as UniversityRow[]);
-    });
+    // Paginated — universities_master exceeds PostgREST's 1000-row default.
+    fetchAllUniversitiesMaster<UniversityRow>("id, university_name, country", {
+      activeOnly: true,
+      orderBy: "university_name",
+    }).then((rows) => setUniversities(rows));
     supabase.from("courses_master").select("id, course_name, course_category").eq("active_flag", true).order("course_name").then(({ data }) => {
       if (data) setCourses(data as CourseRow[]);
     });
