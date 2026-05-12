@@ -1,0 +1,1 @@
+UPDATE public.bre_scoring_configs SET is_active = (version_number = 3) WHERE version_number IN (2, 3);
