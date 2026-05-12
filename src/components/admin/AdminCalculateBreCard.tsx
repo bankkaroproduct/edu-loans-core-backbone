@@ -74,6 +74,7 @@ export function AdminCalculateBreCard({ lead }: { lead: Lead }) {
   const [resolution, setResolution] = useState<BuildProfileResolution | null>(null);
   const [scoringVersion, setScoringVersion] = useState<number | null>(null);
   const [bucketThreshold, setBucketThreshold] = useState<number | null>(null);
+  const [activeRules, setActiveRules] = useState<BreLenderRule[]>([]);
 
   const handleRun = async () => {
     setRunning(true);
@@ -88,6 +89,7 @@ export function AdminCalculateBreCard({ lead }: { lead: Lead }) {
       setResult(r);
       setScoringVersion(cfg.version_number);
       setBucketThreshold(cfg.bucket_threshold);
+      setActiveRules(rules);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       toast.error(`BRE evaluation failed: ${msg}`);
