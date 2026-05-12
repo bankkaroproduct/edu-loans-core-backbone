@@ -168,26 +168,21 @@ export function applyRankModifier(input: RankModifierInput): RankModifierResult 
 
   // ---- Loan adjustment ----
   let adjLoan: number | null = null;
-  let lenderCapMax: number | null = null;
-  let lenderCapMin: number | null = null;
+  const cap = pickLenderCap(input.rule, input.productType);
+  const lenderCapMax: number | null = cap.max;
+  const lenderCapMin: number | null = cap.min;
   const clamps: string[] = [];
 
   if (baseProjectedLoan != null && Number.isFinite(baseProjectedLoan) && baseProjectedLoan > 0) {
-    const cap = pickLenderCap(input.rule, input.productType);
-    lenderCapMax = cap.max;
-    lenderCapMin = cap.min;
     let candidate = baseProjectedLoan * (1 + loanPct);
-    // Never exceed requested loan
     if (requestedLoan != null && candidate > requestedLoan) {
       candidate = requestedLoan;
       clamps.push("requested_loan");
     }
-    // Never exceed lender max cap
     if (lenderCapMax != null && candidate > lenderCapMax) {
       candidate = lenderCapMax;
       clamps.push("lender_max_cap");
     }
-    // Never go below lender min
     if (lenderCapMin != null && candidate < lenderCapMin) {
       candidate = lenderCapMin;
       clamps.push("lender_min_cap");
