@@ -32,7 +32,12 @@ import { toast } from "sonner";
 import { evaluate } from "@/lib/bre/engine";
 import { loadActive } from "@/lib/bre/loader";
 import { buildBreProfileFromLeadAsync, type BuildProfileResolution } from "@/lib/bre/leadProfile";
-import type { BreResult, BucketKey, ParameterTrace } from "@/lib/bre/types";
+import {
+  applyRankModifier,
+  resolveRankBandFromResolution,
+  type RankModifierResult,
+} from "@/lib/bre/rankModifier";
+import type { BreLenderRule, BreResult, BucketKey, ParameterTrace } from "@/lib/bre/types";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Lead = Tables<"student_leads">;
@@ -69,6 +74,7 @@ export function AdminCalculateBreCard({ lead }: { lead: Lead }) {
   const [resolution, setResolution] = useState<BuildProfileResolution | null>(null);
   const [scoringVersion, setScoringVersion] = useState<number | null>(null);
   const [bucketThreshold, setBucketThreshold] = useState<number | null>(null);
+  const [activeRules, setActiveRules] = useState<BreLenderRule[]>([]);
 
   const handleRun = async () => {
     setRunning(true);
@@ -83,6 +89,7 @@ export function AdminCalculateBreCard({ lead }: { lead: Lead }) {
       setResult(r);
       setScoringVersion(cfg.version_number);
       setBucketThreshold(cfg.bucket_threshold);
+      setActiveRules(rules);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       toast.error(`BRE evaluation failed: ${msg}`);
@@ -115,8 +122,30 @@ export function AdminCalculateBreCard({ lead }: { lead: Lead }) {
       /below threshold|age cap|destination country|loan amount/i.test(r),
     );
 
-    return { allBucketsPass, eligibleLenders, displayStatus, bucketReasons };
-  }, [result]);
+    // Phase 2 — university rank modifier overlay (display-only, post-eligibility).
+    const rankInfo = resolveRankBandFromResolution(resolution?.university_match);
+    const rankModifiers = new Map<string, RankModifierResult>();
+    for (const l of eligibleLenders) {
+      const rule = activeRules.find((r) => r.lender_id === l.lender_id) ?? null;
+      const mod = applyRankModifier({
+        band: rankInfo.band,
+        globalRank: rankInfo.globalRank,
+        baseProjectedLoan: l.projected_loan_amount,
+        baseProjectedRate: l.projected_rate,
+        requestedLoan: lead.loan_amount_required != null ? Number(lead.loan_amount_required) : null,
+        productType: l.product_type,
+        rule,
+        roiRangeMin: l.roi_range_min ?? null,
+        roiRangeMax: l.roi_range_max ?? null,
+      });
+      rankModifiers.set(l.lender_id, mod);
+    }
+    // Headline modifier (any lender — band/rank are lead-level, all lenders share band)
+    const headlineModifier =
+      eligibleLenders.length > 0 ? rankModifiers.get(eligibleLenders[0].lender_id) ?? null : null;
+
+    return { allBucketsPass, eligibleLenders, displayStatus, bucketReasons, rankModifiers, headlineModifier };
+  }, [result, resolution, activeRules, lead.loan_amount_required]);
 
   return (
     <div className="rounded-lg border border-border bg-card p-4 space-y-4">
@@ -172,6 +201,14 @@ export function AdminCalculateBreCard({ lead }: { lead: Lead }) {
 
           {/* ---------- Resolution notes (fuzzy match / derived fields) ---------- */}
           <ResolutionNotes resolution={resolution} />
+
+          {/* ---------- University rank impact (Phase 2) ---------- */}
+          {derived.headlineModifier && (
+            <div className="rounded-md border border-sky-500/30 bg-sky-500/5 p-2 text-xs text-foreground flex gap-2">
+              <Info className="h-4 w-4 shrink-0 mt-0.5 text-sky-600 dark:text-sky-300" />
+              <div>{derived.headlineModifier.explanation}</div>
+            </div>
+          )}
 
           {/* ---------- BRE Eligibility Scorecard ---------- */}
           <div>
@@ -258,6 +295,7 @@ export function AdminCalculateBreCard({ lead }: { lead: Lead }) {
               eligibleLenders={derived.eligibleLenders}
               loanRange={result.eligible_loan_range}
               rateRange={result.indicative_rate_range}
+              rankModifiers={derived.rankModifiers}
             />
           )}
         </div>
@@ -594,10 +632,12 @@ function LenderOptionsList({
   eligibleLenders,
   loanRange,
   rateRange,
+  rankModifiers,
 }: {
   eligibleLenders: BreResult["eligible_lenders"];
   loanRange: BreResult["eligible_loan_range"];
   rateRange: BreResult["indicative_rate_range"];
+  rankModifiers: Map<string, RankModifierResult>;
 }) {
   return (
     <div className="space-y-2">
@@ -625,34 +665,50 @@ function LenderOptionsList({
         {[...eligibleLenders]
           .sort((a, b) => (a.rank ?? Number.POSITIVE_INFINITY) - (b.rank ?? Number.POSITIVE_INFINITY))
           .slice(0, 8)
-          .map((l) => (
+          .map((l) => {
+          const mod = rankModifiers.get(l.lender_id);
+          const adjLoan = mod?.adjustedProjectedLoan ?? l.projected_loan_amount;
+          const adjRate = mod?.adjustedProjectedRate ?? l.projected_rate;
+          const changedLoan = mod && adjLoan !== l.projected_loan_amount && l.projected_loan_amount != null;
+          const changedRate = mod && adjRate !== l.projected_rate && l.projected_rate != null;
+          return (
           <li
             key={l.lender_id}
-            className="flex items-center justify-between gap-2 rounded-md border border-border/60 px-2.5 py-2 text-xs"
+            className="rounded-md border border-border/60 px-2.5 py-2 text-xs space-y-1"
           >
-            <div className="flex items-center gap-2 min-w-0">
-              <span
-                className="inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded bg-muted px-1.5 text-[11px] font-mono font-semibold text-foreground"
-                aria-label={`Rank ${l.rank ?? "unranked"}`}
-              >
-                {l.rank != null ? `#${l.rank}` : "—"}
-              </span>
-              <span className="font-medium text-foreground truncate" title={l.lender_name}>{l.lender_name}</span>
-              <FitBadge badge={l.badge} />
-              {l.product_type && (
-                <Badge variant="outline" className="text-[10px] px-1 py-0">
-                  {l.product_type}
-                </Badge>
-              )}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <span
+                  className="inline-flex h-5 min-w-[1.5rem] items-center justify-center rounded bg-muted px-1.5 text-[11px] font-mono font-semibold text-foreground"
+                  aria-label={`Rank ${l.rank ?? "unranked"}`}
+                >
+                  {l.rank != null ? `#${l.rank}` : "—"}
+                </span>
+                <span className="font-medium text-foreground truncate" title={l.lender_name}>{l.lender_name}</span>
+                <FitBadge badge={l.badge} />
+                {l.product_type && (
+                  <Badge variant="outline" className="text-[10px] px-1 py-0">
+                    {l.product_type}
+                  </Badge>
+                )}
+              </div>
+              <div className="text-muted-foreground tabular-nums whitespace-nowrap">
+                {adjRate != null && (
+                  <span className={changedRate ? "text-foreground font-medium" : ""}>{adjRate}%</span>
+                )}
+                {adjLoan != null && (
+                  <span className={changedLoan ? "text-foreground font-medium" : ""}>
+                    {" · "}₹{Math.round(adjLoan).toLocaleString("en-IN")}
+                  </span>
+                )}
+              </div>
             </div>
-            <div className="text-muted-foreground tabular-nums whitespace-nowrap">
-              {l.projected_rate != null && <>{l.projected_rate}%</>}
-              {l.projected_loan_amount != null && (
-                <> · ₹{Math.round(l.projected_loan_amount).toLocaleString("en-IN")}</>
-              )}
-            </div>
+            {mod && (changedLoan || changedRate) && (
+              <div className="text-[10px] text-muted-foreground italic">{mod.explanation}</div>
+            )}
           </li>
-        ))}
+          );
+        })}
       </ol>
       <p className="text-[11px] text-muted-foreground italic">
         Estimates only. No lender is auto-assigned and lead stage is not changed.
@@ -699,12 +755,14 @@ function ResolutionNotes({ resolution }: { resolution: BuildProfileResolution | 
     };
     if (um.kind === "fuzzy" || um.kind === "by_id") {
       const u = um as Extract<typeof um, { kind: "fuzzy" | "by_id" }>;
-      const rankBits: string[] = [];
-      if (u.global_rank != null) rankBits.push(`Global Rank #${u.global_rank}`);
-      if (u.rank_band) rankBits.push(`band ${u.rank_band}`);
-      if (u.rank_score != null) rankBits.push(`score ${u.rank_score}`);
-      const rankSummary = rankBits.length > 0 ? rankBits.join(" · ") : "no rank in master";
-      const resolvedVia = `resolved via: ${sourceLabel(u.source)}`;
+      const formatBand = (b: string | null | undefined): string | null => {
+        if (!b) return null;
+        if (b === "premium") return "Premium";
+        if (b === "unranked") return "Unranked";
+        const m = /^tier_(\d+)$/.exec(b);
+        return m ? `Tier ${m[1]}` : b;
+      };
+      const bandLabel = formatBand(u.rank_band);
       items.push({
         label: u.kind === "fuzzy" ? "University matched from raw name" : "University resolved from master",
         tone: "ok",
@@ -712,10 +770,18 @@ function ResolutionNotes({ resolution }: { resolution: BuildProfileResolution | 
           <>
             {u.kind === "fuzzy" && (<><span className="italic">"{u.raw}"</span> → </>)}
             <span className="font-medium">{u.master_name}</span>
-            {" · "}<span className="font-mono">{rankSummary}</span>
-            {" · "}ranking_bucket: <span className="font-mono">{u.ranking_bucket ?? "Unranked"}</span>
+            {u.global_rank != null && (
+              <>{" · "}<span className="font-mono">Global Rank #{u.global_rank}</span></>
+            )}
+            {bandLabel && (
+              <>{" · "}<span className="font-mono">{bandLabel}</span></>
+            )}
+            {u.rank_score != null && (
+              <>{" · "}<span className="font-mono">Score {u.rank_score}</span></>
+            )}
+            {" · "}<span className="text-muted-foreground">Resolved via: {sourceLabel(u.source)}</span>
+            {" · "}ranking_bucket fallback: <span className="font-mono">{u.ranking_bucket ?? "Unranked"}</span>
             {" · "}employability_outlook: <span className="font-mono">{u.employability_outlook ?? "—"}</span>
-            {" · "}<span className="text-muted-foreground">{resolvedVia}</span>
           </>
         ),
       });
