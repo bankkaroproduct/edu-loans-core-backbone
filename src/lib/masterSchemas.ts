@@ -102,9 +102,7 @@ export const MASTER_SCHEMAS: Record<string, MasterSchema> = {
       { key: "country", label: "Country" },
       { key: "ranking_bucket", label: "Ranking" },
       { key: "global_rank", label: "Global Rank" },
-      { key: "rank_band", label: "Band" },
-      { key: "rank_score", label: "Score" },
-      { key: "rank_source", label: "Source" },
+      { key: "rank_band", label: "Tier" },
       { key: "aliases", label: "Aliases", render: "tags" },
     ],
     fields: [
