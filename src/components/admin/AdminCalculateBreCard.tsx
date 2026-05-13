@@ -822,7 +822,7 @@ function ResolutionNotes({ resolution }: { resolution: BuildProfileResolution | 
         const m = /^tier_(\d+)$/.exec(b);
         return m ? `Tier ${m[1]}` : b;
       };
-      const bandLabel = formatBand(u.rank_band);
+      const bandLabel = formatBand((u as any).effective_band ?? u.rank_band);
       items.push({
         label: u.kind === "fuzzy" ? "University matched from raw name" : "University resolved from master",
         tone: "ok",
