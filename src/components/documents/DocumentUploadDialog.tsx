@@ -102,7 +102,10 @@ export function DocumentUploadDialog({ open, onOpenChange, requirement, leadId, 
 
     try {
       const ext = file.name.split(".").pop() ?? "pdf";
-      const storagePath = `${leadId}/${requirement.document_type_id}_v${nextVersion}.${ext}`;
+      // Append a unique suffix so retries after a prior failed upload (which can
+      // leave an orphan blob in storage) don't collide on the deterministic path.
+      const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const storagePath = `${leadId}/${requirement.document_type_id}_v${nextVersion}_${uniqueSuffix}.${ext}`;
 
       setProgress(40);
 
