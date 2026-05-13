@@ -64,7 +64,7 @@ export default function AdminDashboard() {
         onCardClick={(k) => setDrilldown(k)}
       />
 
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <AdminLeadQueue
             data={queue.data}
