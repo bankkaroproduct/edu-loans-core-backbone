@@ -1,6 +1,7 @@
 // Read-only ranking chip shown next to the University field on Admin Lead
 // Detail. Renders nothing when the lead has no resolvable university or when
-// no rank data exists. Phase 1 visibility only — no engine logic here.
+// no rank data exists. Display-only — Global Rank is the source of truth and
+// Tier is derived from it via approved cutoffs.
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,7 +9,6 @@ import { supabase } from "@/integrations/supabase/client";
 interface RankInfo {
   global_rank: number | null;
   rank_band: string | null;
-  rank_score: number | null;
 }
 
 const BAND_LABEL: Record<string, string> = {
@@ -25,27 +25,6 @@ const BAND_LABEL: Record<string, string> = {
   tier_10: "Tier 10",
   unranked: "Unranked",
 };
-
-export function UniversityRankChip({ universityId }: { universityId: string | null | undefined }) {
-  const [info, setInfo] = useState<RankInfo | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!universityId) {
-      setInfo(null);
-      return;
-    }
-    (async () => {
-      const { data } = await supabase
-        .from("universities_master")
-        .select("global_rank, rank_band, rank_score")
-        .eq("id", universityId)
-        .maybeSingle();
-      if (cancelled) return;
-      setInfo((data as RankInfo) ?? null);
-    })();
-    return () => { cancelled = true; };
-  }, [universityId]);
 
 // Approved cutoffs — must mirror globalRankToBand() in src/lib/bre/leadProfile.ts.
 function deriveBandFromRank(rank: number): string {
@@ -74,7 +53,7 @@ export function UniversityRankChip({ universityId }: { universityId: string | nu
     (async () => {
       const { data } = await supabase
         .from("universities_master")
-        .select("global_rank, rank_band, rank_score")
+        .select("global_rank, rank_band")
         .eq("id", universityId)
         .maybeSingle();
       if (cancelled) return;
@@ -87,7 +66,7 @@ export function UniversityRankChip({ universityId }: { universityId: string | nu
   const { global_rank, rank_band } = info;
   if (global_rank == null && !rank_band) return null;
 
-  // Global Rank is source of truth — derive tier from it when present.
+  // Global Rank is the source of truth — derive tier from it when present.
   const effectiveBand = global_rank != null ? deriveBandFromRank(global_rank) : rank_band;
 
   const parts: string[] = [];
