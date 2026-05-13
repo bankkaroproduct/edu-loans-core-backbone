@@ -851,7 +851,10 @@ async function handleUploadDocument(req: Request, supabaseAdmin: any) {
 
     // Upload to storage
     const ext = file.name.split(".").pop() || "pdf";
-    const storagePath = `${lead.id}/${requirement.document_type_id}_v${versionNumber}.${ext}`;
+    // Unique suffix prevents retries from colliding with orphan storage blobs
+    // left behind by prior failed uploads.
+    const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const storagePath = `${lead.id}/${requirement.document_type_id}_v${versionNumber}_${uniqueSuffix}.${ext}`;
 
     const arrayBuffer = await file.arrayBuffer();
     const { error: uploadErr } = await supabaseAdmin.storage
