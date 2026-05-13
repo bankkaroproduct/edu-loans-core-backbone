@@ -225,7 +225,7 @@ export default function AdminPartners() {
                         </TableCell>
                         <TableCell>
                           <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium capitalize ${statusStyles[p.status]}`}>
-                            {p.status}
+                            {p.status === "active" ? "Active" : p.status}
                           </span>
                         </TableCell>
                         <TableCell className="text-muted-foreground whitespace-nowrap">
