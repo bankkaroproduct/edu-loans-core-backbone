@@ -95,7 +95,7 @@ export function AdminPartnerCard({ partner, isStudentDirect }: Props) {
 
         <div className="flex items-center gap-2 pt-1">
           <Badge variant="secondary" className="text-[10px]">
-            {isDirectSystem ? "direct / system" : partner.partner_type.replace(/_/g, " ")}
+            {isDirectSystem ? "Direct / System" : partner.partner_type.replace(/_/g, " ")}
           </Badge>
           <Badge
             variant="outline"
