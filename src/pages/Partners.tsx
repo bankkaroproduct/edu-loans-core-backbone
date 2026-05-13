@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { PageSkeleton } from "@/components/shared/PageSkeleton";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Building2 } from "lucide-react";
+import { formatDisplayLabel } from "@/lib/formatDisplayLabel";
 
 type Partner = Tables<"partner_organizations">;
 
@@ -18,8 +19,6 @@ const statusColors: Record<string, string> = {
   suspended: "bg-destructive/10 text-destructive",
   terminated: "bg-destructive/10 text-destructive",
 };
-
-const fmt = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
 export default function Partners() {
   const [partners, setPartners] = useState<Partner[]>([]);
