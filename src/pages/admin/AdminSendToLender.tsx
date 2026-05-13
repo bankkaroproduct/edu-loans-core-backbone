@@ -20,6 +20,7 @@ import {
 import { toast } from "sonner";
 import { useLeadDocumentsData } from "@/hooks/useLeadDocumentsData";
 import { CaseSummaryCard } from "@/components/admin/send-to-lender/CaseSummaryCard";
+import { formatStageLabel } from "@/components/dashboard/StageBadge";
 import { AttachmentSelector } from "@/components/admin/send-to-lender/AttachmentSelector";
 import { LenderRecipientPicker } from "@/components/admin/send-to-lender/LenderRecipientPicker";
 import {
@@ -327,7 +328,7 @@ export default function AdminSendToLender() {
           <div>
             <span className="text-muted-foreground text-xs">Stage / Status</span>
             <p className="font-medium">
-              {lead.current_stage} · {lead.current_status}
+              {formatStageLabel(lead.current_stage)} · {formatStageLabel(lead.current_status)}
             </p>
           </div>
           <div className="ml-auto flex items-center gap-2">

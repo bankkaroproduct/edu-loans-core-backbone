@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import { Pencil, CheckCircle2, Sparkles, Shield, Info, Lock } from "lucide-react";
 import { intakeSessionLabel } from "@/lib/intakeSession";
 import { formatWorkExperience } from "@/lib/workExperience";
+import { formatDisplayLabel } from "@/lib/formatDisplayLabel";
 
 interface SummaryItem {
   label: string;
@@ -104,12 +105,12 @@ export default function StudentReviewSubmit() {
           { label: "Full Name", value: formData.student_full_name },
           { label: "Email", value: formData.student_email },
           { label: "Date of Birth", value: formData.student_dob },
-          { label: "Gender", value: formData.student_gender },
+          { label: "Gender", value: formData.student_gender ? formatDisplayLabel(formData.student_gender) : null },
           { label: "City", value: formData.city },
           { label: "State", value: formData.state },
           { label: "Pincode", value: formData.pincode },
           { label: "Destination Country", value: formData.intended_study_country },
-          { label: "Course Category", value: formData.course_category },
+          { label: "Course Category", value: formData.course_category ? formatDisplayLabel(formData.course_category) : null },
           { label: "Loan Amount", value: formData.loan_amount_required ? `₹${Number(formData.loan_amount_required).toLocaleString("en-IN")}` : null },
         ]}
       />
@@ -120,7 +121,7 @@ export default function StudentReviewSubmit() {
         editPath="/student/apply/education"
         readOnly={isReadOnly}
         items={[
-          { label: "Highest Qualification", value: formData.highest_qualification },
+          { label: "Highest Qualification", value: formData.highest_qualification ? formatDisplayLabel(formData.highest_qualification) : null },
           { label: "Highest Qualification Score", value: formData.test_scores.highest_qualification_score || formData.marks_gpa },
           { label: "Course", value: formData.course_name },
           { label: "University", value: formData.university_name_raw },
@@ -138,7 +139,7 @@ export default function StudentReviewSubmit() {
         items={[
           { label: "Name", value: formData.coapplicant_name },
           { label: "Age", value: formData.test_scores.coapplicant_age ? String(formData.test_scores.coapplicant_age) : null },
-          { label: "Relation", value: formData.coapplicant_relation },
+          { label: "Relation", value: formData.coapplicant_relation ? formatDisplayLabel(formData.coapplicant_relation) : null },
           { label: "Mobile", value: formData.coapplicant_mobile },
           { label: "Email", value: formData.coapplicant_email },
           { label: "Employment Type", value: formData.coapplicant_employment_type },
