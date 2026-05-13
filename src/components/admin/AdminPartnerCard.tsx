@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Building2, GraduationCap, Mail, Phone, User } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import { formatDisplayLabel } from "@/lib/formatDisplayLabel";
 
 type PartnerOrg = Tables<"partner_organizations">;
 
@@ -95,7 +96,7 @@ export function AdminPartnerCard({ partner, isStudentDirect }: Props) {
 
         <div className="flex items-center gap-2 pt-1">
           <Badge variant="secondary" className="text-[10px]">
-            {isDirectSystem ? "Direct / System" : partner.partner_type.replace(/_/g, " ")}
+            {isDirectSystem ? "Direct / System" : formatDisplayLabel(partner.partner_type)}
           </Badge>
           <Badge
             variant="outline"
@@ -105,7 +106,7 @@ export function AdminPartnerCard({ partner, isStudentDirect }: Props) {
               "border-amber-300 text-amber-700 bg-amber-50"
             }`}
           >
-            {partner.status}
+            {formatDisplayLabel(partner.status)}
           </Badge>
         </div>
       </CardContent>
