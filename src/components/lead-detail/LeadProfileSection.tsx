@@ -15,6 +15,7 @@ import { useLeadMasterData } from "@/hooks/useLeadMasterData";
 import { COURSE_CATEGORY_OPTIONS } from "@/lib/courseCategoryOptions";
 import { TEST_SCORE_RANGES, ACADEMIC_TOTAL_RANGE, ACADEMIC_PERCENTAGE_MAX, WORK_EXPERIENCE_YEARS_RANGE } from "@/lib/leadScoreRanges";
 import type { MasterOption } from "@/components/ui/master-combobox";
+import { formatDisplayLabel } from "@/lib/formatDisplayLabel";
 
 type Lead = Tables<"student_leads"> & {
   district?: string | null;
@@ -351,7 +352,7 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
             {/* Single decimal field. Reads new exact key first; falls back to
                 legacy years+months. Saves into the new key only. */}
             <Field
-              label="Co-applicant Work Experience (In years)"
+              label="Work Experience (Years)"
               value={formatCoappWorkExpDecimal(resolveCoappWorkExpDecimalYears(ts))}
               editable={edTS("coapplicant_work_experience_total_years", {
                 inputType: "number",
@@ -411,8 +412,8 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Source Type" value={lead.source_type} />
-            <Field label="Source Subtype" value={lead.source_sub_type} />
+            <Field label="Source Type" value={formatDisplayLabel(lead.source_type)} />
+            <Field label="Source Subtype" value={formatDisplayLabel(lead.source_sub_type)} />
             <Field label="Submitted By" value={submittedByName} readOnlyFallback="Not captured" />
             <Field label="Created At" value={new Date(lead.created_at).toLocaleString()} readOnlyFallback="—" />
             <Field label="Last Updated" value={new Date(lead.updated_at).toLocaleString()} readOnlyFallback="—" />
