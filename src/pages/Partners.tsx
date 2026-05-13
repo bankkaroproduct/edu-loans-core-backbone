@@ -68,7 +68,7 @@ export default function Partners() {
                         <p className="text-xs text-muted-foreground">{p.legal_name}</p>
                       </div>
                     </TableCell>
-                    <TableCell className="text-sm">{fmt(p.partner_type)}</TableCell>
+                    <TableCell className="text-sm">{formatDisplayLabel(p.partner_type)}</TableCell>
                     <TableCell>
                       <div className="text-sm">
                         <p>{p.contact_person_name ?? "—"}</p>
@@ -77,7 +77,7 @@ export default function Partners() {
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className={statusColors[p.status] ?? ""}>
-                        {p.status === "active" ? "Active" : fmt(p.status)}
+                        {p.status === "active" ? "Active" : formatDisplayLabel(p.status)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{p.onboarding_date ?? "—"}</TableCell>
