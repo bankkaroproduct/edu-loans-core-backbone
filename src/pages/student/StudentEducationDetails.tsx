@@ -13,6 +13,7 @@ import { fetchAllUniversitiesMaster } from "@/lib/fetchAllUniversities";
 import { toast } from "@/hooks/use-toast";
 import { Lightbulb } from "lucide-react";
 import { useHighestQualificationOptions } from "@/hooks/useHighestQualificationOptions";
+import { formatDisplayLabel } from "@/lib/formatDisplayLabel";
 import { buildIntakeSessionOptions, intakeSessionValue, parseIntakeSessionValue } from "@/lib/intakeSession";
 import { sanitizeWorkExpInput, formatWorkExperience } from "@/lib/workExperience";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -127,7 +128,7 @@ export default function StudentEducationDetails() {
   // Context strip
   const contextItems = [
     formData.intended_study_country && `🌍 ${formData.intended_study_country}`,
-    formData.course_category && `📚 ${formData.course_category}`,
+    formData.course_category && `📚 ${formatDisplayLabel(formData.course_category)}`,
   ].filter(Boolean);
 
   return (
