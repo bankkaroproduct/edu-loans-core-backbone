@@ -39,7 +39,7 @@ export default function AdminDashboard() {
   const closeDrill = (open: boolean) => { if (!open) setDrilldown(null); };
 
   return (
-    <div className="space-y-7 max-w-screen-2xl mx-auto">
+    <div className="space-y-8 max-w-screen-2xl mx-auto">
       <PageHeader
         title="Admin Dashboard"
         description="Operations overview · partner pipeline at a glance"
@@ -64,7 +64,7 @@ export default function AdminDashboard() {
         onCardClick={(k) => setDrilldown(k)}
       />
 
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <AdminLeadQueue
             data={queue.data}
