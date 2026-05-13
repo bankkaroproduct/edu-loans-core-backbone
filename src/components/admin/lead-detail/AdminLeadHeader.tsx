@@ -88,7 +88,7 @@ export function AdminLeadHeader({
                 <button
                   type="button"
                   onClick={copyLeadId}
-                  className="group inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/40 px-2 py-0.5 font-mono text-[11px] text-muted-foreground hover:bg-muted transition-colors"
+                  className="group inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/40 px-2 py-0.5 font-mono text-muted-foreground hover:bg-muted transition-colors font-bold text-sm"
                   title="Copy Lead ID"
                 >
                   {lead.lead_id}
