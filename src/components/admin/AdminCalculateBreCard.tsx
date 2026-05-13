@@ -836,9 +836,6 @@ function ResolutionNotes({ resolution }: { resolution: BuildProfileResolution | 
             {bandLabel && (
               <>{" · "}<span className="font-mono">{bandLabel}</span></>
             )}
-            {u.rank_score != null && (
-              <>{" · "}<span className="font-mono">Score {u.rank_score}</span></>
-            )}
             {" · "}<span className="text-muted-foreground">Resolved via: {sourceLabel(u.source)}</span>
             {" · "}ranking_bucket fallback: <span className="font-mono">{u.ranking_bucket ?? "Unranked"}</span>
             {" · "}employability_outlook: <span className="font-mono">{u.employability_outlook ?? "—"}</span>
