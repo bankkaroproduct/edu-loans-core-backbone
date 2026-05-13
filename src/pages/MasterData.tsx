@@ -264,7 +264,6 @@ export default function MasterData() {
                 columns={[
                   { key: "university_name", label: "University" },
                   { key: "country", label: "Country" },
-                  { key: "ranking_bucket", label: "Ranking" },
                   { key: "global_rank", label: "Global Rank" },
                   { key: "rank_band", label: "Tier" },
                 ]}
