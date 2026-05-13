@@ -10,7 +10,7 @@ export function AdminRequestsSnapshot() {
   const { count, loading } = useAdminPendingRequests();
 
   return (
-    <Card className="p-6 rounded-xl border-border/70 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+    <Card className="p-6 rounded-2xl border-border/60 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold flex items-center gap-2">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
