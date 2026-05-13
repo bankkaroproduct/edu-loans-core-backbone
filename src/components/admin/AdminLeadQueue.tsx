@@ -71,7 +71,7 @@ export function AdminLeadQueue({ data, loading, error, onRetry, filters, onFilte
       : "border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary";
 
   return (
-    <Card className="rounded-xl border-border/70 shadow-[0_1px_2px_rgba(15,23,42,0.04)] overflow-hidden">
+    <Card className="rounded-2xl border-border/60 shadow-sm overflow-hidden">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-6 pt-5 pb-4 border-b border-border/60">
         <div>
           <h3 className="text-base font-semibold tracking-tight">Lead Queue</h3>
