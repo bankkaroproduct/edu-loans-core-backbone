@@ -28,6 +28,8 @@ import { cn } from "@/lib/utils";
 import { normalizePhone, isValidIndianPhone } from "@/lib/phone";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { computeAdminDiff, getAdminFieldLabel } from "@/lib/adminEditableFields";
+import { formatDisplayLabel } from "@/lib/formatDisplayLabel";
+import { formatStageLabel } from "@/components/dashboard/StageBadge";
 import { MoneyInput } from "@/components/ui/money-input";
 import { LakhsInput } from "@/components/ui/lakhs-input";
 import { MasterCombobox, type MasterOption } from "@/components/ui/master-combobox";
@@ -1094,7 +1096,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         <Alert className="bg-amber-50 border-amber-200 text-amber-900 [&>svg]:text-amber-600">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription className="text-xs">
-            <strong>Terminal stage ({editLeadStage}):</strong> This lead has reached a terminal stage. Edits here will not re-open the lifecycle and may affect downstream reporting. Proceed only if you have a documented business reason.
+            <strong>Terminal stage ({editLeadStage ? formatStageLabel(editLeadStage) : ""}):</strong> This lead has reached a terminal stage. Edits here will not re-open the lifecycle and may affect downstream reporting. Proceed only if you have a documented business reason.
           </AlertDescription>
         </Alert>
       )}
@@ -1741,7 +1743,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               </div>
               <div>
                 <Badge variant="outline" className="mb-2">Current Academic Profile</Badge>
-                <ReviewRow label="Highest Qualification" value={form.highest_qualification} nudgeStep="study" nudgeField="highest_qualification" />
+                <ReviewRow label="Highest Qualification" value={form.highest_qualification ? formatDisplayLabel(form.highest_qualification) : ""} nudgeStep="study" nudgeField="highest_qualification" />
                 <ReviewRow label="Highest Qualification Score" value={form.highest_qualification_score} />
                 <ReviewRow label="10th Score" value={form.tenth_score} nudgeStep="study" nudgeField="tenth_score" />
                 <ReviewRow label="12th Score" value={form.twelfth_score} nudgeStep="study" nudgeField="twelfth_score" />
@@ -1779,10 +1781,10 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                     Email, Employment Type, Income. */}
                 <ReviewRow label="Co-Applicant Name" value={form.coapplicant_name} nudgeStep="financial" nudgeField="coapplicant_name" />
                 <ReviewRow label="Age" value={form.coapplicant_age} nudgeStep="financial" nudgeField="coapplicant_age" />
-                <ReviewRow label="Relation" value={form.coapplicant_relation} nudgeStep="financial" nudgeField="coapplicant_relation" />
+                <ReviewRow label="Relation" value={form.coapplicant_relation ? formatDisplayLabel(form.coapplicant_relation) : ""} nudgeStep="financial" nudgeField="coapplicant_relation" />
                 <ReviewRow label="Mobile Number" value={form.coapplicant_mobile} nudgeStep="financial" nudgeField="coapplicant_mobile" />
                 <ReviewRow label="Email" value={form.coapplicant_email} nudgeStep="financial" nudgeField="coapplicant_email" />
-                <ReviewRow label="Employment Type" value={form.coapplicant_employment_type} nudgeStep="financial" nudgeField="coapplicant_employment_type" />
+                <ReviewRow label="Employment Type" value={form.coapplicant_employment_type ? formatDisplayLabel(form.coapplicant_employment_type) : ""} nudgeStep="financial" nudgeField="coapplicant_employment_type" />
                 <ReviewRow
                   label="Monthly Income (₹)"
                   value={form.coapplicant_income ? `₹${Number(form.coapplicant_income).toLocaleString("en-IN")}` : ""}
