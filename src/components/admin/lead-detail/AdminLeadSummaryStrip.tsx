@@ -129,6 +129,8 @@ export function AdminLeadSummaryStrip({ lead, onSaved }: Props) {
     setCourseManual(matchedCourseId ? "" : lead.course_name ?? "");
   }, [lead.id, lead.intended_study_country, lead.intake_term, lead.intake_year, lead.university_id, lead.university_name_raw, lead.course_name, matchedCourseId]);
 
+  const tileValueClass = "text-sm font-semibold text-foreground truncate block max-w-full";
+
   const editable = (
     field: string,
     value: string | null | undefined,
@@ -144,11 +146,19 @@ export function AdminLeadSummaryStrip({ lead, onSaved }: Props) {
         allowEditExisting
         inputType={extra?.inputType}
         formatDisplay={extra?.formatDisplay}
+        className={tileValueClass}
         onSaved={() => onSaved?.()}
       />
     ) : (
-      <ReadOnlyValue value={value} />
+      <ReadOnlyValue value={extra?.formatDisplay && value ? extra.formatDisplay(value) : value} />
     );
+
+  const titleizeEnum = (v: string) =>
+    v
+      .split(/[_\s]+/)
+      .filter(Boolean)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join(" ");
 
   const intakeDisplay = intakeSessionLabel(lead.intake_term, lead.intake_year) || null;
   const universityDisplay = lead.university_name_raw ?? null;
