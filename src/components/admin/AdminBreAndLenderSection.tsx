@@ -1483,7 +1483,7 @@ function ResolutionNotes({ resolution }: { resolution: BuildProfileResolution | 
 
     if (um.kind === "fuzzy" || um.kind === "by_id") {
       const u = um as Extract<typeof um, { kind: "fuzzy" | "by_id" }>;
-      const bandLabel = formatBand(u.rank_band ?? u.effective_band);
+      const bandLabel = formatBand(u.effective_band ?? u.rank_band);
       items.push({
         label: u.kind === "fuzzy" ? "University matched from raw name" : "University resolved from master",
         tone: "ok",
