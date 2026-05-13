@@ -400,7 +400,11 @@ export function AdminLeadSummaryStrip({ lead, onSaved }: Props) {
         )}
       </Tile>
 
-      <Tile label="Source">{editable("source_sub_type", lead.source_sub_type, "Source Subtype")}</Tile>
+      <Tile label="Source">
+        {editable("source_sub_type", lead.source_sub_type, "Source Subtype", {
+          formatDisplay: (v) => titleizeEnum(v),
+        })}
+      </Tile>
     </div>
   );
 }
