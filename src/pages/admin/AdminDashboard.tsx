@@ -39,7 +39,7 @@ export default function AdminDashboard() {
   const closeDrill = (open: boolean) => { if (!open) setDrilldown(null); };
 
   return (
-    <div className="space-y-7 max-w-screen-2xl mx-auto">
+    <div className="space-y-8 max-w-screen-2xl mx-auto">
       <PageHeader
         title="Admin Dashboard"
         description="Operations overview · partner pipeline at a glance"
