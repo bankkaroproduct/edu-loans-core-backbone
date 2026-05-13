@@ -266,8 +266,7 @@ export default function MasterData() {
                   { key: "country", label: "Country" },
                   { key: "ranking_bucket", label: "Ranking" },
                   { key: "global_rank", label: "Global Rank" },
-                  { key: "rank_band", label: "Band" },
-                  { key: "rank_score", label: "Score" },
+                  { key: "rank_band", label: "Tier" },
                 ]}
                 searchKeys={["university_name", "country"]}
                 orderBy={{ column: "university_name", ascending: true }}

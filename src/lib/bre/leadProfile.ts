@@ -334,10 +334,12 @@ function resolveUniversityTier(
   supportedTiers: Set<string>,
 ): { tier: string | null; source: UniSource; effective_band: string | null } {
   if (!master) return { tier: null, source: "no_match", effective_band: null };
-  // Prefer exact global_rank
+  // Global Rank is the source of truth. When present, ALWAYS derive the band
+  // from it via the approved cutoffs — never trust a stored `rank_band` that
+  // could disagree with the rank.
   const grBand = master.global_rank != null
-    ? (master.rank_band as ReturnType<typeof globalRankToBand>) ?? globalRankToBand(master.global_rank)
-    : null;
+    ? globalRankToBand(master.global_rank)
+    : (master.rank_band as ReturnType<typeof globalRankToBand>);
   if (grBand) {
     const passthrough = supportedTiers.has(grBand) ? grBand : (COLLAPSE_TO_LEGACY[grBand] ?? "unranked");
     return { tier: passthrough, source: "global_rank", effective_band: grBand };

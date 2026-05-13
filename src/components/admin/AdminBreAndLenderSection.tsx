@@ -1483,7 +1483,7 @@ function ResolutionNotes({ resolution }: { resolution: BuildProfileResolution | 
 
     if (um.kind === "fuzzy" || um.kind === "by_id") {
       const u = um as Extract<typeof um, { kind: "fuzzy" | "by_id" }>;
-      const bandLabel = formatBand(u.rank_band ?? u.effective_band);
+      const bandLabel = formatBand(u.effective_band ?? u.rank_band);
       items.push({
         label: u.kind === "fuzzy" ? "University matched from raw name" : "University resolved from master",
         tone: "ok",
@@ -1496,9 +1496,6 @@ function ResolutionNotes({ resolution }: { resolution: BuildProfileResolution | 
             )}
             {bandLabel && (
               <>{" · "}<span className="font-mono">{bandLabel}</span></>
-            )}
-            {u.rank_score != null && (
-              <>{" · "}<span className="font-mono">Score {u.rank_score}</span></>
             )}
             {" · "}<span className="text-muted-foreground">Resolved via: {sourceLabel(u.source)}</span>
             {" · "}ranking_bucket fallback: <span className="font-mono">{u.ranking_bucket ?? "Unranked"}</span>
