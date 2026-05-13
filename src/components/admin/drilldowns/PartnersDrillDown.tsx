@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MetricDrillDrawer } from "./MetricDrillDrawer";
 import { useActivePartnersDrilldown } from "@/hooks/useAdminMetricDrilldowns";
+import { formatDisplayLabel } from "@/lib/formatDisplayLabel";
 
 interface Props {
   open: boolean;
@@ -55,8 +56,8 @@ export function PartnersDrillDown({ open, onOpenChange, totalCount }: Props) {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium text-foreground truncate">{p.display_name}</span>
                     <span className="text-[11px] text-muted-foreground font-mono">{p.partner_code}</span>
-                    <Badge variant="outline" className="h-5 text-[10px] capitalize">
-                      {p.partner_type.replace(/_/g, " ")}
+                    <Badge variant="outline" className="h-5 text-[10px]">
+                      {formatDisplayLabel(p.partner_type)}
                     </Badge>
                   </div>
                   <div className="text-[11px] text-muted-foreground mt-1 flex flex-wrap gap-x-3 gap-y-0.5">

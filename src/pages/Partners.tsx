@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { PageSkeleton } from "@/components/shared/PageSkeleton";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Building2 } from "lucide-react";
+import { formatDisplayLabel } from "@/lib/formatDisplayLabel";
 
 type Partner = Tables<"partner_organizations">;
 
@@ -18,8 +19,6 @@ const statusColors: Record<string, string> = {
   suspended: "bg-destructive/10 text-destructive",
   terminated: "bg-destructive/10 text-destructive",
 };
-
-const fmt = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
 export default function Partners() {
   const [partners, setPartners] = useState<Partner[]>([]);
@@ -69,7 +68,7 @@ export default function Partners() {
                         <p className="text-xs text-muted-foreground">{p.legal_name}</p>
                       </div>
                     </TableCell>
-                    <TableCell className="text-sm">{fmt(p.partner_type)}</TableCell>
+                    <TableCell className="text-sm">{formatDisplayLabel(p.partner_type)}</TableCell>
                     <TableCell>
                       <div className="text-sm">
                         <p>{p.contact_person_name ?? "—"}</p>
@@ -78,7 +77,7 @@ export default function Partners() {
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className={statusColors[p.status] ?? ""}>
-                        {p.status === "active" ? "Active" : fmt(p.status)}
+                        {formatDisplayLabel(p.status)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{p.onboarding_date ?? "—"}</TableCell>

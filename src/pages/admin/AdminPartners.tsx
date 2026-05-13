@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { formatDisplayLabel } from "@/lib/formatDisplayLabel";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { PageSkeleton } from "@/components/shared/PageSkeleton";
 import { Card, CardContent } from "@/components/ui/card";
@@ -207,8 +208,8 @@ export default function AdminPartners() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="capitalize text-muted-foreground">
-                          {p.partner_type.replace(/_/g, " ")}
+                        <TableCell className="text-muted-foreground">
+                          {formatDisplayLabel(p.partner_type)}
                         </TableCell>
                         <TableCell>
                           {p.contact_person_email ? (
@@ -224,8 +225,8 @@ export default function AdminPartners() {
                           {leadCounts[p.id] ?? 0}
                         </TableCell>
                         <TableCell>
-                          <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium capitalize ${statusStyles[p.status]}`}>
-                            {p.status === "active" ? "Active" : p.status}
+                          <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${statusStyles[p.status]}`}>
+                            {formatDisplayLabel(p.status)}
                           </span>
                         </TableCell>
                         <TableCell className="text-muted-foreground whitespace-nowrap">
