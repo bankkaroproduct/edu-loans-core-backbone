@@ -579,7 +579,7 @@ export function InlineEditField({
       <button
         type="button"
         onClick={startEdit}
-        className={`text-left hover:underline underline-offset-2 ${className ?? ""}`}
+        className={`text-left hover:underline underline-offset-2 font-semibold text-sm ${className ?? ""}`}
         title={`Edit ${label}`}
       >
         {display}
