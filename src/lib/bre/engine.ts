@@ -42,9 +42,10 @@ export const COAPPLICANT_AGE_CAP = 60;
  * still contain these params no longer contribute to bucket scores or
  * rejection reasons. Lender-side CIBIL knockouts are also disabled below.
  *
- * Historical co-applicant data (Employer / Occupation, Existing EMI, CIBIL)
- * remains intact in the database for audit visibility but is never fed to
- * the engine.
+ * Historical co-applicant data (Employer / Occupation, Existing EMI, CIBIL,
+ * Income Stability / Work Experience years) remains intact in the database
+ * for audit visibility but is never fed to the engine. Bucket weights are
+ * auto-renormalized to 100 after these params are filtered out.
  */
 export const BRE_DEPRECATED_PARAM_KEYS: ReadonlySet<string> = new Set([
   "cibil_score",
@@ -53,6 +54,10 @@ export const BRE_DEPRECATED_PARAM_KEYS: ReadonlySet<string> = new Set([
   // values in universities_master remain intact for audit, but the engine never
   // reads them. University-bucket weights are auto-renormalized to 100.
   "employability_outlook",
+  // Income Stability (Years) — co-applicant work experience as income stability
+  // is excluded from BRE scoring. Blank values no longer reduce score or appear
+  // as missing-data blockers. Co-applicant weights auto-renormalize to 100.
+  "income_stability_years",
 ]);
 
 const BUCKETS: { key: BucketKey; field: keyof BreScoringConfig }[] = [
