@@ -257,7 +257,7 @@ export default function AdminLeadDetail() {
         <div className="space-y-1">
           <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Lender Workflow</h2>
           <p className="text-xs text-muted-foreground">
-            Diagnostic and assignment tools — manual changes do not auto-update lifecycle.
+            Diagnostic and assignment tools - Manual changes do not auto-update lifecycle.
           </p>
         </div>
         <AdminLeadTimeline history={history} notes={notes} audits={audits} actorNames={actorNames} />
