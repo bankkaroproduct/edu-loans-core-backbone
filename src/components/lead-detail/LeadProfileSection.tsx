@@ -206,6 +206,7 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
                   { value: "female", label: "Female" },
                   { value: "other", label: "Other" },
                 ],
+                formatDisplay: (v) => formatDisplayLabel(v),
               })}
               onSaved={onSaved}
             />
@@ -278,6 +279,7 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
               editable={ed("course_category", {
                 options: COURSE_CATEGORY_OPTIONS.map((v) => ({ value: v, label: v })),
                 optionsRenderAs: "dropdown",
+                formatDisplay: (v) => formatDisplayLabel(v),
               })}
               onSaved={onSaved}
             />
@@ -293,7 +295,7 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
               })}
               onSaved={onSaved}
             />
-            <Field label="Highest Qualification" value={lead.highest_qualification} editable={ed("highest_qualification")}  onSaved={onSaved} />
+            <Field label="Highest Qualification" value={lead.highest_qualification} editable={ed("highest_qualification", { formatDisplay: (v) => formatDisplayLabel(v) })}  onSaved={onSaved} />
             <Field label="Highest Qualification Score" value={hqScore} editable={hqEditable}  onSaved={onSaved} />
             <Field
               label="Work Experience (years)"
@@ -335,7 +337,7 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
         <CardContent>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Co-Applicant" value={lead.coapplicant_name} editable={ed("coapplicant_name")}  onSaved={onSaved} />
-            <Field label="Relation" value={lead.coapplicant_relation} editable={ed("coapplicant_relation")}  onSaved={onSaved} />
+            <Field label="Relation" value={lead.coapplicant_relation} editable={ed("coapplicant_relation", { formatDisplay: (v) => formatDisplayLabel(v) })}  onSaved={onSaved} />
             <Field label="Co-Applicant Mobile" value={lead.coapplicant_mobile} editable={ed("coapplicant_mobile")}  onSaved={onSaved} />
             <Field
               label="Co-Applicant Email"
@@ -364,7 +366,7 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
             <Field
               label="Co-Applicant Employment Type"
               value={lead.coapplicant_employment_type}
-              editable={ed("coapplicant_employment_type")}
+              editable={ed("coapplicant_employment_type", { formatDisplay: (v) => formatDisplayLabel(v) })}
               onSaved={onSaved}
             />
             {/* Co-Applicant Income Source removed from Financial Snapshot
