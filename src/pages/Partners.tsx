@@ -77,7 +77,7 @@ export default function Partners() {
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className={statusColors[p.status] ?? ""}>
-                        {p.status === "active" ? "Active" : formatDisplayLabel(p.status)}
+                        {formatDisplayLabel(p.status)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{p.onboarding_date ?? "—"}</TableCell>
