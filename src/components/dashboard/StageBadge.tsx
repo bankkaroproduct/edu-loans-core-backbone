@@ -71,6 +71,7 @@ const statusTone: Record<string, BadgeTone> = {
 };
 
 export function formatStageLabel(stage: string) {
+  if (stage === "active") return "Active";
   return stage.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
