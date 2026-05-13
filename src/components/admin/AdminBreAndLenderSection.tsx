@@ -292,7 +292,7 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
           </p>
           {!result && (
             <p className="text-xs text-muted-foreground">
-              Run BRE to see the diagnostic and recommended lender options. Read-only — does not change
+              Run BRE to see the diagnostic and recommended lender options. Read only - Does not change
               the assigned lender.
             </p>
           )}
