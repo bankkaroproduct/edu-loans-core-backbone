@@ -171,7 +171,7 @@ export function LeadDetailHeader({ lead, submittedByName, isDraft, backTo = "/le
                         ? "This lead has reached the maximum approved edit limit (10/10). Please contact admin for further changes."
                         : hasPendingEditRequest
                         ? "An edit request is already pending admin review."
-                        : `Lead is in terminal stage (${lead.current_stage}) and cannot be edited.`}
+                        : `Lead is in terminal stage (${formatStageLabel(lead.current_stage)}) and cannot be edited.`}
                     </TooltipContent>
                   )}
                 </Tooltip>

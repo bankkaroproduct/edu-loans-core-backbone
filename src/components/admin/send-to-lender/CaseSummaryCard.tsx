@@ -1,6 +1,9 @@
 import { Card } from "@/components/ui/card";
 import { GraduationCap } from "lucide-react";
 import type { LeadRow } from "@/lib/sendToLender/buildDraft";
+import { formatDisplayLabel } from "@/lib/formatDisplayLabel";
+import { formatStageLabel } from "@/components/dashboard/StageBadge";
+import { formatEmploymentLabel } from "@/lib/bre/employmentDisplay";
 
 const Row = ({ label, value }: { label: string; value: React.ReactNode }) => (
   <div className="flex justify-between gap-3 py-1.5 text-sm border-b border-border/40 last:border-0">
@@ -31,7 +34,7 @@ export function CaseSummaryCard({ lead }: { lead: LeadRow }) {
           <Row label="Lead ID" value={<span className="font-mono">{lead.lead_id}</span>} />
           <Row label="Phone" value={lead.student_phone} />
           <Row label="Email" value={lead.student_email} />
-          <Row label="Stage / Status" value={`${lead.current_stage} · ${lead.current_status}`} />
+          <Row label="Stage / Status" value={`${formatStageLabel(lead.current_stage)} · ${formatStageLabel(lead.current_status)}`} />
         </div>
 
         <div>
@@ -57,7 +60,7 @@ export function CaseSummaryCard({ lead }: { lead: LeadRow }) {
             Co-applicant
           </p>
           <Row label="Name" value={lead.coapplicant_name} />
-          <Row label="Relation" value={lead.coapplicant_relation} />
+          <Row label="Relation" value={lead.coapplicant_relation ? formatDisplayLabel(lead.coapplicant_relation) : null} />
           <Row
             label="Income"
             value={
@@ -66,14 +69,14 @@ export function CaseSummaryCard({ lead }: { lead: LeadRow }) {
                 : "—"
             }
           />
-          <Row label="Employment" value={lead.coapplicant_employment_type} />
+          <Row label="Employment" value={lead.coapplicant_employment_type ? formatEmploymentLabel(lead.coapplicant_employment_type) : null} />
         </div>
 
         <div>
           <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1 mt-3">
             Academics & Collateral
           </p>
-          <Row label="Highest Qualification" value={lead.highest_qualification} />
+          <Row label="Highest Qualification" value={lead.highest_qualification ? formatDisplayLabel(lead.highest_qualification) : null} />
           <Row label="Marks / GPA" value={lead.marks_gpa} />
           <Row
             label="Collateral"

@@ -318,6 +318,7 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
                 { value: "female", label: "Female" },
                 { value: "other", label: "Other" },
               ],
+              formatDisplay: (v) => formatDisplayLabel(v),
             })}
             onSaved={onSaved}
           />
@@ -385,6 +386,7 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
             editable={ed("course_category", {
               options: COURSE_CATEGORY_OPTIONS.map((v) => ({ value: v, label: v })),
               optionsRenderAs: "dropdown",
+              formatDisplay: (v) => formatDisplayLabel(v),
             })}
             onSaved={onSaved}
           />
@@ -408,6 +410,7 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
             editable={ed("highest_qualification", {
               options: highestQualOptions.map((o) => ({ value: o, label: o })),
               optionsRenderAs: "dropdown",
+              formatDisplay: (v) => formatDisplayLabel(v),
             })}
             onSaved={onSaved}
           />
@@ -540,6 +543,7 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
             editable={ed("coapplicant_relation", {
               options: CO_APPLICANT_RELATIONS.map((r) => ({ value: r, label: r })),
               optionsRenderAs: "dropdown",
+              formatDisplay: (v) => formatDisplayLabel(v),
             })}
             onSaved={onSaved}
           />
@@ -582,6 +586,7 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
             editable={ed("coapplicant_employment_type", {
               options: COAPP_EMPLOYMENT_TYPES.map((v) => ({ value: v, label: v })),
               optionsRenderAs: "dropdown",
+              formatDisplay: (v) => formatDisplayLabel(v),
             })}
             onSaved={onSaved}
           />
