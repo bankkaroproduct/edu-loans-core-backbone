@@ -241,12 +241,25 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
       /below threshold|age cap|destination country|loan amount/i.test(r),
     );
 
+    // When BRE is rejected, the engine flags every lender row `eligible: false`
+    // even though hard rules (active flag, country, collateral, loan amount,
+    // product type) already filtered the candidate set in `result.eligible_lenders`.
+    // For BRE-failed leads we surface those candidate rows as TENTATIVE /
+    // manual-review options so the admin still has a starting point. This is
+    // display-only — eligibility, scoring, ranking, and rates are untouched.
+    const tentativeLenders =
+      displayStatus === "rejected" && eligibleLenders.length === 0
+        ? result.eligible_lenders
+        : [];
+    const lendersToShow =
+      tentativeLenders.length > 0 ? tentativeLenders : eligibleLenders;
+
     // Phase 2 — university rank modifier overlay (display-only, post-eligibility).
     // Computed per-lender so each card can show base → adjusted projected loan/rate.
     // Does NOT affect sort order, eligibility, scores, or assignment.
     const rankInfo = resolveRankBandFromResolution(resolution?.university_match);
     const rankModifiers = new Map<string, RankModifierResult>();
-    for (const l of eligibleLenders) {
+    for (const l of lendersToShow) {
       const rule = activeRules.find((rl) => rl.lender_id === l.lender_id) ?? null;
       const mod = applyRankModifier({
         band: rankInfo.band,
