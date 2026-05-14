@@ -291,7 +291,7 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
   };
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 items-start">
+    <div className="gap-4 md:columns-2 [&>*]:break-inside-avoid [&>*]:mb-4 md:[&>*]:mb-4">
       <SectionCard icon={User} title="Student Details">
         <div className="grid grid-cols-2 gap-x-4 gap-y-3.5">
           <Field label="First Name" value={lead.student_first_name} editable={ed("student_first_name")} onSaved={onSaved} />

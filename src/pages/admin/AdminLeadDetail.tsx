@@ -265,23 +265,9 @@ export default function AdminLeadDetail() {
         <AdminAssignLenderCard leadId={lead.id} />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-3 items-start">
         <div className="lg:col-span-2 space-y-6">
           <AdminLeadProfileSection lead={lead} submittedByName={submittedByName} onSaved={loadAll} />
-
-          <AdminLeadDocumentsView
-            leadId={lead.id}
-            lead={lead}
-            requirements={sharedRequirements}
-            documents={sharedDocuments}
-            onChanged={onDocsChanged}
-          />
-
-          <AdminInternalNotes
-            leadId={lead.id}
-            notes={notes}
-            onNoteAdded={loadAll}
-          />
         </div>
 
         <div className="space-y-6">
@@ -298,8 +284,26 @@ export default function AdminLeadDetail() {
           />
 
           <AdminLeadPayoutSnapshot payouts={payouts} leadId={lead.id} />
-
         </div>
+      </div>
+
+      {/* Document Readiness/Review and Internal Notes moved out of the 3-col
+          grid and rendered full-width below so the right sidebar no longer
+          leaves a large blank area beside very tall document/notes content. */}
+      <div className="space-y-6">
+        <AdminLeadDocumentsView
+          leadId={lead.id}
+          lead={lead}
+          requirements={sharedRequirements}
+          documents={sharedDocuments}
+          onChanged={onDocsChanged}
+        />
+
+        <AdminInternalNotes
+          leadId={lead.id}
+          notes={notes}
+          onNoteAdded={loadAll}
+        />
       </div>
     </div>
   );
