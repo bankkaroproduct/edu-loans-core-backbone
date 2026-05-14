@@ -36,6 +36,7 @@ export function TemplateEditor({ open, onOpenChange, mode, template, onSaved }: 
   const [body, setBody] = useState("");
   const [description, setDescription] = useState("");
   const [activeFlag, setActiveFlag] = useState(false);
+  const [resendTemplateId, setResendTemplateId] = useState("");
   const [vars, setVars] = useState<Record<string, string>>(defaultVariableValues());
   const [saving, setSaving] = useState(false);
   const [keyTaken, setKeyTaken] = useState(false);
@@ -59,6 +60,7 @@ export function TemplateEditor({ open, onOpenChange, mode, template, onSaved }: 
       setBody(template.body);
       setDescription(template.description ?? "");
       setActiveFlag(template.active_flag);
+      setResendTemplateId(template.resend_template_id ?? "");
     } else if (mode === "duplicate" && template) {
       setTemplateKey(`copy_of_${template.template_key}`.slice(0, 80));
       setChannel(template.channel);
@@ -66,6 +68,7 @@ export function TemplateEditor({ open, onOpenChange, mode, template, onSaved }: 
       setBody(template.body);
       setDescription(template.description ?? "");
       setActiveFlag(false); // Guardrail #4: new templates default inactive
+      setResendTemplateId(template.resend_template_id ?? "");
     } else {
       setTemplateKey("");
       setChannel("email");
@@ -73,6 +76,7 @@ export function TemplateEditor({ open, onOpenChange, mode, template, onSaved }: 
       setBody("");
       setDescription("");
       setActiveFlag(false); // Guardrail #4
+      setResendTemplateId("");
     }
     setKeyTaken(false);
     setVars(defaultVariableValues());
@@ -153,6 +157,7 @@ export function TemplateEditor({ open, onOpenChange, mode, template, onSaved }: 
             body,
             description: description || null,
             active_flag: activeFlag,
+            resend_template_id: channel === "email" ? (resendTemplateId.trim() || null) : null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", template.id);
@@ -166,6 +171,7 @@ export function TemplateEditor({ open, onOpenChange, mode, template, onSaved }: 
           body,
           description: description || null,
           active_flag: activeFlag, // Guardrail #4: defaults to false unless user toggled on
+          resend_template_id: channel === "email" ? (resendTemplateId.trim() || null) : null,
         });
         if (error) {
           if (error.code === "23505") {
