@@ -241,12 +241,25 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
       /below threshold|age cap|destination country|loan amount/i.test(r),
     );
 
+    // When BRE is rejected, the engine flags every lender row `eligible: false`
+    // even though hard rules (active flag, country, collateral, loan amount,
+    // product type) already filtered the candidate set in `result.eligible_lenders`.
+    // For BRE-failed leads we surface those candidate rows as TENTATIVE /
+    // manual-review options so the admin still has a starting point. This is
+    // display-only — eligibility, scoring, ranking, and rates are untouched.
+    const tentativeLenders =
+      displayStatus === "rejected" && eligibleLenders.length === 0
+        ? result.eligible_lenders
+        : [];
+    const lendersToShow =
+      tentativeLenders.length > 0 ? tentativeLenders : eligibleLenders;
+
     // Phase 2 — university rank modifier overlay (display-only, post-eligibility).
     // Computed per-lender so each card can show base → adjusted projected loan/rate.
     // Does NOT affect sort order, eligibility, scores, or assignment.
     const rankInfo = resolveRankBandFromResolution(resolution?.university_match);
     const rankModifiers = new Map<string, RankModifierResult>();
-    for (const l of eligibleLenders) {
+    for (const l of lendersToShow) {
       const rule = activeRules.find((rl) => rl.lender_id === l.lender_id) ?? null;
       const mod = applyRankModifier({
         band: rankInfo.band,
@@ -262,16 +275,18 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
       });
       rankModifiers.set(l.lender_id, mod);
     }
-    // Headline modifier — band/rank are lead-level, so any eligible lender's
+    // Headline modifier — band/rank are lead-level, so any displayed lender's
     // explanation works as the section-level summary line.
     const headlineModifier =
-      eligibleLenders.length > 0
-        ? rankModifiers.get(eligibleLenders[0].lender_id) ?? null
+      lendersToShow.length > 0
+        ? rankModifiers.get(lendersToShow[0].lender_id) ?? null
         : null;
 
     return {
       allBucketsPass,
       eligibleLenders,
+      lendersToShow,
+      isTentative: tentativeLenders.length > 0,
       displayStatus,
       bucketReasons,
       rankModifiers,
@@ -443,7 +458,7 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
                 <Info className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>BRE passed, but no active lender rule currently matches this profile.</span>
               </div>
-            ) : derived.eligibleLenders.length === 0 ? (
+            ) : derived.lendersToShow.length === 0 ? (
               <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground flex gap-2">
                 <Info className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>
@@ -456,15 +471,18 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
                   <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200 flex gap-2">
                     <Info className="h-4 w-4 shrink-0 mt-0.5" />
                     <div>
-                      <div className="font-semibold mb-0.5">Tentative Lender Options — Manual Review Required</div>
+                      <div className="font-semibold mb-0.5">Tentative Manual Review Lender Options</div>
                       <div>
                         Profile could not clear BRE thresholds. These are tentative lender options based on available profile data and require manual lender validation. Final approval, loan amount, and interest rate may vary.
+                      </div>
+                      <div className="mt-1 text-amber-900/80 dark:text-amber-200/80">
+                        BRE result remains Not Cleared. These options are shown only to support manual lender discussion.
                       </div>
                     </div>
                   </div>
                 )}
                 <LenderOptionCards
-                  eligibleLenders={derived.eligibleLenders}
+                  eligibleLenders={derived.lendersToShow}
                   loanRange={result.eligible_loan_range}
                   storedMatches={storedMatches}
                   scoringVersion={scoringVersion}
