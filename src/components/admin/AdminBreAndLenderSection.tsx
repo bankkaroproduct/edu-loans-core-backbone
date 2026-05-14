@@ -275,16 +275,18 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
       });
       rankModifiers.set(l.lender_id, mod);
     }
-    // Headline modifier — band/rank are lead-level, so any eligible lender's
+    // Headline modifier — band/rank are lead-level, so any displayed lender's
     // explanation works as the section-level summary line.
     const headlineModifier =
-      eligibleLenders.length > 0
-        ? rankModifiers.get(eligibleLenders[0].lender_id) ?? null
+      lendersToShow.length > 0
+        ? rankModifiers.get(lendersToShow[0].lender_id) ?? null
         : null;
 
     return {
       allBucketsPass,
       eligibleLenders,
+      lendersToShow,
+      isTentative: tentativeLenders.length > 0,
       displayStatus,
       bucketReasons,
       rankModifiers,
