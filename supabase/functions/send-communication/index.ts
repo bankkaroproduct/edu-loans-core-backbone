@@ -213,6 +213,49 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Decide template-mode vs HTML-mode.
+    // Template mode requires: configured resend_template_id on the template
+    // AND no body_override from the caller (Send-to-Lender always wins via HTML).
+    const rawResendId = typeof (tpl as { resend_template_id?: unknown }).resend_template_id === "string"
+      ? ((tpl as { resend_template_id?: string }).resend_template_id ?? "").trim()
+      : "";
+    const hasBodyOverride = typeof body_override === "string" && body_override.length > 0;
+    const useTemplateMode = rawResendId.length > 0 && !hasBodyOverride;
+
+    // Sanitize variables for Resend: keys must match [A-Za-z0-9_], 1..50 chars.
+    // Drop invalid keys silently; coerce values to strings; skip null/undefined.
+    const sanitizedVariables: Record<string, string> = {};
+    if (useTemplateMode) {
+      const RESEND_VAR_KEY = /^[A-Za-z0-9_]{1,50}$/;
+      for (const [k, v] of Object.entries(variables ?? {})) {
+        if (!RESEND_VAR_KEY.test(k)) continue;
+        if (v === undefined || v === null) continue;
+        sanitizedVariables[k] = String(v);
+      }
+    }
+
+    // Audit-only fields appended to payload_snapshot for both paths.
+    (payloadSnapshot as Record<string, unknown>).template_mode = useTemplateMode ? "resend_template" : "html";
+    if (useTemplateMode) {
+      (payloadSnapshot as Record<string, unknown>).resend_template_id = rawResendId;
+      (payloadSnapshot as Record<string, unknown>).resend_template_variables = sanitizedVariables;
+    }
+    baseLog.payload_snapshot = payloadSnapshot;
+
+    const resendBody: Record<string, unknown> = {
+      from: EMAIL_FROM,
+      to: [recipient],
+      ...(sanitizedCc.length > 0 ? { cc: sanitizedCc } : {}),
+      reply_to: EMAIL_REPLY_TO,
+      subject: renderedSubject ?? "(no subject)",
+    };
+    if (useTemplateMode) {
+      // Resend rule: when `template` is provided, do NOT send html/text/react.
+      resendBody.template = { id: rawResendId, variables: sanitizedVariables };
+    } else {
+      resendBody.html = `<pre style="font-family:system-ui,sans-serif;white-space:pre-wrap">${renderedBody.replace(/</g, "&lt;")}</pre>`;
+    }
+
     try {
       const r = await fetch(`${RESEND_GATEWAY}/emails`, {
         method: "POST",
@@ -221,14 +264,7 @@ Deno.serve(async (req) => {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
           "X-Connection-Api-Key": RESEND_API_KEY,
         },
-        body: JSON.stringify({
-          from: EMAIL_FROM,
-          to: [recipient],
-          ...(sanitizedCc.length > 0 ? { cc: sanitizedCc } : {}),
-          reply_to: EMAIL_REPLY_TO,
-          subject: renderedSubject ?? "(no subject)",
-          html: `<pre style="font-family:system-ui,sans-serif;white-space:pre-wrap">${renderedBody.replace(/</g, "&lt;")}</pre>`,
-        }),
+        body: JSON.stringify(resendBody),
       });
       const raw = await r.text();
       let data: Record<string, unknown> = {};

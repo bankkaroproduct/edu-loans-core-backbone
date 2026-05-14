@@ -182,6 +182,15 @@ export default function AdminCommunicationTemplates() {
                       )}
                       {t.channel}
                     </Badge>
+                    {t.channel === "email" && t.resend_template_id && (
+                      <Badge
+                        variant="secondary"
+                        className="text-[10px] h-5 ml-1"
+                        title={`Resend template: ${t.resend_template_id}`}
+                      >
+                        Resend
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell className="max-w-[400px]">
                     {t.channel === "email" && t.subject && (

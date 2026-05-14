@@ -11,6 +11,8 @@ export interface CommunicationTemplate {
   body: string;
   description: string | null;
   active_flag: boolean;
+  /** Optional Resend template ID/alias. When set on an email template and no body_override is supplied, the edge function uses Resend template mode. */
+  resend_template_id?: string | null;
 }
 
 export interface CommunicationLog {

@@ -36,6 +36,7 @@ export function TemplateEditor({ open, onOpenChange, mode, template, onSaved }: 
   const [body, setBody] = useState("");
   const [description, setDescription] = useState("");
   const [activeFlag, setActiveFlag] = useState(false);
+  const [resendTemplateId, setResendTemplateId] = useState("");
   const [vars, setVars] = useState<Record<string, string>>(defaultVariableValues());
   const [saving, setSaving] = useState(false);
   const [keyTaken, setKeyTaken] = useState(false);
@@ -59,6 +60,7 @@ export function TemplateEditor({ open, onOpenChange, mode, template, onSaved }: 
       setBody(template.body);
       setDescription(template.description ?? "");
       setActiveFlag(template.active_flag);
+      setResendTemplateId(template.resend_template_id ?? "");
     } else if (mode === "duplicate" && template) {
       setTemplateKey(`copy_of_${template.template_key}`.slice(0, 80));
       setChannel(template.channel);
@@ -66,6 +68,7 @@ export function TemplateEditor({ open, onOpenChange, mode, template, onSaved }: 
       setBody(template.body);
       setDescription(template.description ?? "");
       setActiveFlag(false); // Guardrail #4: new templates default inactive
+      setResendTemplateId(template.resend_template_id ?? "");
     } else {
       setTemplateKey("");
       setChannel("email");
@@ -73,6 +76,7 @@ export function TemplateEditor({ open, onOpenChange, mode, template, onSaved }: 
       setBody("");
       setDescription("");
       setActiveFlag(false); // Guardrail #4
+      setResendTemplateId("");
     }
     setKeyTaken(false);
     setVars(defaultVariableValues());
@@ -153,6 +157,7 @@ export function TemplateEditor({ open, onOpenChange, mode, template, onSaved }: 
             body,
             description: description || null,
             active_flag: activeFlag,
+            resend_template_id: channel === "email" ? (resendTemplateId.trim() || null) : null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", template.id);
@@ -166,6 +171,7 @@ export function TemplateEditor({ open, onOpenChange, mode, template, onSaved }: 
           body,
           description: description || null,
           active_flag: activeFlag, // Guardrail #4: defaults to false unless user toggled on
+          resend_template_id: channel === "email" ? (resendTemplateId.trim() || null) : null,
         });
         if (error) {
           if (error.code === "23505") {
@@ -270,6 +276,25 @@ export function TemplateEditor({ open, onOpenChange, mode, template, onSaved }: 
                   placeholder="Your application has been received"
                   className="mt-1"
                 />
+              </div>
+            )}
+
+            {channel === "email" && (
+              <div>
+                <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Resend Template ID / Alias <span className="normal-case text-muted-foreground">(optional)</span>
+                </Label>
+                <Input
+                  value={resendTemplateId}
+                  onChange={(e) => setResendTemplateId(e.target.value)}
+                  placeholder="e.g. eduloans-lead-received"
+                  className="mt-1 font-mono text-sm"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  When set, live email sends use this Resend template with the same variables.
+                  Leave blank to keep the current HTML/body sending behavior.
+                  Send-to-Lender (which provides a custom body) always uses the HTML path.
+                </p>
               </div>
             )}
 
