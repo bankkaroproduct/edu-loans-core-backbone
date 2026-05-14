@@ -279,6 +279,25 @@ export function TemplateEditor({ open, onOpenChange, mode, template, onSaved }: 
               </div>
             )}
 
+            {channel === "email" && (
+              <div>
+                <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Resend Template ID / Alias <span className="normal-case text-muted-foreground">(optional)</span>
+                </Label>
+                <Input
+                  value={resendTemplateId}
+                  onChange={(e) => setResendTemplateId(e.target.value)}
+                  placeholder="e.g. eduloans-lead-received"
+                  className="mt-1 font-mono text-sm"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  When set, live email sends use this Resend template with the same variables.
+                  Leave blank to keep the current HTML/body sending behavior.
+                  Send-to-Lender (which provides a custom body) always uses the HTML path.
+                </p>
+              </div>
+            )}
+
             <div>
               <Label className="text-xs uppercase tracking-wide text-muted-foreground">Body</Label>
               <Textarea
