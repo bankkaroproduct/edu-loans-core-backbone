@@ -363,7 +363,16 @@ export function InlineEditField({
       .eq("id", leadId);
     if (error) {
       setSaving(false);
-      toast.error(`Failed to save ${label}`, { description: error.message });
+      const msg = error.message ?? "";
+      const isCrossPair = /Score obtained cannot exceed total marks \/ scale/i.test(msg);
+      // If the trigger complains about score>total but the pair we just edited
+      // is internally consistent, the offender is another untouched academic pair.
+      let description = msg;
+      if (isCrossPair && jsonbColumn === "test_scores") {
+        description =
+          "Another academic section on this lead has score greater than total marks/scale. Please correct that pair (10th, 12th, Graduation, or Highest Qualification) and try again.";
+      }
+      toast.error(`Failed to save ${label}`, { description });
       return;
     }
     // Audit log
