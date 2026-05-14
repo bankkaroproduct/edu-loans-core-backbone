@@ -458,7 +458,7 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
                 <Info className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>BRE passed, but no active lender rule currently matches this profile.</span>
               </div>
-            ) : derived.eligibleLenders.length === 0 ? (
+            ) : derived.lendersToShow.length === 0 ? (
               <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground flex gap-2">
                 <Info className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>
@@ -471,15 +471,18 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
                   <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200 flex gap-2">
                     <Info className="h-4 w-4 shrink-0 mt-0.5" />
                     <div>
-                      <div className="font-semibold mb-0.5">Tentative Lender Options — Manual Review Required</div>
+                      <div className="font-semibold mb-0.5">Tentative Manual Review Lender Options</div>
                       <div>
                         Profile could not clear BRE thresholds. These are tentative lender options based on available profile data and require manual lender validation. Final approval, loan amount, and interest rate may vary.
+                      </div>
+                      <div className="mt-1 text-amber-900/80 dark:text-amber-200/80">
+                        BRE result remains Not Cleared. These options are shown only to support manual lender discussion.
                       </div>
                     </div>
                   </div>
                 )}
                 <LenderOptionCards
-                  eligibleLenders={derived.eligibleLenders}
+                  eligibleLenders={derived.lendersToShow}
                   loanRange={result.eligible_loan_range}
                   storedMatches={storedMatches}
                   scoringVersion={scoringVersion}
