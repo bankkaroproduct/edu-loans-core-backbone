@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MasterCombobox, type MasterOption } from "@/components/ui/master-combobox";
+import { getUniversities as jsonGetUniversities, getCourses as jsonGetCourses, hasCountry as jsonHasCountry } from "@/lib/universitiesData";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchAllUniversitiesMaster } from "@/lib/fetchAllUniversities";
 import { toast } from "@/hooks/use-toast";
