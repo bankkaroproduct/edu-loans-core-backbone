@@ -160,9 +160,24 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
 
   // Source-agnostic Highest Qualification Score:
   // Some sources write to top-level marks_gpa; others write to test_scores.highest_qualification_score.
-  const hqScore =
+  // Display-only fallback (mirrors AddLead/Student review): if neither dedicated source is set,
+  // fall back to the matching level's score based on highest_qualification. Edit target unchanged.
+  const hqRaw =
     (lead.marks_gpa && String(lead.marks_gpa).trim() !== "" ? String(lead.marks_gpa) : null) ??
     tsStr("highest_qualification_score");
+  const hqLevel = (lead as any).highest_qualification ?? "";
+  const hqScore =
+    hqRaw ??
+    (hqLevel === "12th / High School" ? tsStr("twelfth") : null) ??
+    (hqLevel === "10th / SSC" ? tsStr("tenth") : null);
+  const isAtOrBelow12 = hqLevel === "12th / High School" || hqLevel === "10th / SSC";
+  const graduationRaw = tsStr("graduation");
+  const graduationDisplay =
+    graduationRaw ?? (isAtOrBelow12 ? "Not applicable" : null);
+  // City display fallback: when the persisted city is empty, fall back to district
+  // (mirrors resolvePincodeEnrichment). Backend backfill tracked separately.
+  const cityDisplay =
+    (lead.city && String(lead.city).trim() !== "" ? lead.city : null) ?? lead.district ?? null;
   // Edit target: prefer the column the value lives on. If neither is set, default to marks_gpa.
   const hqEditable = (() => {
     const hasMarks = lead.marks_gpa && String(lead.marks_gpa).trim() !== "";
@@ -214,7 +229,7 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
             <Field label="Email" value={lead.student_email} editable={ed("student_email", { inputType: "email" })}  onSaved={onSaved} />
             <Field label="WhatsApp" value={lead.student_whatsapp} editable={ed("student_whatsapp")}  onSaved={onSaved} />
             <Field label="Pincode" value={lead.pincode} editable={ed("pincode")}  onSaved={onSaved} />
-            <Field label="City" value={lead.city} editable={ed("city")}  onSaved={onSaved} />
+            <Field label="City" value={cityDisplay} editable={ed("city")}  onSaved={onSaved} />
             <Field label="District" value={lead.district ?? null} editable={ed("district")}  onSaved={onSaved} />
             <Field label="State" value={lead.state} editable={ed("state")}  onSaved={onSaved} />
             <Field label="Tier" value={lead.tier ?? null} editable={ed("tier")}  onSaved={onSaved} />
@@ -311,7 +326,7 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
             <Field label="12th Score" value={tsStr("twelfth")} editable={edTS("twelfth", { numericRange: { min: 0, max: ACADEMIC_TOTAL_RANGE.max, label: "12th Score" }, siblingMaxKey: "twelfth_total" })} onSaved={onSaved} />
             <Field label="12th Total Marks" value={tsStr("twelfth_total")} editable={edTS("twelfth_total", { numericRange: { min: ACADEMIC_TOTAL_RANGE.min, max: ACADEMIC_TOTAL_RANGE.max, label: "12th Total Marks" } })} onSaved={onSaved} />
             <NormalizedField label="12th Normalized" score={tsStr("twelfth")} total={tsStr("twelfth_total")} />
-            <Field label="Graduation Score" value={tsStr("graduation")} editable={edTS("graduation", { numericRange: { min: 0, max: ACADEMIC_TOTAL_RANGE.max, label: "Graduation Score" }, siblingMaxKey: "graduation_total" })} onSaved={onSaved} />
+            <Field label="Graduation Score" value={graduationDisplay} editable={edTS("graduation", { numericRange: { min: 0, max: ACADEMIC_TOTAL_RANGE.max, label: "Graduation Score" }, siblingMaxKey: "graduation_total" })} onSaved={onSaved} />
             <Field label="Graduation Total / CGPA Scale" value={tsStr("graduation_total")} editable={edTS("graduation_total", { numericRange: { min: ACADEMIC_TOTAL_RANGE.min, max: ACADEMIC_TOTAL_RANGE.max, label: "Graduation Total / CGPA Scale" } })} onSaved={onSaved} />
             <NormalizedField label="Graduation Normalized" score={tsStr("graduation")} total={tsStr("graduation_total")} />
             <Field label="Highest Qual. Total / CGPA Scale" value={tsStr("highest_qualification_total")} editable={edTS("highest_qualification_total", { numericRange: { min: ACADEMIC_TOTAL_RANGE.min, max: ACADEMIC_TOTAL_RANGE.max, label: "Highest Qual. Total / CGPA Scale" } })} onSaved={onSaved} />

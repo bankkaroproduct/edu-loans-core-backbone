@@ -106,7 +106,7 @@ export default function StudentReviewSubmit() {
           { label: "Email", value: formData.student_email },
           { label: "Date of Birth", value: formData.student_dob },
           { label: "Gender", value: formData.student_gender ? formatDisplayLabel(formData.student_gender) : null },
-          { label: "City", value: formData.city },
+          { label: "City", value: formData.city || (formData as any).district || null },
           { label: "State", value: formData.state },
           { label: "Pincode", value: formData.pincode },
           { label: "Destination Country", value: formData.intended_study_country },
