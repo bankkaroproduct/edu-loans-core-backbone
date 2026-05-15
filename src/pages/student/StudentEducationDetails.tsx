@@ -52,20 +52,49 @@ export default function StudentEducationDetails() {
     });
   }, []);
 
-  // Universities filtered by destination country (when present), else show all
+  // Cascading Country → University → Course sourced from
+  // src/data/universities.json (PR1, UI-only). Country comes from Step 1.
+  // When the country isn't covered by the JSON, fall back to the existing
+  // master-driven lists so users on uncovered countries still see options.
+  const norm = (s: string | null | undefined) => (s ?? "").trim().toLowerCase();
+  const countryInJson = jsonHasCountry(formData.intended_study_country);
+
   const universityOptions: MasterOption[] = useMemo(() => {
-    const country = (formData.intended_study_country || "").trim().toLowerCase();
+    const country = (formData.intended_study_country || "").trim();
+    if (countryInJson) {
+      return jsonGetUniversities(country).map(u => ({
+        id: u.name,
+        label: u.name,
+        hint: u.city ?? undefined,
+      }));
+    }
     const list = country
-      ? universities.filter(u => (u.country || "").trim().toLowerCase() === country)
+      ? universities.filter(u => norm(u.country) === norm(country))
       : universities;
     const source = list.length > 0 ? list : universities;
     return source.map(u => ({ id: u.id, label: u.university_name, hint: u.country }));
-  }, [universities, formData.intended_study_country]);
+  }, [universities, formData.intended_study_country, countryInJson]);
 
-  const courseOptions: MasterOption[] = useMemo(
-    () => courses.map(c => ({ id: c.id, label: c.course_name, hint: c.course_category ?? undefined })),
-    [courses],
-  );
+  const courseOptions: MasterOption[] = useMemo(() => {
+    const country = (formData.intended_study_country || "").trim();
+    const uni = (formData.university_name_raw || "").trim();
+    if (countryInJson && uni) {
+      return jsonGetCourses(country, uni).map(c => ({ id: c, label: c }));
+    }
+    return courses.map(c => ({ id: c.id, label: c.course_name, hint: c.course_category ?? undefined }));
+  }, [courses, countryInJson, formData.intended_study_country, formData.university_name_raw]);
+
+  const resolveUniversityId = (uniName: string, country: string): string => {
+    const tName = norm(uniName);
+    const tCountry = norm(country);
+    if (!tName) return "";
+    return universities.find(u => norm(u.university_name) === tName && norm(u.country) === tCountry)?.id ?? "";
+  };
+  const resolveCourseId = (courseName: string): string => {
+    const t = norm(courseName);
+    if (!t) return "";
+    return courses.find(c => norm(c.course_name) === t)?.id ?? "";
+  };
 
   const handleContinue = async () => {
     if (!formData.course_name.trim()) {
