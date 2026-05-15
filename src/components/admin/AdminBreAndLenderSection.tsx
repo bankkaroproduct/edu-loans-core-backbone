@@ -454,7 +454,12 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
             )}
 
             {derived.displayStatus === "passed_no_lender" ? (
-              <LenderMatchFailureSummary lenders={result.eligible_lenders} />
+              <LenderMatchFailureSummary
+                lenders={result.eligible_lenders}
+                lead={lead}
+                resolution={resolution}
+                activeRuleCount={activeRules.length}
+              />
             ) : derived.lendersToShow.length === 0 ? (
               <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground flex gap-2">
                 <Info className="h-4 w-4 shrink-0 mt-0.5" />
