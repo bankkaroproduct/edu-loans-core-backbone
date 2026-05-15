@@ -1839,11 +1839,31 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               </div>
               <div>
                 <Badge variant="outline" className="mb-2">Current Academic Profile</Badge>
-                <ReviewRow label="Highest Qualification" value={form.highest_qualification ? formatDisplayLabel(form.highest_qualification) : ""} nudgeStep="study" nudgeField="highest_qualification" />
-                <ReviewRow label="Highest Qualification Score" value={form.highest_qualification_score} />
-                <ReviewRow label="10th Score" value={form.tenth_score} nudgeStep="study" nudgeField="tenth_score" />
-                <ReviewRow label="12th Score" value={form.twelfth_score} nudgeStep="study" nudgeField="twelfth_score" />
-                <ReviewRow label="Graduation Score" value={form.graduation_score} />
+                {(() => {
+                  // Display-only fallbacks. Form state / submission payload unchanged.
+                  // Fix B: mirror highest-qualification score from the matching level
+                  //        when user left the dedicated input blank.
+                  // Fix C: render "Not applicable" for Graduation when user is at-or-below 12th.
+                  const hq = form.highest_qualification || "";
+                  const isAtOrBelow12 = hq === "12th / High School" || hq === "10th / SSC";
+                  const derivedHighestScore =
+                    form.highest_qualification_score ||
+                    (hq === "12th / High School" ? form.twelfth_score : "") ||
+                    (hq === "10th / SSC" ? form.tenth_score : "") ||
+                    (hq && !isAtOrBelow12 ? form.graduation_score : "") ||
+                    "";
+                  const graduationDisplay =
+                    form.graduation_score || (isAtOrBelow12 ? "Not applicable" : "");
+                  return (
+                    <>
+                      <ReviewRow label="Highest Qualification" value={hq ? formatDisplayLabel(hq) : ""} nudgeStep="study" nudgeField="highest_qualification" />
+                      <ReviewRow label="Highest Qualification Score" value={derivedHighestScore} />
+                      <ReviewRow label="10th Score" value={form.tenth_score} nudgeStep="study" nudgeField="tenth_score" />
+                      <ReviewRow label="12th Score" value={form.twelfth_score} nudgeStep="study" nudgeField="twelfth_score" />
+                      <ReviewRow label="Graduation Score" value={graduationDisplay} />
+                    </>
+                  );
+                })()}
                 {form.marks_gpa ? <ReviewRow label="Marks / GPA (legacy)" value={form.marks_gpa} /> : null}
                 {form.work_experience_years && (
                   <ReviewRow
