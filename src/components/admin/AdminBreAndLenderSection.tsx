@@ -658,8 +658,11 @@ function LenderMatchFailureSummary({
       if (Number.isFinite(m) && m > 0)
         rows.push({ label: "Co-applicant income", value: `₹${m.toLocaleString("en-IN")} / month` });
     }
-    if (lead.course_level)
-      rows.push({ label: "Course level", value: formatDisplayLabel(lead.course_level) });
+    const cl = resolution?.course_level_derivation;
+    if (cl && "derived" in cl && cl.derived)
+      rows.push({ label: "Course level", value: formatDisplayLabel(cl.derived) });
+    if (lead.course_name)
+      rows.push({ label: "Course", value: formatDisplayLabel(lead.course_name) });
     if (lead.course_category)
       rows.push({ label: "Course category", value: formatDisplayLabel(lead.course_category) });
     if (lead.intended_study_country)
