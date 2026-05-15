@@ -407,6 +407,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   const pincodeResult = usePincodeLookup(form.pincode);
   const lastAppliedPincode = useRef<{
     pincode: string;
+    city: string | null;
     district: string | null;
     state: string | null;
     tier: string | null;
@@ -414,7 +415,9 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   useEffect(() => {
     const current = (form.pincode ?? "").trim();
 
-    // Apply on a fresh successful match
+    // Apply on a fresh successful match.
+    // pincode_master has no city column → city falls back to district (mirrors
+    // resolvePincodeEnrichment in src/lib/pincodeEnrichment.ts).
     if (
       pincodeResult.found &&
       pincodeResult.pincode === current &&
@@ -426,16 +429,18 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         // Only overwrite fields that are blank OR still hold the previously auto-filled value
         const overwriteIfOurs = (cur: string, was: string | null, next: string | null) =>
           (!cur || (prevApplied && cur === was)) && next ? next : cur;
+        const nextCity = overwriteIfOurs(prev.city, prevApplied?.city ?? null, pincodeResult.district);
         const nextDistrict = overwriteIfOurs(prev.district, prevApplied?.district ?? null, pincodeResult.district);
         const nextState = overwriteIfOurs(prev.state, prevApplied?.state ?? null, pincodeResult.state);
         const nextTier = overwriteIfOurs(prev.tier, prevApplied?.tier ?? null, pincodeResult.tier);
         lastAppliedPincode.current = {
           pincode: current,
+          city: nextCity,
           district: nextDistrict,
           state: nextState,
           tier: nextTier,
         };
-        return { ...prev, district: nextDistrict, state: nextState, tier: nextTier };
+        return { ...prev, city: nextCity, district: nextDistrict, state: nextState, tier: nextTier };
       });
       return;
     }
@@ -449,6 +454,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       if (newIsInvalid) {
         setForm((p) => ({
           ...p,
+          city: prev.city && p.city === prev.city ? "" : p.city,
           district: prev.district && p.district === prev.district ? "" : p.district,
           state: prev.state && p.state === prev.state ? "" : p.state,
           tier: prev.tier && p.tier === prev.tier ? "" : p.tier,
