@@ -835,20 +835,17 @@ function LenderMatchFailureSummary({
         </div>
       )}
 
-      {/* Block B — Profile context to review */}
-      {profileRows.length > 0 && (
+      {/* Block B — Operational match explanation (business-language reasoning) */}
+      {explanation.length > 0 && (
         <div className="space-y-1.5 border-t border-amber-500/30 pt-3">
           <div className="text-[11px] uppercase tracking-wider font-semibold text-amber-900/80 dark:text-amber-200/80">
-            Profile context to review
+            Operational Match Explanation
           </div>
-          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs">
-            {profileRows.map((row) => (
-              <div key={row.label} className="flex justify-between gap-3 border-b border-amber-500/10 py-0.5">
-                <dt className="text-muted-foreground">{row.label}</dt>
-                <dd className="text-foreground text-right font-medium">{row.value}</dd>
-              </div>
+          <ul className="space-y-1 text-xs text-foreground list-disc pl-4">
+            {explanation.map((line, i) => (
+              <li key={i} className="leading-relaxed">{line}</li>
             ))}
-          </dl>
+          </ul>
         </div>
       )}
 
