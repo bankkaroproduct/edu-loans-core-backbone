@@ -1545,21 +1545,6 @@ export type Database = {
         }
         Relationships: []
       }
-      pincode_tier_staging: {
-        Row: {
-          pincode: string
-          tier: string
-        }
-        Insert: {
-          pincode: string
-          tier: string
-        }
-        Update: {
-          pincode?: string
-          tier?: string
-        }
-        Relationships: []
-      }
       qa_results_admin_ops: {
         Row: {
           actual: string | null
