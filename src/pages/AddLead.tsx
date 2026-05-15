@@ -43,6 +43,7 @@ import { sortByPriority } from "@/lib/countryOrder";
 import { buildIntakeSessionOptions, intakeSessionValue, parseIntakeSessionValue } from "@/lib/intakeSession";
 import type { Tables } from "@/integrations/supabase/types";
 import { fetchAllUniversitiesMaster } from "@/lib/fetchAllUniversities";
+import { getUniversities as jsonGetUniversities, getCourses as jsonGetCourses, hasCountry as jsonHasCountry } from "@/lib/universitiesData";
 
 type Country = Tables<"countries_master">;
 type University = Tables<"universities_master">;
@@ -457,25 +458,64 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     }
   }, [pincodeResult, form.pincode]);
 
-  // Master combobox options
-  // Universities master stores `country` as the full display name (e.g. "United States",
-  // "United Kingdom") — same shape as `countries_master.country_name`. The previous
-  // implementation incorrectly translated the form value to an ISO code (US, GB, …)
-  // and tried to match against that, which produced an empty list for every country.
-  // Compare the names directly (case-insensitive, trimmed). When no country is selected,
-  // show the full master list so the user still sees options.
+  // ----------------------------------------------------------------------------
+  // Cascading Country → University → Course options sourced from
+  // src/data/universities.json (PR1, UI-only). The Country dropdown itself
+  // continues to read from `countries_master` (unchanged) — the JSON is
+  // consulted only when the selected country name (case-insensitive exact
+  // match) is one of the 26 covered countries. master id resolution remains
+  // best-effort: when a JSON name happens to match a `universities_master`
+  // row by name + country (or a `courses_master` row by name), we set the
+  // FK; otherwise we save the raw string. Once PR2 syncs the JSON into the
+  // master tables, this best-effort match becomes deterministic.
+  const norm = (s: string | null | undefined) => (s ?? "").trim().toLowerCase();
+
+  const countryInJson = jsonHasCountry(form.intended_study_country);
+
   const universityOptions: MasterOption[] = useMemo(() => {
     const country = (form.intended_study_country ?? "").trim();
-    const filtered = country
-      ? universities.filter((u) => sameCountryName(u.country, country))
-      : universities;
-    return filtered.map((u) => ({ id: u.id, label: u.university_name, hint: u.country }));
-  }, [universities, form.intended_study_country]);
+    if (!country) return [];
+    if (countryInJson) {
+      // JSON-driven path
+      return jsonGetUniversities(country).map((u) => ({
+        id: u.name, // use name as the option id for JSON-only entries
+        label: u.name,
+        hint: u.city ?? undefined,
+      }));
+    }
+    // Fallback to master list when country isn't covered by JSON.
+    return universities
+      .filter((u) => sameCountryName(u.country, country))
+      .map((u) => ({ id: u.id, label: u.university_name, hint: u.country }));
+  }, [universities, form.intended_study_country, countryInJson]);
 
-  const courseOptions: MasterOption[] = useMemo(
-    () => courses.map((c) => ({ id: c.id, label: c.course_name, hint: c.course_category ?? undefined })),
-    [courses],
-  );
+  const courseOptions: MasterOption[] = useMemo(() => {
+    const country = (form.intended_study_country ?? "").trim();
+    const uniName = form.university_name_raw.trim();
+    if (countryInJson && uniName) {
+      return jsonGetCourses(country, uniName).map((c) => ({ id: c, label: c }));
+    }
+    // Fallback: full master courses list (existing behavior) when JSON
+    // cascade can't resolve.
+    return courses.map((c) => ({ id: c.id, label: c.course_name, hint: c.course_category ?? undefined }));
+  }, [courses, countryInJson, form.intended_study_country, form.university_name_raw]);
+
+  // Best-effort resolvers: turn a JSON-picked label into a master FK id.
+  const resolveUniversityId = (uniName: string, country: string): string => {
+    const tName = norm(uniName);
+    const tCountry = norm(country);
+    if (!tName) return "";
+    const hit = universities.find(
+      (u) => norm(u.university_name) === tName && norm(u.country) === tCountry,
+    );
+    return hit?.id ?? "";
+  };
+  const resolveCourseId = (courseName: string): string => {
+    const t = norm(courseName);
+    if (!t) return "";
+    const hit = courses.find((c) => norm(c.course_name) === t);
+    return hit?.id ?? "";
+  };
 
   const fullName = `${form.student_first_name.trim()} ${form.student_last_name.trim()}`.trim();
   const resolvedCourseName = form.course_name || form.course_name_raw.trim();
@@ -1225,12 +1265,14 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                       selectedId={isMaster ? current : ""}
                       manualValue={isMaster ? "" : current}
                       onSelectMaster={(opt) => {
-                        // Switching country must clear stale university selection so
-                        // partners aren't shown a university from a different country.
+                        // Switching country must clear stale university AND course so
+                        // we don't carry a selection from a different country.
                         setMany({
                           intended_study_country: opt.label,
                           university_id: "",
                           university_name_raw: "",
+                          course_id: "",
+                          course_name: "",
                         });
                       }}
                       onSelectManual={() => {
@@ -1238,6 +1280,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                           intended_study_country: "",
                           university_id: "",
                           university_name_raw: "",
+                          course_id: "",
+                          course_name: "",
                         });
                       }}
                       onChangeManual={(t) => {
@@ -1245,6 +1289,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                           intended_study_country: t,
                           university_id: "",
                           university_name_raw: "",
+                          course_id: "",
+                          course_name: "",
                         });
                       }}
                       placeholder="Search & select intended country…"
@@ -1255,31 +1301,75 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               </div>
               <div className="space-y-2 md:col-span-2" data-field="university">
                 <Label>University *</Label>
-                <MasterCombobox
-                  options={universityOptions}
-                  selectedId={form.university_id}
-                  manualValue={form.university_id ? "" : form.university_name_raw}
-                  onSelectMaster={(opt) => setMany({ university_id: opt.id, university_name_raw: opt.label })}
-                  onSelectManual={() => setMany({ university_id: "", university_name_raw: form.university_name_raw })}
-                  onChangeManual={(t) => setMany({ university_id: "", university_name_raw: t })}
-                  placeholder={form.intended_study_country ? `Search universities in ${form.intended_study_country}…` : "Pick a country first to filter universities"}
-                  helperText="Search the master list, or pick 'Not available in list' to type manually."
-                  manualPlaceholder="Type the university name"
-                />
+                {(() => {
+                  // When the cascade is JSON-driven, option ids are the university
+                  // NAME (not a master uuid). Reflect "selected" via name match so
+                  // the chosen row stays highlighted in the popover.
+                  const selectedId = countryInJson
+                    ? (form.university_name_raw || "")
+                    : form.university_id;
+                  return (
+                    <MasterCombobox
+                      options={universityOptions}
+                      selectedId={selectedId}
+                      manualValue={selectedId ? "" : form.university_name_raw}
+                      onSelectMaster={(opt) => {
+                        const country = form.intended_study_country || "";
+                        const masterId = countryInJson
+                          ? resolveUniversityId(opt.label, country)
+                          : opt.id;
+                        // Picking a new university clears the previously selected course.
+                        setMany({
+                          university_id: masterId,
+                          university_name_raw: opt.label,
+                          course_id: "",
+                          course_name: "",
+                        });
+                      }}
+                      onSelectManual={() => setMany({
+                        university_id: "",
+                        university_name_raw: form.university_name_raw,
+                        course_id: "",
+                        course_name: "",
+                      })}
+                      onChangeManual={(t) => setMany({
+                        university_id: "",
+                        university_name_raw: t,
+                        course_id: "",
+                        course_name: "",
+                      })}
+                      placeholder={form.intended_study_country ? `Search universities in ${form.intended_study_country}…` : "Pick a country first to filter universities"}
+                      helperText="Search the list, or pick 'Not available in list' to type manually."
+                      manualPlaceholder="Type the university name"
+                    />
+                  );
+                })()}
               </div>
               <div className="space-y-2 md:col-span-2" data-field="course">
                 <Label>Course *</Label>
-                <MasterCombobox
-                  options={courseOptions}
-                  selectedId={form.course_id}
-                  manualValue={form.course_id ? "" : form.course_name}
-                  onSelectMaster={(opt) => setMany({ course_id: opt.id, course_name: opt.label })}
-                  onSelectManual={() => setMany({ course_id: "", course_name: form.course_name })}
-                  onChangeManual={(t) => setMany({ course_id: "", course_name: t })}
-                  placeholder="Search courses…"
-                  helperText="Search the master list, or pick 'Not available in list' to type manually."
-                  manualPlaceholder="Type the course name"
-                />
+                {(() => {
+                  const selectedId = countryInJson
+                    ? (form.course_name || "")
+                    : form.course_id;
+                  return (
+                    <MasterCombobox
+                      options={courseOptions}
+                      selectedId={selectedId}
+                      manualValue={selectedId ? "" : form.course_name}
+                      onSelectMaster={(opt) => {
+                        const masterId = countryInJson
+                          ? resolveCourseId(opt.label)
+                          : opt.id;
+                        setMany({ course_id: masterId, course_name: opt.label });
+                      }}
+                      onSelectManual={() => setMany({ course_id: "", course_name: form.course_name })}
+                      onChangeManual={(t) => setMany({ course_id: "", course_name: t })}
+                      placeholder={form.university_name_raw ? "Search courses…" : "Pick a university first"}
+                      helperText="Search the list, or pick 'Not available in list' to type manually."
+                      manualPlaceholder="Type the course name"
+                    />
+                  );
+                })()}
               </div>
               <div className="space-y-2 md:col-span-2" data-field="intake_term">
                 <Label>Intake Session *</Label>

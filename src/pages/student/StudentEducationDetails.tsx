@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MasterCombobox, type MasterOption } from "@/components/ui/master-combobox";
+import { getUniversities as jsonGetUniversities, getCourses as jsonGetCourses, hasCountry as jsonHasCountry } from "@/lib/universitiesData";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchAllUniversitiesMaster } from "@/lib/fetchAllUniversities";
 import { toast } from "@/hooks/use-toast";
@@ -51,20 +52,49 @@ export default function StudentEducationDetails() {
     });
   }, []);
 
-  // Universities filtered by destination country (when present), else show all
+  // Cascading Country → University → Course sourced from
+  // src/data/universities.json (PR1, UI-only). Country comes from Step 1.
+  // When the country isn't covered by the JSON, fall back to the existing
+  // master-driven lists so users on uncovered countries still see options.
+  const norm = (s: string | null | undefined) => (s ?? "").trim().toLowerCase();
+  const countryInJson = jsonHasCountry(formData.intended_study_country);
+
   const universityOptions: MasterOption[] = useMemo(() => {
-    const country = (formData.intended_study_country || "").trim().toLowerCase();
+    const country = (formData.intended_study_country || "").trim();
+    if (countryInJson) {
+      return jsonGetUniversities(country).map(u => ({
+        id: u.name,
+        label: u.name,
+        hint: u.city ?? undefined,
+      }));
+    }
     const list = country
-      ? universities.filter(u => (u.country || "").trim().toLowerCase() === country)
+      ? universities.filter(u => norm(u.country) === norm(country))
       : universities;
     const source = list.length > 0 ? list : universities;
     return source.map(u => ({ id: u.id, label: u.university_name, hint: u.country }));
-  }, [universities, formData.intended_study_country]);
+  }, [universities, formData.intended_study_country, countryInJson]);
 
-  const courseOptions: MasterOption[] = useMemo(
-    () => courses.map(c => ({ id: c.id, label: c.course_name, hint: c.course_category ?? undefined })),
-    [courses],
-  );
+  const courseOptions: MasterOption[] = useMemo(() => {
+    const country = (formData.intended_study_country || "").trim();
+    const uni = (formData.university_name_raw || "").trim();
+    if (countryInJson && uni) {
+      return jsonGetCourses(country, uni).map(c => ({ id: c, label: c }));
+    }
+    return courses.map(c => ({ id: c.id, label: c.course_name, hint: c.course_category ?? undefined }));
+  }, [courses, countryInJson, formData.intended_study_country, formData.university_name_raw]);
+
+  const resolveUniversityId = (uniName: string, country: string): string => {
+    const tName = norm(uniName);
+    const tCountry = norm(country);
+    if (!tName) return "";
+    return universities.find(u => norm(u.university_name) === tName && norm(u.country) === tCountry)?.id ?? "";
+  };
+  const resolveCourseId = (courseName: string): string => {
+    const t = norm(courseName);
+    if (!t) return "";
+    return courses.find(c => norm(c.course_name) === t)?.id ?? "";
+  };
 
   const handleContinue = async () => {
     if (!formData.course_name.trim()) {
@@ -159,14 +189,16 @@ export default function StudentEducationDetails() {
               <Label>Course Name <span className="text-destructive">*</span></Label>
               <MasterCombobox
                 options={courseOptions}
-                selectedId=""
-                manualValue={formData.course_name}
+                selectedId={countryInJson ? (formData.course_name || "") : (formData.course_id || "")}
+                manualValue={(countryInJson ? !!formData.course_name : !!formData.course_id) ? "" : formData.course_name}
                 onSelectMaster={(opt) => {
+                  const masterId = countryInJson ? resolveCourseId(opt.label) : opt.id;
+                  updateField("course_id", masterId);
                   updateField("course_name", opt.label);
                   if (opt.hint) updateField("course_category", opt.hint);
                 }}
-                onSelectManual={() => updateField("course_name", "")}
-                onChangeManual={(t) => updateField("course_name", t)}
+                onSelectManual={() => { updateField("course_id", ""); updateField("course_name", ""); }}
+                onChangeManual={(t) => { updateField("course_id", ""); updateField("course_name", t); }}
                 placeholder="Search for your course"
                 emptyMessage="No matching course."
                 manualPlaceholder="e.g. MS in Computer Science"
@@ -177,17 +209,29 @@ export default function StudentEducationDetails() {
               <Label>University Name</Label>
               <MasterCombobox
                 options={universityOptions}
-                selectedId={formData.university_id}
-                manualValue={formData.university_name_raw}
+                selectedId={countryInJson ? (formData.university_name_raw || "") : (formData.university_id || "")}
+                manualValue={(countryInJson ? !!formData.university_name_raw : !!formData.university_id) ? "" : formData.university_name_raw}
                 onSelectMaster={(opt) => {
-                  updateField("university_id", opt.id);
+                  const country = formData.intended_study_country || "";
+                  const masterId = countryInJson ? resolveUniversityId(opt.label, country) : opt.id;
+                  updateField("university_id", masterId);
                   updateField("university_name_raw", opt.label);
+                  // Picking a different university clears any previously selected course.
+                  updateField("course_id", "");
+                  updateField("course_name", "");
                 }}
                 onSelectManual={() => {
                   updateField("university_id", "");
                   updateField("university_name_raw", "");
+                  updateField("course_id", "");
+                  updateField("course_name", "");
                 }}
-                onChangeManual={(t) => updateField("university_name_raw", t)}
+                onChangeManual={(t) => {
+                  updateField("university_id", "");
+                  updateField("university_name_raw", t);
+                  updateField("course_id", "");
+                  updateField("course_name", "");
+                }}
                 placeholder={
                   formData.intended_study_country
                     ? `Search universities in ${formData.intended_study_country}`

@@ -27,6 +27,7 @@ export interface StudentFormData {
   course_name: string;
   university_name_raw: string;
   university_id: string;
+  course_id: string;
   intake_term: string;
   intake_year: string;
   test_scores: {
@@ -76,7 +77,7 @@ const EMPTY_FORM: StudentFormData = {
   student_dob: "", student_gender: "", city: "", state: "", district: "", tier: "", pincode: "",
   intended_study_country: "", course_category: "", loan_amount_required: "",
   highest_qualification: "", marks_gpa: "", course_name: "",
-  university_name_raw: "", university_id: "", intake_term: "", intake_year: "",
+  university_name_raw: "", university_id: "", course_id: "", intake_term: "", intake_year: "",
   test_scores: {},
   coapplicant_name: "", coapplicant_relation: "", coapplicant_mobile: "",
   coapplicant_email: "", coapplicant_income: "", coapplicant_employment_type: "",
@@ -227,6 +228,7 @@ export function useStudentApplication() {
       course_name: (lead.course_name && lead.course_name !== "Not specified") ? lead.course_name : prev.course_name,
       university_name_raw: lead.university_name_raw || prev.university_name_raw,
       university_id: lead.university_id || prev.university_id,
+      course_id: lead.course_id || prev.course_id,
       intake_term: lead.intake_term || prev.intake_term,
       intake_year: lead.intake_year?.toString() || prev.intake_year,
       test_scores: {
@@ -338,6 +340,7 @@ export function useStudentApplication() {
           highest_qualification: formData.highest_qualification || null,
           marks_gpa: formData.marks_gpa || null,
           course_name: formData.course_name || "Not specified",
+          course_id: formData.course_id || null,
           course_category: formData.course_category || null,
           university_name_raw: formData.university_name_raw || null,
           university_id: formData.university_id || null,
