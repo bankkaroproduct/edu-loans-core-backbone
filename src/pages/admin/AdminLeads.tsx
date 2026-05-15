@@ -245,7 +245,9 @@ export default function AdminLeads() {
 
       const from = (page - 1) * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
-      const q = buildBase().order(sortKey, { ascending: sortDir === "asc" }).range(from, to);
+      const q = buildBase()
+        .order(sortKey, { ascending: sortDir === "asc", nullsFirst: false })
+        .range(from, to);
 
       const { data, count, error: qErr } = await q;
       if (qErr) throw qErr;
