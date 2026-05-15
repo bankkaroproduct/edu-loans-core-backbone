@@ -267,14 +267,29 @@ export default function StudentBasicDetails() {
                 const opts: MasterOption[] = sorted.map(c => ({ id: c.country_name, label: c.country_name }));
                 const current = formData.intended_study_country || "";
                 const isMaster = !!current && opts.some(o => o.id === current);
+                // Cascade reset: changing the destination country must clear any
+                // university/course chosen on Step 2 (StudentEducationDetails),
+                // since those are filtered by the country picked here.
+                const resetCascade = () => {
+                  if (formData.university_id) updateField("university_id", "");
+                  if (formData.university_name_raw) updateField("university_name_raw", "");
+                  if (formData.course_id) updateField("course_id", "");
+                  if (formData.course_name) updateField("course_name", "");
+                };
                 return (
                   <MasterCombobox
                     options={opts}
                     selectedId={isMaster ? current : ""}
                     manualValue={isMaster ? "" : current}
-                    onSelectMaster={(opt) => updateField("intended_study_country", opt.label)}
-                    onSelectManual={() => updateField("intended_study_country", "")}
-                    onChangeManual={(t) => updateField("intended_study_country", t)}
+                    onSelectMaster={(opt) => {
+                      if (opt.label !== current) resetCascade();
+                      updateField("intended_study_country", opt.label);
+                    }}
+                    onSelectManual={() => { resetCascade(); updateField("intended_study_country", ""); }}
+                    onChangeManual={(t) => {
+                      if (t !== current) resetCascade();
+                      updateField("intended_study_country", t);
+                    }}
                     placeholder="Select destination country"
                     manualPlaceholder="Type the country name"
                   />
