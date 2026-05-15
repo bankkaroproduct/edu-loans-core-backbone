@@ -51,7 +51,7 @@ import {
   resolveRankBandFromResolution,
   type RankModifierResult,
 } from "@/lib/bre/rankModifier";
-import type { BreLenderRule, BreResult, BucketKey, ParameterTrace } from "@/lib/bre/types";
+import type { BreLenderRule, BreResult, BucketKey, LenderMatchResult, ParameterTrace } from "@/lib/bre/types";
 import { formatEmploymentLabel, isEmploymentTypeParam } from "@/lib/bre/employmentDisplay";
 import { displayLenderCode } from "@/lib/lenderDisplay";
 import {
@@ -454,10 +454,7 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
             )}
 
             {derived.displayStatus === "passed_no_lender" ? (
-              <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200 flex gap-2">
-                <Info className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>BRE passed, but no active lender rule currently matches this profile.</span>
-              </div>
+              <LenderMatchFailureSummary lenders={result.eligible_lenders} />
             ) : derived.lendersToShow.length === 0 ? (
               <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground flex gap-2">
                 <Info className="h-4 w-4 shrink-0 mt-0.5" />
@@ -503,6 +500,111 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
 // ============================================================================
 // Sub-components (local to this file — no shared abstractions)
 // ============================================================================
+
+/**
+ * LenderMatchFailureSummary
+ * -------------------------
+ * Display-only panel shown when BRE scoring passes but no active lender rule
+ * matches the profile. Aggregates the existing per-lender `reasons[]` already
+ * produced by the engine — does NOT re-evaluate, re-score, or change any
+ * lender, rule, commercial, ROI, loan amount, or eligibility logic.
+ *
+ * Inactive lenders are already excluded upstream by the engine (only active
+ * `bre_lender_rules` rows reach `result.eligible_lenders`), so they will not
+ * appear here.
+ */
+function LenderMatchFailureSummary({ lenders }: { lenders: LenderMatchResult[] }) {
+  const grouped = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const l of lenders) {
+      const seen = new Set<string>();
+      for (const r of l.reasons ?? []) {
+        if (!r || seen.has(r)) continue;
+        seen.add(r);
+        counts.set(r, (counts.get(r) ?? 0) + 1);
+      }
+    }
+    return Array.from(counts.entries()).sort(
+      (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
+    );
+  }, [lenders]);
+
+  const topReasons = grouped.slice(0, 6);
+  const perLender = useMemo(
+    () =>
+      lenders
+        .filter((l) => (l.reasons?.length ?? 0) > 0)
+        .sort((a, b) => a.lender_name.localeCompare(b.lender_name)),
+    [lenders],
+  );
+
+  if (lenders.length === 0) {
+    return (
+      <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200 flex gap-2">
+        <Info className="h-4 w-4 shrink-0 mt-0.5" />
+        <span>
+          No active lender rules are configured. Please configure lender rules to enable automated matching.
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 space-y-3">
+      <div className="flex gap-2">
+        <Info className="h-4 w-4 shrink-0 mt-0.5 text-amber-700 dark:text-amber-300" />
+        <div className="text-xs text-amber-900 dark:text-amber-200">
+          <div className="font-semibold mb-0.5">BRE Passed · No Automated Lender Match</div>
+          <div>
+            This profile cleared BRE scoring, but no active lender currently matches all
+            lender-specific rules. Manual lender discussion may still be possible — review
+            the rule gaps below.
+          </div>
+        </div>
+      </div>
+
+      {topReasons.length > 0 && (
+        <div className="space-y-1.5">
+          <div className="text-[11px] uppercase tracking-wider font-semibold text-amber-900/80 dark:text-amber-200/80">
+            Top reasons lenders did not match
+          </div>
+          <ul className="space-y-1">
+            {topReasons.map(([reason, count]) => (
+              <li key={reason} className="flex items-start gap-2 text-xs text-foreground">
+                <Badge variant="outline" className="shrink-0 h-5 px-1.5 text-[10px] font-mono">
+                  {count}
+                </Badge>
+                <span className="leading-relaxed">{reason}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {perLender.length > 0 && (
+        <Accordion type="single" collapsible className="border-t border-amber-500/30 pt-1">
+          <AccordionItem value="per-lender" className="border-0">
+            <AccordionTrigger className="py-2 text-xs font-medium text-amber-900 dark:text-amber-200 hover:no-underline">
+              Per-lender details ({perLender.length})
+            </AccordionTrigger>
+            <AccordionContent>
+              <ul className="space-y-2 pt-1">
+                {perLender.map((l) => (
+                  <li key={l.lender_id} className="text-xs">
+                    <div className="font-medium text-foreground">{l.lender_name}</div>
+                    <div className="text-muted-foreground leading-relaxed">
+                      {l.reasons.join("; ")}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      )}
+    </div>
+  );
+}
 
 function StatusBanner({
   status,
