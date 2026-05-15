@@ -518,23 +518,192 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
  * `bre_lender_rules` rows reach `result.eligible_lenders`), so they will not
  * appear here.
  */
-function LenderMatchFailureSummary({ lenders }: { lenders: LenderMatchResult[] }) {
-  const grouped = useMemo(() => {
-    const counts = new Map<string, number>();
+type FailureCategory =
+  | "relationship"
+  | "coapp_income"
+  | "coapp_age"
+  | "coapp_cibil"
+  | "loan_amount"
+  | "country_geo"
+  | "course"
+  | "academics"
+  | "student_age"
+  | "collateral"
+  | "other";
+
+const CATEGORY_META: Record<FailureCategory, { label: string; helper: string }> = {
+  relationship: {
+    label: "Co-applicant relationship mismatch",
+    helper: "The co-applicant relationship is not accepted by the active lender rules.",
+  },
+  coapp_income: {
+    label: "Co-applicant income below lender minimums",
+    helper: "Co-applicant income/ITR is below the minimums required by the active lender rules.",
+  },
+  coapp_age: {
+    label: "Co-applicant age out of policy range",
+    helper: "Co-applicant age sits outside the min/max bands set by the active lender rules.",
+  },
+  coapp_cibil: {
+    label: "Co-applicant CIBIL below lender minimums",
+    helper: "Co-applicant CIBIL is below the minimums required by the active lender rules.",
+  },
+  loan_amount: {
+    label: "Requested loan amount outside lender caps",
+    helper: "The requested loan amount is above (or below) the caps set by the active lender rules.",
+  },
+  country_geo: {
+    label: "Destination country / region not in coverage",
+    helper: "The destination country/state/city is not in the coverage list of the active lender rules.",
+  },
+  course: {
+    label: "Course not in lender accepted list",
+    helper: "The course is not in the accepted list of the active lender rules.",
+  },
+  academics: {
+    label: "Academic marks below lender minimums",
+    helper: "Academic marks are below the minimums set by the active lender rules.",
+  },
+  student_age: {
+    label: "Student age out of policy range",
+    helper: "Student age sits outside the bands permitted by the active lender rules.",
+  },
+  collateral: {
+    label: "Collateral route not supported",
+    helper: "The chosen collateral route (secured / unsecured) is not offered by the active lender rules.",
+  },
+  other: {
+    label: "Other lender-rule gaps",
+    helper: "One or more other lender-specific gates blocked this profile.",
+  },
+};
+
+function classifyReason(raw: string): FailureCategory {
+  const r = raw.toLowerCase();
+  if (r.includes("relationship")) return "relationship";
+  if (r.includes("cibil")) return "coapp_cibil";
+  if (r.includes("co-applicant") && r.includes("age")) return "coapp_age";
+  if (r.includes("co-applicant") && (r.includes("income") || r.includes("salary") || r.includes("itr"))) return "coapp_income";
+  if (r.includes("salaried co-applicant") || r.includes("self-employed co-applicant")) return "coapp_income";
+  if (r.startsWith("requested loan") || r.includes("loan amount")) return "loan_amount";
+  if (r.includes("country") || r.includes("state ") || r.startsWith("city ")) return "country_geo";
+  if (r.includes("course")) return "course";
+  if (r.includes("academic marks")) return "academics";
+  if (r.includes("student age")) return "student_age";
+  if (r.includes("collateral") || r.includes("secured loans") || r.includes("unsecured loans")) return "collateral";
+  return "other";
+}
+
+/**
+ * Re-format quoted snake_case / lowercase tokens inside an existing reason
+ * string (e.g. `"relative"` → `Relative`) without changing other content.
+ */
+function humanizeReason(raw: string): string {
+  return raw.replace(/"([^"]+)"/g, (_, inner) => `"${formatDisplayLabel(inner, inner)}"`);
+}
+
+interface LenderMatchFailureSummaryProps {
+  lenders: LenderMatchResult[];
+  lead: Lead;
+  resolution: BuildProfileResolution | null;
+  activeRuleCount: number;
+}
+
+function LenderMatchFailureSummary({
+  lenders,
+  lead,
+  resolution,
+  activeRuleCount,
+}: LenderMatchFailureSummaryProps) {
+  // Categorize per-lender unique reasons → distinct lender count per category.
+  const categories = useMemo(() => {
+    const lendersByCategory = new Map<FailureCategory, Set<string>>();
+    const sampleByCategory = new Map<FailureCategory, string>();
     for (const l of lenders) {
-      const seen = new Set<string>();
+      const seenCats = new Set<FailureCategory>();
       for (const r of l.reasons ?? []) {
-        if (!r || seen.has(r)) continue;
-        seen.add(r);
-        counts.set(r, (counts.get(r) ?? 0) + 1);
+        if (!r) continue;
+        const cat = classifyReason(r);
+        if (!seenCats.has(cat)) {
+          seenCats.add(cat);
+          if (!lendersByCategory.has(cat)) lendersByCategory.set(cat, new Set());
+          lendersByCategory.get(cat)!.add(l.lender_id);
+          if (!sampleByCategory.has(cat)) sampleByCategory.set(cat, humanizeReason(r));
+        }
       }
     }
-    return Array.from(counts.entries()).sort(
-      (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
-    );
+    return Array.from(lendersByCategory.entries())
+      .map(([cat, set]) => ({
+        cat,
+        count: set.size,
+        sample: sampleByCategory.get(cat) ?? "",
+      }))
+      .sort((a, b) => b.count - a.count || a.cat.localeCompare(b.cat));
   }, [lenders]);
 
-  const topReasons = grouped.slice(0, 6);
+  const topCategories = categories.slice(0, 6);
+  const presentCats = new Set(categories.map((c) => c.cat));
+
+  // Profile context rows — only show fields actually present.
+  const profileRows = useMemo(() => {
+    const rows: { label: string; value: string }[] = [];
+    if (lead.coapplicant_relation)
+      rows.push({ label: "Co-applicant relation", value: formatDisplayLabel(lead.coapplicant_relation) });
+    if (lead.coapplicant_employment_type)
+      rows.push({ label: "Co-applicant employment", value: formatDisplayLabel(lead.coapplicant_employment_type) });
+    if (lead.coapplicant_income != null) {
+      const m = Number(lead.coapplicant_income);
+      if (Number.isFinite(m) && m > 0)
+        rows.push({ label: "Co-applicant income", value: `₹${m.toLocaleString("en-IN")} / month` });
+    }
+    if (lead.course_level)
+      rows.push({ label: "Course level", value: formatDisplayLabel(lead.course_level) });
+    if (lead.course_category)
+      rows.push({ label: "Course category", value: formatDisplayLabel(lead.course_category) });
+    if (lead.intended_study_country)
+      rows.push({ label: "Destination country", value: formatDisplayLabel(lead.intended_study_country) });
+    if (lead.loan_amount_required != null) {
+      const v = Number(lead.loan_amount_required);
+      if (Number.isFinite(v) && v > 0)
+        rows.push({ label: "Requested loan", value: `₹${v.toLocaleString("en-IN")}` });
+    }
+    const um = resolution?.university_match;
+    if (um && (um.kind === "by_id" || um.kind === "fuzzy")) {
+      const bits: string[] = [];
+      if (um.global_rank != null) bits.push(`Rank #${um.global_rank}`);
+      if (um.ranking_bucket) bits.push(formatDisplayLabel(um.ranking_bucket));
+      if (bits.length > 0) rows.push({ label: "University", value: `${um.master_name} · ${bits.join(" · ")}` });
+      else rows.push({ label: "University", value: um.master_name });
+    } else if (lead.university_name_raw) {
+      rows.push({ label: "University", value: lead.university_name_raw });
+    }
+    if (resolution?.collateral_state)
+      rows.push({
+        label: "Collateral route",
+        value: formatDisplayLabel(resolution.collateral_state.replace("_review_needed", "")),
+      });
+    return rows;
+  }, [lead, resolution]);
+
+  // Suggested next actions — only when a relevant category is present.
+  const actions = useMemo(() => {
+    const out: string[] = [];
+    if (presentCats.has("relationship"))
+      out.push("Check if a parent / spouse / sibling co-applicant can be added — many lenders restrict accepted relationships.");
+    if (presentCats.has("coapp_income") || presentCats.has("loan_amount"))
+      out.push("Consider reducing the requested loan amount, or add a higher-income co-applicant to clear lender income/EMI gates.");
+    if (presentCats.has("country_geo") || presentCats.has("course"))
+      out.push("Destination country / course may sit outside current lender coverage — manual lender discussion recommended.");
+    if (presentCats.has("collateral"))
+      out.push("Explore the alternate collateral route (secured ⇌ unsecured) if the profile supports it.");
+    if (presentCats.has("coapp_cibil"))
+      out.push("Improve / re-check co-applicant CIBIL, or add a co-applicant with a stronger bureau score.");
+    if (presentCats.has("academics") || presentCats.has("student_age"))
+      out.push("Verify academic marks and student age fields — small data corrections sometimes restore lender eligibility.");
+    out.push("Review lender coverage / rules in BRE → Lender Rules if this profile should be commercially accepted.");
+    return out;
+  }, [presentCats]);
+
   const perLender = useMemo(
     () =>
       lenders
@@ -543,7 +712,7 @@ function LenderMatchFailureSummary({ lenders }: { lenders: LenderMatchResult[] }
     [lenders],
   );
 
-  if (lenders.length === 0) {
+  if (lenders.length === 0 || activeRuleCount === 0) {
     return (
       <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200 flex gap-2">
         <Info className="h-4 w-4 shrink-0 mt-0.5" />
@@ -555,7 +724,7 @@ function LenderMatchFailureSummary({ lenders }: { lenders: LenderMatchResult[] }
   }
 
   return (
-    <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 space-y-3">
+    <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 space-y-4">
       <div className="flex gap-2">
         <Info className="h-4 w-4 shrink-0 mt-0.5 text-amber-700 dark:text-amber-300" />
         <div className="text-xs text-amber-900 dark:text-amber-200">
@@ -568,24 +737,65 @@ function LenderMatchFailureSummary({ lenders }: { lenders: LenderMatchResult[] }
         </div>
       </div>
 
-      {topReasons.length > 0 && (
+      {/* Block A — Primary lender-rule blockers (categorized) */}
+      {topCategories.length > 0 && (
         <div className="space-y-1.5">
           <div className="text-[11px] uppercase tracking-wider font-semibold text-amber-900/80 dark:text-amber-200/80">
-            Top reasons lenders did not match
+            Primary lender-rule blockers
           </div>
-          <ul className="space-y-1">
-            {topReasons.map(([reason, count]) => (
-              <li key={reason} className="flex items-start gap-2 text-xs text-foreground">
-                <Badge variant="outline" className="shrink-0 h-5 px-1.5 text-[10px] font-mono">
-                  {count}
-                </Badge>
-                <span className="leading-relaxed">{reason}</span>
-              </li>
+          <ul className="space-y-2">
+            {topCategories.map(({ cat, count, sample }) => {
+              const meta = CATEGORY_META[cat];
+              return (
+                <li key={cat} className="text-xs text-foreground">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="shrink-0 h-5 px-1.5 text-[10px] font-mono">
+                      {count} {count === 1 ? "lender" : "lenders"}
+                    </Badge>
+                    <span className="font-medium">{meta.label}</span>
+                  </div>
+                  <div className="ml-[3.25rem] mt-0.5 text-muted-foreground leading-relaxed">
+                    {sample || meta.helper}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
+      {/* Block B — Profile context to review */}
+      {profileRows.length > 0 && (
+        <div className="space-y-1.5 border-t border-amber-500/30 pt-3">
+          <div className="text-[11px] uppercase tracking-wider font-semibold text-amber-900/80 dark:text-amber-200/80">
+            Profile context to review
+          </div>
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs">
+            {profileRows.map((row) => (
+              <div key={row.label} className="flex justify-between gap-3 border-b border-amber-500/10 py-0.5">
+                <dt className="text-muted-foreground">{row.label}</dt>
+                <dd className="text-foreground text-right font-medium">{row.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )}
+
+      {/* Block C — Suggested admin next actions */}
+      {actions.length > 0 && (
+        <div className="space-y-1.5 border-t border-amber-500/30 pt-3">
+          <div className="text-[11px] uppercase tracking-wider font-semibold text-amber-900/80 dark:text-amber-200/80">
+            Suggested next actions
+          </div>
+          <ul className="space-y-1 text-xs text-foreground list-disc pl-4">
+            {actions.map((a) => (
+              <li key={a} className="leading-relaxed">{a}</li>
             ))}
           </ul>
         </div>
       )}
 
+      {/* Block D — Per-lender details (existing collapsible) */}
       {perLender.length > 0 && (
         <Accordion type="single" collapsible className="border-t border-amber-500/30 pt-1">
           <AccordionItem value="per-lender" className="border-0">
@@ -598,7 +808,7 @@ function LenderMatchFailureSummary({ lenders }: { lenders: LenderMatchResult[] }
                   <li key={l.lender_id} className="text-xs">
                     <div className="font-medium text-foreground">{l.lender_name}</div>
                     <div className="text-muted-foreground leading-relaxed">
-                      {l.reasons.join("; ")}
+                      {l.reasons.map(humanizeReason).join("; ")}
                     </div>
                   </li>
                 ))}
