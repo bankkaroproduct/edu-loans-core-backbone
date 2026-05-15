@@ -407,6 +407,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   const pincodeResult = usePincodeLookup(form.pincode);
   const lastAppliedPincode = useRef<{
     pincode: string;
+    city: string | null;
     district: string | null;
     state: string | null;
     tier: string | null;
@@ -414,7 +415,9 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   useEffect(() => {
     const current = (form.pincode ?? "").trim();
 
-    // Apply on a fresh successful match
+    // Apply on a fresh successful match.
+    // pincode_master has no city column → city falls back to district (mirrors
+    // resolvePincodeEnrichment in src/lib/pincodeEnrichment.ts).
     if (
       pincodeResult.found &&
       pincodeResult.pincode === current &&
@@ -426,16 +429,18 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         // Only overwrite fields that are blank OR still hold the previously auto-filled value
         const overwriteIfOurs = (cur: string, was: string | null, next: string | null) =>
           (!cur || (prevApplied && cur === was)) && next ? next : cur;
+        const nextCity = overwriteIfOurs(prev.city, prevApplied?.city ?? null, pincodeResult.district);
         const nextDistrict = overwriteIfOurs(prev.district, prevApplied?.district ?? null, pincodeResult.district);
         const nextState = overwriteIfOurs(prev.state, prevApplied?.state ?? null, pincodeResult.state);
         const nextTier = overwriteIfOurs(prev.tier, prevApplied?.tier ?? null, pincodeResult.tier);
         lastAppliedPincode.current = {
           pincode: current,
+          city: nextCity,
           district: nextDistrict,
           state: nextState,
           tier: nextTier,
         };
-        return { ...prev, district: nextDistrict, state: nextState, tier: nextTier };
+        return { ...prev, city: nextCity, district: nextDistrict, state: nextState, tier: nextTier };
       });
       return;
     }
@@ -449,6 +454,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       if (newIsInvalid) {
         setForm((p) => ({
           ...p,
+          city: prev.city && p.city === prev.city ? "" : p.city,
           district: prev.district && p.district === prev.district ? "" : p.district,
           state: prev.state && p.state === prev.state ? "" : p.state,
           tier: prev.tier && p.tier === prev.tier ? "" : p.tier,
@@ -1833,11 +1839,31 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               </div>
               <div>
                 <Badge variant="outline" className="mb-2">Current Academic Profile</Badge>
-                <ReviewRow label="Highest Qualification" value={form.highest_qualification ? formatDisplayLabel(form.highest_qualification) : ""} nudgeStep="study" nudgeField="highest_qualification" />
-                <ReviewRow label="Highest Qualification Score" value={form.highest_qualification_score} />
-                <ReviewRow label="10th Score" value={form.tenth_score} nudgeStep="study" nudgeField="tenth_score" />
-                <ReviewRow label="12th Score" value={form.twelfth_score} nudgeStep="study" nudgeField="twelfth_score" />
-                <ReviewRow label="Graduation Score" value={form.graduation_score} />
+                {(() => {
+                  // Display-only fallbacks. Form state / submission payload unchanged.
+                  // Fix B: mirror highest-qualification score from the matching level
+                  //        when user left the dedicated input blank.
+                  // Fix C: render "Not applicable" for Graduation when user is at-or-below 12th.
+                  const hq = form.highest_qualification || "";
+                  const isAtOrBelow12 = hq === "12th / High School" || hq === "10th / SSC";
+                  const derivedHighestScore =
+                    form.highest_qualification_score ||
+                    (hq === "12th / High School" ? form.twelfth_score : "") ||
+                    (hq === "10th / SSC" ? form.tenth_score : "") ||
+                    (hq && !isAtOrBelow12 ? form.graduation_score : "") ||
+                    "";
+                  const graduationDisplay =
+                    form.graduation_score || (isAtOrBelow12 ? "Not applicable" : "");
+                  return (
+                    <>
+                      <ReviewRow label="Highest Qualification" value={hq ? formatDisplayLabel(hq) : ""} nudgeStep="study" nudgeField="highest_qualification" />
+                      <ReviewRow label="Highest Qualification Score" value={derivedHighestScore} />
+                      <ReviewRow label="10th Score" value={form.tenth_score} nudgeStep="study" nudgeField="tenth_score" />
+                      <ReviewRow label="12th Score" value={form.twelfth_score} nudgeStep="study" nudgeField="twelfth_score" />
+                      <ReviewRow label="Graduation Score" value={graduationDisplay} />
+                    </>
+                  );
+                })()}
                 {form.marks_gpa ? <ReviewRow label="Marks / GPA (legacy)" value={form.marks_gpa} /> : null}
                 {form.work_experience_years && (
                   <ReviewRow

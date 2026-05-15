@@ -122,7 +122,20 @@ export default function StudentReviewSubmit() {
         readOnly={isReadOnly}
         items={[
           { label: "Highest Qualification", value: formData.highest_qualification ? formatDisplayLabel(formData.highest_qualification) : null },
-          { label: "Highest Qualification Score", value: formData.test_scores.highest_qualification_score || formData.marks_gpa },
+          { label: "Highest Qualification Score", value: (() => {
+            // Display-only fallback. Submitted payload still has empty
+            // highest_qualification_score when user left the dedicated input blank.
+            // Tracked follow-up: auto-fill on input or persist derived value at submit.
+            const hq = formData.highest_qualification || "";
+            const ts = formData.test_scores;
+            return (
+              ts.highest_qualification_score ||
+              (hq === "12th / High School" ? ts.twelfth : "") ||
+              (hq === "10th / SSC" ? ts.tenth : "") ||
+              formData.marks_gpa ||
+              ""
+            );
+          })() },
           { label: "Course", value: formData.course_name },
           { label: "University", value: formData.university_name_raw },
           { label: "Intake", value: formData.intake_term && formData.intake_year ? intakeSessionLabel(formData.intake_term, Number(formData.intake_year)) : null },
