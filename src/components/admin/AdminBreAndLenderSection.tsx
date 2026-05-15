@@ -800,28 +800,8 @@ function LenderMatchFailureSummary({
         </div>
       )}
 
-      {/* Block D — Per-lender details (existing collapsible) */}
-      {perLender.length > 0 && (
-        <Accordion type="single" collapsible className="border-t border-amber-500/30 pt-1">
-          <AccordionItem value="per-lender" className="border-0">
-            <AccordionTrigger className="py-2 text-xs font-medium text-amber-900 dark:text-amber-200 hover:no-underline">
-              Per-lender details ({perLender.length})
-            </AccordionTrigger>
-            <AccordionContent>
-              <ul className="space-y-2 pt-1">
-                {perLender.map((l) => (
-                  <li key={l.lender_id} className="text-xs">
-                    <div className="font-medium text-foreground">{l.lender_name}</div>
-                    <div className="text-muted-foreground leading-relaxed">
-                      {l.reasons.map(humanizeReason).join("; ")}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      )}
+      {/* Block D — Per-lender details intentionally hidden from UI.
+          Backend reasons remain available in result.eligible_lenders for debug/future use. */}
     </div>
   );
 }
