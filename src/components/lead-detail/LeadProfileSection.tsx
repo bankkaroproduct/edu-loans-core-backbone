@@ -160,9 +160,24 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
 
   // Source-agnostic Highest Qualification Score:
   // Some sources write to top-level marks_gpa; others write to test_scores.highest_qualification_score.
-  const hqScore =
+  // Display-only fallback (mirrors AddLead/Student review): if neither dedicated source is set,
+  // fall back to the matching level's score based on highest_qualification. Edit target unchanged.
+  const hqRaw =
     (lead.marks_gpa && String(lead.marks_gpa).trim() !== "" ? String(lead.marks_gpa) : null) ??
     tsStr("highest_qualification_score");
+  const hqLevel = (lead as any).highest_qualification ?? "";
+  const hqScore =
+    hqRaw ??
+    (hqLevel === "12th / High School" ? tsStr("twelfth") : null) ??
+    (hqLevel === "10th / SSC" ? tsStr("tenth") : null);
+  const isAtOrBelow12 = hqLevel === "12th / High School" || hqLevel === "10th / SSC";
+  const graduationRaw = tsStr("graduation");
+  const graduationDisplay =
+    graduationRaw ?? (isAtOrBelow12 ? "Not applicable" : null);
+  // City display fallback: when the persisted city is empty, fall back to district
+  // (mirrors resolvePincodeEnrichment). Backend backfill tracked separately.
+  const cityDisplay =
+    (lead.city && String(lead.city).trim() !== "" ? lead.city : null) ?? lead.district ?? null;
   // Edit target: prefer the column the value lives on. If neither is set, default to marks_gpa.
   const hqEditable = (() => {
     const hasMarks = lead.marks_gpa && String(lead.marks_gpa).trim() !== "";
