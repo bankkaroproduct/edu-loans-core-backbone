@@ -454,10 +454,7 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
             )}
 
             {derived.displayStatus === "passed_no_lender" ? (
-              <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200 flex gap-2">
-                <Info className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>BRE passed, but no active lender rule currently matches this profile.</span>
-              </div>
+              <LenderMatchFailureSummary lenders={result.eligible_lenders} />
             ) : derived.lendersToShow.length === 0 ? (
               <div className="rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground flex gap-2">
                 <Info className="h-4 w-4 shrink-0 mt-0.5" />
