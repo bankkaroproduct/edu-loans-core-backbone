@@ -646,49 +646,115 @@ function LenderMatchFailureSummary({
   const topCategories = categories.slice(0, 6);
   const presentCats = new Set(categories.map((c) => c.cat));
 
-  // Profile context rows — only show fields actually present.
-  const profileRows = useMemo(() => {
-    const rows: { label: string; value: string }[] = [];
-    if (lead.coapplicant_relation)
-      rows.push({ label: "Co-applicant relation", value: formatDisplayLabel(lead.coapplicant_relation) });
-    if (lead.coapplicant_employment_type)
-      rows.push({ label: "Co-applicant employment", value: formatDisplayLabel(lead.coapplicant_employment_type) });
-    if (lead.coapplicant_income != null) {
-      const m = Number(lead.coapplicant_income);
-      if (Number.isFinite(m) && m > 0)
-        rows.push({ label: "Co-applicant income", value: `₹${m.toLocaleString("en-IN")} / month` });
+  // Operational Match Explanation — business-language bullets that combine
+  // actual lender rejection categories with available lead/resolution facts.
+  // Each bullet only renders when its source data exists. No invented facts.
+  const explanation = useMemo(() => {
+    const out: string[] = [];
+    const countByCat = new Map(categories.map((c) => [c.cat, c.count] as const));
+
+    // Relationship mismatch
+    if (presentCats.has("relationship")) {
+      const n = countByCat.get("relationship") ?? 0;
+      const rel = lead.coapplicant_relation
+        ? `"${formatDisplayLabel(lead.coapplicant_relation)}"`
+        : "the selected co-applicant relation";
+      out.push(
+        `Co-applicant relationship mismatch: ${rel} is not accepted by ${n} active lender ${n === 1 ? "rule" : "rules"}.`,
+      );
     }
+
+    // Course level (UG / Bachelors)
     const cl = resolution?.course_level_derivation;
-    if (cl && "derived" in cl && cl.derived)
-      rows.push({ label: "Course level", value: formatDisplayLabel(cl.derived) });
-    if (lead.course_name)
-      rows.push({ label: "Course", value: formatDisplayLabel(lead.course_name) });
-    if (lead.course_category)
-      rows.push({ label: "Course category", value: formatDisplayLabel(lead.course_category) });
-    if (lead.intended_study_country)
-      rows.push({ label: "Destination country", value: formatDisplayLabel(lead.intended_study_country) });
-    if (lead.loan_amount_required != null) {
-      const v = Number(lead.loan_amount_required);
-      if (Number.isFinite(v) && v > 0)
-        rows.push({ label: "Requested loan", value: `₹${v.toLocaleString("en-IN")}` });
+    const derivedLevel = cl && "derived" in cl ? (cl.derived ?? null) : null;
+    const levelLower = (derivedLevel ?? "").toLowerCase();
+    const isUG = levelLower.includes("bachelor") || levelLower === "ug" || levelLower.includes("under");
+    if (isUG) {
+      out.push(
+        `Course level is ${formatDisplayLabel(derivedLevel)}. Active education-loan rules are often PG / Masters-focused for overseas study, which can reduce automated lender matches.`,
+      );
     }
+
+    // Healthcare / Nursing course category
+    const courseBlob = `${lead.course_name ?? ""} ${lead.course_category ?? ""}`.toLowerCase();
+    const isHealthcare = /nurs|health|medic|pharma/.test(courseBlob);
+    if (isHealthcare) {
+      const label = lead.course_category
+        ? formatDisplayLabel(lead.course_category)
+        : formatDisplayLabel(lead.course_name);
+      out.push(
+        `Course category is ${label}. If active lender coverage does not include this category, automated lender matching may fail.`,
+      );
+    }
+
+    // Loan vs co-applicant income
+    const loan = Number(lead.loan_amount_required);
+    const inc = Number(lead.coapplicant_income);
+    const loanIncomeFlag =
+      Number.isFinite(loan) && loan > 0 && Number.isFinite(inc) && inc > 0 && loan / inc > 60;
+    if (
+      loanIncomeFlag ||
+      presentCats.has("loan_amount") ||
+      presentCats.has("coapp_income")
+    ) {
+      if (Number.isFinite(loan) && loan > 0 && Number.isFinite(inc) && inc > 0) {
+        out.push(
+          `Requested loan of ₹${loan.toLocaleString("en-IN")} against co-applicant income of ₹${inc.toLocaleString("en-IN")}/month is a difficult combination for automated lender thresholds — most rules expect stronger income support.`,
+        );
+      } else {
+        out.push(
+          "Requested loan amount appears high relative to co-applicant income — this can fail lender income / repayment-comfort checks.",
+        );
+      }
+    }
+
+    // Country coverage
+    if (presentCats.has("country_geo") && lead.intended_study_country) {
+      const n = countByCat.get("country_geo") ?? 0;
+      out.push(
+        `Destination country ${formatDisplayLabel(lead.intended_study_country)} is not in the coverage list of ${n} active lender ${n === 1 ? "rule" : "rules"}.`,
+      );
+    }
+
+    // University coverage / premiere-list nuance
     const um = resolution?.university_match;
     if (um && (um.kind === "by_id" || um.kind === "fuzzy")) {
       const bits: string[] = [];
       if (um.global_rank != null) bits.push(`Rank #${um.global_rank}`);
       if (um.ranking_bucket) bits.push(formatDisplayLabel(um.ranking_bucket));
-      if (bits.length > 0) rows.push({ label: "University", value: `${um.master_name} · ${bits.join(" · ")}` });
-      else rows.push({ label: "University", value: um.master_name });
-    } else if (lead.university_name_raw) {
-      rows.push({ label: "University", value: lead.university_name_raw });
+      const suffix = bits.length > 0 ? ` (${bits.join(" · ")})` : "";
+      out.push(
+        `University ${um.master_name}${suffix}: BRE may accept this profile, but lender-specific university coverage, premiere-list, or tier rules can still restrict automated matching.`,
+      );
     }
-    if (resolution?.collateral_state)
-      rows.push({
-        label: "Collateral route",
-        value: formatDisplayLabel(resolution.collateral_state.replace("_review_needed", "")),
-      });
-    return rows;
-  }, [lead, resolution]);
+
+    // Collateral route
+    if (resolution?.collateral_state) {
+      const route = formatDisplayLabel(resolution.collateral_state.replace("_review_needed", ""));
+      out.push(
+        `Collateral route is ${route}. Worth reviewing against each lender's collateral policy before manual discussion.`,
+      );
+    }
+
+    // Combined summary (only if we actually produced multiple bullets)
+    if (out.length >= 2) {
+      const parts: string[] = [];
+      if (derivedLevel) parts.push(formatDisplayLabel(derivedLevel));
+      if (lead.course_category) parts.push(formatDisplayLabel(lead.course_category));
+      else if (lead.course_name) parts.push(formatDisplayLabel(lead.course_name));
+      if (lead.intended_study_country) parts.push(formatDisplayLabel(lead.intended_study_country));
+      if (Number.isFinite(loan) && loan > 0) parts.push(`₹${loan.toLocaleString("en-IN")} loan`);
+      if (Number.isFinite(inc) && inc > 0) parts.push(`₹${inc.toLocaleString("en-IN")}/month income`);
+      if (lead.coapplicant_relation) parts.push(`${formatDisplayLabel(lead.coapplicant_relation)} co-applicant`);
+      if (parts.length >= 2) {
+        out.push(
+          `Combined view: no active lender currently accepts this combination of ${parts.join(" + ")} under automated rules.`,
+        );
+      }
+    }
+
+    return out;
+  }, [lead, resolution, categories, presentCats]);
 
   // Suggested next actions — only when a relevant category is present.
   const actions = useMemo(() => {
@@ -769,20 +835,17 @@ function LenderMatchFailureSummary({
         </div>
       )}
 
-      {/* Block B — Profile context to review */}
-      {profileRows.length > 0 && (
+      {/* Block B — Operational match explanation (business-language reasoning) */}
+      {explanation.length > 0 && (
         <div className="space-y-1.5 border-t border-amber-500/30 pt-3">
           <div className="text-[11px] uppercase tracking-wider font-semibold text-amber-900/80 dark:text-amber-200/80">
-            Profile context to review
+            Operational Match Explanation
           </div>
-          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs">
-            {profileRows.map((row) => (
-              <div key={row.label} className="flex justify-between gap-3 border-b border-amber-500/10 py-0.5">
-                <dt className="text-muted-foreground">{row.label}</dt>
-                <dd className="text-foreground text-right font-medium">{row.value}</dd>
-              </div>
+          <ul className="space-y-1 text-xs text-foreground list-disc pl-4">
+            {explanation.map((line, i) => (
+              <li key={i} className="leading-relaxed">{line}</li>
             ))}
-          </dl>
+          </ul>
         </div>
       )}
 
