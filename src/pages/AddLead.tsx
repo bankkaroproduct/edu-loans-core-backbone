@@ -458,25 +458,64 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     }
   }, [pincodeResult, form.pincode]);
 
-  // Master combobox options
-  // Universities master stores `country` as the full display name (e.g. "United States",
-  // "United Kingdom") — same shape as `countries_master.country_name`. The previous
-  // implementation incorrectly translated the form value to an ISO code (US, GB, …)
-  // and tried to match against that, which produced an empty list for every country.
-  // Compare the names directly (case-insensitive, trimmed). When no country is selected,
-  // show the full master list so the user still sees options.
+  // ----------------------------------------------------------------------------
+  // Cascading Country → University → Course options sourced from
+  // src/data/universities.json (PR1, UI-only). The Country dropdown itself
+  // continues to read from `countries_master` (unchanged) — the JSON is
+  // consulted only when the selected country name (case-insensitive exact
+  // match) is one of the 26 covered countries. master id resolution remains
+  // best-effort: when a JSON name happens to match a `universities_master`
+  // row by name + country (or a `courses_master` row by name), we set the
+  // FK; otherwise we save the raw string. Once PR2 syncs the JSON into the
+  // master tables, this best-effort match becomes deterministic.
+  const norm = (s: string | null | undefined) => (s ?? "").trim().toLowerCase();
+
+  const countryInJson = jsonHasCountry(form.intended_study_country);
+
   const universityOptions: MasterOption[] = useMemo(() => {
     const country = (form.intended_study_country ?? "").trim();
-    const filtered = country
-      ? universities.filter((u) => sameCountryName(u.country, country))
-      : universities;
-    return filtered.map((u) => ({ id: u.id, label: u.university_name, hint: u.country }));
-  }, [universities, form.intended_study_country]);
+    if (!country) return [];
+    if (countryInJson) {
+      // JSON-driven path
+      return jsonGetUniversities(country).map((u) => ({
+        id: u.name, // use name as the option id for JSON-only entries
+        label: u.name,
+        hint: u.city ?? undefined,
+      }));
+    }
+    // Fallback to master list when country isn't covered by JSON.
+    return universities
+      .filter((u) => sameCountryName(u.country, country))
+      .map((u) => ({ id: u.id, label: u.university_name, hint: u.country }));
+  }, [universities, form.intended_study_country, countryInJson]);
 
-  const courseOptions: MasterOption[] = useMemo(
-    () => courses.map((c) => ({ id: c.id, label: c.course_name, hint: c.course_category ?? undefined })),
-    [courses],
-  );
+  const courseOptions: MasterOption[] = useMemo(() => {
+    const country = (form.intended_study_country ?? "").trim();
+    const uniName = form.university_name_raw.trim();
+    if (countryInJson && uniName) {
+      return jsonGetCourses(country, uniName).map((c) => ({ id: c, label: c }));
+    }
+    // Fallback: full master courses list (existing behavior) when JSON
+    // cascade can't resolve.
+    return courses.map((c) => ({ id: c.id, label: c.course_name, hint: c.course_category ?? undefined }));
+  }, [courses, countryInJson, form.intended_study_country, form.university_name_raw]);
+
+  // Best-effort resolvers: turn a JSON-picked label into a master FK id.
+  const resolveUniversityId = (uniName: string, country: string): string => {
+    const tName = norm(uniName);
+    const tCountry = norm(country);
+    if (!tName) return "";
+    const hit = universities.find(
+      (u) => norm(u.university_name) === tName && norm(u.country) === tCountry,
+    );
+    return hit?.id ?? "";
+  };
+  const resolveCourseId = (courseName: string): string => {
+    const t = norm(courseName);
+    if (!t) return "";
+    const hit = courses.find((c) => norm(c.course_name) === t);
+    return hit?.id ?? "";
+  };
 
   const fullName = `${form.student_first_name.trim()} ${form.student_last_name.trim()}`.trim();
   const resolvedCourseName = form.course_name || form.course_name_raw.trim();
