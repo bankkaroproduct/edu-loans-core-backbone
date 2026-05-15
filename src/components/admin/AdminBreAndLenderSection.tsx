@@ -61,6 +61,8 @@ import {
 import { getPremiereMatches } from "@/lib/premiere/lookup";
 import { getSeedForLender } from "@/lib/bre/lenderScorecard/seeds";
 import type { Tables } from "@/integrations/supabase/types";
+import { formatDisplayLabel } from "@/lib/formatDisplayLabel";
+import type { BuildProfileResolution } from "@/lib/bre/leadProfile";
 
 type Lead = Tables<"student_leads">;
 
