@@ -340,6 +340,7 @@ export function useStudentApplication() {
           highest_qualification: formData.highest_qualification || null,
           marks_gpa: formData.marks_gpa || null,
           course_name: formData.course_name || "Not specified",
+          course_id: formData.course_id || null,
           course_category: formData.course_category || null,
           university_name_raw: formData.university_name_raw || null,
           university_id: formData.university_id || null,
