@@ -51,7 +51,7 @@ import {
   resolveRankBandFromResolution,
   type RankModifierResult,
 } from "@/lib/bre/rankModifier";
-import type { BreLenderRule, BreResult, BucketKey, ParameterTrace } from "@/lib/bre/types";
+import type { BreLenderRule, BreResult, BucketKey, LenderMatchResult, ParameterTrace } from "@/lib/bre/types";
 import { formatEmploymentLabel, isEmploymentTypeParam } from "@/lib/bre/employmentDisplay";
 import { displayLenderCode } from "@/lib/lenderDisplay";
 import {
