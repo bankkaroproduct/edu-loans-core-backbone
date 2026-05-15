@@ -27,6 +27,7 @@ export interface StudentFormData {
   course_name: string;
   university_name_raw: string;
   university_id: string;
+  course_id: string;
   intake_term: string;
   intake_year: string;
   test_scores: {
