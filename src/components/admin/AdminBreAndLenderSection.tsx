@@ -825,7 +825,7 @@ function LenderMatchFailureSummary({
                     </Badge>
                     <span className="font-medium">{meta.label}</span>
                   </div>
-                  <div className="ml-[3.25rem] mt-0.5 text-muted-foreground leading-relaxed">
+                  <div className="mt-0.5 text-muted-foreground leading-relaxed">
                     {sample || meta.helper}
                   </div>
                 </li>
