@@ -43,6 +43,7 @@ import { sortByPriority } from "@/lib/countryOrder";
 import { buildIntakeSessionOptions, intakeSessionValue, parseIntakeSessionValue } from "@/lib/intakeSession";
 import type { Tables } from "@/integrations/supabase/types";
 import { fetchAllUniversitiesMaster } from "@/lib/fetchAllUniversities";
+import { getUniversities as jsonGetUniversities, getCourses as jsonGetCourses, hasCountry as jsonHasCountry } from "@/lib/universitiesData";
 
 type Country = Tables<"countries_master">;
 type University = Tables<"universities_master">;
