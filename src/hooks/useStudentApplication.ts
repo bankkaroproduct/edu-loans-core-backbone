@@ -77,7 +77,7 @@ const EMPTY_FORM: StudentFormData = {
   student_dob: "", student_gender: "", city: "", state: "", district: "", tier: "", pincode: "",
   intended_study_country: "", course_category: "", loan_amount_required: "",
   highest_qualification: "", marks_gpa: "", course_name: "",
-  university_name_raw: "", university_id: "", intake_term: "", intake_year: "",
+  university_name_raw: "", university_id: "", course_id: "", intake_term: "", intake_year: "",
   test_scores: {},
   coapplicant_name: "", coapplicant_relation: "", coapplicant_mobile: "",
   coapplicant_email: "", coapplicant_income: "", coapplicant_employment_type: "",
