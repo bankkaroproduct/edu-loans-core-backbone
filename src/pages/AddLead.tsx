@@ -1265,12 +1265,14 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                       selectedId={isMaster ? current : ""}
                       manualValue={isMaster ? "" : current}
                       onSelectMaster={(opt) => {
-                        // Switching country must clear stale university selection so
-                        // partners aren't shown a university from a different country.
+                        // Switching country must clear stale university AND course so
+                        // we don't carry a selection from a different country.
                         setMany({
                           intended_study_country: opt.label,
                           university_id: "",
                           university_name_raw: "",
+                          course_id: "",
+                          course_name: "",
                         });
                       }}
                       onSelectManual={() => {
@@ -1278,6 +1280,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                           intended_study_country: "",
                           university_id: "",
                           university_name_raw: "",
+                          course_id: "",
+                          course_name: "",
                         });
                       }}
                       onChangeManual={(t) => {
@@ -1285,6 +1289,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                           intended_study_country: t,
                           university_id: "",
                           university_name_raw: "",
+                          course_id: "",
+                          course_name: "",
                         });
                       }}
                       placeholder="Search & select intended country…"
@@ -1295,31 +1301,75 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               </div>
               <div className="space-y-2 md:col-span-2" data-field="university">
                 <Label>University *</Label>
-                <MasterCombobox
-                  options={universityOptions}
-                  selectedId={form.university_id}
-                  manualValue={form.university_id ? "" : form.university_name_raw}
-                  onSelectMaster={(opt) => setMany({ university_id: opt.id, university_name_raw: opt.label })}
-                  onSelectManual={() => setMany({ university_id: "", university_name_raw: form.university_name_raw })}
-                  onChangeManual={(t) => setMany({ university_id: "", university_name_raw: t })}
-                  placeholder={form.intended_study_country ? `Search universities in ${form.intended_study_country}…` : "Pick a country first to filter universities"}
-                  helperText="Search the master list, or pick 'Not available in list' to type manually."
-                  manualPlaceholder="Type the university name"
-                />
+                {(() => {
+                  // When the cascade is JSON-driven, option ids are the university
+                  // NAME (not a master uuid). Reflect "selected" via name match so
+                  // the chosen row stays highlighted in the popover.
+                  const selectedId = countryInJson
+                    ? (form.university_name_raw || "")
+                    : form.university_id;
+                  return (
+                    <MasterCombobox
+                      options={universityOptions}
+                      selectedId={selectedId}
+                      manualValue={selectedId ? "" : form.university_name_raw}
+                      onSelectMaster={(opt) => {
+                        const country = form.intended_study_country || "";
+                        const masterId = countryInJson
+                          ? resolveUniversityId(opt.label, country)
+                          : opt.id;
+                        // Picking a new university clears the previously selected course.
+                        setMany({
+                          university_id: masterId,
+                          university_name_raw: opt.label,
+                          course_id: "",
+                          course_name: "",
+                        });
+                      }}
+                      onSelectManual={() => setMany({
+                        university_id: "",
+                        university_name_raw: form.university_name_raw,
+                        course_id: "",
+                        course_name: "",
+                      })}
+                      onChangeManual={(t) => setMany({
+                        university_id: "",
+                        university_name_raw: t,
+                        course_id: "",
+                        course_name: "",
+                      })}
+                      placeholder={form.intended_study_country ? `Search universities in ${form.intended_study_country}…` : "Pick a country first to filter universities"}
+                      helperText="Search the list, or pick 'Not available in list' to type manually."
+                      manualPlaceholder="Type the university name"
+                    />
+                  );
+                })()}
               </div>
               <div className="space-y-2 md:col-span-2" data-field="course">
                 <Label>Course *</Label>
-                <MasterCombobox
-                  options={courseOptions}
-                  selectedId={form.course_id}
-                  manualValue={form.course_id ? "" : form.course_name}
-                  onSelectMaster={(opt) => setMany({ course_id: opt.id, course_name: opt.label })}
-                  onSelectManual={() => setMany({ course_id: "", course_name: form.course_name })}
-                  onChangeManual={(t) => setMany({ course_id: "", course_name: t })}
-                  placeholder="Search courses…"
-                  helperText="Search the master list, or pick 'Not available in list' to type manually."
-                  manualPlaceholder="Type the course name"
-                />
+                {(() => {
+                  const selectedId = countryInJson
+                    ? (form.course_name || "")
+                    : form.course_id;
+                  return (
+                    <MasterCombobox
+                      options={courseOptions}
+                      selectedId={selectedId}
+                      manualValue={selectedId ? "" : form.course_name}
+                      onSelectMaster={(opt) => {
+                        const masterId = countryInJson
+                          ? resolveCourseId(opt.label)
+                          : opt.id;
+                        setMany({ course_id: masterId, course_name: opt.label });
+                      }}
+                      onSelectManual={() => setMany({ course_id: "", course_name: form.course_name })}
+                      onChangeManual={(t) => setMany({ course_id: "", course_name: t })}
+                      placeholder={form.university_name_raw ? "Search courses…" : "Pick a university first"}
+                      helperText="Search the list, or pick 'Not available in list' to type manually."
+                      manualPlaceholder="Type the course name"
+                    />
+                  );
+                })()}
               </div>
               <div className="space-y-2 md:col-span-2" data-field="intake_term">
                 <Label>Intake Session *</Label>
