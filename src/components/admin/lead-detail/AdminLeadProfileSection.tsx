@@ -329,7 +329,7 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
           <Field label="City" value={lead.city} editable={ed("city")} onSaved={onSaved} />
           <Field label="District" value={lead.district ?? null} editable={ed("district")} onSaved={onSaved} />
           <Field label="State" value={lead.state} editable={ed("state")} onSaved={onSaved} />
-          <Field label="Tier" value={lead.tier ?? null} editable={ed("tier")} onSaved={onSaved} />
+          <Field label="City Tier" value={lead.tier ?? null} editable={ed("tier")} onSaved={onSaved} />
           <Field label="Country" value={lead.country_of_residence} editable={ed("country_of_residence")} onSaved={onSaved} />
         </div>
       </SectionCard>
