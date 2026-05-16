@@ -111,10 +111,7 @@ export default function StudentRecommendations() {
     return 1;
   })();
 
-  const formatAmount = (amt: number | null) => {
-    if (!amt) return "—";
-    return `₹${(amt / 100000).toFixed(1)}L`;
-  };
+  const formatAmount = (amt: number | null) => formatINRWithUnit(amt);
 
   // State-aware card CTA
   const getCardCTA = () => {
