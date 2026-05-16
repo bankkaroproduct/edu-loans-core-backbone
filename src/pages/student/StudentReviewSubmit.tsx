@@ -11,7 +11,7 @@ import { Pencil, CheckCircle2, Sparkles, Shield, Info, Lock } from "lucide-react
 import { intakeSessionLabel } from "@/lib/intakeSession";
 import { formatWorkExperience } from "@/lib/workExperience";
 import { formatDisplayLabel } from "@/lib/formatDisplayLabel";
-import { formatINRWithUnit } from "@/lib/formatCurrency";
+import { INRAmountStacked } from "@/components/shared/INRAmountStacked";
 
 interface SummaryItem {
   label: string;
