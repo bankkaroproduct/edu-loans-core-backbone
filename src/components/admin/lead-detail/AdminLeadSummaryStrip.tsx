@@ -361,7 +361,7 @@ export function AdminLeadSummaryStrip({ lead, onSaved }: Props) {
           </span>
         ) : (
           <ReadOnlyValue
-            value={lead.loan_amount_required ? formatINR(String(lead.loan_amount_required)) : null}
+            value={lead.loan_amount_required ? formatINRWithUnit(lead.loan_amount_required) : null}
             emphasis
           />
         )}
