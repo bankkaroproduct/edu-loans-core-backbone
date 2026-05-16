@@ -11,7 +11,7 @@ import { HeroDrillPanel } from "@/components/dashboard/HeroDrillPanel";
 import type { CardKey, DrilldownData } from "@/lib/dashboardDrilldowns";
 import type { KPIData } from "@/components/dashboard/KPICards";
 import { YourLeads } from "@/components/dashboard/YourLeads";
-import type { DocSummary } from "@/components/dashboard/DocumentSnapshot";
+type DocSummary = { pending: number; underReview: number; verified: number; rejected: number; reuploadNeeded: number; };
 import { PayoutSnapshot, type PayoutSummary } from "@/components/dashboard/PayoutSnapshot";
 import { SystemHelp } from "@/components/dashboard/SystemHelp";
 import { OnboardingEmptyState } from "@/components/dashboard/OnboardingEmptyState";
