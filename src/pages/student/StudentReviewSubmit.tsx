@@ -116,7 +116,13 @@ export default function StudentReviewSubmit() {
           { label: "Pincode", value: formData.pincode },
           { label: "Destination Country", value: formData.intended_study_country },
           { label: "Course Category", value: formData.course_category ? formatDisplayLabel(formData.course_category) : null },
-          { label: "Loan Amount", value: formData.loan_amount_required ? formatINRWithUnit(formData.loan_amount_required) : null },
+          {
+            label: "Loan Amount",
+            value: formData.loan_amount_required ? String(formData.loan_amount_required) : null,
+            node: formData.loan_amount_required
+              ? <INRAmountStacked value={formData.loan_amount_required} />
+              : undefined,
+          },
         ]}
       />
 
