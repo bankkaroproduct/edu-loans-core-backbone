@@ -158,7 +158,7 @@ export default function StudentTracker() {
                         <span className="text-xs font-mono text-muted-foreground">{data.lead_summary.lead_id || "—"}</span>
                         <HealthBadge health={data.health} />
                       </div>
-                      <h1 className="text-xl font-bold text-foreground">{data.lead_summary.student_stage_label}</h1>
+                      <h1 className="text-2xl font-semibold tracking-tight text-foreground">{data.lead_summary.student_stage_label}</h1>
                       <p className="mt-1 text-sm text-muted-foreground">{healthConfig[data.health].micro}</p>
                     </div>
                     <div className="text-right shrink-0">

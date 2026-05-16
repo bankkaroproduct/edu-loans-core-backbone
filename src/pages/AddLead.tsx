@@ -1125,7 +1125,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" /> {headingTitle}
               {(draftId || isEditMode) && (
                 <Badge variant="outline" className="ml-1 text-[10px]">

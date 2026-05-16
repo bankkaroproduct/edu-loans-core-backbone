@@ -74,7 +74,7 @@ export default function LeadDocuments() {
           </Button>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-lg font-semibold text-foreground truncate">Documents</h1>
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground truncate">Documents</h1>
               <Badge variant="outline" className="text-xs font-mono">{lead.lead_id ?? lead.id.slice(0, 8)}</Badge>
             </div>
             <p className="text-sm text-muted-foreground truncate">{studentName}</p>

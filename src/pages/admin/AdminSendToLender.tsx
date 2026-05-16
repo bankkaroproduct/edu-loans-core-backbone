@@ -306,7 +306,7 @@ export default function AdminSendToLender() {
             <ArrowLeft className="h-4 w-4 mr-1" /> Back to lead
           </Button>
           <div>
-            <h1 className="text-xl font-semibold flex items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
               <Mail className="h-5 w-5 text-primary" /> Send to Lender
             </h1>
             <p className="text-xs text-muted-foreground">
