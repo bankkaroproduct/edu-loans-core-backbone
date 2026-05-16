@@ -355,7 +355,7 @@ export function AdminLeadSummaryStrip({ lead, onSaved }: Props) {
               allowEditExisting
               inputType="number"
               numericKind="amount"
-              formatDisplay={(v) => formatINR(v)}
+              formatDisplay={(v) => formatINRWithUnit(v)}
               onSaved={() => onSaved?.()}
             />
           </span>
