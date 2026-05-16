@@ -57,12 +57,15 @@ interface EditableConfig {
 function Field({
   label,
   value,
+  displayNode,
   editable,
   readOnlyFallback = "—",
   onSaved,
 }: {
   label: string;
   value: string | null | undefined;
+  /** When provided and not editable, render this in place of `value` (e.g. multi-line JSX). */
+  displayNode?: ReactNode;
   editable?: EditableConfig;
   readOnlyFallback?: string;
   onSaved?: () => void;
@@ -84,6 +87,7 @@ function Field({
             optionsRenderAs={editable.optionsRenderAs}
             parseValue={editable.parseValue}
             formatDisplay={editable.formatDisplay}
+            formatDisplayNode={editable.formatDisplayNode}
             numericKind={editable.numericKind}
             numericRange={editable.numericRange}
             siblingMaxKey={editable.siblingMaxKey}
@@ -92,6 +96,8 @@ function Field({
             allowEditExisting
             onSaved={onSaved ? () => onSaved() : undefined}
           />
+        ) : displayNode ? (
+          displayNode
         ) : hasValue ? (
           value
         ) : (
