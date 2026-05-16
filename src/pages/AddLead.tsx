@@ -1410,6 +1410,14 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               <p className="text-xs text-muted-foreground">
                 Total Marks / Scale is optional but recommended for accurate scoring. Example: enter <code>9.5</code> and total <code>10</code> for CGPA, or <code>78</code> and total <code>100</code> for percentage.
               </p>
+              {(() => {
+                const enabled = getEnabledLevels(form.highest_qualification);
+                const mirrored = getMirroredHighestQual(form.highest_qualification, {
+                  tenth: form.tenth_score, tenth_total: form.tenth_total,
+                  twelfth: form.twelfth_score, twelfth_total: form.twelfth_total,
+                  graduation: form.graduation_score, graduation_total: form.graduation_total,
+                });
+                return (
               <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2 md:col-span-2" data-field="highest_qualification">
                 <Label>Highest Qualification *</Label>
@@ -1440,6 +1448,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 totalValue={form.tenth_total}
                 onScore={(v) => set("tenth_score", v)}
                 onTotal={(v) => set("tenth_total", v)}
+                disabled={!enabled.tenth}
               />
               <ScoreTotalPair
                 label="12th"
@@ -1454,6 +1463,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 totalValue={form.twelfth_total}
                 onScore={(v) => set("twelfth_score", v)}
                 onTotal={(v) => set("twelfth_total", v)}
+                disabled={!enabled.twelfth}
               />
               <ScoreTotalPair
                 label="Graduation"
@@ -1467,6 +1477,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 totalValue={form.graduation_total}
                 onScore={(v) => set("graduation_score", v)}
                 onTotal={(v) => set("graduation_total", v)}
+                disabled={!enabled.graduation}
               />
               <ScoreTotalPair
                 label="Highest Qualification"
@@ -1476,10 +1487,11 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 totalLabel="Highest Qualification Total Marks / CGPA Scale"
                 scorePlaceholder="e.g. 8.5"
                 totalPlaceholder="e.g. 10"
-                scoreValue={form.highest_qualification_score}
-                totalValue={form.highest_qualification_total}
+                scoreValue={enabled.highest_qualification ? form.highest_qualification_score : mirrored.score}
+                totalValue={enabled.highest_qualification ? form.highest_qualification_total : mirrored.total}
                 onScore={(v) => set("highest_qualification_score", v)}
                 onTotal={(v) => set("highest_qualification_total", v)}
+                disabled={!enabled.highest_qualification}
               />
 
               {/* Read-only academic context for student-origin leads in admin edit mode */}
