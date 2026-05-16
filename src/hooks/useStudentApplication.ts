@@ -3,6 +3,7 @@ import { useStudentAuth } from "@/hooks/useStudentAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { parseCoappWorkExpShorthand } from "@/lib/academicScore";
+import { getEnabledLevels, getMirroredHighestQual } from "@/lib/academicLevelCascade";
 
 export interface StudentFormData {
   // Basic
@@ -309,6 +310,19 @@ export function useStudentApplication() {
         // CRITICAL: build the merged scores object so we never overwrite
         // existing IELTS/TOEFL/Duolingo/GRE/GMAT keys when academic-only
         // fields change, and vice-versa.
+        // Academic levels are gated by the highest-qualification cascade
+        // (src/lib/academicLevelCascade.ts). Disabled levels are EXCLUDED
+        // from the payload; the Highest Qualification pair is auto-mirrored
+        // from the matching source level (12th or Graduation) when disabled.
+        const enabledLevels = getEnabledLevels(formData.highest_qualification);
+        const mirroredHQ = getMirroredHighestQual(formData.highest_qualification, {
+          tenth: formData.test_scores.tenth || "",
+          tenth_total: formData.test_scores.tenth_total || "",
+          twelfth: formData.test_scores.twelfth || "",
+          twelfth_total: formData.test_scores.twelfth_total || "",
+          graduation: formData.test_scores.graduation || "",
+          graduation_total: formData.test_scores.graduation_total || "",
+        });
         const scoresStr: Record<string, string | undefined> = {
           ielts: formData.test_scores.ielts,
           toefl: formData.test_scores.toefl,
@@ -316,15 +330,19 @@ export function useStudentApplication() {
           pte: formData.test_scores.pte,
           gre: formData.test_scores.gre,
           gmat: formData.test_scores.gmat,
-          tenth: formData.test_scores.tenth,
-          twelfth: formData.test_scores.twelfth,
-          graduation: formData.test_scores.graduation,
-          highest_qualification_score: formData.test_scores.highest_qualification_score,
+          tenth: enabledLevels.tenth ? formData.test_scores.tenth : undefined,
+          twelfth: enabledLevels.twelfth ? formData.test_scores.twelfth : undefined,
+          graduation: enabledLevels.graduation ? formData.test_scores.graduation : undefined,
+          highest_qualification_score: enabledLevels.highest_qualification
+            ? formData.test_scores.highest_qualification_score
+            : mirroredHQ.score,
           // Total marks denominators (new — optional, BRE-aware).
-          tenth_total: formData.test_scores.tenth_total,
-          twelfth_total: formData.test_scores.twelfth_total,
-          graduation_total: formData.test_scores.graduation_total,
-          highest_qualification_total: formData.test_scores.highest_qualification_total,
+          tenth_total: enabledLevels.tenth ? formData.test_scores.tenth_total : undefined,
+          twelfth_total: enabledLevels.twelfth ? formData.test_scores.twelfth_total : undefined,
+          graduation_total: enabledLevels.graduation ? formData.test_scores.graduation_total : undefined,
+          highest_qualification_total: enabledLevels.highest_qualification
+            ? formData.test_scores.highest_qualification_total
+            : mirroredHQ.total,
           work_experience_years: formData.test_scores.work_experience_years,
         };
         const scores: Record<string, number | string> = {};
