@@ -706,10 +706,7 @@ export default function AdminLeads() {
                           {r.loan_amount_required === null || r.loan_amount_required === undefined ? (
                             <span className="text-muted-foreground font-normal">—</span>
                           ) : (
-                            <>
-                              <span className="text-muted-foreground font-normal mr-0.5">₹</span>
-                              {Number(r.loan_amount_required).toLocaleString("en-IN")}
-                            </>
+                            formatINRCompact(r.loan_amount_required)
                           )}
                         </TableCell>
                         <TableCell className="py-3.5"><StageBadge stage={r.current_stage} /></TableCell>
