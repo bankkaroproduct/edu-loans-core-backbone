@@ -14,6 +14,7 @@ const ACRONYMS = new Set([
   "NBFC", "PSU", "PAN", "CIBIL", "OTP", "BRE", "RLS",
   "KYC", "GST", "EMI", "ID", "PTR", "CRM", "API", "URL",
   "PDF", "CSV", "TAT", "ROI", "LTV", "DTI", "FOIR",
+  "UPI", "NRI", "IRDAI", "RBI", "AML", "NEFT", "IMPS",
 ]);
 
 export function formatDisplayLabel(value: unknown, fallback = "—"): string {
