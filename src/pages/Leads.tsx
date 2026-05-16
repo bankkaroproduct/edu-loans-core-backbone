@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { StageBadge, StatusBadge, formatStageLabel } from "@/components/dashboard/StageBadge";
+import { formatINRCompact } from "@/lib/formatCurrency";
 import {
   Plus, Search, Upload, X, ChevronLeft, ChevronRight, ArrowUpDown,
   AlertTriangle, FileText, Filter, LayoutList, CalendarIcon, ChevronDown,
