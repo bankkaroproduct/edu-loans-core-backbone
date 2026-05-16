@@ -60,7 +60,7 @@ export function LeadLifecycleProgress({ lead }: Props) {
           <div className="flex items-center gap-2 rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2">
             <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
             <span className="text-sm font-medium text-destructive">
-              Lead exited at: {formatStageLabel(lead.current_stage)}
+              Lead exited at: {formatLabel(lead.current_stage)}
             </span>
           </div>
         )}
@@ -100,7 +100,7 @@ export function LeadLifecycleProgress({ lead }: Props) {
                             : "text-muted-foreground",
                         )}
                       >
-                        {formatStageLabel(stage)}
+                        {formatLabel(stage)}
                       </span>
                     </div>
                     {/* Connector — vertically aligned to dot center via matching h-5 row */}
@@ -145,7 +145,7 @@ export function LeadLifecycleProgress({ lead }: Props) {
             )}
             <div className="space-y-1 min-w-0">
               <p className="text-sm font-semibold text-foreground">
-                Current: {formatStageLabel(lead.current_stage)} · {formatStageLabel(lead.current_status)}
+                Current: {formatLabel(lead.current_stage)} · {formatLabel(lead.current_status)}
               </p>
               {lead.status_reason && (
                 <p className="text-sm text-foreground break-words">{lead.status_reason}</p>
