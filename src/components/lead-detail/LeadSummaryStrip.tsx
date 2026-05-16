@@ -137,14 +137,12 @@ export function LeadSummaryStrip({ lead }: Props) {
                 value={lead.loan_amount_required ? String(lead.loan_amount_required) : null}
                 allowEditExisting
                 inputType="number"
-                formatDisplay={(v) => formatINRWithUnit(v)}
+                formatDisplayNode={(v) => <INRAmountStacked value={v} emphasis />}
               />
+            ) : lead.loan_amount_required ? (
+              <INRAmountStacked value={lead.loan_amount_required} emphasis />
             ) : (
-              <ReadOnlyCell
-                label="Loan Amount"
-                value={lead.loan_amount_required ? formatINRWithUnit(lead.loan_amount_required) : null}
-                emphasis
-              />
+              <ReadOnlyCell label="Loan Amount" value={null} emphasis />
             )}
           </Cell>
 
