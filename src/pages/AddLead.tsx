@@ -1065,11 +1065,18 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     value,
     nudgeStep,
     nudgeField,
+    notApplicable,
   }: {
     label: string;
     value: string | number | boolean | null | undefined;
     nudgeStep?: StepId;
     nudgeField?: string;
+    /**
+     * When true, render "Not Applicable" instead of "—" or the nudge link.
+     * Used for academic rows the cascade explicitly disables (e.g. Graduation
+     * when Highest Qualification = 12th).
+     */
+    notApplicable?: boolean;
   }) => {
     const display = value === true ? "Yes" : value === false ? "No" : value;
     const isMissing = display === undefined || display === null || display === "" || display === 0;
@@ -1077,7 +1084,9 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       <div className="flex items-start gap-2 py-2 border-b border-border/50 last:border-0">
         <span className="text-sm text-muted-foreground shrink-0">{label}:</span>
         <span className="text-sm font-medium min-w-0">
-          {isMissing ? (
+          {notApplicable ? (
+            <span className="text-muted-foreground">Not Applicable</span>
+          ) : isMissing ? (
             nudgeStep ? (
               <button
                 type="button"
