@@ -1509,6 +1509,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 )
               )}
               </div>
+                );
+              })()}
             </CardContent>
           </Card>
 
