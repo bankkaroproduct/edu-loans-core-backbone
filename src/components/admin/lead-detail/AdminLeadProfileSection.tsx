@@ -51,6 +51,7 @@ interface EditableConfig {
   options?: { value: string; label: string }[];
   parseValue?: (raw: string) => unknown;
   formatDisplay?: (v: string) => string;
+  formatDisplayNode?: (v: string) => ReactNode;
   numericKind?: NumericKind;
   optionsRenderAs?: "buttons" | "dropdown";
   numericRange?: { min?: number; max?: number; label?: string };
