@@ -1052,9 +1052,9 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     const display = value === true ? "Yes" : value === false ? "No" : value;
     const isMissing = display === undefined || display === null || display === "" || display === 0;
     return (
-      <div className="flex justify-between py-1.5 border-b border-border/50 last:border-0">
-        <span className="text-sm text-muted-foreground">{label}</span>
-        <span className="text-sm font-medium text-right max-w-[60%]">
+      <div className="flex items-start gap-2 py-2 border-b border-border/50 last:border-0">
+        <span className="text-sm text-muted-foreground shrink-0">{label}:</span>
+        <span className="text-sm font-medium min-w-0">
           {isMissing ? (
             nudgeStep ? (
               <button
