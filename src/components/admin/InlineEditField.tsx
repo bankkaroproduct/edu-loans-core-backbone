@@ -422,7 +422,11 @@ export function InlineEditField({
     if (hasValue) {
       return (
         <span className={className}>
-          {formatDisplay ? formatDisplay(String(localValue)) : String(localValue)}
+          {formatDisplayNode
+            ? formatDisplayNode(String(localValue))
+            : formatDisplay
+            ? formatDisplay(String(localValue))
+            : String(localValue)}
         </span>
       );
     }
