@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { StudentHeader } from "@/components/student/StudentHeader";
 import { StudentFooter } from "@/components/student/StudentFooter";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import {
   FileText, Search, Send, Award, Banknote, HelpCircle, Loader2, Globe, Zap,
   ArrowLeft, Mail, Phone, PartyPopper
 } from "lucide-react";
-import { formatINRWithUnit } from "@/lib/formatCurrency";
+import { INRAmountStacked } from "@/components/shared/INRAmountStacked";
 
 interface Recommendation {
   id: string;
@@ -111,7 +111,7 @@ export default function StudentRecommendations() {
     return 1;
   })();
 
-  const formatAmount = (amt: number | null) => formatINRWithUnit(amt);
+  const formatAmount = (amt: number | null): ReactNode => <INRAmountStacked value={amt} />;
 
   // State-aware card CTA
   const getCardCTA = () => {
@@ -377,13 +377,13 @@ export default function StudentRecommendations() {
   );
 }
 
-function SummaryStrip({ summary, formatAmount }: { summary: LeadSummary; formatAmount: (a: number | null) => string }) {
+function SummaryStrip({ summary, formatAmount }: { summary: LeadSummary; formatAmount: (a: number | null) => ReactNode }) {
   return (
-    <div className="mb-5 flex flex-wrap gap-x-4 gap-y-1.5 rounded-lg border bg-card px-4 py-3 text-xs text-muted-foreground">
+    <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-lg border bg-card px-4 py-3 text-xs text-muted-foreground">
       <span><strong className="text-foreground">{summary.intended_study_country}</strong></span>
       {summary.university_name_raw && <span>· {summary.university_name_raw}</span>}
       <span>· {summary.course_name}</span>
-      <span>· {formatAmount(summary.loan_amount_required)}</span>
+      <span className="inline-flex items-center gap-1">· {formatAmount(summary.loan_amount_required)}</span>
       <span>· {summary.intake_term} {summary.intake_year}</span>
       <span>· Co-applicant: {summary.coapplicant_name ? "Yes" : "No"}</span>
     </div>

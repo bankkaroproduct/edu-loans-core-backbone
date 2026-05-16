@@ -11,11 +11,13 @@ import { Pencil, CheckCircle2, Sparkles, Shield, Info, Lock } from "lucide-react
 import { intakeSessionLabel } from "@/lib/intakeSession";
 import { formatWorkExperience } from "@/lib/workExperience";
 import { formatDisplayLabel } from "@/lib/formatDisplayLabel";
-import { formatINRWithUnit } from "@/lib/formatCurrency";
+import { INRAmountStacked } from "@/components/shared/INRAmountStacked";
 
 interface SummaryItem {
   label: string;
   value: string | null | undefined;
+  /** When provided, rendered in place of `value` (e.g. multi-line JSX). */
+  node?: React.ReactNode;
 }
 
 function SummaryBlock({ title, items, editPath, readOnly }: { title: string; items: SummaryItem[]; editPath: string; readOnly?: boolean }) {
@@ -35,7 +37,9 @@ function SummaryBlock({ title, items, editPath, readOnly }: { title: string; ite
           {items.map(item => (
             <div key={item.label}>
               <span className="text-[11px] text-muted-foreground">{item.label}</span>
-              <p className="text-sm font-medium text-foreground">{item.value || <span className="text-muted-foreground/60">—</span>}</p>
+              <div className="text-sm font-medium text-foreground">
+                {item.node ?? (item.value || <span className="text-muted-foreground/60">—</span>)}
+              </div>
             </div>
           ))}
         </div>
@@ -112,7 +116,13 @@ export default function StudentReviewSubmit() {
           { label: "Pincode", value: formData.pincode },
           { label: "Destination Country", value: formData.intended_study_country },
           { label: "Course Category", value: formData.course_category ? formatDisplayLabel(formData.course_category) : null },
-          { label: "Loan Amount", value: formData.loan_amount_required ? formatINRWithUnit(formData.loan_amount_required) : null },
+          {
+            label: "Loan Amount",
+            value: formData.loan_amount_required ? String(formData.loan_amount_required) : null,
+            node: formData.loan_amount_required
+              ? <INRAmountStacked value={formData.loan_amount_required} />
+              : undefined,
+          },
         ]}
       />
 

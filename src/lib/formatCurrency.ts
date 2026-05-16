@@ -49,6 +49,35 @@ export function formatINRWithUnit(
   return base;
 }
 
+// Two-part form for stacked display (amount above, unit annotation below).
+// 50000     -> { amount: "₹50,000",       unit: null }
+// 1500000   -> { amount: "₹15,00,000",    unit: "15 Lakhs" }
+// 1225000   -> { amount: "₹12,25,000",    unit: "12.25 Lakhs" }
+// 12500000  -> { amount: "₹1,25,00,000",  unit: "1.25 Crore" }
+// null      -> { amount: fallback,        unit: null }
+export function formatINRParts(
+  value: number | string | null | undefined,
+  opts: { fallback?: string; withSymbol?: boolean } = {},
+): { amount: string; unit: string | null } {
+  const { fallback = "—", withSymbol = true } = opts;
+  if (value === null || value === undefined || value === "") {
+    return { amount: fallback, unit: null };
+  }
+  const n = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(n)) return { amount: fallback, unit: null };
+  const amount = formatINR(n, { withSymbol });
+  const abs = Math.abs(n);
+  if (abs >= 10000000) {
+    const cr = trimDecimals((n / 10000000).toFixed(2));
+    return { amount, unit: `${cr} Crore` };
+  }
+  if (abs >= 100000) {
+    const l = trimDecimals((n / 100000).toFixed(2));
+    return { amount, unit: `${l} ${l === "1" ? "Lakh" : "Lakhs"}` };
+  }
+  return { amount, unit: null };
+}
+
 // Compact form for list/table cells.
 // 50000     -> ₹50,000
 // 1500000   -> ₹15L

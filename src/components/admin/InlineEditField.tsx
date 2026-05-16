@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,6 +36,12 @@ interface Props {
   inputType?: string;
   /** Display formatter for non-empty saved value (does NOT affect storage). */
   formatDisplay?: (value: string) => string;
+  /**
+   * Display formatter that returns a ReactNode (e.g. multi-line JSX).
+   * Used only in display state — editor input remains the raw string value.
+   * Takes precedence over `formatDisplay` when both are provided.
+   */
+  formatDisplayNode?: (value: string) => ReactNode;
   /** Optional placeholder. */
   placeholder?: string;
   className?: string;
@@ -111,6 +117,7 @@ export function InlineEditField({
   allowEditExisting = false,
   inputType = "text",
   formatDisplay,
+  formatDisplayNode,
   placeholder,
   className,
   options,
@@ -415,7 +422,11 @@ export function InlineEditField({
     if (hasValue) {
       return (
         <span className={className}>
-          {formatDisplay ? formatDisplay(String(localValue)) : String(localValue)}
+          {formatDisplayNode
+            ? formatDisplayNode(String(localValue))
+            : formatDisplay
+            ? formatDisplay(String(localValue))
+            : String(localValue)}
         </span>
       );
     }
@@ -580,7 +591,11 @@ export function InlineEditField({
   }
 
   if (hasValue) {
-    const display = formatDisplay ? formatDisplay(String(localValue)) : String(localValue);
+    const display: ReactNode = formatDisplayNode
+      ? formatDisplayNode(String(localValue))
+      : formatDisplay
+      ? formatDisplay(String(localValue))
+      : String(localValue);
     if (!allowEditExisting) {
       return <span className={className}>{display}</span>;
     }
