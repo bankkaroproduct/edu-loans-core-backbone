@@ -37,6 +37,7 @@ import { CollateralRadio, collateralBoolToState, collateralStateToBool, type Col
 import { sanitizeWorkExpInput, formatWorkExperience, isValidWorkExp } from "@/lib/workExperience";
 import { ScoreTotalPair } from "@/components/shared/ScoreTotalPair";
 import { validateScoreTotalPair, parseCoappWorkExpShorthand, validateCoappWorkExpShorthand, previewCoappWorkExpShorthand, buildCoappWorkExpShorthand } from "@/lib/academicScore";
+import { getEnabledLevels, getMirroredHighestQual } from "@/lib/academicLevelCascade";
 import { validateTestScoresMap } from "@/lib/leadScoreRanges";
 import { usePincodeLookup } from "@/hooks/usePincodeLookup";
 import { sortByPriority } from "@/lib/countryOrder";
@@ -540,13 +541,15 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     // Score-range / numeric-sanity checks run on BOTH draft and submit paths.
     // Required-ness checks remain submit-only below.
     {
-      const pairs: Array<[string, string, string, string]> = [
-        ["10th", form.tenth_score, form.tenth_total, "tenth_total"],
-        ["12th", form.twelfth_score, form.twelfth_total, "twelfth_total"],
-        ["Graduation", form.graduation_score, form.graduation_total, "graduation_total"],
-        ["Highest Qualification", form.highest_qualification_score, form.highest_qualification_total, "highest_qualification_total"],
+      const enabledLevels = getEnabledLevels(form.highest_qualification);
+      const pairs: Array<[string, string, string, string, boolean]> = [
+        ["10th", form.tenth_score, form.tenth_total, "tenth_total", enabledLevels.tenth],
+        ["12th", form.twelfth_score, form.twelfth_total, "twelfth_total", enabledLevels.twelfth],
+        ["Graduation", form.graduation_score, form.graduation_total, "graduation_total", enabledLevels.graduation],
+        ["Highest Qualification", form.highest_qualification_score, form.highest_qualification_total, "highest_qualification_total", enabledLevels.highest_qualification],
       ];
-      for (const [label, s, t, field] of pairs) {
+      for (const [label, s, t, field, isEnabled] of pairs) {
+        if (!isEnabled) continue;
         const err = validateScoreTotalPair(s, t);
         if (err) return { message: `${label}: ${err}`, step: "study", field };
       }
@@ -565,6 +568,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       if (!form.intake_year) return { message: "Intake year is required", step: "study", field: "intake_year" };
 
       // Academic Profile — mandatory: highest qualification, 10th score, 12th score.
+      // (10th & 12th are always enabled per the cascade rule.)
       if (!form.highest_qualification) return { message: "Highest qualification is required", step: "study", field: "highest_qualification" };
       if (!form.tenth_score.trim()) return { message: "10th score is required", step: "study", field: "tenth_score" };
       if (!form.twelfth_score.trim()) return { message: "12th score is required", step: "study", field: "twelfth_score" };
@@ -803,16 +807,33 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       else delete existing[key];
     };
 
-    // Academic
-    setOrDelete("tenth", form.tenth_score);
-    setOrDelete("twelfth", form.twelfth_score);
-    setOrDelete("graduation", form.graduation_score);
-    setOrDelete("highest_qualification_score", form.highest_qualification_score);
-    // Total marks denominators (BRE-aware)
-    setOrDelete("tenth_total", form.tenth_total);
-    setOrDelete("twelfth_total", form.twelfth_total);
-    setOrDelete("graduation_total", form.graduation_total);
-    setOrDelete("highest_qualification_total", form.highest_qualification_total);
+    // Academic — gated by the highest-qualification cascade. Disabled levels
+    // have their keys deleted; the Highest Qualification pair is auto-mirrored
+    // from the matching source level (12th or Graduation) when disabled so the
+    // BRE / scoring still has a canonical "highest" score.
+    const enabledLevels = getEnabledLevels(form.highest_qualification);
+    const mirroredHQ = getMirroredHighestQual(form.highest_qualification, {
+      tenth: form.tenth_score, tenth_total: form.tenth_total,
+      twelfth: form.twelfth_score, twelfth_total: form.twelfth_total,
+      graduation: form.graduation_score, graduation_total: form.graduation_total,
+    });
+    if (enabledLevels.tenth) setOrDelete("tenth", form.tenth_score); else delete existing.tenth;
+    if (enabledLevels.twelfth) setOrDelete("twelfth", form.twelfth_score); else delete existing.twelfth;
+    if (enabledLevels.graduation) setOrDelete("graduation", form.graduation_score); else delete existing.graduation;
+    if (enabledLevels.highest_qualification) {
+      setOrDelete("highest_qualification_score", form.highest_qualification_score);
+    } else {
+      setOrDelete("highest_qualification_score", mirroredHQ.score);
+    }
+    // Total marks denominators (BRE-aware) — same gating.
+    if (enabledLevels.tenth) setOrDelete("tenth_total", form.tenth_total); else delete existing.tenth_total;
+    if (enabledLevels.twelfth) setOrDelete("twelfth_total", form.twelfth_total); else delete existing.twelfth_total;
+    if (enabledLevels.graduation) setOrDelete("graduation_total", form.graduation_total); else delete existing.graduation_total;
+    if (enabledLevels.highest_qualification) {
+      setOrDelete("highest_qualification_total", form.highest_qualification_total);
+    } else {
+      setOrDelete("highest_qualification_total", mirroredHQ.total);
+    }
 
     // Standardized test scores (aligned with Student portal: ielts/toefl/duolingo/pte/gre/gmat)
     setOrDelete("ielts", form.ielts);
@@ -850,6 +871,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     return existing;
   }, [
     originalLead,
+    form.highest_qualification,
     form.tenth_score, form.twelfth_score, form.graduation_score, form.highest_qualification_score,
     form.tenth_total, form.twelfth_total, form.graduation_total, form.highest_qualification_total,
     form.ielts, form.toefl, form.duolingo, form.pte, form.gre, form.gmat,
@@ -1043,11 +1065,18 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     value,
     nudgeStep,
     nudgeField,
+    notApplicable,
   }: {
     label: string;
     value: string | number | boolean | null | undefined;
     nudgeStep?: StepId;
     nudgeField?: string;
+    /**
+     * When true, render "Not Applicable" instead of "—" or the nudge link.
+     * Used for academic rows the cascade explicitly disables (e.g. Graduation
+     * when Highest Qualification = 12th).
+     */
+    notApplicable?: boolean;
   }) => {
     const display = value === true ? "Yes" : value === false ? "No" : value;
     const isMissing = display === undefined || display === null || display === "" || display === 0;
@@ -1055,7 +1084,9 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       <div className="flex items-start gap-2 py-2 border-b border-border/50 last:border-0">
         <span className="text-sm text-muted-foreground shrink-0">{label}:</span>
         <span className="text-sm font-medium min-w-0">
-          {isMissing ? (
+          {notApplicable ? (
+            <span className="text-muted-foreground">Not Applicable</span>
+          ) : isMissing ? (
             nudgeStep ? (
               <button
                 type="button"
@@ -1409,6 +1440,14 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               <p className="text-xs text-muted-foreground">
                 Total Marks / Scale is optional but recommended for accurate scoring. Example: enter <code>9.5</code> and total <code>10</code> for CGPA, or <code>78</code> and total <code>100</code> for percentage.
               </p>
+              {(() => {
+                const enabled = getEnabledLevels(form.highest_qualification);
+                const mirrored = getMirroredHighestQual(form.highest_qualification, {
+                  tenth: form.tenth_score, tenth_total: form.tenth_total,
+                  twelfth: form.twelfth_score, twelfth_total: form.twelfth_total,
+                  graduation: form.graduation_score, graduation_total: form.graduation_total,
+                });
+                return (
               <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2 md:col-span-2" data-field="highest_qualification">
                 <Label>Highest Qualification *</Label>
@@ -1439,6 +1478,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 totalValue={form.tenth_total}
                 onScore={(v) => set("tenth_score", v)}
                 onTotal={(v) => set("tenth_total", v)}
+                disabled={!enabled.tenth}
               />
               <ScoreTotalPair
                 label="12th"
@@ -1453,6 +1493,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 totalValue={form.twelfth_total}
                 onScore={(v) => set("twelfth_score", v)}
                 onTotal={(v) => set("twelfth_total", v)}
+                disabled={!enabled.twelfth}
               />
               <ScoreTotalPair
                 label="Graduation"
@@ -1466,6 +1507,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 totalValue={form.graduation_total}
                 onScore={(v) => set("graduation_score", v)}
                 onTotal={(v) => set("graduation_total", v)}
+                disabled={!enabled.graduation}
               />
               <ScoreTotalPair
                 label="Highest Qualification"
@@ -1475,10 +1517,11 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 totalLabel="Highest Qualification Total Marks / CGPA Scale"
                 scorePlaceholder="e.g. 8.5"
                 totalPlaceholder="e.g. 10"
-                scoreValue={form.highest_qualification_score}
-                totalValue={form.highest_qualification_total}
+                scoreValue={enabled.highest_qualification ? form.highest_qualification_score : mirrored.score}
+                totalValue={enabled.highest_qualification ? form.highest_qualification_total : mirrored.total}
                 onScore={(v) => set("highest_qualification_score", v)}
                 onTotal={(v) => set("highest_qualification_total", v)}
+                disabled={!enabled.highest_qualification}
               />
 
               {/* Read-only academic context for student-origin leads in admin edit mode */}
@@ -1496,6 +1539,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 )
               )}
               </div>
+                );
+              })()}
             </CardContent>
           </Card>
 
@@ -1840,27 +1885,27 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               <div>
                 <Badge variant="outline" className="mb-2">Current Academic Profile</Badge>
                 {(() => {
-                  // Display-only fallbacks. Form state / submission payload unchanged.
-                  // Fix B: mirror highest-qualification score from the matching level
-                  //        when user left the dedicated input blank.
-                  // Fix C: render "Not applicable" for Graduation when user is at-or-below 12th.
+                  // Cascade-aware display. Form state / payload unchanged here —
+                  // the payload mirror is applied at submit in buildMergedTestScores.
+                  // Compute the HQ mirror at DISPLAY time so the review shows the
+                  // right value even before submit.
                   const hq = form.highest_qualification || "";
-                  const isAtOrBelow12 = hq === "12th / High School" || hq === "10th / SSC";
-                  const derivedHighestScore =
-                    form.highest_qualification_score ||
-                    (hq === "12th / High School" ? form.twelfth_score : "") ||
-                    (hq === "10th / SSC" ? form.tenth_score : "") ||
-                    (hq && !isAtOrBelow12 ? form.graduation_score : "") ||
-                    "";
-                  const graduationDisplay =
-                    form.graduation_score || (isAtOrBelow12 ? "Not applicable" : "");
+                  const enabled = getEnabledLevels(hq);
+                  const mirroredHQ = getMirroredHighestQual(hq, {
+                    tenth: form.tenth_score, tenth_total: form.tenth_total,
+                    twelfth: form.twelfth_score, twelfth_total: form.twelfth_total,
+                    graduation: form.graduation_score, graduation_total: form.graduation_total,
+                  });
+                  const highestScoreDisplay = enabled.highest_qualification
+                    ? form.highest_qualification_score
+                    : mirroredHQ.score;
                   return (
                     <>
                       <ReviewRow label="Highest Qualification" value={hq ? formatDisplayLabel(hq) : ""} nudgeStep="study" nudgeField="highest_qualification" />
-                      <ReviewRow label="Highest Qualification Score" value={derivedHighestScore} />
-                      <ReviewRow label="10th Score" value={form.tenth_score} nudgeStep="study" nudgeField="tenth_score" />
-                      <ReviewRow label="12th Score" value={form.twelfth_score} nudgeStep="study" nudgeField="twelfth_score" />
-                      <ReviewRow label="Graduation Score" value={graduationDisplay} />
+                      <ReviewRow label="Highest Qualification Score" value={highestScoreDisplay} />
+                      <ReviewRow label="10th Score" value={form.tenth_score} nudgeStep={enabled.tenth ? "study" : undefined} nudgeField="tenth_score" notApplicable={!enabled.tenth} />
+                      <ReviewRow label="12th Score" value={form.twelfth_score} nudgeStep={enabled.twelfth ? "study" : undefined} nudgeField="twelfth_score" notApplicable={!enabled.twelfth} />
+                      <ReviewRow label="Graduation Score" value={form.graduation_score} notApplicable={!enabled.graduation} />
                     </>
                   );
                 })()}

@@ -12,12 +12,19 @@ import { intakeSessionLabel } from "@/lib/intakeSession";
 import { formatWorkExperience } from "@/lib/workExperience";
 import { formatDisplayLabel } from "@/lib/formatDisplayLabel";
 import { INRAmountStacked } from "@/components/shared/INRAmountStacked";
+import { getEnabledLevels, getMirroredHighestQual } from "@/lib/academicLevelCascade";
 
 interface SummaryItem {
   label: string;
   value: string | null | undefined;
   /** When provided, rendered in place of `value` (e.g. multi-line JSX). */
   node?: React.ReactNode;
+  /**
+   * When true, render "Not Applicable" instead of the "—" fallback. Used
+   * for academic rows the cascade explicitly disables (e.g. Graduation
+   * when Highest Qualification = 12th).
+   */
+  notApplicable?: boolean;
 }
 
 function SummaryBlock({ title, items, editPath, readOnly }: { title: string; items: SummaryItem[]; editPath: string; readOnly?: boolean }) {
@@ -38,7 +45,9 @@ function SummaryBlock({ title, items, editPath, readOnly }: { title: string; ite
             <div key={item.label} className="flex items-start gap-2 py-2 border-b border-border/50 last:border-0">
               <span className="text-sm text-muted-foreground shrink-0">{item.label}:</span>
               <div className="text-sm font-medium text-foreground min-w-0">
-                {item.node ?? (item.value || <span className="text-muted-foreground/60">—</span>)}
+                {item.notApplicable
+                  ? <span className="text-muted-foreground">Not Applicable</span>
+                  : (item.node ?? (item.value || <span className="text-muted-foreground/60">—</span>))}
               </div>
             </div>
           ))}
@@ -134,18 +143,22 @@ export default function StudentReviewSubmit() {
         items={[
           { label: "Highest Qualification", value: formData.highest_qualification ? formatDisplayLabel(formData.highest_qualification) : null },
           { label: "Highest Qualification Score", value: (() => {
-            // Display-only fallback. Submitted payload still has empty
-            // highest_qualification_score when user left the dedicated input blank.
-            // Tracked follow-up: auto-fill on input or persist derived value at submit.
+            // Cascade-aware display. When HQ pair is disabled per
+            // src/lib/academicLevelCascade.ts, mirror the source level's
+            // score (12th for "12th / High School", Graduation for
+            // Diploma/Bachelor's). Otherwise use the user's entered value.
             const hq = formData.highest_qualification || "";
             const ts = formData.test_scores;
-            return (
-              ts.highest_qualification_score ||
-              (hq === "12th / High School" ? ts.twelfth : "") ||
-              (hq === "10th / SSC" ? ts.tenth : "") ||
-              formData.marks_gpa ||
-              ""
-            );
+            const enabled = getEnabledLevels(hq);
+            if (enabled.highest_qualification) {
+              return ts.highest_qualification_score || formData.marks_gpa || "";
+            }
+            const mirrored = getMirroredHighestQual(hq, {
+              tenth: ts.tenth || "", tenth_total: ts.tenth_total || "",
+              twelfth: ts.twelfth || "", twelfth_total: ts.twelfth_total || "",
+              graduation: ts.graduation || "", graduation_total: ts.graduation_total || "",
+            });
+            return mirrored.score || "";
           })() },
           { label: "Course", value: formData.course_name },
           { label: "University", value: formData.university_name_raw },

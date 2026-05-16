@@ -21,6 +21,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { normalizeAcademicScore, validateScoreTotalPair } from "@/lib/academicScore";
 import { validateTestScoresMap } from "@/lib/leadScoreRanges";
 import { ScoreTotalPair } from "@/components/shared/ScoreTotalPair";
+import { getEnabledLevels, getMirroredHighestQual } from "@/lib/academicLevelCascade";
 
 interface UniversityRow { id: string; university_name: string; country: string }
 interface CourseRow { id: string; course_name: string; course_category: string | null }
@@ -111,13 +112,15 @@ export default function StudentEducationDetails() {
     }
     // Score/Total pair validation — totals are optional (legacy compat),
     // but when both are filled they must be a valid pair.
-    const pairChecks: Array<[string, string, string]> = [
-      ["10th", formData.test_scores.tenth || "", formData.test_scores.tenth_total || ""],
-      ["12th", formData.test_scores.twelfth || "", formData.test_scores.twelfth_total || ""],
-      ["Graduation", formData.test_scores.graduation || "", formData.test_scores.graduation_total || ""],
-      ["Highest Qualification", formData.test_scores.highest_qualification_score || "", formData.test_scores.highest_qualification_total || ""],
+    const enabledLevelsSubmit = getEnabledLevels(formData.highest_qualification);
+    const pairChecks: Array<[string, string, string, boolean]> = [
+      ["10th", formData.test_scores.tenth || "", formData.test_scores.tenth_total || "", enabledLevelsSubmit.tenth],
+      ["12th", formData.test_scores.twelfth || "", formData.test_scores.twelfth_total || "", enabledLevelsSubmit.twelfth],
+      ["Graduation", formData.test_scores.graduation || "", formData.test_scores.graduation_total || "", enabledLevelsSubmit.graduation],
+      ["Highest Qualification", formData.test_scores.highest_qualification_score || "", formData.test_scores.highest_qualification_total || "", enabledLevelsSubmit.highest_qualification],
     ];
-    for (const [label, s, t] of pairChecks) {
+    for (const [label, s, t, isEnabled] of pairChecks) {
+      if (!isEnabled) continue;
       const err = validateScoreTotalPair(s, t);
       if (err) { toast({ title: `${label}: ${err}`, variant: "destructive" }); return; }
     }
@@ -136,13 +139,15 @@ export default function StudentEducationDetails() {
   const handleSaveExit = async () => {
     // Even on Save & Exit, refuse to persist out-of-range / junk numeric values.
     // Required-ness is intentionally NOT enforced here.
-    const pairChecks: Array<[string, string, string]> = [
-      ["10th", formData.test_scores.tenth || "", formData.test_scores.tenth_total || ""],
-      ["12th", formData.test_scores.twelfth || "", formData.test_scores.twelfth_total || ""],
-      ["Graduation", formData.test_scores.graduation || "", formData.test_scores.graduation_total || ""],
-      ["Highest Qualification", formData.test_scores.highest_qualification_score || "", formData.test_scores.highest_qualification_total || ""],
+    const enabledLevelsExit = getEnabledLevels(formData.highest_qualification);
+    const pairChecks: Array<[string, string, string, boolean]> = [
+      ["10th", formData.test_scores.tenth || "", formData.test_scores.tenth_total || "", enabledLevelsExit.tenth],
+      ["12th", formData.test_scores.twelfth || "", formData.test_scores.twelfth_total || "", enabledLevelsExit.twelfth],
+      ["Graduation", formData.test_scores.graduation || "", formData.test_scores.graduation_total || "", enabledLevelsExit.graduation],
+      ["Highest Qualification", formData.test_scores.highest_qualification_score || "", formData.test_scores.highest_qualification_total || "", enabledLevelsExit.highest_qualification],
     ];
-    for (const [label, s, t] of pairChecks) {
+    for (const [label, s, t, isEnabled] of pairChecks) {
+      if (!isEnabled) continue;
       const err = validateScoreTotalPair(s, t);
       if (err) { toast({ title: `${label}: ${err}`, variant: "destructive" }); return; }
     }
@@ -276,6 +281,14 @@ export default function StudentEducationDetails() {
           <p className="mb-4 text-xs text-muted-foreground">
             Enter your score and the total it was out of. Example: enter <code>9.5</code> and total <code>10</code> for CGPA, or <code>78</code> and total <code>100</code> for percentage.
           </p>
+          {(() => {
+            const enabled = getEnabledLevels(formData.highest_qualification);
+            const mirrored = getMirroredHighestQual(formData.highest_qualification, {
+              tenth: formData.test_scores.tenth || "", tenth_total: formData.test_scores.tenth_total || "",
+              twelfth: formData.test_scores.twelfth || "", twelfth_total: formData.test_scores.twelfth_total || "",
+              graduation: formData.test_scores.graduation || "", graduation_total: formData.test_scores.graduation_total || "",
+            });
+            return (
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5 sm:col-span-2">
               <Label>Highest Qualification <span className="text-destructive">*</span></Label>
@@ -298,6 +311,7 @@ export default function StudentEducationDetails() {
               totalValue={formData.test_scores.tenth_total || ""}
               onScore={(v) => updateTestScore("tenth", v)}
               onTotal={(v) => updateTestScore("tenth_total", v)}
+              disabled={!enabled.tenth}
             />
             <ScoreTotalPair
               label="12th"
@@ -312,6 +326,7 @@ export default function StudentEducationDetails() {
               totalValue={formData.test_scores.twelfth_total || ""}
               onScore={(v) => updateTestScore("twelfth", v)}
               onTotal={(v) => updateTestScore("twelfth_total", v)}
+              disabled={!enabled.twelfth}
             />
             <ScoreTotalPair
               label="Graduation"
@@ -325,6 +340,7 @@ export default function StudentEducationDetails() {
               totalValue={formData.test_scores.graduation_total || ""}
               onScore={(v) => updateTestScore("graduation", v)}
               onTotal={(v) => updateTestScore("graduation_total", v)}
+              disabled={!enabled.graduation}
             />
             <ScoreTotalPair
               label="Highest Qualification"
@@ -334,15 +350,18 @@ export default function StudentEducationDetails() {
               totalLabel="Highest Qualification Total Marks / CGPA Scale"
               scorePlaceholder="e.g. 8.5"
               totalPlaceholder="e.g. 10"
-              scoreValue={formData.test_scores.highest_qualification_score || ""}
-              totalValue={formData.test_scores.highest_qualification_total || ""}
+              scoreValue={enabled.highest_qualification ? (formData.test_scores.highest_qualification_score || "") : mirrored.score}
+              totalValue={enabled.highest_qualification ? (formData.test_scores.highest_qualification_total || "") : mirrored.total}
               onScore={(v) => updateTestScore("highest_qualification_score", v)}
               onTotal={(v) => updateTestScore("highest_qualification_total", v)}
+              disabled={!enabled.highest_qualification}
             />
             <p className="text-xs text-muted-foreground sm:col-span-2">
               Highest Qualification, 10th and 12th are required. Graduation and Highest Qualification Score are optional. Total Marks / Scale is optional but recommended for accurate scoring.
             </p>
           </div>
+            );
+          })()}
         </CardContent>
       </Card>
 

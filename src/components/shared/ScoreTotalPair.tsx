@@ -25,6 +25,13 @@ export interface ScoreTotalPairProps {
   totalValue: string;
   onScore: (value: string) => void;
   onTotal: (value: string) => void;
+  /**
+   * When true, both inputs are disabled and all hint/validation/preview
+   * messages are suppressed. Used by the academic-cascade rule
+   * (src/lib/academicLevelCascade.ts) — e.g. Highest Qualification = "12th"
+   * disables Graduation + Highest Qualification Score pairs.
+   */
+  disabled?: boolean;
 }
 
 export function ScoreTotalPair(props: ScoreTotalPairProps) {
@@ -40,15 +47,16 @@ export function ScoreTotalPair(props: ScoreTotalPairProps) {
     totalValue,
     onScore,
     onTotal,
+    disabled,
   } = props;
 
-  const validationError = validateScoreTotalPair(scoreValue, totalValue);
+  const validationError = disabled ? null : validateScoreTotalPair(scoreValue, totalValue);
   const norm = normalizeAcademicScore(scoreValue, totalValue);
-  const showLivePreview = norm.source === "score_total" && norm.percentage != null;
+  const showLivePreview = !disabled && norm.source === "score_total" && norm.percentage != null;
   const scoreNum = parseNum(scoreValue);
   const totalNum = parseNum(totalValue);
   const showTotalMissingHint =
-    !validationError && scoreNum != null && (!totalValue || totalValue.trim() === "");
+    !disabled && !validationError && scoreNum != null && (!totalValue || totalValue.trim() === "");
 
   return (
     <>
@@ -62,6 +70,7 @@ export function ScoreTotalPair(props: ScoreTotalPairProps) {
           onChange={(e) => onScore(e.target.value)}
           placeholder={scorePlaceholder}
           inputMode="decimal"
+          disabled={disabled}
         />
       </div>
       <div className="space-y-1.5" data-field={totalKey}>
@@ -71,6 +80,7 @@ export function ScoreTotalPair(props: ScoreTotalPairProps) {
           onChange={(e) => onTotal(e.target.value)}
           placeholder={totalPlaceholder}
           inputMode="decimal"
+          disabled={disabled}
         />
         {validationError ? (
           <p className="text-xs font-medium text-destructive">{validationError}</p>
