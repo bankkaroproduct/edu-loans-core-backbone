@@ -112,7 +112,7 @@ export default function StudentReviewSubmit() {
           { label: "Pincode", value: formData.pincode },
           { label: "Destination Country", value: formData.intended_study_country },
           { label: "Course Category", value: formData.course_category ? formatDisplayLabel(formData.course_category) : null },
-          { label: "Loan Amount", value: formData.loan_amount_required ? `₹${Number(formData.loan_amount_required).toLocaleString("en-IN")}` : null },
+          { label: "Loan Amount", value: formData.loan_amount_required ? formatINRWithUnit(formData.loan_amount_required) : null },
         ]}
       />
 
