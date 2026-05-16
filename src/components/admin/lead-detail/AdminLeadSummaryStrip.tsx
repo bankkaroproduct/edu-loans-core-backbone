@@ -347,24 +347,21 @@ export function AdminLeadSummaryStrip({ lead, onSaved }: Props) {
 
       <Tile label="Loan Amount">
         {isAdmin ? (
-          <span className="text-base font-semibold tabular-nums text-primary">
-            <InlineEditField
-              leadId={lead.id}
-              field="loan_amount_required"
-              label="Loan Amount"
-              value={lead.loan_amount_required ? String(lead.loan_amount_required) : null}
-              allowEditExisting
-              inputType="number"
-              numericKind="amount"
-              formatDisplay={(v) => formatINRWithUnit(v)}
-              onSaved={() => onSaved?.()}
-            />
-          </span>
-        ) : (
-          <ReadOnlyValue
-            value={lead.loan_amount_required ? formatINRWithUnit(lead.loan_amount_required) : null}
-            emphasis
+          <InlineEditField
+            leadId={lead.id}
+            field="loan_amount_required"
+            label="Loan Amount"
+            value={lead.loan_amount_required ? String(lead.loan_amount_required) : null}
+            allowEditExisting
+            inputType="number"
+            numericKind="amount"
+            formatDisplayNode={(v) => <INRAmountStacked value={v} emphasis />}
+            onSaved={() => onSaved?.()}
           />
+        ) : lead.loan_amount_required ? (
+          <INRAmountStacked value={lead.loan_amount_required} emphasis />
+        ) : (
+          <ReadOnlyValue value={null} emphasis />
         )}
       </Tile>
 
