@@ -143,18 +143,22 @@ export default function StudentReviewSubmit() {
         items={[
           { label: "Highest Qualification", value: formData.highest_qualification ? formatDisplayLabel(formData.highest_qualification) : null },
           { label: "Highest Qualification Score", value: (() => {
-            // Display-only fallback. Submitted payload still has empty
-            // highest_qualification_score when user left the dedicated input blank.
-            // Tracked follow-up: auto-fill on input or persist derived value at submit.
+            // Cascade-aware display. When HQ pair is disabled per
+            // src/lib/academicLevelCascade.ts, mirror the source level's
+            // score (12th for "12th / High School", Graduation for
+            // Diploma/Bachelor's). Otherwise use the user's entered value.
             const hq = formData.highest_qualification || "";
             const ts = formData.test_scores;
-            return (
-              ts.highest_qualification_score ||
-              (hq === "12th / High School" ? ts.twelfth : "") ||
-              (hq === "10th / SSC" ? ts.tenth : "") ||
-              formData.marks_gpa ||
-              ""
-            );
+            const enabled = getEnabledLevels(hq);
+            if (enabled.highest_qualification) {
+              return ts.highest_qualification_score || formData.marks_gpa || "";
+            }
+            const mirrored = getMirroredHighestQual(hq, {
+              tenth: ts.tenth || "", tenth_total: ts.tenth_total || "",
+              twelfth: ts.twelfth || "", twelfth_total: ts.twelfth_total || "",
+              graduation: ts.graduation || "", graduation_total: ts.graduation_total || "",
+            });
+            return mirrored.score || "";
           })() },
           { label: "Course", value: formData.course_name },
           { label: "University", value: formData.university_name_raw },
