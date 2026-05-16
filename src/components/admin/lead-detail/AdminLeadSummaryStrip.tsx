@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/master-combobox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLeadMasterData } from "@/hooks/useLeadMasterData";
-import { formatINR } from "@/lib/formatCurrency";
+import { formatINR, formatINRWithUnit } from "@/lib/formatCurrency";
 import {
   buildIntakeSessionOptions,
   intakeSessionLabel,
@@ -355,13 +355,13 @@ export function AdminLeadSummaryStrip({ lead, onSaved }: Props) {
               allowEditExisting
               inputType="number"
               numericKind="amount"
-              formatDisplay={(v) => formatINR(v)}
+              formatDisplay={(v) => formatINRWithUnit(v)}
               onSaved={() => onSaved?.()}
             />
           </span>
         ) : (
           <ReadOnlyValue
-            value={lead.loan_amount_required ? formatINR(String(lead.loan_amount_required)) : null}
+            value={lead.loan_amount_required ? formatINRWithUnit(lead.loan_amount_required) : null}
             emphasis
           />
         )}

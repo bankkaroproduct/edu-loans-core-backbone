@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { StageBadge, StatusBadge, formatStageLabel } from "@/components/dashboard/StageBadge";
+import { formatINRCompact } from "@/lib/formatCurrency";
 import {
   Plus, Search, Upload, X, ChevronLeft, ChevronRight, ArrowUpDown,
   AlertTriangle, FileText, Filter, LayoutList, CalendarIcon, ChevronDown,
@@ -634,7 +635,7 @@ export default function Leads() {
                           <TableCell className="text-sm max-w-[120px] truncate" title={lead.university_name_raw ?? ""}>{lead.university_name_raw ?? "—"}</TableCell>
                           <TableCell className="text-sm max-w-[120px] truncate" title={lead.course_name}>{lead.course_name}</TableCell>
                           <TableCell className="text-sm">
-                            {lead.loan_amount_required ? `₹${Number(lead.loan_amount_required).toLocaleString("en-IN")}` : "—"}
+                            {lead.loan_amount_required ? formatINRCompact(lead.loan_amount_required) : "—"}
                           </TableCell>
                           <TableCell>
                             <Badge variant="secondary" className="text-[10px] px-1.5">{originLabel(lead)}</Badge>

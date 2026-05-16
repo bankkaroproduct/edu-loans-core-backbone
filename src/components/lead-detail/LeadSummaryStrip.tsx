@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import type { Tables } from "@/integrations/supabase/types";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { InlineEditField } from "@/components/admin/InlineEditField";
-import { formatINR } from "@/lib/formatCurrency";
+import { formatINR, formatINRWithUnit } from "@/lib/formatCurrency";
 
 type Lead = Tables<"student_leads">;
 
@@ -128,11 +128,25 @@ export function LeadSummaryStrip({ lead }: Props) {
           </Cell>
 
           <Cell label="Loan Amount" emphasis>
-            {editable("loan_amount_required", lead.loan_amount_required ? String(lead.loan_amount_required) : null, "Loan Amount", {
-              inputType: "number",
-              formatDisplay: (v) => formatINR(v),
-            })}
+            {isAdmin ? (
+              <InlineEditField
+                leadId={lead.id}
+                field="loan_amount_required"
+                label="Loan Amount"
+                value={lead.loan_amount_required ? String(lead.loan_amount_required) : null}
+                allowEditExisting
+                inputType="number"
+                formatDisplay={(v) => formatINRWithUnit(v)}
+              />
+            ) : (
+              <ReadOnlyCell
+                label="Loan Amount"
+                value={lead.loan_amount_required ? formatINRWithUnit(lead.loan_amount_required) : null}
+                emphasis
+              />
+            )}
           </Cell>
+
 
           <Cell label="Co-Applicant">
             {editable("coapplicant_name", lead.coapplicant_name, "Co-Applicant")}

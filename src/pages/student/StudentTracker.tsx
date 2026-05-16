@@ -15,6 +15,7 @@ import {
   Upload, Eye, HelpCircle, Activity, ChevronRight, TrendingUp,
   CircleCheck, CircleDot, CircleAlert, Info, Phone, Mail
 } from "lucide-react";
+import { formatINRWithUnit } from "@/lib/formatCurrency";
 
 // --- Stage mapping & journey ---
 const JOURNEY_STEPS = [
@@ -170,7 +171,7 @@ export default function StudentTracker() {
                     {data.lead_summary.intended_study_country && <span>{data.lead_summary.intended_study_country}</span>}
                     {data.lead_summary.course_name && data.lead_summary.course_name !== "Not specified" && <span>· {data.lead_summary.course_name}</span>}
                     {data.lead_summary.university_name_raw && <span>· {data.lead_summary.university_name_raw}</span>}
-                    {data.lead_summary.loan_amount_required && <span>· ₹{Number(data.lead_summary.loan_amount_required).toLocaleString("en-IN")}</span>}
+                    {data.lead_summary.loan_amount_required && <span>· {formatINRWithUnit(data.lead_summary.loan_amount_required)}</span>}
                   </div>
                   {/* Case ownership */}
                   <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">

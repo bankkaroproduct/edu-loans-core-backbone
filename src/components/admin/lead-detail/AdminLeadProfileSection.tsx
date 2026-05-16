@@ -8,7 +8,7 @@ import { User, GraduationCap, Wallet, FolderInput, ShieldCheck, ChevronDown, Che
 import type { Tables } from "@/integrations/supabase/types";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { InlineEditField } from "@/components/admin/InlineEditField";
-import { formatINR } from "@/lib/formatCurrency";
+import { formatINR, formatINRWithUnit } from "@/lib/formatCurrency";
 import {
   normalizeAcademicScore,
   resolveCoappWorkExpDecimalYears,
@@ -395,10 +395,14 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
               for editing intake. */}
           <Field
             label="Loan Amount"
-            value={lead.loan_amount_required ? String(lead.loan_amount_required) : null}
+            value={
+              isAdmin
+                ? (lead.loan_amount_required ? String(lead.loan_amount_required) : null)
+                : (lead.loan_amount_required ? formatINRWithUnit(lead.loan_amount_required) : null)
+            }
             editable={ed("loan_amount_required", {
               inputType: "number",
-              formatDisplay: (v) => formatINR(v),
+              formatDisplay: (v) => formatINRWithUnit(v),
               parseValue: numericParse,
               numericKind: "amount",
             })}
