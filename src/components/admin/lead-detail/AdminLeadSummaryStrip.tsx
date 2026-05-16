@@ -14,7 +14,8 @@ import {
 } from "@/components/ui/master-combobox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLeadMasterData } from "@/hooks/useLeadMasterData";
-import { formatINR, formatINRWithUnit } from "@/lib/formatCurrency";
+import { formatINR } from "@/lib/formatCurrency";
+import { INRAmountStacked } from "@/components/shared/INRAmountStacked";
 import {
   buildIntakeSessionOptions,
   intakeSessionLabel,
