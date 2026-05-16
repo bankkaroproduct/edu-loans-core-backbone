@@ -19,6 +19,12 @@ interface SummaryItem {
   value: string | null | undefined;
   /** When provided, rendered in place of `value` (e.g. multi-line JSX). */
   node?: React.ReactNode;
+  /**
+   * When true, render "Not Applicable" instead of the "—" fallback. Used
+   * for academic rows the cascade explicitly disables (e.g. Graduation
+   * when Highest Qualification = 12th).
+   */
+  notApplicable?: boolean;
 }
 
 function SummaryBlock({ title, items, editPath, readOnly }: { title: string; items: SummaryItem[]; editPath: string; readOnly?: boolean }) {
@@ -39,7 +45,9 @@ function SummaryBlock({ title, items, editPath, readOnly }: { title: string; ite
             <div key={item.label} className="flex items-start gap-2 py-2 border-b border-border/50 last:border-0">
               <span className="text-sm text-muted-foreground shrink-0">{item.label}:</span>
               <div className="text-sm font-medium text-foreground min-w-0">
-                {item.node ?? (item.value || <span className="text-muted-foreground/60">—</span>)}
+                {item.notApplicable
+                  ? <span className="text-muted-foreground">Not Applicable</span>
+                  : (item.node ?? (item.value || <span className="text-muted-foreground/60">—</span>))}
               </div>
             </div>
           ))}
