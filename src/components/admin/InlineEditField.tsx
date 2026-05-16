@@ -36,6 +36,12 @@ interface Props {
   inputType?: string;
   /** Display formatter for non-empty saved value (does NOT affect storage). */
   formatDisplay?: (value: string) => string;
+  /**
+   * Display formatter that returns a ReactNode (e.g. multi-line JSX).
+   * Used only in display state — editor input remains the raw string value.
+   * Takes precedence over `formatDisplay` when both are provided.
+   */
+  formatDisplayNode?: (value: string) => ReactNode;
   /** Optional placeholder. */
   placeholder?: string;
   className?: string;
