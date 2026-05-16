@@ -117,6 +117,7 @@ export function InlineEditField({
   allowEditExisting = false,
   inputType = "text",
   formatDisplay,
+  formatDisplayNode,
   placeholder,
   className,
   options,
