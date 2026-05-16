@@ -111,7 +111,7 @@ export default function StudentRecommendations() {
     return 1;
   })();
 
-  const formatAmount = (amt: number | null) => formatINRWithUnit(amt);
+  const formatAmount = (amt: number | null): ReactNode => <INRAmountStacked value={amt} />;
 
   // State-aware card CTA
   const getCardCTA = () => {
