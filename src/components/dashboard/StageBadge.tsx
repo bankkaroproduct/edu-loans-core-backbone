@@ -70,6 +70,13 @@ const statusTone: Record<string, BadgeTone> = {
   not_applicable: "slate",
 };
 
+/**
+ * @deprecated For new code, use `formatLabel` from `@/lib/labels.ts`
+ * which is acronym-aware (BRE, KYC, PAN, UPI, etc.). This helper does
+ * naive title-case and will produce incorrect output for acronyms
+ * ("Bre" instead of "BRE"). Existing callers are intentionally left
+ * unchanged; only the lifecycle stepper was migrated.
+ */
 export function formatStageLabel(stage: string) {
   if (stage === "active") return "Active";
   return stage.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
