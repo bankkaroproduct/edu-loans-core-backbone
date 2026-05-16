@@ -635,7 +635,7 @@ export default function Leads() {
                           <TableCell className="text-sm max-w-[120px] truncate" title={lead.university_name_raw ?? ""}>{lead.university_name_raw ?? "—"}</TableCell>
                           <TableCell className="text-sm max-w-[120px] truncate" title={lead.course_name}>{lead.course_name}</TableCell>
                           <TableCell className="text-sm">
-                            {lead.loan_amount_required ? `₹${Number(lead.loan_amount_required).toLocaleString("en-IN")}` : "—"}
+                            {lead.loan_amount_required ? formatINRCompact(lead.loan_amount_required) : "—"}
                           </TableCell>
                           <TableCell>
                             <Badge variant="secondary" className="text-[10px] px-1.5">{originLabel(lead)}</Badge>
