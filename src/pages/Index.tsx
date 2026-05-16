@@ -292,11 +292,6 @@ export default function Dashboard() {
 
         <YourLeads leads={leads} loading={loading} />
 
-        <div className="grid gap-6 md:grid-cols-2 [&>*]:h-full">
-          <DocumentSnapshot data={docSummary} loading={loading} />
-          <BulkUploadSnapshot batches={batches} loading={loading} />
-        </div>
-
         <PayoutSnapshot data={payoutSummary} loading={loading} />
 
         <SystemHelp />
