@@ -541,13 +541,15 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     // Score-range / numeric-sanity checks run on BOTH draft and submit paths.
     // Required-ness checks remain submit-only below.
     {
-      const pairs: Array<[string, string, string, string]> = [
-        ["10th", form.tenth_score, form.tenth_total, "tenth_total"],
-        ["12th", form.twelfth_score, form.twelfth_total, "twelfth_total"],
-        ["Graduation", form.graduation_score, form.graduation_total, "graduation_total"],
-        ["Highest Qualification", form.highest_qualification_score, form.highest_qualification_total, "highest_qualification_total"],
+      const enabledLevels = getEnabledLevels(form.highest_qualification);
+      const pairs: Array<[string, string, string, string, boolean]> = [
+        ["10th", form.tenth_score, form.tenth_total, "tenth_total", enabledLevels.tenth],
+        ["12th", form.twelfth_score, form.twelfth_total, "twelfth_total", enabledLevels.twelfth],
+        ["Graduation", form.graduation_score, form.graduation_total, "graduation_total", enabledLevels.graduation],
+        ["Highest Qualification", form.highest_qualification_score, form.highest_qualification_total, "highest_qualification_total", enabledLevels.highest_qualification],
       ];
-      for (const [label, s, t, field] of pairs) {
+      for (const [label, s, t, field, isEnabled] of pairs) {
+        if (!isEnabled) continue;
         const err = validateScoreTotalPair(s, t);
         if (err) return { message: `${label}: ${err}`, step: "study", field };
       }
@@ -566,6 +568,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       if (!form.intake_year) return { message: "Intake year is required", step: "study", field: "intake_year" };
 
       // Academic Profile — mandatory: highest qualification, 10th score, 12th score.
+      // (10th & 12th are always enabled per the cascade rule.)
       if (!form.highest_qualification) return { message: "Highest qualification is required", step: "study", field: "highest_qualification" };
       if (!form.tenth_score.trim()) return { message: "10th score is required", step: "study", field: "tenth_score" };
       if (!form.twelfth_score.trim()) return { message: "12th score is required", step: "study", field: "twelfth_score" };
