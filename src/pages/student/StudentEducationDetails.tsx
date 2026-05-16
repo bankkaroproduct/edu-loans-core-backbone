@@ -21,6 +21,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { normalizeAcademicScore, validateScoreTotalPair } from "@/lib/academicScore";
 import { validateTestScoresMap } from "@/lib/leadScoreRanges";
 import { ScoreTotalPair } from "@/components/shared/ScoreTotalPair";
+import { getEnabledLevels, getMirroredHighestQual } from "@/lib/academicLevelCascade";
 
 interface UniversityRow { id: string; university_name: string; country: string }
 interface CourseRow { id: string; course_name: string; course_category: string | null }
@@ -111,13 +112,15 @@ export default function StudentEducationDetails() {
     }
     // Score/Total pair validation — totals are optional (legacy compat),
     // but when both are filled they must be a valid pair.
-    const pairChecks: Array<[string, string, string]> = [
-      ["10th", formData.test_scores.tenth || "", formData.test_scores.tenth_total || ""],
-      ["12th", formData.test_scores.twelfth || "", formData.test_scores.twelfth_total || ""],
-      ["Graduation", formData.test_scores.graduation || "", formData.test_scores.graduation_total || ""],
-      ["Highest Qualification", formData.test_scores.highest_qualification_score || "", formData.test_scores.highest_qualification_total || ""],
+    const enabledLevelsSubmit = getEnabledLevels(formData.highest_qualification);
+    const pairChecks: Array<[string, string, string, boolean]> = [
+      ["10th", formData.test_scores.tenth || "", formData.test_scores.tenth_total || "", enabledLevelsSubmit.tenth],
+      ["12th", formData.test_scores.twelfth || "", formData.test_scores.twelfth_total || "", enabledLevelsSubmit.twelfth],
+      ["Graduation", formData.test_scores.graduation || "", formData.test_scores.graduation_total || "", enabledLevelsSubmit.graduation],
+      ["Highest Qualification", formData.test_scores.highest_qualification_score || "", formData.test_scores.highest_qualification_total || "", enabledLevelsSubmit.highest_qualification],
     ];
-    for (const [label, s, t] of pairChecks) {
+    for (const [label, s, t, isEnabled] of pairChecks) {
+      if (!isEnabled) continue;
       const err = validateScoreTotalPair(s, t);
       if (err) { toast({ title: `${label}: ${err}`, variant: "destructive" }); return; }
     }
@@ -136,13 +139,15 @@ export default function StudentEducationDetails() {
   const handleSaveExit = async () => {
     // Even on Save & Exit, refuse to persist out-of-range / junk numeric values.
     // Required-ness is intentionally NOT enforced here.
-    const pairChecks: Array<[string, string, string]> = [
-      ["10th", formData.test_scores.tenth || "", formData.test_scores.tenth_total || ""],
-      ["12th", formData.test_scores.twelfth || "", formData.test_scores.twelfth_total || ""],
-      ["Graduation", formData.test_scores.graduation || "", formData.test_scores.graduation_total || ""],
-      ["Highest Qualification", formData.test_scores.highest_qualification_score || "", formData.test_scores.highest_qualification_total || ""],
+    const enabledLevelsExit = getEnabledLevels(formData.highest_qualification);
+    const pairChecks: Array<[string, string, string, boolean]> = [
+      ["10th", formData.test_scores.tenth || "", formData.test_scores.tenth_total || "", enabledLevelsExit.tenth],
+      ["12th", formData.test_scores.twelfth || "", formData.test_scores.twelfth_total || "", enabledLevelsExit.twelfth],
+      ["Graduation", formData.test_scores.graduation || "", formData.test_scores.graduation_total || "", enabledLevelsExit.graduation],
+      ["Highest Qualification", formData.test_scores.highest_qualification_score || "", formData.test_scores.highest_qualification_total || "", enabledLevelsExit.highest_qualification],
     ];
-    for (const [label, s, t] of pairChecks) {
+    for (const [label, s, t, isEnabled] of pairChecks) {
+      if (!isEnabled) continue;
       const err = validateScoreTotalPair(s, t);
       if (err) { toast({ title: `${label}: ${err}`, variant: "destructive" }); return; }
     }
