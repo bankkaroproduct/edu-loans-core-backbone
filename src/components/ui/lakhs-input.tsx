@@ -94,11 +94,23 @@ export const LakhsInput = React.forwardRef<HTMLInputElement, LakhsInputProps>(
             {...rest}
           />
         </div>
-        <p className="text-[11px] text-muted-foreground">
-          {previewRupees > 0
-            ? `= ${formatIndianRupees(previewRupees)}`
-            : "Enter amount in lakhs (e.g. 25 = ₹25,00,000)"}
-        </p>
+        {previewRupees > 0 ? (
+          (() => {
+            const { amount, unit } = formatINRParts(previewRupees);
+            return (
+              <div className="flex flex-col leading-tight">
+                <span className="text-sm tabular-nums text-foreground">{amount}</span>
+                {unit && (
+                  <span className="text-[11px] text-muted-foreground tabular-nums">{unit}</span>
+                )}
+              </div>
+            );
+          })()
+        ) : (
+          <p className="text-[11px] text-muted-foreground">
+            Enter amount in lakhs (e.g. 25 = ₹25,00,000)
+          </p>
+        )}
       </div>
     );
   }
