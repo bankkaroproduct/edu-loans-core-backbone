@@ -12,6 +12,7 @@ import { intakeSessionLabel } from "@/lib/intakeSession";
 import { formatWorkExperience } from "@/lib/workExperience";
 import { formatDisplayLabel } from "@/lib/formatDisplayLabel";
 import { INRAmountStacked } from "@/components/shared/INRAmountStacked";
+import { getEnabledLevels, getMirroredHighestQual } from "@/lib/academicLevelCascade";
 
 interface SummaryItem {
   label: string;
