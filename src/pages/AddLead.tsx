@@ -871,6 +871,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     return existing;
   }, [
     originalLead,
+    form.highest_qualification,
     form.tenth_score, form.twelfth_score, form.graduation_score, form.highest_qualification_score,
     form.tenth_total, form.twelfth_total, form.graduation_total, form.highest_qualification_total,
     form.ielts, form.toefl, form.duolingo, form.pte, form.gre, form.gmat,
