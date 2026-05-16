@@ -16,6 +16,8 @@ import { INRAmountStacked } from "@/components/shared/INRAmountStacked";
 interface SummaryItem {
   label: string;
   value: string | null | undefined;
+  /** When provided, rendered in place of `value` (e.g. multi-line JSX). */
+  node?: React.ReactNode;
 }
 
 function SummaryBlock({ title, items, editPath, readOnly }: { title: string; items: SummaryItem[]; editPath: string; readOnly?: boolean }) {
