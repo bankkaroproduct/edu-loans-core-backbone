@@ -37,7 +37,9 @@ function SummaryBlock({ title, items, editPath, readOnly }: { title: string; ite
           {items.map(item => (
             <div key={item.label}>
               <span className="text-[11px] text-muted-foreground">{item.label}</span>
-              <p className="text-sm font-medium text-foreground">{item.value || <span className="text-muted-foreground/60">—</span>}</p>
+              <div className="text-sm font-medium text-foreground">
+                {item.node ?? (item.value || <span className="text-muted-foreground/60">—</span>)}
+              </div>
             </div>
           ))}
         </div>
