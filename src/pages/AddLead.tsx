@@ -807,16 +807,33 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       else delete existing[key];
     };
 
-    // Academic
-    setOrDelete("tenth", form.tenth_score);
-    setOrDelete("twelfth", form.twelfth_score);
-    setOrDelete("graduation", form.graduation_score);
-    setOrDelete("highest_qualification_score", form.highest_qualification_score);
-    // Total marks denominators (BRE-aware)
-    setOrDelete("tenth_total", form.tenth_total);
-    setOrDelete("twelfth_total", form.twelfth_total);
-    setOrDelete("graduation_total", form.graduation_total);
-    setOrDelete("highest_qualification_total", form.highest_qualification_total);
+    // Academic — gated by the highest-qualification cascade. Disabled levels
+    // have their keys deleted; the Highest Qualification pair is auto-mirrored
+    // from the matching source level (12th or Graduation) when disabled so the
+    // BRE / scoring still has a canonical "highest" score.
+    const enabledLevels = getEnabledLevels(form.highest_qualification);
+    const mirroredHQ = getMirroredHighestQual(form.highest_qualification, {
+      tenth: form.tenth_score, tenth_total: form.tenth_total,
+      twelfth: form.twelfth_score, twelfth_total: form.twelfth_total,
+      graduation: form.graduation_score, graduation_total: form.graduation_total,
+    });
+    if (enabledLevels.tenth) setOrDelete("tenth", form.tenth_score); else delete existing.tenth;
+    if (enabledLevels.twelfth) setOrDelete("twelfth", form.twelfth_score); else delete existing.twelfth;
+    if (enabledLevels.graduation) setOrDelete("graduation", form.graduation_score); else delete existing.graduation;
+    if (enabledLevels.highest_qualification) {
+      setOrDelete("highest_qualification_score", form.highest_qualification_score);
+    } else {
+      setOrDelete("highest_qualification_score", mirroredHQ.score);
+    }
+    // Total marks denominators (BRE-aware) — same gating.
+    if (enabledLevels.tenth) setOrDelete("tenth_total", form.tenth_total); else delete existing.tenth_total;
+    if (enabledLevels.twelfth) setOrDelete("twelfth_total", form.twelfth_total); else delete existing.twelfth_total;
+    if (enabledLevels.graduation) setOrDelete("graduation_total", form.graduation_total); else delete existing.graduation_total;
+    if (enabledLevels.highest_qualification) {
+      setOrDelete("highest_qualification_total", form.highest_qualification_total);
+    } else {
+      setOrDelete("highest_qualification_total", mirroredHQ.total);
+    }
 
     // Standardized test scores (aligned with Student portal: ielts/toefl/duolingo/pte/gre/gmat)
     setOrDelete("ielts", form.ielts);
