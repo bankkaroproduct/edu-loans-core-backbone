@@ -591,7 +591,11 @@ export function InlineEditField({
   }
 
   if (hasValue) {
-    const display = formatDisplay ? formatDisplay(String(localValue)) : String(localValue);
+    const display: ReactNode = formatDisplayNode
+      ? formatDisplayNode(String(localValue))
+      : formatDisplay
+      ? formatDisplay(String(localValue))
+      : String(localValue);
     if (!allowEditExisting) {
       return <span className={className}>{display}</span>;
     }
