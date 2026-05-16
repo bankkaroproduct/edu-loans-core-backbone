@@ -15,7 +15,7 @@ import {
   Upload, Eye, HelpCircle, Activity, ChevronRight, TrendingUp,
   CircleCheck, CircleDot, CircleAlert, Info, Phone, Mail
 } from "lucide-react";
-import { formatINRWithUnit } from "@/lib/formatCurrency";
+import { formatINRCompact } from "@/lib/formatCurrency";
 
 // --- Stage mapping & journey ---
 const JOURNEY_STEPS = [
