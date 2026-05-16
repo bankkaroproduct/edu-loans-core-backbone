@@ -79,7 +79,7 @@ export default function StudentContinue() {
           {/* Welcome header */}
           <div className="mb-8">
             <div className="flex items-center gap-2.5">
-              <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground">
                 Welcome{isNew ? "" : " back"}, {displayName}!
               </h1>
               <CheckCircle2 className="h-6 w-6 text-emerald-500" />

@@ -273,7 +273,7 @@ export default function QuickLead() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">
             <Zap className="h-5 w-5 text-primary" /> Add Quick Lead
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
