@@ -13,6 +13,7 @@ import {
   FileText, Search, Send, Award, Banknote, HelpCircle, Loader2, Globe, Zap,
   ArrowLeft, Mail, Phone, PartyPopper
 } from "lucide-react";
+import { formatINRWithUnit } from "@/lib/formatCurrency";
 
 interface Recommendation {
   id: string;
