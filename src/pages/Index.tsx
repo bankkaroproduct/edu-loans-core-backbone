@@ -11,8 +11,7 @@ import { HeroDrillPanel } from "@/components/dashboard/HeroDrillPanel";
 import type { CardKey, DrilldownData } from "@/lib/dashboardDrilldowns";
 import type { KPIData } from "@/components/dashboard/KPICards";
 import { YourLeads } from "@/components/dashboard/YourLeads";
-import { DocumentSnapshot, type DocSummary } from "@/components/dashboard/DocumentSnapshot";
-import { BulkUploadSnapshot } from "@/components/dashboard/BulkUploadSnapshot";
+type DocSummary = { pending: number; underReview: number; verified: number; rejected: number; reuploadNeeded: number; };
 import { PayoutSnapshot, type PayoutSummary } from "@/components/dashboard/PayoutSnapshot";
 import { SystemHelp } from "@/components/dashboard/SystemHelp";
 import { OnboardingEmptyState } from "@/components/dashboard/OnboardingEmptyState";
@@ -292,11 +291,6 @@ export default function Dashboard() {
         {isFirstRun && <OnboardingEmptyState partnerName={partnerName} />}
 
         <YourLeads leads={leads} loading={loading} />
-
-        <div className="grid gap-6 md:grid-cols-2 [&>*]:h-full">
-          <DocumentSnapshot data={docSummary} loading={loading} />
-          <BulkUploadSnapshot batches={batches} loading={loading} />
-        </div>
 
         <PayoutSnapshot data={payoutSummary} loading={loading} />
 
