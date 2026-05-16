@@ -16,11 +16,7 @@
 import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-
-function formatIndianRupees(rupees: number): string {
-  if (!isFinite(rupees) || rupees <= 0) return "";
-  return "₹" + Math.round(rupees).toLocaleString("en-IN");
-}
+import { formatINRParts } from "@/lib/formatCurrency";
 
 /** Convert rupee digit string (e.g. "2500000") into lakhs string ("25"). */
 function rupeesToLakhsString(rupees: string): string {
