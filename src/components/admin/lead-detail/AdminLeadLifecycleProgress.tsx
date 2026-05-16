@@ -4,7 +4,7 @@
 // No stage-order, terminal, or status-text logic is changed here.
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatLabel } from "@/components/dashboard/StageBadge";
+import { formatLabel } from "@/lib/labels";
 import { Activity, AlertTriangle, CheckCircle, Info, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
