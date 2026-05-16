@@ -33,11 +33,11 @@ function SummaryBlock({ title, items, editPath, readOnly }: { title: string; ite
             </Button>
           )}
         </div>
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="flex flex-col">
           {items.map(item => (
-            <div key={item.label}>
-              <span className="text-[11px] text-muted-foreground">{item.label}</span>
-              <div className="text-sm font-medium text-foreground">
+            <div key={item.label} className="flex items-start gap-2 py-2 border-b border-border/50 last:border-0">
+              <span className="text-sm text-muted-foreground shrink-0">{item.label}:</span>
+              <div className="text-sm font-medium text-foreground min-w-0">
                 {item.node ?? (item.value || <span className="text-muted-foreground/60">—</span>)}
               </div>
             </div>
