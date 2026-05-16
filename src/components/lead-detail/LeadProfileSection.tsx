@@ -4,7 +4,7 @@ import { User, GraduationCap, Wallet, FolderInput, ShieldCheck } from "lucide-re
 import type { Tables } from "@/integrations/supabase/types";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { InlineEditField } from "@/components/admin/InlineEditField";
-import { formatINR } from "@/lib/formatCurrency";
+import { formatINR, formatINRWithUnit } from "@/lib/formatCurrency";
 import {
   normalizeAcademicScore,
   resolveCoappWorkExpDecimalYears,
