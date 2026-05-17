@@ -1627,7 +1627,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               <div className="space-y-2 md:col-span-2" data-field="loan_amount_required">
                 <Label>Approx Loan Amount Required (₹) *</Label>
                 <LakhsInput value={form.loan_amount_required} onChange={(d) => set("loan_amount_required", d)} placeholder="e.g. 25 or 12.5" />
-                <p className="text-xs text-muted-foreground">Rough expectation — exact figure can be refined later by ops.</p>
+                
               </div>
               {/* 1. Name */}
               <div className="space-y-2" data-field="coapplicant_name">
