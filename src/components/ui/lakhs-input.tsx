@@ -74,8 +74,8 @@ export const LakhsInput = React.forwardRef<HTMLInputElement, LakhsInputProps>(
     const preview = previewRupees > 0 ? formatINRParts(previewRupees) : null;
 
     return (
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <div className={cn("flex", className)}>
+      <div className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 sm:flex-nowrap">
+        <div className={cn("flex min-w-36 flex-1", className)}>
           <span className="flex items-center rounded-l-md border border-r-0 bg-muted px-3 text-sm text-muted-foreground">
             ₹ Lakhs
           </span>
