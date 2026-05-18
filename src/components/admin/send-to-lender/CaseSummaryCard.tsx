@@ -48,11 +48,7 @@ export function CaseSummaryCard({ lead }: { lead: LeadRow }) {
           <Row label="Intake" value={`${lead.intake_term ?? ""} ${lead.intake_year ?? ""}`.trim()} />
           <Row
             label="Loan Required"
-            value={
-              lead.loan_amount_required != null
-                ? `₹ ${Number(lead.loan_amount_required).toLocaleString("en-IN")}`
-                : "—"
-            }
+            value={lead.loan_amount_required != null ? formatINR(lead.loan_amount_required) : "—"}
           />
         </div>
 
