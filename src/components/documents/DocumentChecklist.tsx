@@ -127,8 +127,15 @@ export function DocumentChecklist({ requirements, documents, onUpload, leadId, h
     }
   });
 
+  // Filter out non-applicable academic docs based on highest qualification.
+  // Unknown qualification → no filtering (preserves current behavior).
+  const { applicable: applicableRequirements, notApplicable: naRequirements } = useMemo(
+    () => partitionRequirementsByApplicability(requirements, highestQualification),
+    [requirements, highestQualification],
+  );
+
   // Group requirements into the 7 spec sections (frontend-only grouping by document_code).
-  const grouped = useMemo(() => groupRequirementsBySection(requirements), [requirements]);
+  const grouped = useMemo(() => groupRequirementsBySection(applicableRequirements), [applicableRequirements]);
 
   const latestByType = useMemo(() => {
     const m = new Map<string, LeadDocFile | null | undefined>();
