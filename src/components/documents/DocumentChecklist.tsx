@@ -382,6 +382,11 @@ export function DocumentChecklist({ requirements, documents, onUpload, leadId, h
             );
           })}
         </Accordion>
+        {naRequirements.length > 0 && (
+          <p className="text-[11px] text-muted-foreground italic px-1 pt-1">
+            Some academic documents are not applicable based on highest qualification and have been hidden.
+          </p>
+        )}
       </CardContent>
       <SampleDocumentModal
         open={!!sampleOpen}
