@@ -29,8 +29,8 @@ function ReadOnlyCell({
     <p
       className={
         hasValue
-          ? `${emphasis ? "text-base font-semibold tabular-nums text-foreground" : "text-sm font-medium"} truncate`
-          : "text-sm italic text-muted-foreground/70 truncate"
+          ? `${emphasis ? "text-base font-semibold tabular-nums text-foreground" : "text-sm font-medium"} break-words`
+          : "text-sm italic text-muted-foreground/70 break-words"
       }
       title={hasValue ? String(value) : "Please provide details"}
     >
