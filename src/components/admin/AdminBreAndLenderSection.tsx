@@ -744,8 +744,8 @@ function LenderMatchFailureSummary({
       if (lead.course_category) parts.push(formatDisplayLabel(lead.course_category));
       else if (lead.course_name) parts.push(formatDisplayLabel(lead.course_name));
       if (lead.intended_study_country) parts.push(formatDisplayLabel(lead.intended_study_country));
-      if (Number.isFinite(loan) && loan > 0) parts.push(`₹${loan.toLocaleString("en-IN")} loan`);
-      if (Number.isFinite(inc) && inc > 0) parts.push(`₹${inc.toLocaleString("en-IN")}/month income`);
+      if (Number.isFinite(loan) && loan > 0) parts.push(`${formatINR(loan)} loan`);
+      if (Number.isFinite(inc) && inc > 0) parts.push(`${formatINR(inc)}/month income`);
       if (lead.coapplicant_relation) parts.push(`${formatDisplayLabel(lead.coapplicant_relation)} co-applicant`);
       if (parts.length >= 2) {
         out.push(
