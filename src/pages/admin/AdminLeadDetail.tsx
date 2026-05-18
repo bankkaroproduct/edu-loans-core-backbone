@@ -239,7 +239,7 @@ export default function AdminLeadDetail() {
     );
   }
 
-  const { lead, history, notes, payouts, partner, submittedByName, audits, actorNames } = state;
+  const { history, notes, payouts, partner, audits, actorNames } = state;
   const isDraft = lead.current_stage === "draft";
   const isStudentDirect = lead.source_type === "student_direct";
 
@@ -252,13 +252,6 @@ export default function AdminLeadDetail() {
 
   return (
     <div className="w-full space-y-6">
-      <AdminLeadHeader
-        lead={lead}
-        submittedByName={submittedByName}
-        isDraft={isDraft}
-        backTo="/admin/leads"
-        backLabel="Back to Lead Queue"
-      />
 
 
       <div className="space-y-3">
