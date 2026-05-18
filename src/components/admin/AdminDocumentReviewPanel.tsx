@@ -73,6 +73,8 @@ interface Props {
    *  full Documents page render from the exact same in-memory snapshot. */
   documents?: LeadDocument[];
   onChanged: () => void;
+  /** Lead's highest_qualification — drives smart academic-doc applicability. */
+  highestQualification?: string | null;
 }
 
 const STATUS_BADGE: Record<string, { variant: "default" | "secondary" | "outline" | "destructive"; label: string }> = {
