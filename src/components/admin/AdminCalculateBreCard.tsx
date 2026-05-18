@@ -686,7 +686,7 @@ function LenderOptionsList({
           const changedLoan = mod && adjLoan !== l.projected_loan_amount && l.projected_loan_amount != null;
           const changedRate = mod && adjRate !== l.projected_rate && l.projected_rate != null;
           const fmtMoney = (n: number | null | undefined) =>
-            n == null ? "—" : `₹${Math.round(n).toLocaleString("en-IN")}`;
+            n == null ? "—" : formatINR(Math.round(n));
           const fmtRate = (n: number | null | undefined) => (n == null ? "—" : `${n}%`);
           const loanPctLabel =
             mod && mod.loanModifierPct !== 0
