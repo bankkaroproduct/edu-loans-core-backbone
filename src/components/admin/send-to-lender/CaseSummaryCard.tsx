@@ -4,6 +4,7 @@ import type { LeadRow } from "@/lib/sendToLender/buildDraft";
 import { formatDisplayLabel } from "@/lib/formatDisplayLabel";
 import { formatStageLabel } from "@/components/dashboard/StageBadge";
 import { formatEmploymentLabel } from "@/lib/bre/employmentDisplay";
+import { formatINR } from "@/lib/formatCurrency";
 
 const Row = ({ label, value }: { label: string; value: React.ReactNode }) => (
   <div className="flex justify-between gap-3 py-1.5 text-sm border-b border-border/40 last:border-0">
