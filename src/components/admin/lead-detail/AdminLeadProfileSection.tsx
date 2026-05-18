@@ -152,10 +152,12 @@ function NormalizedField({
 interface Props {
   lead: Lead;
   submittedByName: string | null;
+  partner?: Tables<"partner_organizations"> | null;
+  isStudentDirect?: boolean;
   onSaved?: () => void;
 }
 
-export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Props) {
+export function AdminLeadProfileSection({ lead, submittedByName, partner, isStudentDirect, onSaved }: Props) {
   const { isAdmin } = useRoleAccess();
   const ts = (lead.test_scores ?? {}) as Record<string, unknown>;
   const { options: highestQualOptions } = useHighestQualificationOptions();
