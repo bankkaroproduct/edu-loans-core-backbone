@@ -1616,30 +1616,56 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
           </Card>
 
           {/* Standardized Test Scores — aligned with Student portal keys
-              (ielts/toefl/duolingo/gre/gmat). All optional. Persists in test_scores JSONB. */}
+              (ielts/toefl/duolingo/pte/gre/gmat). All optional. Persists in test_scores JSONB.
+              Progressive disclosure: hidden behind a checkbox to reduce visual noise. */}
           <Card className="mt-4">
             <CardHeader><CardTitle className="text-lg">Test Scores</CardTitle></CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
-              {([
-                { key: "ielts", label: "IELTS", placeholder: "e.g. 7.5" },
-                { key: "toefl", label: "TOEFL", placeholder: "e.g. 105" },
-                { key: "duolingo", label: "Duolingo", placeholder: "e.g. 120" },
-                { key: "pte", label: "PTE", placeholder: "e.g. 65" },
-                { key: "gre", label: "GRE", placeholder: "e.g. 320" },
-                { key: "gmat", label: "GMAT", placeholder: "e.g. 700" },
-              ] as const).map((t) => (
-                <div key={t.key} className="space-y-2" data-field={t.key}>
-                  <Label>{t.label}</Label>
-                  <Input
-                    value={(form as any)[t.key] || ""}
-                    onChange={(e) => set(t.key as any, e.target.value)}
-                    placeholder={t.placeholder}
-                  />
+            <CardContent className="space-y-4">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={hasTestScores}
+                  onCheckedChange={(v) => {
+                    const checked = v === true;
+                    setHasTestScores(checked);
+                    if (!checked) {
+                      // Clear all 6 score fields. setOrDelete strips empties from JSONB on submit.
+                      set("ielts", "");
+                      set("toefl", "");
+                      set("duolingo", "");
+                      set("pte", "");
+                      set("gre", "");
+                      set("gmat", "");
+                    }
+                  }}
+                />
+                <span>I have taken standardized tests (IELTS, TOEFL, PTE, etc.)</span>
+              </label>
+              {hasTestScores ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {([
+                    { key: "ielts", label: "IELTS", placeholder: "e.g. 7.5" },
+                    { key: "toefl", label: "TOEFL", placeholder: "e.g. 105" },
+                    { key: "duolingo", label: "Duolingo", placeholder: "e.g. 120" },
+                    { key: "pte", label: "PTE", placeholder: "e.g. 65" },
+                    { key: "gre", label: "GRE", placeholder: "e.g. 320" },
+                    { key: "gmat", label: "GMAT", placeholder: "e.g. 700" },
+                  ] as const).map((t) => (
+                    <div key={t.key} className="space-y-2" data-field={t.key}>
+                      <Label>{t.label}</Label>
+                      <Input
+                        value={(form as any)[t.key] || ""}
+                        onChange={(e) => set(t.key as any, e.target.value)}
+                        placeholder={t.placeholder}
+                      />
+                    </div>
+                  ))}
+                  <div className="md:col-span-2">
+                    <p className="text-xs text-muted-foreground">All test scores are optional — fill any that apply.</p>
+                  </div>
                 </div>
-              ))}
-              <div className="md:col-span-2">
-                <p className="text-xs text-muted-foreground">All test scores are optional — fill any that apply.</p>
-              </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">Tick the box above if you've taken any standardized tests.</p>
+              )}
             </CardContent>
           </Card>
 
