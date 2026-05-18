@@ -1,9 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import {
+  Accordion, AccordionContent, AccordionItem, AccordionTrigger,
+} from "@/components/ui/accordion";
 import {
   FileText, CheckCircle, XCircle, AlertTriangle, Upload, Eye, Loader2, ChevronDown, ChevronRight, ArrowRight,
 } from "lucide-react";
@@ -17,8 +20,16 @@ import {
   STATUS_LABEL,
   type EffectiveDocStatus,
 } from "@/lib/leadDocumentViewModel";
+import {
+  groupRequirementsBySection,
+  computeSectionStatus,
+  shouldDefaultOpen,
+  SECTION_STATUS_LABEL,
+  SECTION_STATUS_VARIANT,
+} from "@/lib/documentSections";
 import type { DocRequirement } from "@/pages/LeadDocuments";
 import type { LeadNameFields } from "@/lib/referenceName";
+import type { LeadDocFile, LeadDocRequirement } from "@/hooks/useLeadDocumentsData";
 
 interface DocRequirementInput {
   id: string;
@@ -137,6 +148,24 @@ export function AdminDocumentReviewPanel({ leadId, lead, requirements, documents
     onChanged();
   };
 
+  // Group requirements into the 7 spec sections (frontend-only grouping by document_code).
+  const grouped = useMemo(
+    () => groupRequirementsBySection(requirements as unknown as LeadDocRequirement[]),
+    [requirements],
+  );
+
+  const latestByType = useMemo(() => {
+    const m = new Map<string, LeadDocFile | null | undefined>();
+    for (const [k, v] of Object.entries(docsByType)) m.set(k, v as unknown as LeadDocFile | null);
+    return m;
+  }, [docsByType]);
+
+  const defaultOpen = useMemo(() => {
+    return grouped
+      .filter(({ rows }) => shouldDefaultOpen(computeSectionStatus(rows, latestByType).status))
+      .map(({ section }) => section.id);
+  }, [grouped, latestByType]);
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -150,17 +179,50 @@ export function AdminDocumentReviewPanel({ leadId, lead, requirements, documents
         ) : requirements.length === 0 ? (
           <p className="text-xs text-muted-foreground text-center py-4">No document requirements for this lead.</p>
         ) : (
-          requirements.map((req) => (
-            <DocReviewRow
-              key={req.id}
-              req={req}
-              leadId={leadId}
-              lead={lead ?? null}
-              doc={docsByType[req.document_type_id] ?? null}
-              versionCount={versionCountByType[req.document_type_id] ?? 0}
-              onChanged={handleAfterUpload}
-            />
-          ))
+          <Accordion type="multiple" defaultValue={defaultOpen} className="w-full">
+            {grouped.map(({ section, rows }) => {
+              const info = computeSectionStatus(rows, latestByType);
+              const statusLabel = SECTION_STATUS_LABEL[info.status];
+              const statusVariant = SECTION_STATUS_VARIANT[info.status];
+              return (
+                <AccordionItem key={section.id} value={section.id} className="border rounded-md mb-2 border-b">
+                  <AccordionTrigger className="px-3 py-2.5 hover:no-underline">
+                    <div className="flex items-center justify-between gap-3 flex-1 min-w-0">
+                      <div className="min-w-0 text-left">
+                        <p className="text-sm font-semibold truncate">{section.title}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{section.purpose}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {info.isOptionalOnly ? (
+                          <span className="text-[11px] text-muted-foreground">Optional</span>
+                        ) : (
+                          <span className="text-[11px] text-muted-foreground">
+                            {info.requiredVerified} of {info.requiredTotal} required completed
+                          </span>
+                        )}
+                        <Badge variant={statusVariant} className={`text-[10px] ${info.status === "complete" ? "bg-green-600" : ""}`}>
+                          {statusLabel}
+                        </Badge>
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-3 pb-3 space-y-2">
+                    {rows.map((req) => (
+                      <DocReviewRow
+                        key={req.id}
+                        req={req as unknown as DocRequirementInput}
+                        leadId={leadId}
+                        lead={lead ?? null}
+                        doc={docsByType[req.document_type_id] ?? null}
+                        versionCount={versionCountByType[req.document_type_id] ?? 0}
+                        onChanged={handleAfterUpload}
+                      />
+                    ))}
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
         )}
       </CardContent>
     </Card>

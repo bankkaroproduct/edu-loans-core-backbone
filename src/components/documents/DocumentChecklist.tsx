@@ -76,6 +76,18 @@ function ValidationChip({ result }: { result: any }) {
 }
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useMemo } from "react";
+import {
+  Accordion, AccordionContent, AccordionItem, AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  groupRequirementsBySection,
+  computeSectionStatus,
+  shouldDefaultOpen,
+  SECTION_STATUS_LABEL,
+  SECTION_STATUS_VARIANT,
+} from "@/lib/documentSections";
+import type { LeadDocFile } from "@/hooks/useLeadDocumentsData";
 import type { DocRequirement, DocFile } from "@/pages/LeadDocuments";
 
 const STATUS_CONFIG: Record<string, { icon: typeof CheckCircle; color: string; bgClass: string; label: string; priority: number }> = {
@@ -109,16 +121,25 @@ export function DocumentChecklist({ requirements, documents, onUpload, leadId, h
     }
   });
 
-  // Render in canonical document_master.sort_order so the Partner Portal
-  // checklist matches the approved 19-item order. Status priority is no
-  // longer used for sorting — the per-row badge already conveys urgency.
-  const sortedRequirements = [...requirements].sort((a, b) => {
-    const ao = (a.document_master as { sort_order?: number | null } | null | undefined)?.sort_order ?? 9999;
-    const bo = (b.document_master as { sort_order?: number | null } | null | undefined)?.sort_order ?? 9999;
-    if (ao !== bo) return ao - bo;
-    if (a.required_flag !== b.required_flag) return a.required_flag ? -1 : 1;
-    return 0;
-  });
+  // Group requirements into the 7 spec sections (frontend-only grouping by document_code).
+  const grouped = useMemo(() => groupRequirementsBySection(requirements), [requirements]);
+
+  const latestByType = useMemo(() => {
+    const m = new Map<string, LeadDocFile | null | undefined>();
+    for (const [k, arr] of docsByType) {
+      const latest = arr.find((d) => d.is_latest) ?? arr[0] ?? null;
+      m.set(k, latest as unknown as LeadDocFile | null);
+    }
+    return m;
+  }, [docsByType]);
+
+  const defaultOpen = useMemo(
+    () =>
+      grouped
+        .filter(({ rows }) => shouldDefaultOpen(computeSectionStatus(rows, latestByType).status))
+        .map(({ section }) => section.id),
+    [grouped, latestByType],
+  );
 
   const handleViewFile = async (doc: DocFile) => {
     if (doc.storage_path) {
@@ -137,28 +158,17 @@ export function DocumentChecklist({ requirements, documents, onUpload, leadId, h
     }
   };
 
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center gap-2">
-          <FileText className="h-4 w-4 text-primary" /> Document Checklist
-          <span className="text-xs font-normal text-muted-foreground ml-auto">
-            {requirements.length} document{requirements.length !== 1 ? "s" : ""}
-          </span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        {sortedRequirements.map(req => {
-          const cfg = STATUS_CONFIG[req.status] ?? STATUS_CONFIG.not_uploaded;
-          const Icon = cfg.icon;
-          const relatedDocs = docsByType.get(req.document_type_id) ?? [];
-          const latestDoc = relatedDocs.find(d => d.is_latest) ?? relatedDocs[0];
-          const versionCount = relatedDocs.length;
-          const isActionable = ["not_uploaded", "rejected", "reupload_needed"].includes(req.status);
-          const isReupload = ["rejected", "reupload_needed"].includes(req.status);
-          const isBlocker = isReupload;
+  const renderRow = (req: DocRequirement) => {
+    const cfg = STATUS_CONFIG[req.status] ?? STATUS_CONFIG.not_uploaded;
+    const Icon = cfg.icon;
+    const relatedDocs = docsByType.get(req.document_type_id) ?? [];
+    const latestDoc = relatedDocs.find(d => d.is_latest) ?? relatedDocs[0];
+    const versionCount = relatedDocs.length;
+    const isActionable = ["not_uploaded", "rejected", "reupload_needed"].includes(req.status);
+    const isReupload = ["rejected", "reupload_needed"].includes(req.status);
+    const isBlocker = isReupload;
 
-          return (
+    return (
             <div
               key={req.id}
               className={`rounded-lg border p-3.5 transition-colors ${cfg.bgClass}`}
@@ -288,7 +298,53 @@ export function DocumentChecklist({ requirements, documents, onUpload, leadId, h
               </div>
             </div>
           );
-        })}
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <FileText className="h-4 w-4 text-primary" /> Document Checklist
+          <span className="text-xs font-normal text-muted-foreground ml-auto">
+            {requirements.length} document{requirements.length !== 1 ? "s" : ""}
+          </span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <Accordion type="multiple" defaultValue={defaultOpen} className="w-full">
+          {grouped.map(({ section, rows }) => {
+            const info = computeSectionStatus(rows, latestByType);
+            const statusLabel = SECTION_STATUS_LABEL[info.status];
+            const statusVariant = SECTION_STATUS_VARIANT[info.status];
+            return (
+              <AccordionItem key={section.id} value={section.id} className="border rounded-md mb-2">
+                <AccordionTrigger className="px-3 py-2.5 hover:no-underline">
+                  <div className="flex items-center justify-between gap-3 flex-1 min-w-0">
+                    <div className="min-w-0 text-left">
+                      <p className="text-sm font-semibold truncate">{section.title}</p>
+                      <p className="text-[11px] text-muted-foreground truncate">{section.purpose}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {info.isOptionalOnly ? (
+                        <span className="text-[11px] text-muted-foreground">Optional</span>
+                      ) : (
+                        <span className="text-[11px] text-muted-foreground">
+                          {info.requiredVerified} of {info.requiredTotal} required completed
+                        </span>
+                      )}
+                      <Badge variant={statusVariant} className={`text-[10px] ${info.status === "complete" ? "bg-green-600" : ""}`}>
+                        {statusLabel}
+                      </Badge>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-3 pb-3 space-y-2">
+                  {rows.map((req) => renderRow(req))}
+                </AccordionContent>
+              </AccordionItem>
+            );
+          })}
+        </Accordion>
       </CardContent>
     </Card>
   );
