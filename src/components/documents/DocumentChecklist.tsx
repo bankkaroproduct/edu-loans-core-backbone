@@ -343,7 +343,7 @@ export function DocumentChecklist({ requirements, documents, onUpload, leadId, h
         <CardTitle className="text-base flex items-center gap-2">
           <FileText className="h-4 w-4 text-primary" /> Document Checklist
           <span className="text-xs font-normal text-muted-foreground ml-auto">
-            {requirements.length} document{requirements.length !== 1 ? "s" : ""}
+            {applicableRequirements.length} document{applicableRequirements.length !== 1 ? "s" : ""}
           </span>
         </CardTitle>
       </CardHeader>
