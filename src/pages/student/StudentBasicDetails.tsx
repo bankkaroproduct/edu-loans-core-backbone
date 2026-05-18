@@ -43,10 +43,18 @@ export default function StudentBasicDetails() {
     });
   }, []);
 
-  // Prefill from eligibility data if form is empty
+  // Prefill from eligibility data if form is empty.
+  // eligibilityData.fullName is split: first token → first_name, remainder → last_name.
+  // Only applied when BOTH target name fields are currently empty.
   useEffect(() => {
-    if (eligibilityData && !formData.student_full_name) {
-      if (eligibilityData.fullName) updateField("student_full_name", eligibilityData.fullName);
+    if (eligibilityData && !formData.student_first_name && !formData.student_last_name) {
+      if (eligibilityData.fullName) {
+        const parts = eligibilityData.fullName.trim().split(/\s+/);
+        const first = parts.shift() || "";
+        const last = parts.join(" ");
+        if (first) updateField("student_first_name", first);
+        if (last) updateField("student_last_name", last);
+      }
       if (eligibilityData.targetCountry) updateField("intended_study_country", eligibilityData.targetCountry);
       if (eligibilityData.loanAmount) updateField("loan_amount_required", eligibilityData.loanAmount);
     }
