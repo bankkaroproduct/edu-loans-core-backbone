@@ -53,11 +53,14 @@ export function MasterEditPopover({
 
   if (!isAdmin) {
     return display ? (
-      <span className="text-sm font-semibold text-foreground truncate" title={display}>
+      <span
+        className={`text-sm font-semibold text-foreground ${wrap ? "break-words text-left" : "truncate"}`}
+        title={display}
+      >
         {display}
       </span>
     ) : (
-      <span className="text-sm italic text-muted-foreground/70 truncate">Please provide details</span>
+      <span className={`text-sm italic text-muted-foreground/70 ${wrap ? "break-words text-left" : "truncate"}`}>Please provide details</span>
     );
   }
 
