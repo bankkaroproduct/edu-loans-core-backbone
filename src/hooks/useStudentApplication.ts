@@ -216,6 +216,8 @@ export function useStudentApplication() {
     setFormData(prev => ({
       ...prev,
       student_full_name: lead.student_full_name || lead.student_first_name || prev.student_full_name,
+      student_first_name: lead.student_first_name || prev.student_first_name,
+      student_last_name: lead.student_last_name || prev.student_last_name,
       student_email: lead.student_email || prev.student_email,
       student_phone: lead.student_phone || prev.student_phone,
       student_whatsapp: lead.student_whatsapp || prev.student_whatsapp,
