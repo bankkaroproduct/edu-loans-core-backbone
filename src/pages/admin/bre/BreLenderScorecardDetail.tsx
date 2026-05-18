@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, AlertTriangle, Database, FileWarning } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { formatINR } from "@/lib/formatCurrency";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { canEditBre, normalizeBrePermission, isReadOnlyBre } from "@/lib/bre/permissions";
