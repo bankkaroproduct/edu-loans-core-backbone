@@ -181,7 +181,7 @@ export default function StudentReviewSubmit() {
           { label: "Mobile", value: formData.coapplicant_mobile },
           { label: "Email", value: formData.coapplicant_email },
           { label: "Employment Type", value: formData.coapplicant_employment_type ? formatDisplayLabel(formData.coapplicant_employment_type) : null },
-          { label: "Monthly Income", value: formData.coapplicant_income ? `₹${Number(formData.coapplicant_income).toLocaleString("en-IN")}` : null },
+          { label: "Monthly Income", value: formData.coapplicant_income ? formatINR(formData.coapplicant_income) : null },
           { label: "Collateral", value: formData.collateral_available ? `Yes — ${formData.collateral_notes || "Details not specified"}` : formData.collateral_available === false ? "No" : null },
         ]}
       />
