@@ -16,6 +16,7 @@ import { PayoutStatusLegend } from "@/components/payouts/PayoutStatusLegend";
 import { PayoutEmptyState } from "@/components/payouts/PayoutEmptyState";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { PageSkeleton } from "@/components/shared/PageSkeleton";
+import { formatINR } from "@/lib/formatCurrency";
 
 type PayoutRecord = Tables<"partner_payout_records">;
 type PayoutRule = Tables<"partner_payout_rules">;
