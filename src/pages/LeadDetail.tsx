@@ -154,13 +154,8 @@ export default function LeadDetail() {
     );
   }
 
-  const isDraft = lead.current_stage === "draft";
-  const pendingRequest = editRequests.find((r) => r.status === "pending") ?? null;
+  const isDraft = isDraftLead;
   const latestRequest = pendingRequest ?? editRequests[0] ?? null;
-  // Only count applied requests that actually modified fields (matches DB rule)
-  const appliedEditCount = editRequests.filter(
-    (r) => r.status === "applied" && r.applied_changes && Object.keys(r.applied_changes as Record<string, unknown>).length > 0
-  ).length;
 
   return (
     <div className="max-w-screen-2xl mx-auto space-y-6">
