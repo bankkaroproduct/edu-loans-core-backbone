@@ -31,6 +31,8 @@ interface Props {
   onSaved?: () => void;
   /** Optional pre-save validation. Return error string to block. */
   validate?: () => string | null;
+  /** Set true on summary-strip surfaces where wrap is preferred to ellipsis. */
+  wrap?: boolean;
 }
 
 export function MasterEditPopover({
@@ -42,6 +44,7 @@ export function MasterEditPopover({
   buildAudit,
   onSaved,
   validate,
+  wrap = false,
 }: Props) {
   const { appUser } = useAuth();
   const { isAdmin } = useRoleAccess();
