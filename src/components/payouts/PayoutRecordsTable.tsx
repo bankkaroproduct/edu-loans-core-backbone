@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { ArrowUpDown, ExternalLink } from "lucide-react";
+import { formatINR } from "@/lib/formatCurrency";
 
 export interface PayoutRecordRow {
   id: string;
