@@ -1888,6 +1888,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 <ReviewRow label="WhatsApp" value={form.student_whatsapp} />
                 <ReviewRow label="City" value={form.city} />
                 <ReviewRow label="State" value={form.state} />
+                <ReviewRow label="Country of Residence" value={form.country_of_residence} />
               </div>
               <div>
                 <Badge variant="outline" className="mb-2">Study Intent</Badge>
