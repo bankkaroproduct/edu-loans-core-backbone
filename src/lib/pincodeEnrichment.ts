@@ -32,6 +32,7 @@ export interface PincodeEnrichment {
     district: string | null;
     state: string | null;
     tier: string | null;
+    country_of_residence: string | null;
   }>;
   hasConflict: boolean;
   /** Human-friendly warning when not_found (UI may surface as toast). */
