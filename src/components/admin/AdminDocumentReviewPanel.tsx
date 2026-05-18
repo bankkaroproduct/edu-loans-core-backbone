@@ -29,6 +29,7 @@ import {
   SECTION_STATUS_LABEL,
   SECTION_STATUS_VARIANT,
 } from "@/lib/documentSections";
+import { partitionRequirementsByApplicability } from "@/lib/documentApplicability";
 import type { DocRequirement } from "@/pages/LeadDocuments";
 import type { LeadNameFields } from "@/lib/referenceName";
 import type { LeadDocFile, LeadDocRequirement } from "@/hooks/useLeadDocumentsData";
