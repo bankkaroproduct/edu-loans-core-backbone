@@ -8,6 +8,8 @@ import { getEnabledLevels, getMirroredHighestQual } from "@/lib/academicLevelCas
 export interface StudentFormData {
   // Basic
   student_full_name: string;
+  student_first_name: string;
+  student_last_name: string;
   student_email: string;
   student_phone: string;
   student_whatsapp: string;
