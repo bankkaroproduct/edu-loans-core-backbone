@@ -210,7 +210,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     coapplicant_employment_type: "",
     coapplicant_employer: "",
     coapplicant_existing_emi: "",
-    collateral_state: "unsure" as CollateralState,
+    collateral_state: undefined as CollateralState,
     collateral_notes: "",
     partner_remark: "",
     // Academic Profile (aligned with Bulk Upload)
@@ -1952,7 +1952,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   nudgeStep="financial"
                   nudgeField="coapplicant_income"
                 />
-                <ReviewRow label="Collateral" value={form.collateral_state === "likely" ? "Likely" : form.collateral_state === "unlikely" ? "Unlikely" : "Not sure"} />
+                <ReviewRow label="Collateral" value={form.collateral_state === "likely" ? "Yes" : form.collateral_state === "unlikely" ? "No" : "—"} />
                 {form.collateral_state === "likely" && form.collateral_notes && (
                   <ReviewRow label="Collateral Notes" value={form.collateral_notes} />
                 )}
