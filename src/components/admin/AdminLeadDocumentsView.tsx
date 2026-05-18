@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { AdminDocumentReviewPanel } from "@/components/admin/AdminDocumentReviewPanel";
 import { buildAdminDocViewModel } from "@/lib/leadDocumentViewModel";
+import { partitionRequirementsByApplicability } from "@/lib/documentApplicability";
 import type {
   LeadDocFile,
   LeadDocRequirement,
