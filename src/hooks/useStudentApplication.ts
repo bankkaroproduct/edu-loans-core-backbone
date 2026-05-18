@@ -77,7 +77,8 @@ export interface StudentFormData {
 }
 
 const EMPTY_FORM: StudentFormData = {
-  student_full_name: "", student_email: "", student_phone: "",
+  student_full_name: "", student_first_name: "", student_last_name: "",
+  student_email: "", student_phone: "",
   student_whatsapp: "", whatsapp_same_as_phone: false,
   student_dob: "", student_gender: "", city: "", state: "", district: "", tier: "", pincode: "",
   country_of_residence: "",
