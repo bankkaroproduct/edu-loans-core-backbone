@@ -1,9 +1,10 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LeadDetailHeader } from "@/components/lead-detail/LeadDetailHeader";
+import { LeadDetailHeaderInline } from "@/components/lead-detail/LeadDetailHeaderInline";
+import { useHeaderSlot } from "@/components/layout/HeaderSlotContext";
 
 import { LeadProfileSection } from "@/components/lead-detail/LeadProfileSection";
 import { LeadLifecycleProgress } from "@/components/lead-detail/LeadLifecycleProgress";
@@ -127,15 +128,6 @@ export default function LeadDetail() {
 
   return (
     <div className="max-w-screen-2xl mx-auto space-y-6">
-      <LeadDetailHeader
-        lead={lead}
-        submittedByName={submittedByName}
-        isDraft={isDraft}
-        hasPendingEditRequest={!!pendingRequest}
-        appliedEditCount={appliedEditCount}
-        onRequestEdit={() => setEditDialogOpen(true)}
-      />
-
       <LeadEditRequestBanner request={latestRequest} />
 
       <LeadLifecycleProgress lead={lead} />
