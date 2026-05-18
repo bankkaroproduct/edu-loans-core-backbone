@@ -69,14 +69,13 @@ export function LeadLifecycleStepper({ lead }: Props) {
                           className={cn(
                             "rounded-full border-2 transition-all flex items-center justify-center",
                             isCurrent
-                              ? "w-5 h-5 bg-primary border-primary ring-4 ring-primary/15"
+                              ? "w-5 h-5 bg-primary border-primary ring-4 ring-primary/20"
                               : isPast
                               ? "w-4 h-4 bg-primary border-primary"
                               : "w-3.5 h-3.5 bg-card border-border",
                           )}
                         >
                           {isPast && <Check className="h-2.5 w-2.5 text-primary-foreground" strokeWidth={3} />}
-                          {isCurrent && <span className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />}
                         </div>
                       </div>
                       {/* Label — wraps naturally, no clamp / no fixed height */}

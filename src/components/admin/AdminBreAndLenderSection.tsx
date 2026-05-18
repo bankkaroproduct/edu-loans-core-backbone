@@ -305,15 +305,6 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Calculator className="h-4 w-4" /> BRE &amp; Lender Recommendation
           </h3>
-          <p className="text-xs text-muted-foreground">
-            Internal eligibility diagnostic and the lenders we can move forward with.
-          </p>
-          {!result && (
-            <p className="text-xs text-muted-foreground">
-              Run BRE to see the diagnostic and recommended lender options. Read only - Does not change
-              the assigned lender.
-            </p>
-          )}
         </div>
         <div className="flex items-center gap-2">
           <Button size="sm" onClick={handleRun} disabled={running || refreshing}>
