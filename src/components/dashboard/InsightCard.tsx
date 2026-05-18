@@ -28,7 +28,7 @@ export function InsightCard({ kpiData, loading }: Props) {
     cta = "View Pending";
     route = "/leads?stage=documents_pending";
   } else if (kpiData.disbursed > 0 && kpiData.pendingPayout > 0) {
-    message = `You have pending payouts worth ₹${kpiData.pendingPayout.toLocaleString("en-IN")}. Track their status.`;
+    message = `You have pending payouts worth ${formatINR(kpiData.pendingPayout)}. Track their status.`;
     cta = "View Payouts";
     route = "/payouts?status=pending";
   } else if (kpiData.totalLeads === 0) {
