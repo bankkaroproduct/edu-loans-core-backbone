@@ -111,9 +111,11 @@ interface Props {
   leadId: string;
   /** When true, suppresses the extra yellow guidance/nudge bar — admin already has direct upload + OCR. */
   hideNudge?: boolean;
+  /** Lead's highest_qualification — used to hide non-applicable academic docs. */
+  highestQualification?: string | null;
 }
 
-export function DocumentChecklist({ requirements, documents, onUpload, leadId, hideNudge = false }: Props) {
+export function DocumentChecklist({ requirements, documents, onUpload, leadId, hideNudge = false, highestQualification }: Props) {
   const [sampleOpen, setSampleOpen] = useState<DocumentSample | null>(null);
   // Group documents by document_type_id
   const docsByType = new Map<string, DocFile[]>();
