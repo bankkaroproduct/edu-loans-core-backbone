@@ -8,14 +8,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatStageLabel, StageBadge, StatusBadge } from "@/components/dashboard/StageBadge";
-import { Clock, ArrowRight, ShieldAlert, Pencil } from "lucide-react";
+import { Clock, ArrowRight, Pencil } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type History = Tables<"lead_stage_history">;
 type Note = Tables<"lead_notes">;
 type AuditLog = Tables<"audit_logs">;
 
-type EventType = "stage_change" | "note" | "system" | "authenticity_change" | "audit";
+type EventType = "stage_change" | "note" | "system" | "audit";
 
 interface TimelineEvent {
   id: string;
@@ -29,9 +29,6 @@ interface TimelineEvent {
   newStatus?: string | null;
   noteType?: string;
   noteText?: string;
-  oldAuthenticity?: string | null;
-  newAuthenticity?: string | null;
-  reason?: string | null;
   actionType?: string;
   oldValue?: Record<string, unknown> | null;
   newValue?: Record<string, unknown> | null;
@@ -92,26 +89,6 @@ function buildEvents(
     const newVal = (a.new_value as Record<string, unknown> | null) ?? null;
     const metaVal = (a.meta as Record<string, unknown> | null) ?? null;
 
-    if (a.action_type === "lead_authenticity_changed") {
-      const oldAuth = (oldVal as { lead_authenticity?: string } | null)?.lead_authenticity ?? null;
-      const newAuth = (newVal as { lead_authenticity?: string } | null)?.lead_authenticity ?? null;
-      const reason = (metaVal as { reason?: string } | null)?.reason ?? null;
-      major.push({
-        id: `a-${a.id}`,
-        type: "authenticity_change",
-        timestamp: a.created_at,
-        actor,
-        description: reason || "",
-        oldAuthenticity: oldAuth,
-        newAuthenticity: newAuth,
-        reason,
-        actionType: a.action_type,
-        oldValue: oldVal,
-        newValue: newVal,
-        meta: metaVal,
-      });
-      continue;
-    }
 
     auditChips.push({
       id: `a-${a.id}`,
@@ -528,14 +505,11 @@ export function AdminLeadTimeline({ history, notes, audits = [], actorNames = {}
                       className="absolute left-3 right-3 top-[26px] h-px bg-border"
                     />
                     {major.map((evt) => {
-                      const isAuth = evt.type === "authenticity_change";
                       const typeLabel =
                         evt.type === "stage_change"
                           ? "Stage Change"
                           : evt.type === "system"
                           ? "System"
-                          : evt.type === "authenticity_change"
-                          ? "Authenticity"
                           : evt.noteType === "internal"
                           ? "Internal Note"
                           : evt.noteType === "partner_visible"
@@ -543,7 +517,7 @@ export function AdminLeadTimeline({ history, notes, audits = [], actorNames = {}
                           : "Note";
                       const fullText =
                         evt.noteText ||
-                        (isAuth ? evt.reason || "" : evt.description || "") ||
+                        evt.description ||
                         typeLabel;
                       return (
                         <div
@@ -551,30 +525,17 @@ export function AdminLeadTimeline({ history, notes, audits = [], actorNames = {}
                           className="relative flex flex-col items-center w-[280px] shrink-0"
                         >
                           {/* Dot */}
-                          <span
-                            className={`relative z-10 h-3 w-3 rounded-full border-2 bg-card ${
-                              isAuth ? "border-amber-500" : "border-primary"
-                            }`}
-                          />
+                          <span className="relative z-10 h-3 w-3 rounded-full border-2 bg-card border-primary" />
                           {/* Compact card */}
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <div
-                                className={`mt-3 w-full rounded-md border bg-card p-2.5 min-w-0 cursor-default ${
-                                  isAuth
-                                    ? "border-l-2 border-l-amber-500 border-border/60"
-                                    : "border-border/60"
-                                }`}
-                              >
+                              <div className="mt-3 w-full rounded-md border bg-card p-2.5 min-w-0 cursor-default border-border/60">
                                 <div className="space-y-1.5 min-w-0">
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     <Badge
-                                      variant={evt.noteType === "internal" || isAuth ? "secondary" : "outline"}
-                                      className={`text-[10px] ${
-                                        isAuth ? "bg-amber-100 text-amber-800 border-amber-200" : ""
-                                      }`}
+                                      variant={evt.noteType === "internal" ? "secondary" : "outline"}
+                                      className="text-[10px]"
                                     >
-                                      {isAuth && <ShieldAlert className="h-3 w-3 mr-1 inline" />}
                                       {typeLabel}
                                     </Badge>
                                     <span
@@ -606,30 +567,9 @@ export function AdminLeadTimeline({ history, notes, audits = [], actorNames = {}
                                     </div>
                                   )}
 
-                                  {isAuth && (
-                                    <div className="flex items-center gap-1 flex-wrap">
-                                      <Badge variant="outline" className="text-[10px] capitalize">
-                                        {evt.oldAuthenticity ?? "unverified"}
-                                      </Badge>
-                                      <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                                      <Badge
-                                        variant="outline"
-                                        className="text-[10px] capitalize bg-amber-50 border-amber-200 text-amber-800"
-                                      >
-                                        {evt.newAuthenticity ?? "—"}
-                                      </Badge>
-                                    </div>
-                                  )}
-
-                                  {evt.description && !isAuth && (
+                                  {evt.description && (
                                     <p className="text-xs text-muted-foreground break-words line-clamp-4 whitespace-pre-wrap">
                                       {evt.description}
-                                    </p>
-                                  )}
-
-                                  {isAuth && evt.reason && (
-                                    <p className="text-xs rounded p-1.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 break-words line-clamp-4 whitespace-pre-wrap">
-                                      Reason: {evt.reason}
                                     </p>
                                   )}
 

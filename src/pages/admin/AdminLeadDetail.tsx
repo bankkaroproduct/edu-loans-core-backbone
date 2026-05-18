@@ -19,7 +19,7 @@ import { AdminInternalNotes } from "@/components/admin/AdminInternalNotes";
 import { AdminEditRequestPanel } from "@/components/admin/AdminEditRequestPanel";
 import { AdminAssignLenderCard } from "@/components/admin/AdminAssignLenderCard";
 import { AdminBreAndLenderSection } from "@/components/admin/AdminBreAndLenderSection";
-import { LeadAuthenticityEditor } from "@/components/admin/LeadAuthenticityEditor";
+
 import { LeadCommunicationPanel } from "@/components/admin/communications/LeadCommunicationPanel";
 import { useLeadDocumentsData } from "@/hooks/useLeadDocumentsData";
 import type { Tables } from "@/integrations/supabase/types";
@@ -224,17 +224,6 @@ export default function AdminLeadDetail() {
         backTo="/admin/leads"
         backLabel="Back to Lead Queue"
       />
-
-      {/* Admin authenticity toolbar — Edit/Documents now live inside AdminLeadHeader */}
-      <div className="flex items-center gap-3 flex-wrap border rounded-md px-4 py-2 bg-muted/30">
-        <span className="text-xs text-muted-foreground">Authenticity</span>
-        <LeadAuthenticityEditor
-          leadId={lead.id}
-          current={(lead as unknown as { lead_authenticity?: string }).lead_authenticity}
-          fraudFlag={lead.fraud_flag}
-          onChanged={loadAll}
-        />
-      </div>
 
 
       {/* Student PTR / Partner Source profile — promoted to the top of Admin Lead

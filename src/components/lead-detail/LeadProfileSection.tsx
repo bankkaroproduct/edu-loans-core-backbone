@@ -1,5 +1,5 @@
-import { Badge } from "@/components/ui/badge";
-import { User, GraduationCap, Wallet, FolderInput, ShieldCheck } from "lucide-react";
+
+import { User, GraduationCap, Wallet, FolderInput } from "lucide-react";
 import ProfileSectionCard from "@/components/lead-detail/ProfileSectionCard";
 import type { Tables } from "@/integrations/supabase/types";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
@@ -22,14 +22,6 @@ import { formatDisplayLabel } from "@/lib/formatDisplayLabel";
 type Lead = Tables<"student_leads"> & {
   district?: string | null;
   tier?: string | null;
-  lead_authenticity?: string | null;
-};
-
-const AUTHENTICITY_LABEL: Record<string, { label: string; tone: "default" | "secondary" | "destructive" | "outline" }> = {
-  unverified: { label: "Unverified", tone: "outline" },
-  verified: { label: "Verified", tone: "default" },
-  suspicious: { label: "Suspicious", tone: "secondary" },
-  fraudulent: { label: "Fraudulent", tone: "destructive" },
 };
 
 interface EditableConfig {
@@ -435,23 +427,6 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
             <Field label="Submitted By" value={submittedByName} readOnlyFallback="Not captured" />
             <Field label="Created At" value={new Date(lead.created_at).toLocaleString()} readOnlyFallback="—" />
             <Field label="Last Updated" value={new Date(lead.updated_at).toLocaleString()} readOnlyFallback="—" />
-            <div className="min-w-0">
-              <span className="text-muted-foreground text-xs flex items-center gap-1">
-                <ShieldCheck className="h-3 w-3" /> Lead Authenticity
-              </span>
-              {(() => {
-                const key = (lead.lead_authenticity ?? "unverified").toLowerCase();
-                const meta = AUTHENTICITY_LABEL[key] ?? AUTHENTICITY_LABEL.unverified;
-                return (
-                  <div className="mt-1">
-                    <Badge variant={meta.tone}>{meta.label}</Badge>
-                    {lead.fraud_flag ? (
-                      <Badge variant="destructive" className="ml-2">Legacy fraud_flag</Badge>
-                    ) : null}
-                  </div>
-                );
-              })()}
-            </div>
           </div>
       </ProfileSectionCard>
     </div>
