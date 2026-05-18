@@ -86,7 +86,7 @@ export function PayoutRecordsTable({ records, sortField, sortDir, onSort }: Prop
               <TableCell className="text-xs text-muted-foreground max-w-[120px] truncate">{r.submitted_by ?? "—"}</TableCell>
               <TableCell className="text-xs">{r.trigger_stage ? fmt(r.trigger_stage) : "—"}</TableCell>
               <TableCell className="text-xs">{r.payout_basis ? fmt(r.payout_basis) : "—"}</TableCell>
-              <TableCell className="font-medium">{fmtINR(r.payout_amount)}</TableCell>
+              <TableCell className="font-medium">{formatINR(r.payout_amount)}</TableCell>
               <TableCell>
                 <Badge variant="outline" className={`text-[10px] ${STATUS_BADGE[r.payout_status] ?? ""}`}>
                   {fmt(r.payout_status)}
