@@ -12,7 +12,7 @@ import { AdminLeadLifecycleProgress } from "@/components/admin/lead-detail/Admin
 import { AdminLeadTimeline } from "@/components/admin/lead-detail/AdminLeadTimeline";
 import { AdminLeadDuplicateContext } from "@/components/admin/lead-detail/AdminLeadDuplicateContext";
 import { AdminLeadPayoutSnapshot } from "@/components/admin/lead-detail/AdminLeadPayoutSnapshot";
-import { AdminPartnerCard } from "@/components/admin/AdminPartnerCard";
+
 import { AdminStageStatusPanel } from "@/components/admin/AdminStageStatusPanel";
 import { AdminLeadDocumentsView } from "@/components/admin/AdminLeadDocumentsView";
 import { AdminInternalNotes } from "@/components/admin/AdminInternalNotes";
