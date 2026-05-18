@@ -34,6 +34,21 @@ export default function StudentEducationDetails() {
   const [intakes, setIntakes] = useState<{ id: string; intake_term: string; intake_year: number }[]>([]);
   const [universities, setUniversities] = useState<UniversityRow[]>([]);
   const [courses, setCourses] = useState<CourseRow[]>([]);
+  // Progressive disclosure for Test Scores. UI-only state; not persisted.
+  // Hydrated to true if any of the 6 scores already has a value on load.
+  const [hasTestScores, setHasTestScores] = useState<boolean>(() => {
+    const ts = formData.test_scores as Record<string, unknown>;
+    return ["ielts", "toefl", "duolingo", "pte", "gre", "gmat"]
+      .some((k) => String(ts?.[k] ?? "").trim() !== "");
+  });
+  // Re-derive when formData is hydrated async (initial load may be empty).
+  useEffect(() => {
+    const ts = formData.test_scores as Record<string, unknown>;
+    const any = ["ielts", "toefl", "duolingo", "pte", "gre", "gmat"]
+      .some((k) => String(ts?.[k] ?? "").trim() !== "");
+    if (any) setHasTestScores(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.test_scores?.ielts, formData.test_scores?.toefl, formData.test_scores?.duolingo, formData.test_scores?.pte, formData.test_scores?.gre, formData.test_scores?.gmat]);
 
   useEffect(() => {
     if (!isVerified) { navigate("/student/login"); return; }
