@@ -86,6 +86,42 @@ export default function LeadDetail() {
     loadData();
   }, [loadData]);
 
+  const { setHeaderContent, setHideSidebarTrigger, setBackTo } = useHeaderSlot();
+
+  const pendingRequest = editRequests.find((r) => r.status === "pending") ?? null;
+  const appliedEditCount = editRequests.filter(
+    (r) => r.status === "applied" && r.applied_changes && Object.keys(r.applied_changes as Record<string, unknown>).length > 0
+  ).length;
+  const isDraftLead = lead?.current_stage === "draft";
+
+  const headerNode = useMemo(() => {
+    if (!lead) return null;
+    return (
+      <LeadDetailHeaderInline
+        lead={lead}
+        submittedByName={submittedByName}
+        isDraft={isDraftLead}
+        hasPendingEditRequest={!!pendingRequest}
+        appliedEditCount={appliedEditCount}
+        onRequestEdit={() => setEditDialogOpen(true)}
+      />
+    );
+  }, [lead, submittedByName, isDraftLead, pendingRequest, appliedEditCount]);
+
+  useEffect(() => {
+    setHideSidebarTrigger(true);
+    setBackTo("/leads");
+    return () => {
+      setHideSidebarTrigger(false);
+      setBackTo(null);
+      setHeaderContent(null);
+    };
+  }, [setHideSidebarTrigger, setBackTo, setHeaderContent]);
+
+  useEffect(() => {
+    setHeaderContent(headerNode);
+  }, [headerNode, setHeaderContent]);
+
   const refreshNotes = async () => {
     if (!id) return;
     const { data } = await supabase.from("lead_notes").select("*").eq("lead_id", id).order("created_at", { ascending: false });
