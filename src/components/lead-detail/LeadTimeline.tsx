@@ -6,14 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Clock, ArrowRight, ShieldAlert, Pencil } from "lucide-react";
+import { Clock, ArrowRight, Pencil } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type History = Tables<"lead_stage_history">;
 type Note = Tables<"lead_notes">;
 type AuditLog = Tables<"audit_logs">;
 
-type EventType = "stage_change" | "note" | "system" | "authenticity_change" | "audit";
+type EventType = "stage_change" | "note" | "system" | "audit";
 
 interface TimelineEvent {
   id: string;
@@ -27,10 +27,6 @@ interface TimelineEvent {
   newStatus?: string | null;
   noteType?: string;
   noteText?: string;
-  // Authenticity / generic audit
-  oldAuthenticity?: string | null;
-  newAuthenticity?: string | null;
-  reason?: string | null;
   // For audit chips
   actionType?: string;
 }
@@ -78,23 +74,6 @@ function buildEvents(history: History[], notes: Note[], audits: AuditLog[], acto
     const role = a.actor_role ? formatStageLabel(a.actor_role) : "System";
     const actor = actorName ? `${actorName} (${role})` : role;
 
-    if (a.action_type === "lead_authenticity_changed") {
-      const oldVal = (a.old_value as { lead_authenticity?: string } | null)?.lead_authenticity ?? null;
-      const newVal = (a.new_value as { lead_authenticity?: string } | null)?.lead_authenticity ?? null;
-      const reason = (a.meta as { reason?: string } | null)?.reason ?? null;
-      major.push({
-        id: `a-${a.id}`,
-        type: "authenticity_change",
-        timestamp: a.created_at,
-        actor,
-        description: reason || "",
-        oldAuthenticity: oldVal,
-        newAuthenticity: newVal,
-        reason,
-        actionType: a.action_type,
-      });
-      continue;
-    }
 
     // Granular audit (admin_direct_edit, document_*, edit_request_*, etc.) → compact chip.
     auditChips.push({
