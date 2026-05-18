@@ -443,26 +443,47 @@ export default function StudentEducationDetails() {
             <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">Optional</span>
           </div>
           <p className="mb-4 text-xs text-muted-foreground">Fill in whatever you have — these are not mandatory at this stage.</p>
-          <div className="grid gap-4 sm:grid-cols-3">
-            {[
-              { key: "ielts", label: "IELTS", placeholder: "e.g. 7.5" },
-              { key: "toefl", label: "TOEFL", placeholder: "e.g. 105" },
-              { key: "duolingo", label: "Duolingo", placeholder: "e.g. 120" },
-              { key: "pte", label: "PTE", placeholder: "e.g. 65" },
-              { key: "gre", label: "GRE", placeholder: "e.g. 325" },
-              { key: "gmat", label: "GMAT", placeholder: "e.g. 720" },
-            ].map(t => (
-              <div key={t.key} className="space-y-1.5">
-                <Label className="text-xs">{t.label}</Label>
-                <Input
-                  type="number"
-                  value={(formData.test_scores as any)[t.key] || ""}
-                  onChange={e => updateTestScore(t.key, e.target.value)}
-                  placeholder={t.placeholder}
-                />
-              </div>
-            ))}
-          </div>
+          <label className="mb-4 flex items-center gap-2 text-sm cursor-pointer">
+            <Checkbox
+              checked={hasTestScores}
+              onCheckedChange={(v) => {
+                const checked = v === true;
+                setHasTestScores(checked);
+                if (!checked) {
+                  // Clear all 6 score fields so submit writes empty test_scores entries
+                  // (existing setOrDelete strips empties from JSONB on save).
+                  ["ielts", "toefl", "duolingo", "pte", "gre", "gmat"].forEach((k) =>
+                    updateTestScore(k, "")
+                  );
+                }
+              }}
+            />
+            <span>I have taken standardized tests (IELTS, TOEFL, PTE, etc.)</span>
+          </label>
+          {hasTestScores ? (
+            <div className="grid gap-4 sm:grid-cols-3">
+              {[
+                { key: "ielts", label: "IELTS", placeholder: "e.g. 7.5" },
+                { key: "toefl", label: "TOEFL", placeholder: "e.g. 105" },
+                { key: "duolingo", label: "Duolingo", placeholder: "e.g. 120" },
+                { key: "pte", label: "PTE", placeholder: "e.g. 65" },
+                { key: "gre", label: "GRE", placeholder: "e.g. 325" },
+                { key: "gmat", label: "GMAT", placeholder: "e.g. 720" },
+              ].map(t => (
+                <div key={t.key} className="space-y-1.5">
+                  <Label className="text-xs">{t.label}</Label>
+                  <Input
+                    type="number"
+                    value={(formData.test_scores as any)[t.key] || ""}
+                    onChange={e => updateTestScore(t.key, e.target.value)}
+                    placeholder={t.placeholder}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">Tick the box above if you've taken any standardized tests.</p>
+          )}
         </CardContent>
       </Card>
     </StudentStepLayout>
