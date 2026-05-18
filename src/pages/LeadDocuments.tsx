@@ -119,6 +119,7 @@ export default function LeadDocuments() {
             onUpload={(req) => setUploadTarget(req)}
             leadId={lead.id}
             hideNudge={isAdminContext}
+            highestQualification={lead.highest_qualification}
           />
         </>
       )}
