@@ -227,9 +227,6 @@ export function AdminAssignLenderCard({ leadId }: { leadId: string }) {
                 </Button>
               )}
             </div>
-            <p className="text-[11px] text-muted-foreground mt-2">
-              Manual assignment is independent of BRE recommendations and persists across refresh.
-            </p>
           </div>
 
           {current && (
