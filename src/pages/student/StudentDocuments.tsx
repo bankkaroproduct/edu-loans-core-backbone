@@ -112,22 +112,47 @@ export default function StudentDocuments() {
 
   if (!isVerified) return null;
 
-  const allComplete = counts.total > 0 && counts.verified >= counts.total - counts.not_required && counts.action_needed === 0 && counts.pending === 0;
+  // Smart academic applicability — hide non-applicable academic docs from the
+  // student view and recompute readiness counts from the filtered list so
+  // hidden docs never appear as "missing".
+  const applicableRequirements = requirements.filter((r) => {
+    const adapted = {
+      document_master: {
+        document_code: r.document_code ?? null,
+        display_name: null,
+        document_name: r.document_name,
+      },
+    } as unknown as LeadDocRequirement;
+    return isRequirementApplicable(adapted, leadSummary?.highest_qualification ?? null);
+  });
+  const hiddenAcademicCount = requirements.length - applicableRequirements.length;
+
+  const effectiveCounts: DocCounts = {
+    total: applicableRequirements.length,
+    pending: applicableRequirements.filter((r) => r.status === "not_uploaded").length,
+    uploaded: applicableRequirements.filter((r) => r.status === "uploaded").length,
+    under_review: applicableRequirements.filter((r) => r.status === "under_review").length,
+    verified: applicableRequirements.filter((r) => r.status === "verified").length,
+    action_needed: applicableRequirements.filter((r) => ["rejected", "reupload_needed"].includes(r.status)).length,
+    not_required: applicableRequirements.filter((r) => ["waived", "not_applicable"].includes(r.status)).length,
+  };
+
+  const allComplete = effectiveCounts.total > 0 && effectiveCounts.verified >= effectiveCounts.total - effectiveCounts.not_required && effectiveCounts.action_needed === 0 && effectiveCounts.pending === 0;
 
   // Readiness banner config
   const getReadinessBanner = () => {
-    if (counts.total === 0) return { type: "empty", icon: Info, color: "border-muted bg-muted/30", textColor: "text-muted-foreground", message: "No documents have been assigned yet — check back soon." };
-    if (counts.action_needed > 0) return { type: "action", icon: AlertCircle, color: "border-red-200 bg-red-50/60", textColor: "text-red-800", message: `${counts.action_needed} document${counts.action_needed > 1 ? "s" : ""} need${counts.action_needed === 1 ? "s" : ""} re-upload before your case can proceed.` };
-    if (counts.pending > 0) return { type: "pending", icon: Upload, color: "border-amber-200 bg-amber-50/60", textColor: "text-amber-800", message: `${counts.pending} required document${counts.pending > 1 ? "s" : ""} still need${counts.pending === 1 ? "s" : ""} upload.` };
+    if (effectiveCounts.total === 0) return { type: "empty", icon: Info, color: "border-muted bg-muted/30", textColor: "text-muted-foreground", message: "No documents have been assigned yet — check back soon." };
+    if (effectiveCounts.action_needed > 0) return { type: "action", icon: AlertCircle, color: "border-red-200 bg-red-50/60", textColor: "text-red-800", message: `${effectiveCounts.action_needed} document${effectiveCounts.action_needed > 1 ? "s" : ""} need${effectiveCounts.action_needed === 1 ? "s" : ""} re-upload before your case can proceed.` };
+    if (effectiveCounts.pending > 0) return { type: "pending", icon: Upload, color: "border-amber-200 bg-amber-50/60", textColor: "text-amber-800", message: `${effectiveCounts.pending} required document${effectiveCounts.pending > 1 ? "s" : ""} still need${effectiveCounts.pending === 1 ? "s" : ""} upload.` };
     if (allComplete) return { type: "complete", icon: CheckCircle2, color: "border-emerald-200 bg-emerald-50/60", textColor: "text-emerald-800", message: "All required documents are complete!" };
-    if (counts.under_review > 0 || counts.uploaded > 0) return { type: "review", icon: Clock, color: "border-blue-200 bg-blue-50/60", textColor: "text-blue-800", message: "All documents uploaded — under review." };
+    if (effectiveCounts.under_review > 0 || effectiveCounts.uploaded > 0) return { type: "review", icon: Clock, color: "border-blue-200 bg-blue-50/60", textColor: "text-blue-800", message: "All documents uploaded — under review." };
     return { type: "review", icon: Clock, color: "border-blue-200 bg-blue-50/60", textColor: "text-blue-800", message: "Documents are being processed." };
   };
 
   const banner = getReadinessBanner();
 
   // Sort: action needed first, then pending, then uploaded/review, then verified, then not required
-  const sortedRequirements = [...requirements].sort((a, b) => {
+  const sortedRequirements = [...applicableRequirements].sort((a, b) => {
     const priority: Record<string, number> = { "Action Needed": 0, "Pending Upload": 1, "Uploaded": 2, "Being Reviewed": 3, "Verified": 4, "Not Required": 5 };
     return (priority[a.student_status_label] ?? 9) - (priority[b.student_status_label] ?? 9);
   });
