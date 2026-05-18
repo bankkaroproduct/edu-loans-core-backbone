@@ -114,7 +114,7 @@ export function MasterEditPopover({
           type="button"
           className={
             display
-              ? "text-left text-sm font-semibold text-foreground truncate hover:underline underline-offset-2 w-full"
+              ? `text-left text-sm font-semibold text-foreground hover:underline underline-offset-2 w-full ${wrap ? "break-words" : "truncate"}`
               : "text-left text-sm italic text-primary hover:underline underline-offset-2 w-full"
           }
           title={`Edit ${label}`}
