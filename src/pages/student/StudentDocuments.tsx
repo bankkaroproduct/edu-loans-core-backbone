@@ -10,6 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { StudentDocumentUploadDialog } from "@/components/student/StudentDocumentUploadDialog";
 import { SampleDocumentModal } from "@/components/documents/SampleDocumentModal";
 import { findSampleForDocument, getHelperText, type DocumentSample } from "@/lib/documentSamples";
+import { isRequirementApplicable } from "@/lib/documentApplicability";
+import type { LeadDocRequirement } from "@/hooks/useLeadDocumentsData";
 import {
   CheckCircle2, AlertTriangle, Upload, Eye, RefreshCw, FileText, Clock,
   Shield, Compass, HeartHandshake, HelpCircle, Loader2, AlertCircle, Info,
