@@ -1,6 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { User, GraduationCap, Wallet, FolderInput, ShieldCheck } from "lucide-react";
+import ProfileSectionCard from "@/components/lead-detail/ProfileSectionCard";
 import type { Tables } from "@/integrations/supabase/types";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { InlineEditField } from "@/components/admin/InlineEditField";
@@ -202,15 +202,9 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
   };
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="gap-4 md:columns-2 [&>*]:break-inside-avoid [&>*]:mb-4 md:[&>*]:mb-4">
       {/* Student Details */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <User className="h-4 w-4 text-primary" /> Student Details
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <ProfileSectionCard icon={User} title="Student Details">
           <div className="grid grid-cols-2 gap-3">
             <Field label="First Name" value={lead.student_first_name} editable={ed("student_first_name")}  onSaved={onSaved} />
             <Field label="Last Name" value={lead.student_last_name} editable={ed("student_last_name")}  onSaved={onSaved} />
@@ -244,17 +238,10 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
             <Field label="Tier" value={lead.tier ?? null} editable={ed("tier")}  onSaved={onSaved} />
             <Field label="Country" value={lead.country_of_residence} editable={ed("country_of_residence")}  onSaved={onSaved} />
           </div>
-        </CardContent>
-      </Card>
+      </ProfileSectionCard>
 
       {/* Education / Study Intent */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <GraduationCap className="h-4 w-4 text-primary" /> Education & Study Intent
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <ProfileSectionCard icon={GraduationCap} title="Education & Study Intent">
           <div className="grid grid-cols-2 gap-3">
             <Field
               label="Study Country"
@@ -366,17 +353,10 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
             })}
             <Field label="Other Test Scores" value={tsStr("raw_text")} editable={edTS("raw_text")}  onSaved={onSaved} />
           </div>
-        </CardContent>
-      </Card>
+      </ProfileSectionCard>
 
       {/* Financial Snapshot */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Wallet className="h-4 w-4 text-primary" /> Financial Snapshot
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <ProfileSectionCard icon={Wallet} title="Financial Snapshot">
           <div className="grid grid-cols-2 gap-3">
             <Field label="Co-Applicant" value={lead.coapplicant_name} editable={ed("coapplicant_name")}  onSaved={onSaved} />
             <Field label="Relation" value={lead.coapplicant_relation} editable={ed("coapplicant_relation", { formatDisplay: (v) => formatDisplayLabel(v) })}  onSaved={onSaved} />
@@ -445,17 +425,10 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
             />
             <Field label="Collateral Notes" value={lead.collateral_notes} editable={ed("collateral_notes")}  onSaved={onSaved} />
           </div>
-        </CardContent>
-      </Card>
+      </ProfileSectionCard>
 
       {/* Source / Creation Context — system-only, untouched */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <FolderInput className="h-4 w-4 text-primary" /> Source & Creation Context
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <ProfileSectionCard icon={FolderInput} title="Source & Creation Context">
           <div className="grid grid-cols-2 gap-3">
             <Field label="Source Type" value={formatDisplayLabel(lead.source_type)} />
             <Field label="Source Subtype" value={formatDisplayLabel(lead.source_sub_type)} />
@@ -480,8 +453,7 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
               })()}
             </div>
           </div>
-        </CardContent>
-      </Card>
+      </ProfileSectionCard>
     </div>
   );
 }

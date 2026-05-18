@@ -1,10 +1,11 @@
 // Admin-only profile section: Student Details / Education & Study Intent /
 // Financial Snapshot / Source. Visual mirror of LeadProfileSection.
 // Reuses InlineEditField for all save logic — no new save/edit code paths.
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, GraduationCap, Wallet, FolderInput, ShieldCheck, ChevronDown, ChevronUp } from "lucide-react";
+import { User, GraduationCap, Wallet, FolderInput, ShieldCheck } from "lucide-react";
+import ProfileSectionCard from "@/components/lead-detail/ProfileSectionCard";
 import type { Tables } from "@/integrations/supabase/types";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { InlineEditField } from "@/components/admin/InlineEditField";
@@ -159,88 +160,6 @@ function NormalizedField({
   );
 }
 
-function SectionCard({
-  icon: Icon,
-  title,
-  children,
-  collapsedMaxHeight = 280,
-}: {
-  icon: typeof User;
-  title: string;
-  children: React.ReactNode;
-  collapsedMaxHeight?: number;
-}) {
-  const contentRef = useRef<HTMLDivElement>(null);
-  const [collapsed, setCollapsed] = useState(true);
-  const [overflows, setOverflows] = useState(false);
-
-  useLayoutEffect(() => {
-    const el = contentRef.current;
-    if (!el) return;
-    const measure = () => {
-      // Temporarily clear maxHeight to read true scrollHeight
-      const prev = el.style.maxHeight;
-      el.style.maxHeight = "none";
-      const full = el.scrollHeight;
-      el.style.maxHeight = prev;
-      setOverflows(full > collapsedMaxHeight + 8);
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [collapsedMaxHeight, children]);
-
-  const isClipped = overflows && collapsed;
-
-  return (
-    <Card className="rounded-xl border-border/60 shadow-[0_1px_2px_rgba(15,23,42,0.04)] self-start h-fit">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-semibold flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10">
-            <Icon className="h-3.5 w-3.5 text-primary" />
-          </span>
-          {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div
-          ref={contentRef}
-          style={{ maxHeight: isClipped ? collapsedMaxHeight : undefined }}
-          className={isClipped ? "overflow-hidden relative" : ""}
-          // @ts-expect-error inert is a valid HTML attribute, types lag behind
-          inert={isClipped ? "" : undefined}
-          aria-hidden={isClipped ? true : undefined}
-        >
-          {children}
-          {isClipped && (
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-card to-transparent" />
-          )}
-        </div>
-        {overflows && (
-          <div className="mt-3 flex justify-center border-t border-border/60 pt-2">
-            <button
-              type="button"
-              onClick={() => setCollapsed((c) => !c)}
-              className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-            >
-              {collapsed ? (
-                <>
-                  View More <ChevronDown className="h-3.5 w-3.5" />
-                </>
-              ) : (
-                <>
-                  View Less <ChevronUp className="h-3.5 w-3.5" />
-                </>
-              )}
-            </button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
 interface Props {
   lead: Lead;
   submittedByName: string | null;
@@ -314,7 +233,7 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
 
   return (
     <div className="gap-4 md:columns-2 [&>*]:break-inside-avoid [&>*]:mb-4 md:[&>*]:mb-4">
-      <SectionCard icon={User} title="Student Details">
+      <ProfileSectionCard icon={User} title="Student Details">
         <div className="grid grid-cols-2 gap-x-4 gap-y-3.5">
           <Field label="First Name" value={lead.student_first_name} editable={ed("student_first_name")} onSaved={onSaved} />
           <Field label="Last Name" value={lead.student_last_name} editable={ed("student_last_name")} onSaved={onSaved} />
@@ -354,9 +273,9 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
           <Field label="City Tier" value={lead.tier ?? null} editable={ed("tier")} onSaved={onSaved} />
           <Field label="Country" value={lead.country_of_residence} editable={ed("country_of_residence")} onSaved={onSaved} />
         </div>
-      </SectionCard>
+      </ProfileSectionCard>
 
-      <SectionCard icon={GraduationCap} title="Education & Study Intent">
+      <ProfileSectionCard icon={GraduationCap} title="Education & Study Intent">
         <div className="grid grid-cols-2 gap-x-4 gap-y-3.5">
           <Field
             label="Study Country"
@@ -601,9 +520,9 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
           })}
           <Field label="Other Test Scores" value={tsStr("raw_text")} editable={edTS("raw_text")} onSaved={onSaved} />
         </div>
-      </SectionCard>
+      </ProfileSectionCard>
 
-      <SectionCard icon={Wallet} title="Financial Snapshot">
+      <ProfileSectionCard icon={Wallet} title="Financial Snapshot">
         <div className="grid grid-cols-2 gap-x-4 gap-y-3.5">
           <Field label="Co-Applicant" value={lead.coapplicant_name} editable={ed("coapplicant_name")} onSaved={onSaved} />
           <Field
@@ -695,9 +614,9 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
           />
           <Field label="Collateral Notes" value={lead.collateral_notes} editable={ed("collateral_notes")} onSaved={onSaved} />
         </div>
-      </SectionCard>
+      </ProfileSectionCard>
 
-      <SectionCard icon={FolderInput} title="Source & Creation Context">
+      <ProfileSectionCard icon={FolderInput} title="Source & Creation Context">
         <div className="grid grid-cols-2 gap-x-4 gap-y-3.5">
           <Field label="Source Type" value={formatDisplayLabel(lead.source_type)} />
           <Field label="Source Subtype" value={formatDisplayLabel(lead.source_sub_type)} />
@@ -722,7 +641,7 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
             })()}
           </div>
         </div>
-      </SectionCard>
+      </ProfileSectionCard>
     </div>
   );
 }
