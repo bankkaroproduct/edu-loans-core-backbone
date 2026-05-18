@@ -8,6 +8,14 @@ import { User, GraduationCap, Wallet, FolderInput, ShieldCheck, ChevronDown, Che
 import type { Tables } from "@/integrations/supabase/types";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { InlineEditField } from "@/components/admin/InlineEditField";
+import { MasterEditPopover } from "@/components/admin/MasterEditPopover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  buildIntakeSessionOptions,
+  intakeSessionLabel,
+  intakeSessionValue,
+  parseIntakeSessionValue,
+} from "@/lib/intakeSession";
 import { formatINR } from "@/lib/formatCurrency";
 import { INRAmountStacked } from "@/components/shared/INRAmountStacked";
 import type { ReactNode } from "react";
@@ -243,7 +251,13 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
   const { isAdmin } = useRoleAccess();
   const ts = (lead.test_scores ?? {}) as Record<string, unknown>;
   const { options: highestQualOptions } = useHighestQualificationOptions();
-  const { countries, universities, courses } = useLeadMasterData();
+  const { countries, universities, courses, intakes } = useLeadMasterData();
+  const intakeOptions = useMemo(() => buildIntakeSessionOptions(intakes, { onlyFuture: false }), [intakes]);
+  const [intakeDraft, setIntakeDraft] = useState<string>(intakeSessionValue(lead.intake_term, lead.intake_year));
+  useEffect(() => {
+    setIntakeDraft(intakeSessionValue(lead.intake_term, lead.intake_year));
+  }, [lead.id, lead.intake_term, lead.intake_year]);
+  const intakeDisplay = intakeSessionLabel(lead.intake_term, lead.intake_year) || null;
 
   const countryOptions: MasterOption[] = countries.map((c) => ({ id: c.country_name, label: c.country_name }));
   const universityOptions: MasterOption[] = (() => {
