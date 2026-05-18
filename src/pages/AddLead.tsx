@@ -143,6 +143,9 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   const [isDraftSuccess, setIsDraftSuccess] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [coAppOpen, setCoAppOpen] = useState(false);
+  // Progressive disclosure for Test Scores card. UI-only state; not persisted.
+  // Hydrates to true when any of the 6 scores already has a value.
+  const [hasTestScores, setHasTestScores] = useState(false);
   const [originalLead, setOriginalLead] = useState<Record<string, unknown> | null>(null);
   const [editLeadStage, setEditLeadStage] = useState<string | null>(null);
 
@@ -380,6 +383,16 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     })();
     return () => { cancelled = true; };
   }, [hydrateId, navigate, isEditMode, stepIds]);
+
+  // Hydrate the Test Scores progressive-disclosure checkbox once hydration
+  // completes (or whenever a different lead is loaded). UI-only state.
+  useEffect(() => {
+    if (hydrating) return;
+    const keys = ["ielts", "toefl", "duolingo", "pte", "gre", "gmat"] as const;
+    const any = keys.some((k) => String((form as any)[k] ?? "").trim() !== "");
+    setHasTestScores(any);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrating, hydrateId]);
 
   // Unsaved changes protection
   useEffect(() => {
@@ -1603,30 +1616,56 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
           </Card>
 
           {/* Standardized Test Scores — aligned with Student portal keys
-              (ielts/toefl/duolingo/gre/gmat). All optional. Persists in test_scores JSONB. */}
+              (ielts/toefl/duolingo/pte/gre/gmat). All optional. Persists in test_scores JSONB.
+              Progressive disclosure: hidden behind a checkbox to reduce visual noise. */}
           <Card className="mt-4">
             <CardHeader><CardTitle className="text-lg">Test Scores</CardTitle></CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
-              {([
-                { key: "ielts", label: "IELTS", placeholder: "e.g. 7.5" },
-                { key: "toefl", label: "TOEFL", placeholder: "e.g. 105" },
-                { key: "duolingo", label: "Duolingo", placeholder: "e.g. 120" },
-                { key: "pte", label: "PTE", placeholder: "e.g. 65" },
-                { key: "gre", label: "GRE", placeholder: "e.g. 320" },
-                { key: "gmat", label: "GMAT", placeholder: "e.g. 700" },
-              ] as const).map((t) => (
-                <div key={t.key} className="space-y-2" data-field={t.key}>
-                  <Label>{t.label}</Label>
-                  <Input
-                    value={(form as any)[t.key] || ""}
-                    onChange={(e) => set(t.key as any, e.target.value)}
-                    placeholder={t.placeholder}
-                  />
+            <CardContent className="space-y-4">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={hasTestScores}
+                  onCheckedChange={(v) => {
+                    const checked = v === true;
+                    setHasTestScores(checked);
+                    if (!checked) {
+                      // Clear all 6 score fields. setOrDelete strips empties from JSONB on submit.
+                      set("ielts", "");
+                      set("toefl", "");
+                      set("duolingo", "");
+                      set("pte", "");
+                      set("gre", "");
+                      set("gmat", "");
+                    }
+                  }}
+                />
+                <span>I have taken standardized tests (IELTS, TOEFL, PTE, etc.)</span>
+              </label>
+              {hasTestScores ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {([
+                    { key: "ielts", label: "IELTS", placeholder: "e.g. 7.5" },
+                    { key: "toefl", label: "TOEFL", placeholder: "e.g. 105" },
+                    { key: "duolingo", label: "Duolingo", placeholder: "e.g. 120" },
+                    { key: "pte", label: "PTE", placeholder: "e.g. 65" },
+                    { key: "gre", label: "GRE", placeholder: "e.g. 320" },
+                    { key: "gmat", label: "GMAT", placeholder: "e.g. 700" },
+                  ] as const).map((t) => (
+                    <div key={t.key} className="space-y-2" data-field={t.key}>
+                      <Label>{t.label}</Label>
+                      <Input
+                        value={(form as any)[t.key] || ""}
+                        onChange={(e) => set(t.key as any, e.target.value)}
+                        placeholder={t.placeholder}
+                      />
+                    </div>
+                  ))}
+                  <div className="md:col-span-2">
+                    <p className="text-xs text-muted-foreground">All test scores are optional — fill any that apply.</p>
+                  </div>
                 </div>
-              ))}
-              <div className="md:col-span-2">
-                <p className="text-xs text-muted-foreground">All test scores are optional — fill any that apply.</p>
-              </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">Tick the box above if you've taken any standardized tests.</p>
+              )}
             </CardContent>
           </Card>
 
@@ -1936,13 +1975,14 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                     value={formatWorkExperience(form.work_experience_years) || form.work_experience_years}
                   />
                 )}
-                {(form.ielts || form.toefl || form.duolingo || form.gre || form.gmat) && (
+                {(form.ielts || form.toefl || form.duolingo || form.pte || form.gre || form.gmat) && (
                   <ReviewRow
                     label="Test Scores"
                     value={[
                       form.ielts && `IELTS: ${form.ielts}`,
                       form.toefl && `TOEFL: ${form.toefl}`,
                       form.duolingo && `Duolingo: ${form.duolingo}`,
+                      form.pte && `PTE: ${form.pte}`,
                       form.gre && `GRE: ${form.gre}`,
                       form.gmat && `GMAT: ${form.gmat}`,
                     ].filter(Boolean).join(" · ")}
