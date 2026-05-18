@@ -1,4 +1,5 @@
 import type { Tables } from "@/integrations/supabase/types";
+import { formatINR as fmtINR } from "@/lib/formatCurrency";
 
 export type CardKey =
   | "total_earned"
