@@ -57,7 +57,7 @@ export default function StudentBasicDetails() {
   // CRITICAL: If pincode changes to one that doesn't match (or becomes invalid), clear the
   // values we previously auto-filled so stale district/state never carry forward silently.
   const pincodeResult = usePincodeLookup(formData.pincode);
-  const lastApplied = useRef<{ pincode: string; city: string | null; state: string | null } | null>(null);
+  const lastApplied = useRef<{ pincode: string; city: string | null; state: string | null; country: string | null } | null>(null);
   useEffect(() => {
     const current = (formData.pincode ?? "").trim();
 
@@ -71,15 +71,20 @@ export default function StudentBasicDetails() {
       const previouslyAuto = lastApplied.current;
       const cityIsOurs = !!(previouslyAuto && formData.city === previouslyAuto.city);
       const stateIsOurs = !!(previouslyAuto && formData.state === previouslyAuto.state);
+      const countryIsOurs = !!(previouslyAuto && formData.country_of_residence === previouslyAuto.country);
 
       const newCity = pincodeResult.district || "";
       const newState = pincodeResult.state || "";
+      const newCountry = pincodeResult.country || "";
 
       if ((!formData.city || cityIsOurs) && newCity) {
         updateField("city", newCity);
       }
       if ((!formData.state || stateIsOurs) && newState) {
         updateField("state", newState);
+      }
+      if ((!formData.country_of_residence || countryIsOurs) && newCountry) {
+        updateField("country_of_residence", newCountry);
       }
       // Persist district + tier separately for downstream use
       if (pincodeResult.district) updateField("district", pincodeResult.district);
@@ -89,6 +94,7 @@ export default function StudentBasicDetails() {
         pincode: current,
         city: (!formData.city || cityIsOurs) ? newCity : formData.city,
         state: (!formData.state || stateIsOurs) ? newState : formData.state,
+        country: (!formData.country_of_residence || countryIsOurs) ? newCountry : formData.country_of_residence,
       };
       return;
     }
@@ -104,6 +110,7 @@ export default function StudentBasicDetails() {
       if (newIsInvalid) {
         if (prev.city && formData.city === prev.city) updateField("city", "");
         if (prev.state && formData.state === prev.state) updateField("state", "");
+        if (prev.country && formData.country_of_residence === prev.country) updateField("country_of_residence", "");
         // Always clear derived district/tier when pincode no longer matches
         if (formData.district) updateField("district", "");
         if (formData.tier) updateField("tier", "");
@@ -112,7 +119,7 @@ export default function StudentBasicDetails() {
         lastApplied.current = null;
       }
     }
-  }, [pincodeResult, formData.pincode, formData.city, formData.state, formData.district, formData.tier, updateField]);
+  }, [pincodeResult, formData.pincode, formData.city, formData.state, formData.district, formData.tier, formData.country_of_residence, updateField]);
 
   const handleContinue = async () => {
     if (!formData.student_full_name.trim()) {
