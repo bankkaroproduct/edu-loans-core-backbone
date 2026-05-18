@@ -4,6 +4,7 @@ import { StudentHeader } from "@/components/student/StudentHeader";
 import { StudentFooter } from "@/components/student/StudentFooter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { LakhsInput } from "@/components/ui/lakhs-input";
 import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useStudentAuth, EligibilityData } from "@/hooks/useStudentAuth";
