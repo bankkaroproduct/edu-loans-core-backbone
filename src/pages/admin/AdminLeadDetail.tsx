@@ -250,7 +250,7 @@ export default function AdminLeadDetail() {
 
       <div className="grid gap-6 lg:grid-cols-3 items-start">
         <div className="lg:col-span-2 space-y-6">
-          <AdminLeadProfileSection lead={lead} submittedByName={submittedByName} onSaved={loadAll} />
+          <AdminLeadProfileSection lead={lead} submittedByName={submittedByName} partner={partner} isStudentDirect={isStudentDirect} onSaved={loadAll} />
         </div>
 
         <div className="space-y-6">
