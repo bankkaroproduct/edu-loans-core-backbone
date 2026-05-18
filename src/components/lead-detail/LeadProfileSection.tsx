@@ -238,17 +238,10 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
             <Field label="Tier" value={lead.tier ?? null} editable={ed("tier")}  onSaved={onSaved} />
             <Field label="Country" value={lead.country_of_residence} editable={ed("country_of_residence")}  onSaved={onSaved} />
           </div>
-        </CardContent>
-      </Card>
+      </ProfileSectionCard>
 
       {/* Education / Study Intent */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <GraduationCap className="h-4 w-4 text-primary" /> Education & Study Intent
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <ProfileSectionCard icon={GraduationCap} title="Education & Study Intent">
           <div className="grid grid-cols-2 gap-3">
             <Field
               label="Study Country"
