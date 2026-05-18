@@ -298,7 +298,53 @@ export function DocumentChecklist({ requirements, documents, onUpload, leadId, h
               </div>
             </div>
           );
-        })}
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <FileText className="h-4 w-4 text-primary" /> Document Checklist
+          <span className="text-xs font-normal text-muted-foreground ml-auto">
+            {requirements.length} document{requirements.length !== 1 ? "s" : ""}
+          </span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <Accordion type="multiple" defaultValue={defaultOpen} className="w-full">
+          {grouped.map(({ section, rows }) => {
+            const info = computeSectionStatus(rows, latestByType);
+            const statusLabel = SECTION_STATUS_LABEL[info.status];
+            const statusVariant = SECTION_STATUS_VARIANT[info.status];
+            return (
+              <AccordionItem key={section.id} value={section.id} className="border rounded-md mb-2">
+                <AccordionTrigger className="px-3 py-2.5 hover:no-underline">
+                  <div className="flex items-center justify-between gap-3 flex-1 min-w-0">
+                    <div className="min-w-0 text-left">
+                      <p className="text-sm font-semibold truncate">{section.title}</p>
+                      <p className="text-[11px] text-muted-foreground truncate">{section.purpose}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {info.isOptionalOnly ? (
+                        <span className="text-[11px] text-muted-foreground">Optional</span>
+                      ) : (
+                        <span className="text-[11px] text-muted-foreground">
+                          {info.requiredVerified} of {info.requiredTotal} required completed
+                        </span>
+                      )}
+                      <Badge variant={statusVariant} className={`text-[10px] ${info.status === "complete" ? "bg-green-600" : ""}`}>
+                        {statusLabel}
+                      </Badge>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-3 pb-3 space-y-2">
+                  {rows.map((req) => renderRow(req))}
+                </AccordionContent>
+              </AccordionItem>
+            );
+          })}
+        </Accordion>
       </CardContent>
     </Card>
   );
