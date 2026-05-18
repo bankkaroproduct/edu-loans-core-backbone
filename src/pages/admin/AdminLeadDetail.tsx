@@ -268,12 +268,6 @@ export default function AdminLeadDetail() {
           two-column grid so the visual order is always:
           Lifecycle Timeline → Lender Recommendations → Calculate BRE → Assign Lender. */}
       <div className="space-y-6 mt-2">
-        <div className="space-y-1">
-          <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Lender Workflow</h2>
-          <p className="text-xs text-muted-foreground">
-            Diagnostic and assignment tools - Manual changes, Do not auto-update lifecycle.
-          </p>
-        </div>
         <AdminLeadTimeline history={history} notes={notes} audits={audits} actorNames={actorNames} />
         <AdminBreAndLenderSection lead={lead} />
         <AdminAssignLenderCard leadId={lead.id} />
