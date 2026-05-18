@@ -271,7 +271,7 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
           <Field label="District" value={lead.district ?? null} editable={ed("district")} onSaved={onSaved} />
           <Field label="State" value={lead.state} editable={ed("state")} onSaved={onSaved} />
           <Field label="City Tier" value={lead.tier ?? null} editable={ed("tier")} onSaved={onSaved} />
-          <Field label="Country" value={lead.country_of_residence} editable={ed("country_of_residence")} onSaved={onSaved} />
+          <Field label="Country" value={lead.country_of_residence || (lead.pincode && /^\d{6}$/.test(lead.pincode) ? "India" : null)} editable={ed("country_of_residence")} onSaved={onSaved} />
         </div>
       </ProfileSectionCard>
 

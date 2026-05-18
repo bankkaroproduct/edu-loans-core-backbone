@@ -32,6 +32,7 @@ export interface PincodeEnrichment {
     district: string | null;
     state: string | null;
     tier: string | null;
+    country_of_residence: string | null;
   }>;
   hasConflict: boolean;
   /** Human-friendly warning when not_found (UI may surface as toast). */
@@ -83,6 +84,10 @@ export async function resolvePincodeEnrichment(
       district: data.district ?? null,
       state: data.state ?? null,
       tier: data.tier ?? null,
+      // pincode_master is India-only by design (no `country` column).
+      // Hardcode "India" on successful resolve so every caller of this
+      // helper inherits the country-of-residence fill. Single source of truth.
+      country_of_residence: "India",
     },
     hasConflict: !!data.has_conflict,
     warning: data.has_conflict

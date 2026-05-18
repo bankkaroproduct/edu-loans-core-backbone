@@ -19,6 +19,8 @@ export interface StudentFormData {
   district: string;
   tier: string;
   pincode: string;
+  /** Auto-derived from pincode (India-only master). Always "India" when set. */
+  country_of_residence: string;
   intended_study_country: string;
   course_category: string;
   loan_amount_required: string;
@@ -76,6 +78,7 @@ const EMPTY_FORM: StudentFormData = {
   student_full_name: "", student_email: "", student_phone: "",
   student_whatsapp: "", whatsapp_same_as_phone: false,
   student_dob: "", student_gender: "", city: "", state: "", district: "", tier: "", pincode: "",
+  country_of_residence: "",
   intended_study_country: "", course_category: "", loan_amount_required: "",
   highest_qualification: "", marks_gpa: "", course_name: "",
   university_name_raw: "", university_id: "", course_id: "", intake_term: "", intake_year: "",

@@ -11,6 +11,9 @@ export interface PincodeLookupResult {
   district: string | null;
   state: string | null;
   tier: string | null;
+  /** Derived country-of-residence. "India" when found (pincode_master is
+   *  India-only by design), null otherwise. Additive — callers may ignore. */
+  country: string | null;
   hasConflict: boolean;
   /** The pincode this result corresponds to. Used by callers to detect stale autofill. */
   pincode: string | null;
@@ -22,6 +25,7 @@ const EMPTY: PincodeLookupResult = {
   district: null,
   state: null,
   tier: null,
+  country: null,
   hasConflict: false,
   pincode: null,
 };
@@ -81,6 +85,7 @@ export function usePincodeLookup(pincode: string | null | undefined): PincodeLoo
             district: data.district ?? null,
             state: data.state ?? null,
             tier: data.tier ?? null,
+            country: "India",
             hasConflict: !!data.has_conflict,
             pincode: trimmed,
           }

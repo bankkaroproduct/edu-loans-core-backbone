@@ -124,6 +124,7 @@ export default function StudentReviewSubmit() {
           { label: "City", value: formData.city || (formData as any).district || null },
           { label: "State", value: formData.state },
           { label: "Pincode", value: formData.pincode },
+          { label: "Country of Residence", value: formData.country_of_residence || (formData.pincode && /^\d{6}$/.test(formData.pincode) ? "India" : null) },
           { label: "Destination Country", value: formData.intended_study_country },
           { label: "Course Category", value: formData.course_category ? formatDisplayLabel(formData.course_category) : null },
           {

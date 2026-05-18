@@ -412,6 +412,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     district: string | null;
     state: string | null;
     tier: string | null;
+    country_of_residence: string | null;
   } | null>(null);
   useEffect(() => {
     const current = (form.pincode ?? "").trim();
@@ -419,6 +420,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     // Apply on a fresh successful match.
     // pincode_master has no city column → city falls back to district (mirrors
     // resolvePincodeEnrichment in src/lib/pincodeEnrichment.ts).
+    // Country of residence is derived as "India" since pincode_master is India-only.
     if (
       pincodeResult.found &&
       pincodeResult.pincode === current &&
@@ -434,14 +436,27 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         const nextDistrict = overwriteIfOurs(prev.district, prevApplied?.district ?? null, pincodeResult.district);
         const nextState = overwriteIfOurs(prev.state, prevApplied?.state ?? null, pincodeResult.state);
         const nextTier = overwriteIfOurs(prev.tier, prevApplied?.tier ?? null, pincodeResult.tier);
+        const nextCountry = overwriteIfOurs(
+          prev.country_of_residence,
+          prevApplied?.country_of_residence ?? null,
+          pincodeResult.country,
+        );
         lastAppliedPincode.current = {
           pincode: current,
           city: nextCity,
           district: nextDistrict,
           state: nextState,
           tier: nextTier,
+          country_of_residence: nextCountry,
         };
-        return { ...prev, city: nextCity, district: nextDistrict, state: nextState, tier: nextTier };
+        return {
+          ...prev,
+          city: nextCity,
+          district: nextDistrict,
+          state: nextState,
+          tier: nextTier,
+          country_of_residence: nextCountry,
+        };
       });
       return;
     }
@@ -459,6 +474,10 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
           district: prev.district && p.district === prev.district ? "" : p.district,
           state: prev.state && p.state === prev.state ? "" : p.state,
           tier: prev.tier && p.tier === prev.tier ? "" : p.tier,
+          country_of_residence:
+            prev.country_of_residence && p.country_of_residence === prev.country_of_residence
+              ? ""
+              : p.country_of_residence,
         }));
         if (current.length !== 6) lastAppliedPincode.current = null;
       }
@@ -1869,6 +1888,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 <ReviewRow label="WhatsApp" value={form.student_whatsapp} />
                 <ReviewRow label="City" value={form.city} />
                 <ReviewRow label="State" value={form.state} />
+                <ReviewRow label="Country of Residence" value={form.country_of_residence} />
               </div>
               <div>
                 <Badge variant="outline" className="mb-2">Study Intent</Badge>
