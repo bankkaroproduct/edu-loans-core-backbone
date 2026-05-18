@@ -61,6 +61,7 @@ import {
 import { getPremiereMatches } from "@/lib/premiere/lookup";
 import { getSeedForLender } from "@/lib/bre/lenderScorecard/seeds";
 import type { Tables } from "@/integrations/supabase/types";
+import { formatINR } from "@/lib/formatCurrency";
 import { formatDisplayLabel } from "@/lib/formatDisplayLabel";
 
 
