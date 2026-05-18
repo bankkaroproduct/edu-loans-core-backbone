@@ -110,7 +110,7 @@ export interface StepCompletion {
 export function deriveStepCompletion(lead: any): StepCompletion {
   if (!lead) return { basic: false, education: false, coapplicant: false, submitted: false };
 
-  const hasName = !!(lead.student_first_name || lead.student_full_name);
+  const hasName = !!(lead.student_first_name || lead.student_last_name || lead.student_full_name);
   const hasPhone = !!lead.student_phone;
   const hasCountry = !!lead.intended_study_country;
   const basic = hasName && hasPhone && hasCountry;
