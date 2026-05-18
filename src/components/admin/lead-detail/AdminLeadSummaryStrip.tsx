@@ -130,7 +130,7 @@ export function AdminLeadSummaryStrip({ lead, onSaved }: Props) {
     setCourseManual(matchedCourseId ? "" : lead.course_name ?? "");
   }, [lead.id, lead.intended_study_country, lead.intake_term, lead.intake_year, lead.university_id, lead.university_name_raw, lead.course_name, matchedCourseId]);
 
-  const tileValueClass = "text-sm font-semibold text-foreground truncate block max-w-full";
+  const tileValueClass = "text-sm font-semibold text-foreground break-words block max-w-full";
 
   const editable = (
     field: string,
