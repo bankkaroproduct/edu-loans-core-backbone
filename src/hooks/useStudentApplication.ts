@@ -298,7 +298,8 @@ export function useStudentApplication() {
           : (formData.student_whatsapp || "").replace(/\D/g, "").slice(-10);
 
         payload = {
-          student_full_name: formData.student_full_name,
+          student_first_name: formData.student_first_name,
+          student_last_name: formData.student_last_name || null,
           student_email: formData.student_email,
           student_whatsapp: whatsappToSend || null,
           whatsapp_same_as_phone: !!formData.whatsapp_same_as_phone,
