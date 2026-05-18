@@ -1,0 +1,387 @@
+{
+  "samples": [
+    {
+      "document_name": "Candidate Photograph",
+      "section_name": "01_Student_Profile_Identity",
+      "sample_file": "candidate_photograph_sample.png",
+      "relative_path": "01_Student_Profile_Identity/candidate_photograph_sample.png",
+      "helper_text": "Candidate's passport-size photograph with clear face and plain background.",
+      "sample_instruction": "Upload a clear passport-size photograph. Face should be visible, not cropped, and background should be simple.",
+      "important_visible_fields": [
+        "Full face",
+        "Plain background",
+        "No sunglasses or filters",
+        "Recent photo (within 6 months)"
+      ],
+      "priority_level": 1
+    },
+    {
+      "document_name": "Candidate PAN Card",
+      "section_name": "01_Student_Profile_Identity",
+      "sample_file": "candidate_pan_card_sample.png",
+      "relative_path": "01_Student_Profile_Identity/candidate_pan_card_sample.png",
+      "helper_text": "Clear front-side image or PDF of the candidate's PAN card.",
+      "sample_instruction": "Upload a readable PAN card copy where name, PAN number, and date of birth are clearly visible.",
+      "important_visible_fields": [
+        "PAN number (10 characters)",
+        "Name",
+        "Father's name",
+        "Date of birth",
+        "Photograph",
+        "Signature"
+      ],
+      "priority_level": 1
+    },
+    {
+      "document_name": "Candidate Aadhaar Card",
+      "section_name": "01_Student_Profile_Identity",
+      "sample_file": "candidate_aadhaar_card_sample.png",
+      "relative_path": "01_Student_Profile_Identity/candidate_aadhaar_card_sample.png",
+      "helper_text": "Clear Aadhaar card copy of the candidate. Front and back if available.",
+      "sample_instruction": "Upload a readable Aadhaar copy. Masking can be accepted if current business rules allow it.",
+      "important_visible_fields": [
+        "12-digit Aadhaar number",
+        "Name",
+        "Date of birth",
+        "Gender",
+        "Photograph",
+        "Address (back side)",
+        "QR code (back side)"
+      ],
+      "priority_level": 1
+    },
+    {
+      "document_name": "Passport",
+      "section_name": "01_Student_Profile_Identity",
+      "sample_file": "passport_sample.png",
+      "relative_path": "01_Student_Profile_Identity/passport_sample.png",
+      "helper_text": "Passport first and last page showing identity and address details.",
+      "sample_instruction": "Upload clear passport pages showing candidate identity, passport number, validity, and address details.",
+      "important_visible_fields": [
+        "Passport number",
+        "Name",
+        "Date of birth",
+        "Nationality",
+        "Date of issue",
+        "Date of expiry",
+        "Photograph",
+        "MRZ band"
+      ],
+      "priority_level": 1
+    },
+    {
+      "document_name": "10th Marksheet",
+      "section_name": "02_Education_Academic_History",
+      "sample_file": "10th_marksheet_sample.png",
+      "relative_path": "02_Education_Academic_History/10th_marksheet_sample.png",
+      "helper_text": "Class 10 marksheet showing student name, board, year, and marks clearly.",
+      "sample_instruction": "Upload a readable 10th marksheet with student name, passing year, board, and marks visible.",
+      "important_visible_fields": [
+        "Student name",
+        "Board name",
+        "Roll number",
+        "Passing year",
+        "Subject-wise marks",
+        "Total marks / percentage",
+        "Result"
+      ],
+      "priority_level": 2
+    },
+    {
+      "document_name": "12th Marksheet",
+      "section_name": "02_Education_Academic_History",
+      "sample_file": "12th_marksheet_sample.png",
+      "relative_path": "02_Education_Academic_History/12th_marksheet_sample.png",
+      "helper_text": "Class 12 marksheet showing student name, board, year, and marks clearly.",
+      "sample_instruction": "Upload a readable 12th marksheet with student name, passing year, board, and marks visible.",
+      "important_visible_fields": [
+        "Student name",
+        "Board name",
+        "Stream",
+        "Roll number",
+        "Passing year",
+        "Subject-wise marks",
+        "Total / percentage",
+        "Result"
+      ],
+      "priority_level": 2
+    },
+    {
+      "document_name": "Graduation Marksheet",
+      "section_name": "02_Education_Academic_History",
+      "sample_file": "graduation_marksheet_sample.png",
+      "relative_path": "02_Education_Academic_History/graduation_marksheet_sample.png",
+      "helper_text": "Latest or consolidated graduation marksheet.",
+      "sample_instruction": "Upload the latest semester or consolidated graduation marksheet showing student name, university, course, and marks/CGPA.",
+      "important_visible_fields": [
+        "Student name",
+        "University name",
+        "Course / programme",
+        "Semester or year",
+        "Course-wise grades",
+        "SGPA / CGPA",
+        "Result"
+      ],
+      "priority_level": 2
+    },
+    {
+      "document_name": "Graduation Degree Certificate",
+      "section_name": "02_Education_Academic_History",
+      "sample_file": "graduation_degree_certificate_sample.png",
+      "relative_path": "02_Education_Academic_History/graduation_degree_certificate_sample.png",
+      "helper_text": "Final graduation degree certificate issued by the university.",
+      "sample_instruction": "Upload the final degree certificate if issued by the university.",
+      "important_visible_fields": [
+        "University name",
+        "Student name",
+        "Degree awarded",
+        "Completion year",
+        "Certificate number",
+        "Seal",
+        "Signature"
+      ],
+      "priority_level": 2
+    },
+    {
+      "document_name": "Post-Graduation Marksheet",
+      "section_name": "02_Education_Academic_History",
+      "sample_file": "post_graduation_marksheet_sample.png",
+      "relative_path": "02_Education_Academic_History/post_graduation_marksheet_sample.png",
+      "helper_text": "Post-graduation marksheet, if applicable.",
+      "sample_instruction": "Upload post-graduation marksheet only if applicable to the candidate's academic profile.",
+      "important_visible_fields": [
+        "Student name",
+        "University name",
+        "Programme",
+        "Semester or year",
+        "Course-wise grades",
+        "SGPA / CGPA",
+        "Result"
+      ],
+      "priority_level": 2
+    },
+    {
+      "document_name": "Post-Graduation Degree Certificate",
+      "section_name": "02_Education_Academic_History",
+      "sample_file": "post_graduation_degree_certificate_sample.png",
+      "relative_path": "02_Education_Academic_History/post_graduation_degree_certificate_sample.png",
+      "helper_text": "Post-graduation degree certificate, if applicable.",
+      "sample_instruction": "Upload post-graduation degree certificate only if applicable.",
+      "important_visible_fields": [
+        "University name",
+        "Student name",
+        "Degree awarded",
+        "Completion year",
+        "Certificate number",
+        "Seal",
+        "Signature"
+      ],
+      "priority_level": 2
+    },
+    {
+      "document_name": "Admission/Offer Letter",
+      "section_name": "03_Admission_Study_Intent",
+      "sample_file": "admission_offer_letter_sample.png",
+      "relative_path": "03_Admission_Study_Intent/admission_offer_letter_sample.png",
+      "helper_text": "Official offer/admission letter from the university or institution.",
+      "sample_instruction": "Upload the official admission or offer letter showing university name, course, intake, and student name.",
+      "important_visible_fields": [
+        "Institution header",
+        "Student name",
+        "Programme",
+        "Intake",
+        "Campus / country",
+        "Offer status",
+        "Reference number",
+        "Signature"
+      ],
+      "priority_level": 3
+    },
+    {
+      "document_name": "I-20/CAS/CoE",
+      "section_name": "03_Admission_Study_Intent",
+      "sample_file": "i20_cas_coe_sample.png",
+      "relative_path": "03_Admission_Study_Intent/i20_cas_coe_sample.png",
+      "helper_text": "Country-specific admission confirmation document: I-20 for USA, CAS for UK, CoE for Australia.",
+      "sample_instruction": "Upload the applicable country-specific confirmation document. I-20 for USA, CAS for UK, CoE for Australia.",
+      "important_visible_fields": [
+        "Document type (I-20 / CAS / CoE)",
+        "Student name",
+        "Institution",
+        "Programme start date",
+        "Reference number (SEVIS / CAS / CoE)",
+        "Country tag"
+      ],
+      "priority_level": 3
+    },
+    {
+      "document_name": "IELTS/TOEFL Score",
+      "section_name": "04_Test_Scores",
+      "sample_file": "ielts_toefl_score_sample.png",
+      "relative_path": "04_Test_Scores/ielts_toefl_score_sample.png",
+      "helper_text": "English language test scorecard, if available or required.",
+      "sample_instruction": "Upload official IELTS, TOEFL, PTE, or equivalent English proficiency scorecard if available or required.",
+      "important_visible_fields": [
+        "Candidate name",
+        "Test type",
+        "Test date",
+        "Listening score",
+        "Reading score",
+        "Writing score",
+        "Speaking score",
+        "Overall score"
+      ],
+      "priority_level": 3
+    },
+    {
+      "document_name": "GRE Score Card",
+      "section_name": "04_Test_Scores",
+      "sample_file": "gre_score_card_sample.png",
+      "relative_path": "04_Test_Scores/gre_score_card_sample.png",
+      "helper_text": "GRE official scorecard, if available or required.",
+      "sample_instruction": "Upload official GRE scorecard if available or required for the course/lender.",
+      "important_visible_fields": [
+        "Candidate name",
+        "Test date",
+        "Verbal Reasoning score",
+        "Quantitative Reasoning score",
+        "Analytical Writing score",
+        "Registration number"
+      ],
+      "priority_level": 3
+    },
+    {
+      "document_name": "Co-applicant Photograph",
+      "section_name": "05_Coapplicant_Profile_Identity",
+      "sample_file": "coapplicant_photograph_sample.png",
+      "relative_path": "05_Coapplicant_Profile_Identity/coapplicant_photograph_sample.png",
+      "helper_text": "Co-applicant's passport-size photograph with clear face and plain background.",
+      "sample_instruction": "Upload a clear passport-size photograph of the co-applicant.",
+      "important_visible_fields": [
+        "Full face",
+        "Plain background",
+        "No sunglasses or filters",
+        "Recent photo (within 6 months)"
+      ],
+      "priority_level": 1
+    },
+    {
+      "document_name": "Co-applicant PAN Card",
+      "section_name": "05_Coapplicant_Profile_Identity",
+      "sample_file": "coapplicant_pan_card_sample.png",
+      "relative_path": "05_Coapplicant_Profile_Identity/coapplicant_pan_card_sample.png",
+      "helper_text": "Clear front-side image or PDF of the co-applicant's PAN card.",
+      "sample_instruction": "Upload a readable PAN card copy where co-applicant name, PAN number, and date of birth are clearly visible.",
+      "important_visible_fields": [
+        "PAN number (10 characters)",
+        "Name",
+        "Father's name",
+        "Date of birth",
+        "Photograph",
+        "Signature"
+      ],
+      "priority_level": 1
+    },
+    {
+      "document_name": "Co-applicant Aadhaar Card",
+      "section_name": "05_Coapplicant_Profile_Identity",
+      "sample_file": "coapplicant_aadhaar_card_sample.png",
+      "relative_path": "05_Coapplicant_Profile_Identity/coapplicant_aadhaar_card_sample.png",
+      "helper_text": "Clear Aadhaar card copy of the co-applicant. Front and back if available.",
+      "sample_instruction": "Upload a readable Aadhaar copy of the co-applicant.",
+      "important_visible_fields": [
+        "12-digit Aadhaar number",
+        "Name",
+        "Date of birth",
+        "Gender",
+        "Photograph",
+        "Address (back side)",
+        "QR code (back side)"
+      ],
+      "priority_level": 1
+    },
+    {
+      "document_name": "Salary Slips",
+      "section_name": "06_Coapplicant_Financial_Documents",
+      "sample_file": "salary_slips_sample.png",
+      "relative_path": "06_Coapplicant_Financial_Documents/salary_slips_sample.png",
+      "helper_text": "Latest salary slips, preferably last 3 months.",
+      "sample_instruction": "Upload recent salary slips showing employer name, employee name, salary breakup, and month.",
+      "important_visible_fields": [
+        "Employer name",
+        "Employee name",
+        "Employee ID",
+        "Month",
+        "Earnings breakup",
+        "Deductions breakup",
+        "Net salary",
+        "Bank transfer note"
+      ],
+      "priority_level": 3
+    },
+    {
+      "document_name": "Income Tax Returns",
+      "section_name": "06_Coapplicant_Financial_Documents",
+      "sample_file": "income_tax_returns_sample.png",
+      "relative_path": "06_Coapplicant_Financial_Documents/income_tax_returns_sample.png",
+      "helper_text": "Latest ITR documents, preferably last 2 years if available.",
+      "sample_instruction": "Upload recent ITR documents or acknowledgement as per existing business process.",
+      "important_visible_fields": [
+        "Taxpayer name",
+        "PAN",
+        "Assessment year",
+        "Gross income",
+        "Tax paid",
+        "Acknowledgement number",
+        "Filing date"
+      ],
+      "priority_level": 3
+    },
+    {
+      "document_name": "Bank Statements",
+      "section_name": "06_Coapplicant_Financial_Documents",
+      "sample_file": "bank_statements_sample.png",
+      "relative_path": "06_Coapplicant_Financial_Documents/bank_statements_sample.png",
+      "helper_text": "Recent bank statement, preferably last 6 months.",
+      "sample_instruction": "Upload bank statement showing account holder name, bank name, transactions, and statement period.",
+      "important_visible_fields": [
+        "Bank name",
+        "Account holder name",
+        "Masked account number",
+        "Statement period",
+        "Opening balance",
+        "Transactions",
+        "Closing balance"
+      ],
+      "priority_level": 3
+    },
+    {
+      "document_name": "Property Documents",
+      "section_name": "07_Collateral_Secured_Loan_Documents",
+      "sample_file": "property_documents_sample.png",
+      "relative_path": "07_Collateral_Secured_Loan_Documents/property_documents_sample.png",
+      "helper_text": "Property ownership documents if secured/collateral loan route applies.",
+      "sample_instruction": "Upload registry, title deed, ownership proof, or related collateral documents only if collateral/secured loan route applies.",
+      "important_visible_fields": [
+        "Owner name",
+        "Property address",
+        "Plot / survey number",
+        "Document / registration number",
+        "Property type",
+        "Registration date",
+        "Signature / seal"
+      ],
+      "priority_level": 3
+    }
+  ],
+  "count": 21,
+  "watermark": "SAMPLE ONLY \u2014 NOT A REAL DOCUMENT",
+  "asset_size_px": "1200x800",
+  "format": "PNG",
+  "usage": "View Sample modal in EduLoans document upload UI",
+  "notes": [
+    "All assets are dummy / placeholder only.",
+    "Generic 'Sample Govt Icon' and 'Sample ID Authority' placeholders are used in place of real emblems / logos.",
+    "No real document numbers, scannable QR codes, official seals, or real personal data are present."
+  ]
+}
