@@ -143,6 +143,9 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
   const [isDraftSuccess, setIsDraftSuccess] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [coAppOpen, setCoAppOpen] = useState(false);
+  // Progressive disclosure for Test Scores card. UI-only state; not persisted.
+  // Hydrates to true when any of the 6 scores already has a value.
+  const [hasTestScores, setHasTestScores] = useState(false);
   const [originalLead, setOriginalLead] = useState<Record<string, unknown> | null>(null);
   const [editLeadStage, setEditLeadStage] = useState<string | null>(null);
 
