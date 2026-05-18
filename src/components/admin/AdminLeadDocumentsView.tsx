@@ -197,6 +197,7 @@ export function AdminLeadDocumentsView({
           requirements={requirements as never[]}
           documents={documents as never[]}
           onChanged={onChanged}
+          highestQualification={lead?.highest_qualification ?? null}
         />
       )}
     </div>
