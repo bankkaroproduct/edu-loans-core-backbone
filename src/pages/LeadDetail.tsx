@@ -154,7 +154,6 @@ export default function LeadDetail() {
     );
   }
 
-  const isDraft = isDraftLead;
   const latestRequest = pendingRequest ?? editRequests[0] ?? null;
 
   return (
