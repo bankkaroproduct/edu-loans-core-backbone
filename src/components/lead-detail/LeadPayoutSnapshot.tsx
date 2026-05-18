@@ -5,6 +5,7 @@ import { Wallet } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatStageLabel } from "@/components/dashboard/StageBadge";
 import type { Tables } from "@/integrations/supabase/types";
+import { formatINR } from "@/lib/formatCurrency";
 
 type PayoutRecord = Tables<"partner_payout_records">;
 
