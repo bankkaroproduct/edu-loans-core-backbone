@@ -465,6 +465,12 @@ function DocReviewRow({
           }}
         />
       )}
+
+      <SampleDocumentModal
+        open={sampleOpen}
+        onOpenChange={setSampleOpen}
+        sample={sample}
+      />
     </div>
   );
 }
