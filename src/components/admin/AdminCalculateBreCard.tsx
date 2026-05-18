@@ -39,6 +39,7 @@ import {
 } from "@/lib/bre/rankModifier";
 import type { BreLenderRule, BreResult, BucketKey, ParameterTrace } from "@/lib/bre/types";
 import type { Tables } from "@/integrations/supabase/types";
+import { formatINR } from "@/lib/formatCurrency";
 
 type Lead = Tables<"student_leads">;
 
