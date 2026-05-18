@@ -55,6 +55,7 @@ interface LeadSummary {
   updated_at: string;
   student_full_name?: string | null;
   coapplicant_name?: string | null;
+  highest_qualification?: string | null;
 }
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> = {
