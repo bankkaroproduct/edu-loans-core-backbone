@@ -1,4 +1,4 @@
-import { Badge } from "@/components/ui/badge";
+
 import { User, GraduationCap, Wallet, FolderInput } from "lucide-react";
 import ProfileSectionCard from "@/components/lead-detail/ProfileSectionCard";
 import type { Tables } from "@/integrations/supabase/types";
