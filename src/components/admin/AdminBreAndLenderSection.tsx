@@ -700,7 +700,7 @@ function LenderMatchFailureSummary({
     ) {
       if (Number.isFinite(loan) && loan > 0 && Number.isFinite(inc) && inc > 0) {
         out.push(
-          `Requested loan of ₹${loan.toLocaleString("en-IN")} against co-applicant income of ₹${inc.toLocaleString("en-IN")}/month is a difficult combination for automated lender thresholds — most rules expect stronger income support.`,
+          `Requested loan of ${formatINR(loan)} against co-applicant income of ${formatINR(inc)}/month is a difficult combination for automated lender thresholds — most rules expect stronger income support.`,
         );
       } else {
         out.push(
