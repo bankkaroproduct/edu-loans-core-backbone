@@ -92,7 +92,7 @@ export const LakhsInput = React.forwardRef<HTMLInputElement, LakhsInputProps>(
               lastEmittedRef.current = rupees;
               onChange(rupees);
             }}
-            className="rounded-l-none"
+            className="min-w-0 flex-1 rounded-l-none"
             {...rest}
           />
         </div>
