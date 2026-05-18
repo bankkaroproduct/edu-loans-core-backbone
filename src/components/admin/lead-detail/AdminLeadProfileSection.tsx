@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { User, GraduationCap, Wallet, FolderInput, ShieldCheck } from "lucide-react";
-import ProfileSectionCard from "@/components/lead-detail/ProfileSectionCard";
+import ProfileProfileSectionCard from "@/components/lead-detail/ProfileProfileSectionCard";
 import type { Tables } from "@/integrations/supabase/types";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { InlineEditField } from "@/components/admin/InlineEditField";
@@ -233,7 +233,7 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
 
   return (
     <div className="gap-4 md:columns-2 [&>*]:break-inside-avoid [&>*]:mb-4 md:[&>*]:mb-4">
-      <SectionCard icon={User} title="Student Details">
+      <ProfileSectionCard icon={User} title="Student Details">
         <div className="grid grid-cols-2 gap-x-4 gap-y-3.5">
           <Field label="First Name" value={lead.student_first_name} editable={ed("student_first_name")} onSaved={onSaved} />
           <Field label="Last Name" value={lead.student_last_name} editable={ed("student_last_name")} onSaved={onSaved} />
@@ -273,9 +273,9 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
           <Field label="City Tier" value={lead.tier ?? null} editable={ed("tier")} onSaved={onSaved} />
           <Field label="Country" value={lead.country_of_residence} editable={ed("country_of_residence")} onSaved={onSaved} />
         </div>
-      </SectionCard>
+      </ProfileSectionCard>
 
-      <SectionCard icon={GraduationCap} title="Education & Study Intent">
+      <ProfileSectionCard icon={GraduationCap} title="Education & Study Intent">
         <div className="grid grid-cols-2 gap-x-4 gap-y-3.5">
           <Field
             label="Study Country"
@@ -520,9 +520,9 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
           })}
           <Field label="Other Test Scores" value={tsStr("raw_text")} editable={edTS("raw_text")} onSaved={onSaved} />
         </div>
-      </SectionCard>
+      </ProfileSectionCard>
 
-      <SectionCard icon={Wallet} title="Financial Snapshot">
+      <ProfileSectionCard icon={Wallet} title="Financial Snapshot">
         <div className="grid grid-cols-2 gap-x-4 gap-y-3.5">
           <Field label="Co-Applicant" value={lead.coapplicant_name} editable={ed("coapplicant_name")} onSaved={onSaved} />
           <Field
@@ -614,9 +614,9 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
           />
           <Field label="Collateral Notes" value={lead.collateral_notes} editable={ed("collateral_notes")} onSaved={onSaved} />
         </div>
-      </SectionCard>
+      </ProfileSectionCard>
 
-      <SectionCard icon={FolderInput} title="Source & Creation Context">
+      <ProfileSectionCard icon={FolderInput} title="Source & Creation Context">
         <div className="grid grid-cols-2 gap-x-4 gap-y-3.5">
           <Field label="Source Type" value={formatDisplayLabel(lead.source_type)} />
           <Field label="Source Subtype" value={formatDisplayLabel(lead.source_sub_type)} />
@@ -641,7 +641,7 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
             })()}
           </div>
         </div>
-      </SectionCard>
+      </ProfileSectionCard>
     </div>
   );
 }
