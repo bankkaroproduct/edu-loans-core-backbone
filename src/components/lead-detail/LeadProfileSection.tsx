@@ -425,17 +425,10 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
             />
             <Field label="Collateral Notes" value={lead.collateral_notes} editable={ed("collateral_notes")}  onSaved={onSaved} />
           </div>
-        </CardContent>
-      </Card>
+      </ProfileSectionCard>
 
       {/* Source / Creation Context — system-only, untouched */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <FolderInput className="h-4 w-4 text-primary" /> Source & Creation Context
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <ProfileSectionCard icon={FolderInput} title="Source & Creation Context">
           <div className="grid grid-cols-2 gap-3">
             <Field label="Source Type" value={formatDisplayLabel(lead.source_type)} />
             <Field label="Source Subtype" value={formatDisplayLabel(lead.source_sub_type)} />
