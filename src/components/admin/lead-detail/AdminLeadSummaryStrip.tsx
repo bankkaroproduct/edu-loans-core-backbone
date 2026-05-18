@@ -38,8 +38,8 @@ function ReadOnlyValue({
     <p
       className={
         hasValue
-          ? `${emphasis ? "text-base font-semibold tabular-nums text-primary" : "text-sm font-semibold text-foreground"} truncate`
-          : "text-sm italic text-muted-foreground/70 truncate"
+          ? `${emphasis ? "text-base font-semibold tabular-nums text-primary" : "text-sm font-semibold text-foreground"} break-words`
+          : "text-sm italic text-muted-foreground/70 break-words"
       }
       title={hasValue ? String(value) : "Please provide details"}
     >
