@@ -4,6 +4,7 @@ import {
   Upload, CreditCard, XCircle, Eye, Send, Ban, Wallet,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatINR } from "@/lib/formatCurrency";
 
 export interface KPIData {
   totalLeads: number;
