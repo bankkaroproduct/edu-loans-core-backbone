@@ -149,24 +149,27 @@ export default function AdminLeadDetail() {
   useEffect(() => { loadAll(); }, [loadAll, location.key]);
 
   const { setHeaderContent, setHideSidebarTrigger, setBackTo } = useHeaderSlot();
-  const lead = state.lead;
-  const submittedByName = state.submittedByName;
+  const headerLead = state.lead;
+  const headerSubmittedByName = state.submittedByName;
   const inlineHeader = useMemo(
-    () => (lead ? <AdminLeadHeaderInline lead={lead} submittedByName={submittedByName} /> : null),
+    () =>
+      headerLead ? (
+        <AdminLeadHeaderInline lead={headerLead} submittedByName={headerSubmittedByName} />
+      ) : null,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
-      lead?.id,
-      lead?.student_full_name,
-      lead?.student_first_name,
-      lead?.student_last_name,
-      lead?.lead_id,
-      lead?.current_stage,
-      lead?.current_status,
-      lead?.duplicate_flag,
-      lead?.source_sub_type,
-      lead?.created_at,
-      lead?.updated_at,
-      submittedByName,
+      headerLead?.id,
+      headerLead?.student_full_name,
+      headerLead?.student_first_name,
+      headerLead?.student_last_name,
+      headerLead?.lead_id,
+      headerLead?.current_stage,
+      headerLead?.current_status,
+      headerLead?.duplicate_flag,
+      headerLead?.source_sub_type,
+      headerLead?.created_at,
+      headerLead?.updated_at,
+      headerSubmittedByName,
     ],
   );
 
@@ -239,8 +242,7 @@ export default function AdminLeadDetail() {
     );
   }
 
-  const leadRow = state.lead!;
-  const { history, notes, payouts, partner, audits, actorNames } = state;
+  const { lead, history, notes, payouts, partner, submittedByName, audits, actorNames } = state as State & { lead: Lead };
   const isDraft = lead.current_stage === "draft";
   const isStudentDirect = lead.source_type === "student_direct";
 
