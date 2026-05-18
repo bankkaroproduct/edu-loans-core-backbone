@@ -384,6 +384,16 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     return () => { cancelled = true; };
   }, [hydrateId, navigate, isEditMode, stepIds]);
 
+  // Hydrate the Test Scores progressive-disclosure checkbox once hydration
+  // completes (or whenever a different lead is loaded). UI-only state.
+  useEffect(() => {
+    if (hydrating) return;
+    const keys = ["ielts", "toefl", "duolingo", "pte", "gre", "gmat"] as const;
+    const any = keys.some((k) => String((form as any)[k] ?? "").trim() !== "");
+    setHasTestScores(any);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrating, hydrateId]);
+
   // Unsaved changes protection
   useEffect(() => {
     if (!isDirty) return;
