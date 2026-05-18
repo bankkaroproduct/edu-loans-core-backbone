@@ -221,36 +221,32 @@ export function LeadTimeline({ history, notes, audits = [], actorNames = {} }: P
               </div>
             )}
 
-            {/* Major lifecycle events (stage, status, authenticity, notes) — keep rich vertical layout */}
+            {/* Major lifecycle events (stage, status, notes) — keep rich vertical layout */}
             {major.length > 0 && (
               <div className="space-y-0">
                 {major.map((evt, idx) => {
-                  const isAuth = evt.type === "authenticity_change";
                   return (
                     <div key={evt.id} className="relative pl-6 pb-6 last:pb-0">
                       {idx < major.length - 1 && (
                         <div className="absolute left-[7px] top-3 w-0.5 h-[calc(100%-12px)] bg-border" />
                       )}
-                      <div className={`absolute left-0 top-1.5 w-[15px] h-[15px] rounded-full border-2 bg-background ${isAuth ? "border-amber-500" : "border-primary"}`} />
+                      <div className="absolute left-0 top-1.5 w-[15px] h-[15px] rounded-full border-2 bg-background border-primary" />
 
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 flex-wrap text-[10px] text-muted-foreground">
                           <Badge
-                            variant={evt.noteType === "internal" || isAuth ? "secondary" : "outline"}
-                            className={`text-[10px] ${isAuth ? "bg-amber-100 text-amber-800 border-amber-200" : ""}`}
+                            variant={evt.noteType === "internal" ? "secondary" : "outline"}
+                            className="text-[10px]"
                           >
-                            {isAuth && <ShieldAlert className="h-3 w-3 mr-1 inline" />}
                             {evt.type === "stage_change"
                               ? "Stage Change"
                               : evt.type === "system"
                                 ? "System"
-                                : evt.type === "authenticity_change"
-                                  ? "Authenticity Changed"
-                                  : evt.noteType === "internal"
-                                    ? "Internal Note"
-                                    : evt.noteType === "partner_visible"
-                                      ? "Partner Note"
-                                      : "Note"}
+                                : evt.noteType === "internal"
+                                  ? "Internal Note"
+                                  : evt.noteType === "partner_visible"
+                                    ? "Partner Note"
+                                    : "Note"}
                           </Badge>
                           <span>{evt.actor}</span>
                           <span aria-hidden>·</span>
@@ -268,22 +264,8 @@ export function LeadTimeline({ history, notes, audits = [], actorNames = {} }: P
                           </div>
                         )}
 
-                        {isAuth && (
-                          <div className="flex items-center gap-1.5 flex-wrap text-xs">
-                            <Badge variant="outline" className="text-[10px] capitalize">{evt.oldAuthenticity ?? "unverified"}</Badge>
-                            <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                            <Badge variant="outline" className="text-[10px] capitalize bg-amber-50 border-amber-200 text-amber-800">{evt.newAuthenticity ?? "—"}</Badge>
-                          </div>
-                        )}
-
-                        {evt.description && !isAuth && (
+                        {evt.description && (
                           <p className="text-sm text-muted-foreground">{evt.description}</p>
-                        )}
-
-                        {isAuth && evt.reason && (
-                          <p className="text-sm rounded p-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900">
-                            Reason: {evt.reason}
-                          </p>
                         )}
 
                         {evt.noteText && (
