@@ -202,15 +202,9 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
   };
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="gap-4 md:columns-2 [&>*]:break-inside-avoid [&>*]:mb-4 md:[&>*]:mb-4">
       {/* Student Details */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <User className="h-4 w-4 text-primary" /> Student Details
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <ProfileSectionCard icon={User} title="Student Details">
           <div className="grid grid-cols-2 gap-3">
             <Field label="First Name" value={lead.student_first_name} editable={ed("student_first_name")}  onSaved={onSaved} />
             <Field label="Last Name" value={lead.student_last_name} editable={ed("student_last_name")}  onSaved={onSaved} />
