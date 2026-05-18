@@ -153,10 +153,20 @@ export function AdminDocumentReviewPanel({ leadId, lead, requirements, documents
     onChanged();
   };
 
+  // Smart academic applicability — non-applicable academic docs are split out
+  // so they don't count toward readiness denominators but remain viewable.
+  const { applicable: applicableRequirements, notApplicable: naRequirements } = useMemo(
+    () => partitionRequirementsByApplicability(
+      requirements as unknown as LeadDocRequirement[],
+      highestQualification,
+    ),
+    [requirements, highestQualification],
+  );
+
   // Group requirements into the 7 spec sections (frontend-only grouping by document_code).
   const grouped = useMemo(
-    () => groupRequirementsBySection(requirements as unknown as LeadDocRequirement[]),
-    [requirements],
+    () => groupRequirementsBySection(applicableRequirements),
+    [applicableRequirements],
   );
 
   const latestByType = useMemo(() => {
