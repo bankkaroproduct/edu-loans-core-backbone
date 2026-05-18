@@ -373,6 +373,11 @@ export function DocumentChecklist({ requirements, documents, onUpload, leadId, h
           })}
         </Accordion>
       </CardContent>
+      <SampleDocumentModal
+        open={!!sampleOpen}
+        onOpenChange={(o) => { if (!o) setSampleOpen(null); }}
+        sample={sampleOpen}
+      />
     </Card>
   );
 }
