@@ -723,7 +723,7 @@ function LenderOptionsList({
                 )}
                 {adjLoan != null && (
                   <span className={changedLoan ? "text-foreground font-medium" : ""}>
-                    {" · "}₹{Math.round(adjLoan).toLocaleString("en-IN")}
+                    {" · "}{formatINR(Math.round(adjLoan))}
                   </span>
                 )}
               </div>
