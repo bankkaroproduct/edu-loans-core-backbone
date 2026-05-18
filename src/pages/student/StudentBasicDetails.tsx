@@ -175,9 +175,14 @@ export default function StudentBasicDetails() {
         <CardContent className="p-5 sm:p-6">
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Identity Details</h2>
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label>Full Name <span className="text-destructive">*</span></Label>
-              <Input value={formData.student_full_name} onChange={e => updateField("student_full_name", e.target.value)} placeholder="Enter your full name" />
+            <div className="space-y-1.5">
+              <Label>First Name <span className="text-destructive">*</span></Label>
+              <Input value={formData.student_first_name} onChange={e => updateField("student_first_name", e.target.value)} placeholder="Enter your first name" />
+              <p className="text-xs text-muted-foreground">Name as per Aadhaar Card / Passport</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Last Name</Label>
+              <Input value={formData.student_last_name} onChange={e => updateField("student_last_name", e.target.value)} placeholder="Enter your last name (optional)" />
               <p className="text-xs text-muted-foreground">Name as per Aadhaar Card / Passport</p>
             </div>
             <div className="space-y-1.5">
