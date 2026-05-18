@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, RefreshCw, ArrowLeft } from "lucide-react";
 
-import { AdminLeadHeader } from "@/components/admin/lead-detail/AdminLeadHeader";
+import { AdminLeadHeaderInline } from "@/components/admin/lead-detail/AdminLeadHeaderInline";
+import { useHeaderSlot } from "@/components/layout/HeaderSlotContext";
 
 import { AdminLeadProfileSection } from "@/components/admin/lead-detail/AdminLeadProfileSection";
 import { AdminLeadLifecycleProgress } from "@/components/admin/lead-detail/AdminLeadLifecycleProgress";
@@ -146,6 +147,40 @@ export default function AdminLeadDetail() {
   }, [id]);
 
   useEffect(() => { loadAll(); }, [loadAll, location.key]);
+
+  const { setHeaderContent, setHideSidebarTrigger, setBackTo } = useHeaderSlot();
+  const lead = state.lead;
+  const submittedByName = state.submittedByName;
+  const inlineHeader = useMemo(
+    () => (lead ? <AdminLeadHeaderInline lead={lead} submittedByName={submittedByName} /> : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      lead?.id,
+      lead?.student_full_name,
+      lead?.student_first_name,
+      lead?.student_last_name,
+      lead?.lead_id,
+      lead?.current_stage,
+      lead?.current_status,
+      lead?.duplicate_flag,
+      lead?.source_sub_type,
+      lead?.created_at,
+      lead?.updated_at,
+      submittedByName,
+    ],
+  );
+
+  useEffect(() => {
+    if (!inlineHeader) return;
+    setHeaderContent(inlineHeader);
+    setHideSidebarTrigger(true);
+    setBackTo("/admin/leads");
+    return () => {
+      setHeaderContent(null);
+      setHideSidebarTrigger(false);
+      setBackTo(null);
+    };
+  }, [inlineHeader, setHeaderContent, setHideSidebarTrigger, setBackTo]);
 
   if (state.loading) {
     return (
