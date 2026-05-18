@@ -118,7 +118,9 @@ export default function StudentReviewSubmit() {
         readOnly={isReadOnly}
         items={[
           { label: "First Name", value: formData.student_first_name },
-          { label: "Last Name", value: formData.student_last_name },
+          ...(formData.student_last_name && String(formData.student_last_name).trim() !== ""
+            ? [{ label: "Last Name", value: formData.student_last_name }]
+            : []),
           { label: "Email", value: formData.student_email },
           { label: "Date of Birth", value: formData.student_dob },
           { label: "Gender", value: formData.student_gender ? formatDisplayLabel(formData.student_gender) : null },
