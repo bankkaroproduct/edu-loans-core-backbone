@@ -3,6 +3,7 @@
 // Reuses InlineEditField for all save logic — no new save/edit code paths.
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 import { User, GraduationCap, Wallet, FolderInput } from "lucide-react";
 import ProfileSectionCard from "@/components/lead-detail/ProfileSectionCard";
@@ -152,10 +153,12 @@ function NormalizedField({
 interface Props {
   lead: Lead;
   submittedByName: string | null;
+  partner?: Tables<"partner_organizations"> | null;
+  isStudentDirect?: boolean;
   onSaved?: () => void;
 }
 
-export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Props) {
+export function AdminLeadProfileSection({ lead, submittedByName, partner, isStudentDirect, onSaved }: Props) {
   const { isAdmin } = useRoleAccess();
   const ts = (lead.test_scores ?? {}) as Record<string, unknown>;
   const { options: highestQualOptions } = useHighestQualificationOptions();
@@ -609,6 +612,61 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
         <div className="grid grid-cols-2 gap-x-4 gap-y-3.5">
           <Field label="Source Type" value={formatDisplayLabel(lead.source_type)} />
           <Field label="Source Subtype" value={formatDisplayLabel(lead.source_sub_type)} />
+
+          {/* Admin-only org context — merged from former AdminPartnerCard.
+              Reuses the partner fetch from AdminLeadDetail.loadAll — no new query. */}
+          {isAdmin && (isStudentDirect || !partner ? (
+            <div className="col-span-2 rounded-md border bg-muted/30 p-2.5">
+              <p className="text-xs text-muted-foreground">
+                {isStudentDirect
+                  ? "Direct Student Lead — submitted via the student portal, no partner attached."
+                  : "Partner record is missing or could not be loaded."}
+              </p>
+            </div>
+          ) : partner.partner_code === "PTR-DIRECT" ? (
+            <div className="col-span-2 rounded-md border border-dashed bg-muted/30 p-2.5">
+              <p className="text-xs text-muted-foreground">
+                Direct / Admin-owned — this lead is owned directly by the admin team and excluded from billable partner reports and payout calculations.
+              </p>
+            </div>
+          ) : (
+            <>
+              <Field label="Organization" value={partner.display_name?.trim() || "Partner Lead"} />
+              <Field label="Legal Name" value={partner.legal_name} />
+              <Field label="Partner ID" value={partner.partner_code} />
+              <div className="min-w-0 space-y-0.5 overflow-hidden">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                  Partner Tags
+                </span>
+                <div className="flex items-center gap-2 pt-1 flex-wrap">
+                  <Badge variant="secondary" className="text-[10px]">
+                    {formatDisplayLabel(partner.partner_type)}
+                  </Badge>
+                  <Badge
+                    variant="outline"
+                    className={`text-[10px] ${
+                      partner.status === "active" ? "border-emerald-300 text-emerald-700 bg-emerald-50" :
+                      partner.status === "suspended" || partner.status === "terminated" ? "border-destructive/30 text-destructive bg-destructive/5" :
+                      "border-amber-300 text-amber-700 bg-amber-50"
+                    }`}
+                  >
+                    {formatDisplayLabel(partner.status)}
+                  </Badge>
+                </div>
+              </div>
+              <div className="col-span-2 min-w-0 space-y-0.5 overflow-hidden">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                  Org Contact
+                </span>
+                <p className="text-xs text-muted-foreground break-words">
+                  {partner.contact_person_name || "—"}
+                  {partner.contact_person_email ? ` · ${partner.contact_person_email}` : ""}
+                  {partner.contact_person_phone ? ` · ${partner.contact_person_phone}` : ""}
+                </p>
+              </div>
+            </>
+          ))}
+
           <Field label="Submitted By" value={submittedByName} readOnlyFallback="Not captured" />
           <Field label="Created At" value={new Date(lead.created_at).toLocaleString()} readOnlyFallback="—" />
           <Field label="Last Updated" value={new Date(lead.updated_at).toLocaleString()} readOnlyFallback="—" />

@@ -12,7 +12,7 @@ import { AdminLeadLifecycleProgress } from "@/components/admin/lead-detail/Admin
 import { AdminLeadTimeline } from "@/components/admin/lead-detail/AdminLeadTimeline";
 import { AdminLeadDuplicateContext } from "@/components/admin/lead-detail/AdminLeadDuplicateContext";
 import { AdminLeadPayoutSnapshot } from "@/components/admin/lead-detail/AdminLeadPayoutSnapshot";
-import { AdminPartnerCard } from "@/components/admin/AdminPartnerCard";
+
 import { AdminStageStatusPanel } from "@/components/admin/AdminStageStatusPanel";
 import { AdminLeadDocumentsView } from "@/components/admin/AdminLeadDocumentsView";
 import { AdminInternalNotes } from "@/components/admin/AdminInternalNotes";
@@ -226,11 +226,6 @@ export default function AdminLeadDetail() {
       />
 
 
-      {/* Student PTR / Partner Source profile — promoted to the top of Admin Lead
-          Detail so the originating partner / student-direct context is always
-          visible above the fold. Single source of truth — not duplicated lower. */}
-      <AdminPartnerCard partner={partner} isStudentDirect={isStudentDirect} />
-
       <div className="space-y-3">
         <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold pt-2">Lifecycle</h2>
         <AdminLeadLifecycleProgress lead={lead} />
@@ -255,7 +250,7 @@ export default function AdminLeadDetail() {
 
       <div className="grid gap-6 lg:grid-cols-3 items-start">
         <div className="lg:col-span-2 space-y-6">
-          <AdminLeadProfileSection lead={lead} submittedByName={submittedByName} onSaved={loadAll} />
+          <AdminLeadProfileSection lead={lead} submittedByName={submittedByName} partner={partner} isStudentDirect={isStudentDirect} onSaved={loadAll} />
         </div>
 
         <div className="space-y-6">
