@@ -346,7 +346,7 @@ export default function StudentDocuments() {
               </div>
 
               {/* Readiness Guidance */}
-              {counts.total > 0 && (
+              {effectiveCounts.total > 0 && (
                 <Card className="mb-6 border-primary/20 bg-primary/5">
                   <CardContent className="p-4 text-center">
                     {allComplete ? (
