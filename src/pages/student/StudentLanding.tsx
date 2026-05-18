@@ -163,8 +163,8 @@ export default function StudentLanding() {
               </select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="elig-amount">Loan Amount (₹)</Label>
-              <Input id="elig-amount" placeholder="e.g. 2000000" type="number" inputMode="numeric" value={form.loanAmount} onChange={e => setForm(f => ({ ...f, loanAmount: e.target.value }))} />
+              <Label htmlFor="elig-amount">Loan Amount</Label>
+              <LakhsInput id="elig-amount" value={form.loanAmount} onChange={d => setForm(f => ({ ...f, loanAmount: d }))} />
             </div>
             <div className="sm:col-span-2">
               <Button type="submit" size="lg" className="w-full gap-2 text-base">
