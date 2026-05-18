@@ -239,6 +239,7 @@ export default function AdminLeadDetail() {
     );
   }
 
+  const leadRow = state.lead!;
   const { history, notes, payouts, partner, audits, actorNames } = state;
   const isDraft = lead.current_stage === "draft";
   const isStudentDirect = lead.source_type === "student_direct";
