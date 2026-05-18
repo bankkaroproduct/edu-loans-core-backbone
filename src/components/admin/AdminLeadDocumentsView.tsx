@@ -46,9 +46,17 @@ export function AdminLeadDocumentsView({
   documents,
   onChanged,
 }: Props) {
+  // Filter out non-applicable academic docs so readiness counts exclude them.
+  const applicableRequirements = useMemo(
+    () =>
+      partitionRequirementsByApplicability(requirements, lead?.highest_qualification ?? null)
+        .applicable,
+    [requirements, lead?.highest_qualification],
+  );
+
   const vm = useMemo(
-    () => buildAdminDocViewModel(requirements, documents),
-    [requirements, documents],
+    () => buildAdminDocViewModel(applicableRequirements, documents),
+    [applicableRequirements, documents],
   );
 
   const { counts, hasRequirements } = vm;
