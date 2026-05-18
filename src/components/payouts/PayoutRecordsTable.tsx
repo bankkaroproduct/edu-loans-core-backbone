@@ -34,7 +34,6 @@ const STATUS_BADGE: Record<string, string> = {
 
 const fmt = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
-const fmtINR = (n: number | null) => n != null ? `₹${n.toLocaleString("en-IN")}` : "—";
 
 export type SortField = "updated_at" | "payout_amount" | "payout_status";
 export type SortDir = "asc" | "desc";
