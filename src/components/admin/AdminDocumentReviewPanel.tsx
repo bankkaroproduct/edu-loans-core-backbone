@@ -88,7 +88,7 @@ const STATUS_BADGE: Record<string, { variant: "default" | "secondary" | "outline
   not_applicable: { variant: "outline", label: "N/A" },
 };
 
-export function AdminDocumentReviewPanel({ leadId, lead, requirements, documents, onChanged }: Props) {
+export function AdminDocumentReviewPanel({ leadId, lead, requirements, documents, onChanged, highestQualification }: Props) {
   const [docsByType, setDocsByType] = useState<Record<string, LeadDocument | null>>({});
   const [versionCountByType, setVersionCountByType] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(documents === undefined);
