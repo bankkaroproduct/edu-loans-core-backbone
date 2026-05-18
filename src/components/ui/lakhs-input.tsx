@@ -71,8 +71,10 @@ export const LakhsInput = React.forwardRef<HTMLInputElement, LakhsInputProps>(
 
     const { previewRupees } = lakhsTextToRupeeDigits(text);
 
+    const preview = previewRupees > 0 ? formatINRParts(previewRupees) : null;
+
     return (
-      <div className="space-y-1">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <div className={cn("flex", className)}>
           <span className="flex items-center rounded-l-md border border-r-0 bg-muted px-3 text-sm text-muted-foreground">
             ₹ Lakhs
@@ -94,17 +96,12 @@ export const LakhsInput = React.forwardRef<HTMLInputElement, LakhsInputProps>(
             {...rest}
           />
         </div>
-        {previewRupees > 0 && (() => {
-          const { amount, unit } = formatINRParts(previewRupees);
-          return (
-            <div className="flex flex-col leading-tight">
-              <span className="text-sm tabular-nums text-foreground">{amount}</span>
-              {unit && (
-                <span className="text-sm text-muted-foreground tabular-nums">{unit}</span>
-              )}
-            </div>
-          );
-        })()}
+        {preview && (
+          <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
+            {preview.amount}
+            {preview.unit ? ` · ${preview.unit}` : ""}
+          </span>
+        )}
       </div>
     );
   }
