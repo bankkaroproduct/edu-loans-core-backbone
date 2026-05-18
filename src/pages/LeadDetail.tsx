@@ -7,7 +7,7 @@ import { LeadDetailHeaderInline } from "@/components/lead-detail/LeadDetailHeade
 import { useHeaderSlot } from "@/components/layout/HeaderSlotContext";
 
 import { LeadProfileSection } from "@/components/lead-detail/LeadProfileSection";
-import { LeadLifecycleProgress } from "@/components/lead-detail/LeadLifecycleProgress";
+import { LeadLifecycleStepper } from "@/components/lead-detail/LeadLifecycleStepper";
 import { LeadTimeline } from "@/components/lead-detail/LeadTimeline";
 import { LeadNotes } from "@/components/lead-detail/LeadNotes";
 import { LeadDocumentSnapshot } from "@/components/lead-detail/LeadDocumentSnapshot";
@@ -160,7 +160,7 @@ export default function LeadDetail() {
     <div className="max-w-screen-2xl mx-auto space-y-6">
       <LeadEditRequestBanner request={latestRequest} />
 
-      <LeadLifecycleProgress lead={lead} />
+      <LeadLifecycleStepper lead={lead} />
 
       <LeadDuplicateContext lead={lead} />
 
