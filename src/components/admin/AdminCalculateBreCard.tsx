@@ -650,7 +650,7 @@ function LenderOptionsList({
           <div className="text-[11px] text-muted-foreground">
             {loanRange && (
               <>
-                ₹{loanRange.min.toLocaleString("en-IN")} – ₹{loanRange.max.toLocaleString("en-IN")}
+                {formatINR(loanRange.min)} – {formatINR(loanRange.max)}
               </>
             )}
             {rateRange && (
