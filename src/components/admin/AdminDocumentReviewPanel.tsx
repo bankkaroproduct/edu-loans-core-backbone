@@ -239,6 +239,43 @@ export function AdminDocumentReviewPanel({ leadId, lead, requirements, documents
             })}
           </Accordion>
         )}
+
+        {/* Collapsed "Not Applicable" section — operational visibility for admin.
+            Excluded from readiness counts; uploaded files (if any) remain viewable. */}
+        {!loading && naRequirements.length > 0 && (
+          <Accordion type="multiple" className="w-full">
+            <AccordionItem value="not-applicable" className="border rounded-md mb-2 border-dashed">
+              <AccordionTrigger className="px-3 py-2.5 hover:no-underline">
+                <div className="flex items-center justify-between gap-3 flex-1 min-w-0">
+                  <div className="min-w-0 text-left">
+                    <p className="text-sm font-semibold truncate text-muted-foreground">
+                      Not Applicable based on highest qualification
+                    </p>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      Hidden from readiness — uploaded files (if any) remain viewable.
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] shrink-0">
+                    {naRequirements.length} hidden
+                  </Badge>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-3 pb-3 space-y-2">
+                {naRequirements.map((req) => (
+                  <DocReviewRow
+                    key={req.id}
+                    req={req as unknown as DocRequirementInput}
+                    leadId={leadId}
+                    lead={lead ?? null}
+                    doc={docsByType[req.document_type_id] ?? null}
+                    versionCount={versionCountByType[req.document_type_id] ?? 0}
+                    onChanged={handleAfterUpload}
+                  />
+                ))}
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        )}
       </CardContent>
     </Card>
   );
