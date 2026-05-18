@@ -223,6 +223,8 @@ export function AdminLeadProfileSection({ lead, submittedByName, partner, isStud
     return Number.isFinite(n) ? n : raw;
   };
 
+  const cityDisplay = (lead.city && String(lead.city).trim() !== "" ? lead.city : null) ?? lead.district ?? null;
+
   return (
     <div className="gap-4 md:columns-2 [&>*]:break-inside-avoid [&>*]:mb-4 md:[&>*]:mb-4">
       <ProfileSectionCard icon={User} title="Student Details">
