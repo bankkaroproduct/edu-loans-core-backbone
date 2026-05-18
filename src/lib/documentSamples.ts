@@ -5,7 +5,7 @@
  * No backend, upload, validation, or status logic depends on this file.
  * If a document has no match, callers must silently hide the View Sample link.
  */
-import manifest from "../../public/document_samples/document_sample_manifest.json";
+import manifest from "@/data/documentSampleManifest.json";
 
 export interface DocumentSample {
   document_name: string;
