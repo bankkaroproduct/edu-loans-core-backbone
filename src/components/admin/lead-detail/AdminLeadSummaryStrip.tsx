@@ -170,6 +170,7 @@ export function AdminLeadSummaryStrip({ lead, onSaved }: Props) {
       <Tile label="Study Destination">
         {isAdmin ? (
           <MasterEditPopover
+            wrap
             leadId={lead.id}
             label="Study Destination"
             display={lead.intended_study_country || null}
@@ -205,6 +206,7 @@ export function AdminLeadSummaryStrip({ lead, onSaved }: Props) {
       <Tile label="Intake Session">
         {isAdmin ? (
           <MasterEditPopover
+            wrap
             leadId={lead.id}
             label="Intake Session"
             display={intakeDisplay}
@@ -245,6 +247,7 @@ export function AdminLeadSummaryStrip({ lead, onSaved }: Props) {
       <Tile label="University">
         {isAdmin ? (
           <MasterEditPopover
+            wrap
             leadId={lead.id}
             label="University"
             display={universityDisplay}
@@ -295,6 +298,7 @@ export function AdminLeadSummaryStrip({ lead, onSaved }: Props) {
       <Tile label="Course">
         {isAdmin ? (
           <MasterEditPopover
+            wrap
             leadId={lead.id}
             label="Course"
             display={courseDisplay}
