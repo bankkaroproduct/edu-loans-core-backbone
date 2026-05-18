@@ -412,9 +412,51 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
             })}
             onSaved={onSaved}
           />
-          {/* Intake Term + Intake Year intentionally omitted here — the Intake
-              Session tile in AdminLeadSummaryStrip is the single source of truth
-              for editing intake. */}
+          <div className="min-w-0 space-y-0.5 overflow-hidden">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+              Intake Session
+            </span>
+            <p className="text-sm font-medium text-foreground break-words min-w-0">
+              {isAdmin ? (
+                <MasterEditPopover
+                  wrap
+                  leadId={lead.id}
+                  label="Intake Session"
+                  display={intakeDisplay}
+                  renderBody={() => (
+                    <Select value={intakeDraft} onValueChange={setIntakeDraft}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="Select intake session" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {intakeOptions.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>
+                            {o.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  validate={() => (!parseIntakeSessionValue(intakeDraft) ? "Please select an intake session" : null)}
+                  buildPayload={() => {
+                    const parsed = parseIntakeSessionValue(intakeDraft);
+                    if (!parsed) return null;
+                    return { intake_term: parsed.term, intake_year: parsed.year };
+                  }}
+                  buildAudit={() => {
+                    const parsed = parseIntakeSessionValue(intakeDraft);
+                    return {
+                      old: { intake_term: lead.intake_term, intake_year: lead.intake_year },
+                      new: { intake_term: parsed?.term ?? null, intake_year: parsed?.year ?? null },
+                    };
+                  }}
+                  onSaved={onSaved}
+                />
+              ) : (
+                intakeDisplay ?? "—"
+              )}
+            </p>
+          </div>
           <Field
             label="Loan Amount"
             value={lead.loan_amount_required ? String(lead.loan_amount_required) : null}
