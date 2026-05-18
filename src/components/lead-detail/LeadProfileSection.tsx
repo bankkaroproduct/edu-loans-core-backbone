@@ -307,8 +307,21 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
               })}
               onSaved={onSaved}
             />
-            {/* Intake Term + Intake Year intentionally omitted here — Intake
-                in LeadSummaryStrip is the single source of truth for display. */}
+            <Field
+              label="Intake Term"
+              value={lead.intake_term}
+              editable={ed("intake_term")}
+              onSaved={onSaved}
+            />
+            <Field
+              label="Intake Year"
+              value={lead.intake_year ? String(lead.intake_year) : null}
+              editable={ed("intake_year", {
+                inputType: "number",
+                parseValue: numericParse,
+              })}
+              onSaved={onSaved}
+            />
             <Field
               label="Loan Amount"
               value={lead.loan_amount_required ? String(lead.loan_amount_required) : null}
