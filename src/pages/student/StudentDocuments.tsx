@@ -357,7 +357,7 @@ export default function StudentDocuments() {
                           View Tracker <ArrowRight className="h-3.5 w-3.5" />
                         </Button>
                       </div>
-                    ) : counts.action_needed > 0 || counts.pending > 0 ? (
+                    ) : effectiveCounts.action_needed > 0 || effectiveCounts.pending > 0 ? (
                       <p className="text-sm text-foreground">
                         <strong>Upload your pending documents</strong> so your case can move to the next stage.
                       </p>
