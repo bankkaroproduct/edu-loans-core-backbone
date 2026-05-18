@@ -43,10 +43,18 @@ export default function StudentBasicDetails() {
     });
   }, []);
 
-  // Prefill from eligibility data if form is empty
+  // Prefill from eligibility data if form is empty.
+  // eligibilityData.fullName is split: first token → first_name, remainder → last_name.
+  // Only applied when BOTH target name fields are currently empty.
   useEffect(() => {
-    if (eligibilityData && !formData.student_full_name) {
-      if (eligibilityData.fullName) updateField("student_full_name", eligibilityData.fullName);
+    if (eligibilityData && !formData.student_first_name && !formData.student_last_name) {
+      if (eligibilityData.fullName) {
+        const parts = eligibilityData.fullName.trim().split(/\s+/);
+        const first = parts.shift() || "";
+        const last = parts.join(" ");
+        if (first) updateField("student_first_name", first);
+        if (last) updateField("student_last_name", last);
+      }
       if (eligibilityData.targetCountry) updateField("intended_study_country", eligibilityData.targetCountry);
       if (eligibilityData.loanAmount) updateField("loan_amount_required", eligibilityData.loanAmount);
     }
@@ -122,8 +130,8 @@ export default function StudentBasicDetails() {
   }, [pincodeResult, formData.pincode, formData.city, formData.state, formData.district, formData.tier, formData.country_of_residence, updateField]);
 
   const handleContinue = async () => {
-    if (!formData.student_full_name.trim()) {
-      toast({ title: "Name is required", variant: "destructive" }); return;
+    if (!formData.student_first_name.trim()) {
+      toast({ title: "First name is required", variant: "destructive" }); return;
     }
     if (!formData.student_email.trim()) {
       toast({ title: "Email is required", variant: "destructive" }); return;
@@ -167,9 +175,14 @@ export default function StudentBasicDetails() {
         <CardContent className="p-5 sm:p-6">
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Identity Details</h2>
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label>Full Name <span className="text-destructive">*</span></Label>
-              <Input value={formData.student_full_name} onChange={e => updateField("student_full_name", e.target.value)} placeholder="Enter your full name" />
+            <div className="space-y-1.5">
+              <Label>First Name <span className="text-destructive">*</span></Label>
+              <Input value={formData.student_first_name} onChange={e => updateField("student_first_name", e.target.value)} placeholder="Enter your first name" />
+              <p className="text-xs text-muted-foreground">Name as per Aadhaar Card / Passport</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Last Name</Label>
+              <Input value={formData.student_last_name} onChange={e => updateField("student_last_name", e.target.value)} placeholder="Enter your last name (optional)" />
               <p className="text-xs text-muted-foreground">Name as per Aadhaar Card / Passport</p>
             </div>
             <div className="space-y-1.5">

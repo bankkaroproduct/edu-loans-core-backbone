@@ -117,7 +117,8 @@ export default function StudentReviewSubmit() {
         editPath="/student/apply/basic"
         readOnly={isReadOnly}
         items={[
-          { label: "Full Name", value: formData.student_full_name },
+          { label: "First Name", value: formData.student_first_name },
+          { label: "Last Name", value: formData.student_last_name },
           { label: "Email", value: formData.student_email },
           { label: "Date of Birth", value: formData.student_dob },
           { label: "Gender", value: formData.student_gender ? formatDisplayLabel(formData.student_gender) : null },

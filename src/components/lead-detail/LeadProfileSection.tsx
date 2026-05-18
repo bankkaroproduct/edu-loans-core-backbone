@@ -200,7 +200,7 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
           <div className="grid grid-cols-2 gap-3">
             <Field label="First Name" value={lead.student_first_name} editable={ed("student_first_name")}  onSaved={onSaved} />
             <Field label="Last Name" value={lead.student_last_name} editable={ed("student_last_name")}  onSaved={onSaved} />
-            <Field label="Full Name" value={lead.student_full_name} editable={ed("student_full_name")}  onSaved={onSaved} />
+            
             <Field
               label="Date of Birth"
               value={(lead as Lead & { student_dob?: string | null }).student_dob ?? null}

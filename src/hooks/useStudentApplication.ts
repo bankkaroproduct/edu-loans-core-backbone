@@ -8,6 +8,8 @@ import { getEnabledLevels, getMirroredHighestQual } from "@/lib/academicLevelCas
 export interface StudentFormData {
   // Basic
   student_full_name: string;
+  student_first_name: string;
+  student_last_name: string;
   student_email: string;
   student_phone: string;
   student_whatsapp: string;
@@ -75,7 +77,8 @@ export interface StudentFormData {
 }
 
 const EMPTY_FORM: StudentFormData = {
-  student_full_name: "", student_email: "", student_phone: "",
+  student_full_name: "", student_first_name: "", student_last_name: "",
+  student_email: "", student_phone: "",
   student_whatsapp: "", whatsapp_same_as_phone: false,
   student_dob: "", student_gender: "", city: "", state: "", district: "", tier: "", pincode: "",
   country_of_residence: "",
@@ -107,7 +110,7 @@ export interface StepCompletion {
 export function deriveStepCompletion(lead: any): StepCompletion {
   if (!lead) return { basic: false, education: false, coapplicant: false, submitted: false };
 
-  const hasName = !!(lead.student_first_name || lead.student_full_name);
+  const hasName = !!(lead.student_first_name || lead.student_last_name || lead.student_full_name);
   const hasPhone = !!lead.student_phone;
   const hasCountry = !!lead.intended_study_country;
   const basic = hasName && hasPhone && hasCountry;
@@ -213,6 +216,8 @@ export function useStudentApplication() {
     setFormData(prev => ({
       ...prev,
       student_full_name: lead.student_full_name || lead.student_first_name || prev.student_full_name,
+      student_first_name: lead.student_first_name || prev.student_first_name,
+      student_last_name: lead.student_last_name || prev.student_last_name,
       student_email: lead.student_email || prev.student_email,
       student_phone: lead.student_phone || prev.student_phone,
       student_whatsapp: lead.student_whatsapp || prev.student_whatsapp,
@@ -293,7 +298,8 @@ export function useStudentApplication() {
           : (formData.student_whatsapp || "").replace(/\D/g, "").slice(-10);
 
         payload = {
-          student_full_name: formData.student_full_name,
+          student_first_name: formData.student_first_name,
+          student_last_name: formData.student_last_name || null,
           student_email: formData.student_email,
           student_whatsapp: whatsappToSend || null,
           whatsapp_same_as_phone: !!formData.whatsapp_same_as_phone,
