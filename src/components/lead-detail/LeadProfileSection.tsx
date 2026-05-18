@@ -353,17 +353,10 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
             })}
             <Field label="Other Test Scores" value={tsStr("raw_text")} editable={edTS("raw_text")}  onSaved={onSaved} />
           </div>
-        </CardContent>
-      </Card>
+      </ProfileSectionCard>
 
       {/* Financial Snapshot */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Wallet className="h-4 w-4 text-primary" /> Financial Snapshot
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <ProfileSectionCard icon={Wallet} title="Financial Snapshot">
           <div className="grid grid-cols-2 gap-3">
             <Field label="Co-Applicant" value={lead.coapplicant_name} editable={ed("coapplicant_name")}  onSaved={onSaved} />
             <Field label="Relation" value={lead.coapplicant_relation} editable={ed("coapplicant_relation", { formatDisplay: (v) => formatDisplayLabel(v) })}  onSaved={onSaved} />
