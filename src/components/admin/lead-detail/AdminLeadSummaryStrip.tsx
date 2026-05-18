@@ -38,8 +38,8 @@ function ReadOnlyValue({
     <p
       className={
         hasValue
-          ? `${emphasis ? "text-base font-semibold tabular-nums text-primary" : "text-sm font-semibold text-foreground"} truncate`
-          : "text-sm italic text-muted-foreground/70 truncate"
+          ? `${emphasis ? "text-base font-semibold tabular-nums text-primary" : "text-sm font-semibold text-foreground"} break-words`
+          : "text-sm italic text-muted-foreground/70 break-words"
       }
       title={hasValue ? String(value) : "Please provide details"}
     >
@@ -130,7 +130,7 @@ export function AdminLeadSummaryStrip({ lead, onSaved }: Props) {
     setCourseManual(matchedCourseId ? "" : lead.course_name ?? "");
   }, [lead.id, lead.intended_study_country, lead.intake_term, lead.intake_year, lead.university_id, lead.university_name_raw, lead.course_name, matchedCourseId]);
 
-  const tileValueClass = "text-sm font-semibold text-foreground truncate block max-w-full";
+  const tileValueClass = "text-sm font-semibold text-foreground break-words block max-w-full";
 
   const editable = (
     field: string,
@@ -170,6 +170,7 @@ export function AdminLeadSummaryStrip({ lead, onSaved }: Props) {
       <Tile label="Study Destination">
         {isAdmin ? (
           <MasterEditPopover
+            wrap
             leadId={lead.id}
             label="Study Destination"
             display={lead.intended_study_country || null}
@@ -205,6 +206,7 @@ export function AdminLeadSummaryStrip({ lead, onSaved }: Props) {
       <Tile label="Intake Session">
         {isAdmin ? (
           <MasterEditPopover
+            wrap
             leadId={lead.id}
             label="Intake Session"
             display={intakeDisplay}
@@ -245,6 +247,7 @@ export function AdminLeadSummaryStrip({ lead, onSaved }: Props) {
       <Tile label="University">
         {isAdmin ? (
           <MasterEditPopover
+            wrap
             leadId={lead.id}
             label="University"
             display={universityDisplay}
@@ -295,6 +298,7 @@ export function AdminLeadSummaryStrip({ lead, onSaved }: Props) {
       <Tile label="Course">
         {isAdmin ? (
           <MasterEditPopover
+            wrap
             leadId={lead.id}
             label="Course"
             display={courseDisplay}
