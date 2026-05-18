@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LeadDetailHeader } from "@/components/lead-detail/LeadDetailHeader";
-import { LeadSummaryStrip } from "@/components/lead-detail/LeadSummaryStrip";
+
 import { LeadProfileSection } from "@/components/lead-detail/LeadProfileSection";
 import { LeadLifecycleProgress } from "@/components/lead-detail/LeadLifecycleProgress";
 import { LeadTimeline } from "@/components/lead-detail/LeadTimeline";
@@ -137,8 +137,6 @@ export default function LeadDetail() {
       />
 
       <LeadEditRequestBanner request={latestRequest} />
-
-      <LeadSummaryStrip lead={lead} />
 
       <LeadLifecycleProgress lead={lead} />
 

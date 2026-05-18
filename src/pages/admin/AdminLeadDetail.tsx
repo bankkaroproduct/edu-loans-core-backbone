@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, RefreshCw, ArrowLeft } from "lucide-react";
 
 import { AdminLeadHeader } from "@/components/admin/lead-detail/AdminLeadHeader";
-import { AdminLeadSummaryStrip } from "@/components/admin/lead-detail/AdminLeadSummaryStrip";
+
 import { AdminLeadProfileSection } from "@/components/admin/lead-detail/AdminLeadProfileSection";
 import { AdminLeadLifecycleProgress } from "@/components/admin/lead-detail/AdminLeadLifecycleProgress";
 import { AdminLeadTimeline } from "@/components/admin/lead-detail/AdminLeadTimeline";
