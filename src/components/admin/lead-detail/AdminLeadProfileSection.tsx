@@ -261,7 +261,7 @@ export function AdminLeadProfileSection({ lead, submittedByName, partner, isStud
           <Field label="Email" value={lead.student_email} editable={ed("student_email", { inputType: "email" })} onSaved={onSaved} />
           <Field label="WhatsApp" value={lead.student_whatsapp} editable={ed("student_whatsapp", { numericKind: "phone" })} onSaved={onSaved} />
           <Field label="Pincode" value={lead.pincode} editable={ed("pincode", { numericKind: "pincode" })} onSaved={onSaved} />
-          <Field label="City" value={lead.city} editable={ed("city")} onSaved={onSaved} />
+          <Field label="City" value={cityDisplay} editable={ed("city")} onSaved={onSaved} />
           <Field label="District" value={lead.district ?? null} editable={ed("district")} onSaved={onSaved} />
           <Field label="State" value={lead.state} editable={ed("state")} onSaved={onSaved} />
           <Field label="City Tier" value={lead.tier ?? null} editable={ed("tier")} onSaved={onSaved} />
