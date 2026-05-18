@@ -8,14 +8,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatStageLabel, StageBadge, StatusBadge } from "@/components/dashboard/StageBadge";
-import { Clock, ArrowRight, ShieldAlert, Pencil } from "lucide-react";
+import { Clock, ArrowRight, Pencil } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type History = Tables<"lead_stage_history">;
 type Note = Tables<"lead_notes">;
 type AuditLog = Tables<"audit_logs">;
 
-type EventType = "stage_change" | "note" | "system" | "authenticity_change" | "audit";
+type EventType = "stage_change" | "note" | "system" | "audit";
 
 interface TimelineEvent {
   id: string;
@@ -29,9 +29,6 @@ interface TimelineEvent {
   newStatus?: string | null;
   noteType?: string;
   noteText?: string;
-  oldAuthenticity?: string | null;
-  newAuthenticity?: string | null;
-  reason?: string | null;
   actionType?: string;
   oldValue?: Record<string, unknown> | null;
   newValue?: Record<string, unknown> | null;
@@ -92,26 +89,6 @@ function buildEvents(
     const newVal = (a.new_value as Record<string, unknown> | null) ?? null;
     const metaVal = (a.meta as Record<string, unknown> | null) ?? null;
 
-    if (a.action_type === "lead_authenticity_changed") {
-      const oldAuth = (oldVal as { lead_authenticity?: string } | null)?.lead_authenticity ?? null;
-      const newAuth = (newVal as { lead_authenticity?: string } | null)?.lead_authenticity ?? null;
-      const reason = (metaVal as { reason?: string } | null)?.reason ?? null;
-      major.push({
-        id: `a-${a.id}`,
-        type: "authenticity_change",
-        timestamp: a.created_at,
-        actor,
-        description: reason || "",
-        oldAuthenticity: oldAuth,
-        newAuthenticity: newAuth,
-        reason,
-        actionType: a.action_type,
-        oldValue: oldVal,
-        newValue: newVal,
-        meta: metaVal,
-      });
-      continue;
-    }
 
     auditChips.push({
       id: `a-${a.id}`,
