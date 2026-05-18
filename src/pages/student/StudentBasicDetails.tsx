@@ -130,8 +130,8 @@ export default function StudentBasicDetails() {
   }, [pincodeResult, formData.pincode, formData.city, formData.state, formData.district, formData.tier, formData.country_of_residence, updateField]);
 
   const handleContinue = async () => {
-    if (!formData.student_full_name.trim()) {
-      toast({ title: "Name is required", variant: "destructive" }); return;
+    if (!formData.student_first_name.trim()) {
+      toast({ title: "First name is required", variant: "destructive" }); return;
     }
     if (!formData.student_email.trim()) {
       toast({ title: "Email is required", variant: "destructive" }); return;
