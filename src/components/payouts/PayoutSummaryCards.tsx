@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Wallet, Clock, CheckCircle, CreditCard, AlertTriangle, Users } from "lucide-react";
+import { formatINR } from "@/lib/formatCurrency";
 
 export interface PayoutMetrics {
   totalAccrued: number;
@@ -8,10 +9,6 @@ export interface PayoutMetrics {
   paid: number;
   reversed: number;
   contributingLeads: number;
-}
-
-function formatINR(n: number) {
-  return `₹${n.toLocaleString("en-IN")}`;
 }
 
 interface Props {
