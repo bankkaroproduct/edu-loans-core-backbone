@@ -3,7 +3,7 @@
 // Reuses InlineEditField for all save logic — no new save/edit code paths.
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+
 import { User, GraduationCap, Wallet, FolderInput } from "lucide-react";
 import ProfileSectionCard from "@/components/lead-detail/ProfileSectionCard";
 import type { Tables } from "@/integrations/supabase/types";
