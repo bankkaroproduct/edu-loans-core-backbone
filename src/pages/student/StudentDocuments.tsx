@@ -10,6 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { StudentDocumentUploadDialog } from "@/components/student/StudentDocumentUploadDialog";
 import { SampleDocumentModal } from "@/components/documents/SampleDocumentModal";
 import { findSampleForDocument, getHelperText, type DocumentSample } from "@/lib/documentSamples";
+import { isRequirementApplicable } from "@/lib/documentApplicability";
+import type { LeadDocRequirement } from "@/hooks/useLeadDocumentsData";
 import {
   CheckCircle2, AlertTriangle, Upload, Eye, RefreshCw, FileText, Clock,
   Shield, Compass, HeartHandshake, HelpCircle, Loader2, AlertCircle, Info,
@@ -53,6 +55,7 @@ interface LeadSummary {
   updated_at: string;
   student_full_name?: string | null;
   coapplicant_name?: string | null;
+  highest_qualification?: string | null;
 }
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> = {
@@ -109,22 +112,47 @@ export default function StudentDocuments() {
 
   if (!isVerified) return null;
 
-  const allComplete = counts.total > 0 && counts.verified >= counts.total - counts.not_required && counts.action_needed === 0 && counts.pending === 0;
+  // Smart academic applicability — hide non-applicable academic docs from the
+  // student view and recompute readiness counts from the filtered list so
+  // hidden docs never appear as "missing".
+  const applicableRequirements = requirements.filter((r) => {
+    const adapted = {
+      document_master: {
+        document_code: r.document_code ?? null,
+        display_name: null,
+        document_name: r.document_name,
+      },
+    } as unknown as LeadDocRequirement;
+    return isRequirementApplicable(adapted, leadSummary?.highest_qualification ?? null);
+  });
+  const hiddenAcademicCount = requirements.length - applicableRequirements.length;
+
+  const effectiveCounts: DocCounts = {
+    total: applicableRequirements.length,
+    pending: applicableRequirements.filter((r) => r.status === "not_uploaded").length,
+    uploaded: applicableRequirements.filter((r) => r.status === "uploaded").length,
+    under_review: applicableRequirements.filter((r) => r.status === "under_review").length,
+    verified: applicableRequirements.filter((r) => r.status === "verified").length,
+    action_needed: applicableRequirements.filter((r) => ["rejected", "reupload_needed"].includes(r.status)).length,
+    not_required: applicableRequirements.filter((r) => ["waived", "not_applicable"].includes(r.status)).length,
+  };
+
+  const allComplete = effectiveCounts.total > 0 && effectiveCounts.verified >= effectiveCounts.total - effectiveCounts.not_required && effectiveCounts.action_needed === 0 && effectiveCounts.pending === 0;
 
   // Readiness banner config
   const getReadinessBanner = () => {
-    if (counts.total === 0) return { type: "empty", icon: Info, color: "border-muted bg-muted/30", textColor: "text-muted-foreground", message: "No documents have been assigned yet — check back soon." };
-    if (counts.action_needed > 0) return { type: "action", icon: AlertCircle, color: "border-red-200 bg-red-50/60", textColor: "text-red-800", message: `${counts.action_needed} document${counts.action_needed > 1 ? "s" : ""} need${counts.action_needed === 1 ? "s" : ""} re-upload before your case can proceed.` };
-    if (counts.pending > 0) return { type: "pending", icon: Upload, color: "border-amber-200 bg-amber-50/60", textColor: "text-amber-800", message: `${counts.pending} required document${counts.pending > 1 ? "s" : ""} still need${counts.pending === 1 ? "s" : ""} upload.` };
+    if (effectiveCounts.total === 0) return { type: "empty", icon: Info, color: "border-muted bg-muted/30", textColor: "text-muted-foreground", message: "No documents have been assigned yet — check back soon." };
+    if (effectiveCounts.action_needed > 0) return { type: "action", icon: AlertCircle, color: "border-red-200 bg-red-50/60", textColor: "text-red-800", message: `${effectiveCounts.action_needed} document${effectiveCounts.action_needed > 1 ? "s" : ""} need${effectiveCounts.action_needed === 1 ? "s" : ""} re-upload before your case can proceed.` };
+    if (effectiveCounts.pending > 0) return { type: "pending", icon: Upload, color: "border-amber-200 bg-amber-50/60", textColor: "text-amber-800", message: `${effectiveCounts.pending} required document${effectiveCounts.pending > 1 ? "s" : ""} still need${effectiveCounts.pending === 1 ? "s" : ""} upload.` };
     if (allComplete) return { type: "complete", icon: CheckCircle2, color: "border-emerald-200 bg-emerald-50/60", textColor: "text-emerald-800", message: "All required documents are complete!" };
-    if (counts.under_review > 0 || counts.uploaded > 0) return { type: "review", icon: Clock, color: "border-blue-200 bg-blue-50/60", textColor: "text-blue-800", message: "All documents uploaded — under review." };
+    if (effectiveCounts.under_review > 0 || effectiveCounts.uploaded > 0) return { type: "review", icon: Clock, color: "border-blue-200 bg-blue-50/60", textColor: "text-blue-800", message: "All documents uploaded — under review." };
     return { type: "review", icon: Clock, color: "border-blue-200 bg-blue-50/60", textColor: "text-blue-800", message: "Documents are being processed." };
   };
 
   const banner = getReadinessBanner();
 
   // Sort: action needed first, then pending, then uploaded/review, then verified, then not required
-  const sortedRequirements = [...requirements].sort((a, b) => {
+  const sortedRequirements = [...applicableRequirements].sort((a, b) => {
     const priority: Record<string, number> = { "Action Needed": 0, "Pending Upload": 1, "Uploaded": 2, "Being Reviewed": 3, "Verified": 4, "Not Required": 5 };
     return (priority[a.student_status_label] ?? 9) - (priority[b.student_status_label] ?? 9);
   });
@@ -187,15 +215,15 @@ export default function StudentDocuments() {
               </div>
 
               {/* Summary Strip */}
-              {counts.total > 0 && (
+              {effectiveCounts.total > 0 && (
                 <div className="mb-5 grid grid-cols-3 gap-2 sm:grid-cols-6">
                   {[
-                    { label: "Total", value: counts.total, color: "text-foreground" },
-                    { label: "Pending", value: counts.pending, color: "text-muted-foreground" },
-                    { label: "Uploaded", value: counts.uploaded, color: "text-blue-600" },
-                    { label: "Reviewing", value: counts.under_review, color: "text-amber-600" },
-                    { label: "Verified", value: counts.verified, color: "text-emerald-600" },
-                    { label: "Action", value: counts.action_needed, color: counts.action_needed > 0 ? "text-red-600" : "text-muted-foreground" },
+                    { label: "Total", value: effectiveCounts.total, color: "text-foreground" },
+                    { label: "Pending", value: effectiveCounts.pending, color: "text-muted-foreground" },
+                    { label: "Uploaded", value: effectiveCounts.uploaded, color: "text-blue-600" },
+                    { label: "Reviewing", value: effectiveCounts.under_review, color: "text-amber-600" },
+                    { label: "Verified", value: effectiveCounts.verified, color: "text-emerald-600" },
+                    { label: "Action", value: effectiveCounts.action_needed, color: effectiveCounts.action_needed > 0 ? "text-red-600" : "text-muted-foreground" },
                   ].map(c => (
                     <div key={c.label} className="rounded-lg border bg-card px-3 py-2 text-center">
                       <p className={`text-lg font-bold ${c.color}`}>{c.value}</p>
@@ -203,6 +231,12 @@ export default function StudentDocuments() {
                     </div>
                   ))}
                 </div>
+              )}
+
+              {hiddenAcademicCount > 0 && (
+                <p className="mb-3 text-[11px] italic text-muted-foreground">
+                  Some academic documents are not applicable based on your highest qualification and have been hidden.
+                </p>
               )}
 
               {/* Document Checklist */}
@@ -312,7 +346,7 @@ export default function StudentDocuments() {
               </div>
 
               {/* Readiness Guidance */}
-              {counts.total > 0 && (
+              {effectiveCounts.total > 0 && (
                 <Card className="mb-6 border-primary/20 bg-primary/5">
                   <CardContent className="p-4 text-center">
                     {allComplete ? (
@@ -323,7 +357,7 @@ export default function StudentDocuments() {
                           View Tracker <ArrowRight className="h-3.5 w-3.5" />
                         </Button>
                       </div>
-                    ) : counts.action_needed > 0 || counts.pending > 0 ? (
+                    ) : effectiveCounts.action_needed > 0 || effectiveCounts.pending > 0 ? (
                       <p className="text-sm text-foreground">
                         <strong>Upload your pending documents</strong> so your case can move to the next stage.
                       </p>

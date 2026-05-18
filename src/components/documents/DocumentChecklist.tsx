@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { SampleDocumentModal } from "@/components/documents/SampleDocumentModal";
 import { findSampleForDocument, getHelperText, type DocumentSample } from "@/lib/documentSamples";
+import { partitionRequirementsByApplicability } from "@/lib/documentApplicability";
 
 type ValidationFlag = "ok" | "warn_name" | "warn_type" | "review_needed" | "inconclusive";
 
@@ -111,9 +112,11 @@ interface Props {
   leadId: string;
   /** When true, suppresses the extra yellow guidance/nudge bar — admin already has direct upload + OCR. */
   hideNudge?: boolean;
+  /** Lead's highest_qualification — used to hide non-applicable academic docs. */
+  highestQualification?: string | null;
 }
 
-export function DocumentChecklist({ requirements, documents, onUpload, leadId, hideNudge = false }: Props) {
+export function DocumentChecklist({ requirements, documents, onUpload, leadId, hideNudge = false, highestQualification }: Props) {
   const [sampleOpen, setSampleOpen] = useState<DocumentSample | null>(null);
   // Group documents by document_type_id
   const docsByType = new Map<string, DocFile[]>();
@@ -125,8 +128,15 @@ export function DocumentChecklist({ requirements, documents, onUpload, leadId, h
     }
   });
 
+  // Filter out non-applicable academic docs based on highest qualification.
+  // Unknown qualification → no filtering (preserves current behavior).
+  const { applicable: applicableRequirements, notApplicable: naRequirements } = useMemo(
+    () => partitionRequirementsByApplicability(requirements, highestQualification),
+    [requirements, highestQualification],
+  );
+
   // Group requirements into the 7 spec sections (frontend-only grouping by document_code).
-  const grouped = useMemo(() => groupRequirementsBySection(requirements), [requirements]);
+  const grouped = useMemo(() => groupRequirementsBySection(applicableRequirements), [applicableRequirements]);
 
   const latestByType = useMemo(() => {
     const m = new Map<string, LeadDocFile | null | undefined>();
@@ -333,7 +343,7 @@ export function DocumentChecklist({ requirements, documents, onUpload, leadId, h
         <CardTitle className="text-base flex items-center gap-2">
           <FileText className="h-4 w-4 text-primary" /> Document Checklist
           <span className="text-xs font-normal text-muted-foreground ml-auto">
-            {requirements.length} document{requirements.length !== 1 ? "s" : ""}
+            {applicableRequirements.length} document{applicableRequirements.length !== 1 ? "s" : ""}
           </span>
         </CardTitle>
       </CardHeader>
@@ -372,6 +382,11 @@ export function DocumentChecklist({ requirements, documents, onUpload, leadId, h
             );
           })}
         </Accordion>
+        {naRequirements.length > 0 && (
+          <p className="text-[11px] text-muted-foreground italic px-1 pt-1">
+            Some academic documents are not applicable based on highest qualification and have been hidden.
+          </p>
+        )}
       </CardContent>
       <SampleDocumentModal
         open={!!sampleOpen}

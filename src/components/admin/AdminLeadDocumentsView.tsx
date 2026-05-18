@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { AdminDocumentReviewPanel } from "@/components/admin/AdminDocumentReviewPanel";
 import { buildAdminDocViewModel } from "@/lib/leadDocumentViewModel";
+import { partitionRequirementsByApplicability } from "@/lib/documentApplicability";
 import type {
   LeadDocFile,
   LeadDocRequirement,
@@ -45,9 +46,17 @@ export function AdminLeadDocumentsView({
   documents,
   onChanged,
 }: Props) {
+  // Filter out non-applicable academic docs so readiness counts exclude them.
+  const applicableRequirements = useMemo(
+    () =>
+      partitionRequirementsByApplicability(requirements, lead?.highest_qualification ?? null)
+        .applicable,
+    [requirements, lead?.highest_qualification],
+  );
+
   const vm = useMemo(
-    () => buildAdminDocViewModel(requirements, documents),
-    [requirements, documents],
+    () => buildAdminDocViewModel(applicableRequirements, documents),
+    [applicableRequirements, documents],
   );
 
   const { counts, hasRequirements } = vm;
@@ -188,6 +197,7 @@ export function AdminLeadDocumentsView({
           requirements={requirements as never[]}
           documents={documents as never[]}
           onChanged={onChanged}
+          highestQualification={lead?.highest_qualification ?? null}
         />
       )}
     </div>

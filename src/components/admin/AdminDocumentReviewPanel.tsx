@@ -29,6 +29,7 @@ import {
   SECTION_STATUS_LABEL,
   SECTION_STATUS_VARIANT,
 } from "@/lib/documentSections";
+import { partitionRequirementsByApplicability } from "@/lib/documentApplicability";
 import type { DocRequirement } from "@/pages/LeadDocuments";
 import type { LeadNameFields } from "@/lib/referenceName";
 import type { LeadDocFile, LeadDocRequirement } from "@/hooks/useLeadDocumentsData";
@@ -72,6 +73,8 @@ interface Props {
    *  full Documents page render from the exact same in-memory snapshot. */
   documents?: LeadDocument[];
   onChanged: () => void;
+  /** Lead's highest_qualification — drives smart academic-doc applicability. */
+  highestQualification?: string | null;
 }
 
 const STATUS_BADGE: Record<string, { variant: "default" | "secondary" | "outline" | "destructive"; label: string }> = {
@@ -85,7 +88,7 @@ const STATUS_BADGE: Record<string, { variant: "default" | "secondary" | "outline
   not_applicable: { variant: "outline", label: "N/A" },
 };
 
-export function AdminDocumentReviewPanel({ leadId, lead, requirements, documents, onChanged }: Props) {
+export function AdminDocumentReviewPanel({ leadId, lead, requirements, documents, onChanged, highestQualification }: Props) {
   const [docsByType, setDocsByType] = useState<Record<string, LeadDocument | null>>({});
   const [versionCountByType, setVersionCountByType] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(documents === undefined);
@@ -150,10 +153,20 @@ export function AdminDocumentReviewPanel({ leadId, lead, requirements, documents
     onChanged();
   };
 
+  // Smart academic applicability — non-applicable academic docs are split out
+  // so they don't count toward readiness denominators but remain viewable.
+  const { applicable: applicableRequirements, notApplicable: naRequirements } = useMemo(
+    () => partitionRequirementsByApplicability(
+      requirements as unknown as LeadDocRequirement[],
+      highestQualification,
+    ),
+    [requirements, highestQualification],
+  );
+
   // Group requirements into the 7 spec sections (frontend-only grouping by document_code).
   const grouped = useMemo(
-    () => groupRequirementsBySection(requirements as unknown as LeadDocRequirement[]),
-    [requirements],
+    () => groupRequirementsBySection(applicableRequirements),
+    [applicableRequirements],
   );
 
   const latestByType = useMemo(() => {
@@ -224,6 +237,43 @@ export function AdminDocumentReviewPanel({ leadId, lead, requirements, documents
                 </AccordionItem>
               );
             })}
+          </Accordion>
+        )}
+
+        {/* Collapsed "Not Applicable" section — operational visibility for admin.
+            Excluded from readiness counts; uploaded files (if any) remain viewable. */}
+        {!loading && naRequirements.length > 0 && (
+          <Accordion type="multiple" className="w-full">
+            <AccordionItem value="not-applicable" className="border rounded-md mb-2 border-dashed">
+              <AccordionTrigger className="px-3 py-2.5 hover:no-underline">
+                <div className="flex items-center justify-between gap-3 flex-1 min-w-0">
+                  <div className="min-w-0 text-left">
+                    <p className="text-sm font-semibold truncate text-muted-foreground">
+                      Not Applicable based on highest qualification
+                    </p>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      Hidden from readiness — uploaded files (if any) remain viewable.
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] shrink-0">
+                    {naRequirements.length} hidden
+                  </Badge>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-3 pb-3 space-y-2">
+                {naRequirements.map((req) => (
+                  <DocReviewRow
+                    key={req.id}
+                    req={req as unknown as DocRequirementInput}
+                    leadId={leadId}
+                    lead={lead ?? null}
+                    doc={docsByType[req.document_type_id] ?? null}
+                    versionCount={versionCountByType[req.document_type_id] ?? 0}
+                    onChanged={handleAfterUpload}
+                  />
+                ))}
+              </AccordionContent>
+            </AccordionItem>
           </Accordion>
         )}
       </CardContent>
