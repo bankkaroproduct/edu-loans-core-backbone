@@ -703,7 +703,7 @@ function KnockoutRulesPanel({
         <KV k="Excluded states" v={cov.excluded_states?.length ? cov.excluded_states.join(", ") : "—"} />
         <KV
           k="Scorecard income floor"
-          v={<span className="flex items-center gap-2">₹{incomeFloor.toLocaleString("en-IN")} <ProvenanceBadge tag={incomeFloorProv} /></span>}
+          v={<span className="flex items-center gap-2">{formatINR(incomeFloor)} <ProvenanceBadge tag={incomeFloorProv} /></span>}
         />
       </CardContent>
     </Card>
