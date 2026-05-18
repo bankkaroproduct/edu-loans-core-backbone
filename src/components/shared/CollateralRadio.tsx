@@ -1,7 +1,7 @@
-// 3-state collateral selector. Maps to:
-//   "likely"   -> collateral_available = true
-//   "unlikely" -> collateral_available = false
-//   "unsure"   -> collateral_available = null
+// 2-state collateral selector (with undefined = no selection). Maps to:
+//   "likely"    -> collateral_available = true
+//   "unlikely"  -> collateral_available = false
+//   undefined   -> collateral_available = null  (user has not chosen)
 //
 // Notes textarea is REVEALED only when "likely" is chosen but stays OPTIONAL.
 
@@ -9,12 +9,12 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 
-export type CollateralState = "likely" | "unlikely" | "unsure";
+export type CollateralState = "likely" | "unlikely" | undefined;
 
 export function collateralBoolToState(v: boolean | null | undefined): CollateralState {
   if (v === true) return "likely";
   if (v === false) return "unlikely";
-  return "unsure";
+  return undefined;
 }
 
 export function collateralStateToBool(s: CollateralState): boolean | null {
@@ -37,26 +37,19 @@ export function CollateralRadio({ state, notes, onChangeState, onChangeNotes, id
     <div className="space-y-3 rounded-md border p-3">
       <div>
         <Label className="text-sm">Collateral likely available?</Label>
-        <p className="text-[11px] text-muted-foreground">
-          Rough indication only. Detailed collateral information is collected later in the document stage.
-        </p>
       </div>
       <RadioGroup
-        value={state}
+        value={state ?? ""}
         onValueChange={(v) => onChangeState(v as CollateralState)}
         className="flex flex-wrap gap-4"
       >
         <div className="flex items-center gap-2">
           <RadioGroupItem id={`${idPrefix}-likely`} value="likely" />
-          <Label htmlFor={`${idPrefix}-likely`} className="text-sm font-normal cursor-pointer">Likely</Label>
+          <Label htmlFor={`${idPrefix}-likely`} className="text-sm font-normal cursor-pointer">Yes</Label>
         </div>
         <div className="flex items-center gap-2">
           <RadioGroupItem id={`${idPrefix}-unlikely`} value="unlikely" />
-          <Label htmlFor={`${idPrefix}-unlikely`} className="text-sm font-normal cursor-pointer">Unlikely</Label>
-        </div>
-        <div className="flex items-center gap-2">
-          <RadioGroupItem id={`${idPrefix}-unsure`} value="unsure" />
-          <Label htmlFor={`${idPrefix}-unsure`} className="text-sm font-normal cursor-pointer">Not sure</Label>
+          <Label htmlFor={`${idPrefix}-unlikely`} className="text-sm font-normal cursor-pointer">No</Label>
         </div>
       </RadioGroup>
       {state === "likely" && (
