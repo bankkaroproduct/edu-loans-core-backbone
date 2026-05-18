@@ -1269,7 +1269,7 @@ function LenderOptionCards({
         </div>
         {loanRange && (
           <div className="text-[11px] text-muted-foreground tabular-nums">
-            ₹{loanRange.min.toLocaleString("en-IN")} – ₹{loanRange.max.toLocaleString("en-IN")}
+            {formatINR(loanRange.min)} – {formatINR(loanRange.max)}
           </div>
         )}
       </div>
