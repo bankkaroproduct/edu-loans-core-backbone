@@ -1638,7 +1638,7 @@ function RankImpactPanel({ mod }: { mod: RankModifierResult }) {
   const changedRate = baseRate != null && adjRate != null && adjRate !== baseRate;
 
   const fmtMoney = (n: number | null | undefined) =>
-    n == null ? "—" : `₹${Math.round(n).toLocaleString("en-IN")}`;
+    n == null ? "—" : formatINR(Math.round(n));
   const fmtRate = (n: number | null | undefined) => (n == null ? "—" : `${n}%`);
 
   const loanPctLabel =
