@@ -453,8 +453,7 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
               })()}
             </div>
           </div>
-        </CardContent>
-      </Card>
+      </ProfileSectionCard>
     </div>
   );
 }
