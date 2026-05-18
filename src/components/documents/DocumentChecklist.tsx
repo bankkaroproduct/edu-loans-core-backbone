@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { SampleDocumentModal } from "@/components/documents/SampleDocumentModal";
 import { findSampleForDocument, getHelperText, type DocumentSample } from "@/lib/documentSamples";
+import { partitionRequirementsByApplicability } from "@/lib/documentApplicability";
 
 type ValidationFlag = "ok" | "warn_name" | "warn_type" | "review_needed" | "inconclusive";
 
