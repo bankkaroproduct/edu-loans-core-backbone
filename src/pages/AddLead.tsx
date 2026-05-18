@@ -1975,13 +1975,14 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                     value={formatWorkExperience(form.work_experience_years) || form.work_experience_years}
                   />
                 )}
-                {(form.ielts || form.toefl || form.duolingo || form.gre || form.gmat) && (
+                {(form.ielts || form.toefl || form.duolingo || form.pte || form.gre || form.gmat) && (
                   <ReviewRow
                     label="Test Scores"
                     value={[
                       form.ielts && `IELTS: ${form.ielts}`,
                       form.toefl && `TOEFL: ${form.toefl}`,
                       form.duolingo && `Duolingo: ${form.duolingo}`,
+                      form.pte && `PTE: ${form.pte}`,
                       form.gre && `GRE: ${form.gre}`,
                       form.gmat && `GMAT: ${form.gmat}`,
                     ].filter(Boolean).join(" · ")}
