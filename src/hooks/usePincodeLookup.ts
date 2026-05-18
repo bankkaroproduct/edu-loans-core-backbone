@@ -85,6 +85,7 @@ export function usePincodeLookup(pincode: string | null | undefined): PincodeLoo
             district: data.district ?? null,
             state: data.state ?? null,
             tier: data.tier ?? null,
+            country: "India",
             hasConflict: !!data.has_conflict,
             pincode: trimmed,
           }
