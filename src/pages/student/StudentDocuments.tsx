@@ -8,10 +8,12 @@ import { Badge } from "@/components/ui/badge";
 import { useStudentAuth } from "@/hooks/useStudentAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { StudentDocumentUploadDialog } from "@/components/student/StudentDocumentUploadDialog";
+import { SampleDocumentModal } from "@/components/documents/SampleDocumentModal";
+import { findSampleForDocument, getHelperText, type DocumentSample } from "@/lib/documentSamples";
 import {
   CheckCircle2, AlertTriangle, Upload, Eye, RefreshCw, FileText, Clock,
   Shield, Compass, HeartHandshake, HelpCircle, Loader2, AlertCircle, Info,
-  ArrowLeft, ArrowRight, PartyPopper
+  ArrowLeft, ArrowRight, PartyPopper, ImageIcon
 } from "lucide-react";
 
 interface DocumentRequirement {
@@ -71,6 +73,7 @@ export default function StudentDocuments() {
   const [counts, setCounts] = useState<DocCounts>({ total: 0, pending: 0, uploaded: 0, under_review: 0, verified: 0, action_needed: 0, not_required: 0 });
   const [leadSummary, setLeadSummary] = useState<LeadSummary | null>(null);
   const [uploadTarget, setUploadTarget] = useState<DocumentRequirement | null>(null);
+  const [sampleOpen, setSampleOpen] = useState<DocumentSample | null>(null);
 
   useEffect(() => {
     if (!isVerified) { navigate("/student/login"); return; }
@@ -210,6 +213,8 @@ export default function StudentDocuments() {
                   const isPending = req.student_status_label === "Pending Upload";
                   const isVerifiedDoc = req.student_status_label === "Verified";
                   const StatusIcon = config.icon;
+                  const helperText = getHelperText(req.document_name);
+                  const sample = findSampleForDocument(req.document_name);
 
                   return (
                     <Card key={req.id} className={`overflow-hidden transition-shadow hover:shadow-sm ${isActionNeeded ? "border-red-200" : ""}`}>
@@ -224,6 +229,21 @@ export default function StudentDocuments() {
                                 <Badge variant="outline" className="text-[10px] text-muted-foreground">Optional</Badge>
                               )}
                             </div>
+
+                            {(helperText || sample) && (
+                              <div className="mt-1 flex flex-wrap items-start gap-1.5 text-xs text-muted-foreground">
+                                {helperText && <span className="leading-snug">{helperText}</span>}
+                                {sample && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setSampleOpen(sample)}
+                                    className="inline-flex shrink-0 items-center gap-1 text-primary hover:underline"
+                                  >
+                                    <ImageIcon className="h-3 w-3" /> View Sample
+                                  </button>
+                                )}
+                              </div>
+                            )}
 
                             <div className="mt-1.5 flex items-center gap-1.5">
                               <StatusIcon className={`h-3.5 w-3.5 ${config.color}`} />
@@ -363,6 +383,11 @@ export default function StudentDocuments() {
           onSuccess={handleUploadComplete}
         />
       )}
+      <SampleDocumentModal
+        open={!!sampleOpen}
+        onOpenChange={(open) => !open && setSampleOpen(null)}
+        sample={sampleOpen}
+      />
     </div>
   );
 }
