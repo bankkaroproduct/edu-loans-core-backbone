@@ -166,7 +166,7 @@ export default function StudentReviewSubmit() {
           { label: "University", value: formData.university_name_raw },
           { label: "Intake", value: formData.intake_term && formData.intake_year ? intakeSessionLabel(formData.intake_term, Number(formData.intake_year)) : null },
           { label: "Work Experience", value: formatWorkExperience(formData.test_scores.work_experience_years) },
-          { label: "Test Scores", value: scoreDisplay },
+          { label: "Test Scores", value: scoreDisplay, node: scoreDisplay ? undefined : <span className="text-muted-foreground">No standardized tests taken</span> },
         ]}
       />
 
