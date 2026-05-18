@@ -1725,7 +1725,7 @@ function RecommendationRationale({
 
   if (projectedLoanAmount != null && projectedLoanAmount > 0) {
     bullets.push(
-      `Loan amount ₹${Math.round(projectedLoanAmount).toLocaleString("en-IN")} fits lender range`,
+      `Loan amount ${formatINR(Math.round(projectedLoanAmount))} fits lender range`,
     );
   }
 
