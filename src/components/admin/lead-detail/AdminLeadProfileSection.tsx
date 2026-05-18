@@ -1,10 +1,11 @@
 // Admin-only profile section: Student Details / Education & Study Intent /
 // Financial Snapshot / Source. Visual mirror of LeadProfileSection.
 // Reuses InlineEditField for all save logic — no new save/edit code paths.
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, GraduationCap, Wallet, FolderInput, ShieldCheck, ChevronDown, ChevronUp } from "lucide-react";
+import { User, GraduationCap, Wallet, FolderInput, ShieldCheck } from "lucide-react";
+import ProfileSectionCard from "@/components/lead-detail/ProfileSectionCard";
 import type { Tables } from "@/integrations/supabase/types";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { InlineEditField } from "@/components/admin/InlineEditField";
