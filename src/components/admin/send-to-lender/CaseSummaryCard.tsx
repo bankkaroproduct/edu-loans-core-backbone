@@ -60,11 +60,7 @@ export function CaseSummaryCard({ lead }: { lead: LeadRow }) {
           <Row label="Relation" value={lead.coapplicant_relation ? formatDisplayLabel(lead.coapplicant_relation) : null} />
           <Row
             label="Income"
-            value={
-              lead.coapplicant_income != null
-                ? `₹ ${Number(lead.coapplicant_income).toLocaleString("en-IN")}`
-                : "—"
-            }
+            value={lead.coapplicant_income != null ? formatINR(lead.coapplicant_income) : "—"}
           />
           <Row label="Employment" value={lead.coapplicant_employment_type ? formatEmploymentLabel(lead.coapplicant_employment_type) : null} />
         </div>
