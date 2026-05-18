@@ -8,8 +8,10 @@ import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
-  FileText, CheckCircle, XCircle, AlertTriangle, Upload, Eye, Loader2, ChevronDown, ChevronRight, ArrowRight,
+  FileText, CheckCircle, XCircle, AlertTriangle, Upload, Eye, Loader2, ChevronDown, ChevronRight, ArrowRight, ImageIcon,
 } from "lucide-react";
+import { SampleDocumentModal } from "@/components/documents/SampleDocumentModal";
+import { findSampleForDocument, getHelperText, type DocumentSample } from "@/lib/documentSamples";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { reviewDocument } from "@/lib/adminActions";
@@ -247,6 +249,12 @@ function DocReviewRow({
   const [remark, setRemark] = useState("");
   const [busy, setBusy] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [sampleOpen, setSampleOpen] = useState(false);
+
+  const displayName = req.document_master?.display_name ?? null;
+  const docName = req.document_master?.document_name ?? null;
+  const helperText = getHelperText(displayName, docName);
+  const sample: DocumentSample | null = findSampleForDocument(displayName, docName);
 
   const status = (doc?.verification_status ?? req.status) as EffectiveDocStatus;
   const badgeVariant = STATUS_BADGE_VARIANT[status] ?? STATUS_BADGE_VARIANT.not_uploaded;
@@ -317,6 +325,21 @@ function DocReviewRow({
         </div>
         <Badge variant={badgeVariant} className="text-[10px] shrink-0">{badgeLabel}</Badge>
       </button>
+
+      {(helperText || sample) && (
+        <div className="px-2.5 pb-2 -mt-1 flex items-start gap-1.5 flex-wrap text-xs text-muted-foreground">
+          {helperText && <span className="leading-snug">{helperText}</span>}
+          {sample && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setSampleOpen(true); }}
+              className="inline-flex items-center gap-1 text-primary hover:underline shrink-0"
+            >
+              <ImageIcon className="h-3 w-3" /> View Sample
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Row-level upload action — nudge text removed in admin per spec; OCR / upload pipeline preserved */}
       {(() => {
@@ -442,6 +465,12 @@ function DocReviewRow({
           }}
         />
       )}
+
+      <SampleDocumentModal
+        open={sampleOpen}
+        onOpenChange={setSampleOpen}
+        sample={sample}
+      />
     </div>
   );
 }

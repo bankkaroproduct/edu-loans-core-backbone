@@ -2,10 +2,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useState } from "react";
 import {
   CheckCircle, Clock, XCircle, AlertTriangle, Upload, Eye,
-  FileText, ShieldCheck, Ban, RotateCcw, Info, History, ShieldAlert, HelpCircle
+  FileText, ShieldCheck, Ban, RotateCcw, Info, History, ShieldAlert, HelpCircle, ImageIcon
 } from "lucide-react";
+import { SampleDocumentModal } from "@/components/documents/SampleDocumentModal";
+import { findSampleForDocument, getHelperText, type DocumentSample } from "@/lib/documentSamples";
 
 type ValidationFlag = "ok" | "warn_name" | "warn_type" | "review_needed" | "inconclusive";
 
@@ -111,6 +114,7 @@ interface Props {
 }
 
 export function DocumentChecklist({ requirements, documents, onUpload, leadId, hideNudge = false }: Props) {
+  const [sampleOpen, setSampleOpen] = useState<DocumentSample | null>(null);
   // Group documents by document_type_id
   const docsByType = new Map<string, DocFile[]>();
   documents.forEach(doc => {
@@ -191,6 +195,29 @@ export function DocumentChecklist({ requirements, documents, onUpload, leadId, h
                         <Badge variant="outline" className="text-[9px] text-muted-foreground">Optional</Badge>
                       )}
                     </div>
+
+                    {/* Helper text + View Sample (guidance only — no logic) */}
+                    {(() => {
+                      const displayName = (req.document_master as { display_name?: string | null } | null | undefined)?.display_name ?? null;
+                      const docName = req.document_master?.document_name ?? null;
+                      const helper = getHelperText(displayName, docName);
+                      const sample = findSampleForDocument(displayName, docName);
+                      if (!helper && !sample) return null;
+                      return (
+                        <div className="flex items-start gap-1.5 flex-wrap text-xs text-muted-foreground">
+                          {helper && <span className="leading-snug">{helper}</span>}
+                          {sample && (
+                            <button
+                              type="button"
+                              onClick={() => setSampleOpen(sample)}
+                              className="inline-flex items-center gap-1 text-primary hover:underline shrink-0"
+                            >
+                              <ImageIcon className="h-3 w-3" /> View Sample
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {/* Validation chip */}
                     {latestDoc?.validation_result && (
@@ -346,6 +373,11 @@ export function DocumentChecklist({ requirements, documents, onUpload, leadId, h
           })}
         </Accordion>
       </CardContent>
+      <SampleDocumentModal
+        open={!!sampleOpen}
+        onOpenChange={(o) => { if (!o) setSampleOpen(null); }}
+        sample={sampleOpen}
+      />
     </Card>
   );
 }
