@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, RefreshCw, ArrowLeft } from "lucide-react";
 
 import { AdminLeadHeader } from "@/components/admin/lead-detail/AdminLeadHeader";
-import { AdminLeadSummaryStrip } from "@/components/admin/lead-detail/AdminLeadSummaryStrip";
+
 import { AdminLeadProfileSection } from "@/components/admin/lead-detail/AdminLeadProfileSection";
 import { AdminLeadLifecycleProgress } from "@/components/admin/lead-detail/AdminLeadLifecycleProgress";
 import { AdminLeadTimeline } from "@/components/admin/lead-detail/AdminLeadTimeline";
@@ -236,7 +236,6 @@ export default function AdminLeadDetail() {
         />
       </div>
 
-      <AdminLeadSummaryStrip lead={lead} onSaved={loadAll} />
 
       {/* Student PTR / Partner Source profile — promoted to the top of Admin Lead
           Detail so the originating partner / student-direct context is always

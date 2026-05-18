@@ -1,13 +1,21 @@
 // Admin-only profile section: Student Details / Education & Study Intent /
 // Financial Snapshot / Source. Visual mirror of LeadProfileSection.
 // Reuses InlineEditField for all save logic — no new save/edit code paths.
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { User, GraduationCap, Wallet, FolderInput, ShieldCheck, ChevronDown, ChevronUp } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { InlineEditField } from "@/components/admin/InlineEditField";
+import { MasterEditPopover } from "@/components/admin/MasterEditPopover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  buildIntakeSessionOptions,
+  intakeSessionLabel,
+  intakeSessionValue,
+  parseIntakeSessionValue,
+} from "@/lib/intakeSession";
 import { formatINR } from "@/lib/formatCurrency";
 import { INRAmountStacked } from "@/components/shared/INRAmountStacked";
 import type { ReactNode } from "react";
@@ -243,7 +251,13 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
   const { isAdmin } = useRoleAccess();
   const ts = (lead.test_scores ?? {}) as Record<string, unknown>;
   const { options: highestQualOptions } = useHighestQualificationOptions();
-  const { countries, universities, courses } = useLeadMasterData();
+  const { countries, universities, courses, intakes } = useLeadMasterData();
+  const intakeOptions = useMemo(() => buildIntakeSessionOptions(intakes, { onlyFuture: false }), [intakes]);
+  const [intakeDraft, setIntakeDraft] = useState<string>(intakeSessionValue(lead.intake_term, lead.intake_year));
+  useEffect(() => {
+    setIntakeDraft(intakeSessionValue(lead.intake_term, lead.intake_year));
+  }, [lead.id, lead.intake_term, lead.intake_year]);
+  const intakeDisplay = intakeSessionLabel(lead.intake_term, lead.intake_year) || null;
 
   const countryOptions: MasterOption[] = countries.map((c) => ({ id: c.country_name, label: c.country_name }));
   const universityOptions: MasterOption[] = (() => {
@@ -398,9 +412,51 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
             })}
             onSaved={onSaved}
           />
-          {/* Intake Term + Intake Year intentionally omitted here — the Intake
-              Session tile in AdminLeadSummaryStrip is the single source of truth
-              for editing intake. */}
+          <div className="min-w-0 space-y-0.5 overflow-hidden">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+              Intake Session
+            </span>
+            <p className="text-sm font-medium text-foreground break-words min-w-0">
+              {isAdmin ? (
+                <MasterEditPopover
+                  wrap
+                  leadId={lead.id}
+                  label="Intake Session"
+                  display={intakeDisplay}
+                  renderBody={() => (
+                    <Select value={intakeDraft} onValueChange={setIntakeDraft}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="Select intake session" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {intakeOptions.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>
+                            {o.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  validate={() => (!parseIntakeSessionValue(intakeDraft) ? "Please select an intake session" : null)}
+                  buildPayload={() => {
+                    const parsed = parseIntakeSessionValue(intakeDraft);
+                    if (!parsed) return null;
+                    return { intake_term: parsed.term, intake_year: parsed.year };
+                  }}
+                  buildAudit={() => {
+                    const parsed = parseIntakeSessionValue(intakeDraft);
+                    return {
+                      old: { intake_term: lead.intake_term, intake_year: lead.intake_year },
+                      new: { intake_term: parsed?.term ?? null, intake_year: parsed?.year ?? null },
+                    };
+                  }}
+                  onSaved={onSaved}
+                />
+              ) : (
+                intakeDisplay ?? "—"
+              )}
+            </p>
+          </div>
           <Field
             label="Loan Amount"
             value={lead.loan_amount_required ? String(lead.loan_amount_required) : null}
