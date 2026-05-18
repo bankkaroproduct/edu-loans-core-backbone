@@ -8,8 +8,10 @@ import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
-  FileText, CheckCircle, XCircle, AlertTriangle, Upload, Eye, Loader2, ChevronDown, ChevronRight, ArrowRight,
+  FileText, CheckCircle, XCircle, AlertTriangle, Upload, Eye, Loader2, ChevronDown, ChevronRight, ArrowRight, ImageIcon,
 } from "lucide-react";
+import { SampleDocumentModal } from "@/components/documents/SampleDocumentModal";
+import { findSampleForDocument, getHelperText, type DocumentSample } from "@/lib/documentSamples";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { reviewDocument } from "@/lib/adminActions";
