@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, RefreshCw, ArrowLeft } from "lucide-react";
 
-import { AdminLeadHeader } from "@/components/admin/lead-detail/AdminLeadHeader";
+import { AdminLeadHeaderInline } from "@/components/admin/lead-detail/AdminLeadHeaderInline";
+import { useHeaderSlot } from "@/components/layout/HeaderSlotContext";
 
 import { AdminLeadProfileSection } from "@/components/admin/lead-detail/AdminLeadProfileSection";
 import { AdminLeadLifecycleProgress } from "@/components/admin/lead-detail/AdminLeadLifecycleProgress";
@@ -147,6 +148,43 @@ export default function AdminLeadDetail() {
 
   useEffect(() => { loadAll(); }, [loadAll, location.key]);
 
+  const { setHeaderContent, setHideSidebarTrigger, setBackTo } = useHeaderSlot();
+  const headerLead = state.lead;
+  const headerSubmittedByName = state.submittedByName;
+  const inlineHeader = useMemo(
+    () =>
+      headerLead ? (
+        <AdminLeadHeaderInline lead={headerLead} submittedByName={headerSubmittedByName} />
+      ) : null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      headerLead?.id,
+      headerLead?.student_full_name,
+      headerLead?.student_first_name,
+      headerLead?.student_last_name,
+      headerLead?.lead_id,
+      headerLead?.current_stage,
+      headerLead?.current_status,
+      headerLead?.duplicate_flag,
+      headerLead?.source_sub_type,
+      headerLead?.created_at,
+      headerLead?.updated_at,
+      headerSubmittedByName,
+    ],
+  );
+
+  useEffect(() => {
+    if (!inlineHeader) return;
+    setHeaderContent(inlineHeader);
+    setHideSidebarTrigger(true);
+    setBackTo("/admin/leads");
+    return () => {
+      setHeaderContent(null);
+      setHideSidebarTrigger(false);
+      setBackTo(null);
+    };
+  }, [inlineHeader, setHeaderContent, setHideSidebarTrigger, setBackTo]);
+
   if (state.loading) {
     return (
       <div className="w-full space-y-6 py-4">
@@ -204,7 +242,7 @@ export default function AdminLeadDetail() {
     );
   }
 
-  const { lead, history, notes, payouts, partner, submittedByName, audits, actorNames } = state;
+  const { lead, history, notes, payouts, partner, submittedByName, audits, actorNames } = state as State & { lead: Lead };
   const isDraft = lead.current_stage === "draft";
   const isStudentDirect = lead.source_type === "student_direct";
 
@@ -217,13 +255,6 @@ export default function AdminLeadDetail() {
 
   return (
     <div className="w-full space-y-6">
-      <AdminLeadHeader
-        lead={lead}
-        submittedByName={submittedByName}
-        isDraft={isDraft}
-        backTo="/admin/leads"
-        backLabel="Back to Lead Queue"
-      />
 
 
       <div className="space-y-3">
