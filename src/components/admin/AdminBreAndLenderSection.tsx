@@ -1531,7 +1531,7 @@ function LenderCard({
         {l.projected_loan_amount != null && (
           <Chip
             icon={<IndianRupee className="h-3 w-3" />}
-            label={`₹${Math.round(l.projected_loan_amount).toLocaleString("en-IN")}`}
+            label={formatINR(Math.round(l.projected_loan_amount))}
             accent
           />
         )}
