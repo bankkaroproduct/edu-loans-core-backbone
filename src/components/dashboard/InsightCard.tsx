@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Lightbulb } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { KPIData } from "./KPICards";
+import { formatINR } from "@/lib/formatCurrency";
 
 interface Props {
   kpiData: KPIData;
