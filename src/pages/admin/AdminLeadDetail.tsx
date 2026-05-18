@@ -226,11 +226,6 @@ export default function AdminLeadDetail() {
       />
 
 
-      {/* Student PTR / Partner Source profile — promoted to the top of Admin Lead
-          Detail so the originating partner / student-direct context is always
-          visible above the fold. Single source of truth — not duplicated lower. */}
-      <AdminPartnerCard partner={partner} isStudentDirect={isStudentDirect} />
-
       <div className="space-y-3">
         <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold pt-2">Lifecycle</h2>
         <AdminLeadLifecycleProgress lead={lead} />
