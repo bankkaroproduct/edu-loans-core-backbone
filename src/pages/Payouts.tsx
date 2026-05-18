@@ -301,7 +301,7 @@ export default function Payouts() {
                         <TableRow key={r.id}>
                           <TableCell>{fmt(r.payout_basis)}</TableCell>
                           <TableCell>
-                            {r.payout_amount ? `₹${Number(r.payout_amount).toLocaleString("en-IN")}` : ""}
+                            {r.payout_amount ? formatINR(r.payout_amount) : ""}
                             {r.payout_percent ? ` ${r.payout_percent}%` : ""}
                           </TableCell>
                           <TableCell>
