@@ -2,10 +2,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useState } from "react";
 import {
   CheckCircle, Clock, XCircle, AlertTriangle, Upload, Eye,
-  FileText, ShieldCheck, Ban, RotateCcw, Info, History, ShieldAlert, HelpCircle
+  FileText, ShieldCheck, Ban, RotateCcw, Info, History, ShieldAlert, HelpCircle, ImageIcon
 } from "lucide-react";
+import { SampleDocumentModal } from "@/components/documents/SampleDocumentModal";
+import { findSampleForDocument, getHelperText, type DocumentSample } from "@/lib/documentSamples";
 
 type ValidationFlag = "ok" | "warn_name" | "warn_type" | "review_needed" | "inconclusive";
 
