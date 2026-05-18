@@ -1848,7 +1848,7 @@ function formatPfLabel(l: BreResult["eligible_lenders"][number]): string | null 
     return `PF: ${l.pf_pct}%${gst}`;
   }
   if (l.pf_flat != null) {
-    return `PF: ₹${Math.round(l.pf_flat).toLocaleString("en-IN")}${gst}`;
+    return `PF: ${formatINR(Math.round(l.pf_flat))}${gst}`;
   }
   return null;
 }
