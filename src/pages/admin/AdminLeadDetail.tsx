@@ -9,7 +9,7 @@ import { AdminLeadHeaderInline } from "@/components/admin/lead-detail/AdminLeadH
 import { useHeaderSlot } from "@/components/layout/HeaderSlotContext";
 
 import { AdminLeadProfileSection } from "@/components/admin/lead-detail/AdminLeadProfileSection";
-import { AdminLeadLifecycleProgress } from "@/components/admin/lead-detail/AdminLeadLifecycleProgress";
+import { LeadLifecycleStepper } from "@/components/lead-detail/LeadLifecycleStepper";
 import { AdminLeadTimeline } from "@/components/admin/lead-detail/AdminLeadTimeline";
 import { AdminLeadDuplicateContext } from "@/components/admin/lead-detail/AdminLeadDuplicateContext";
 import { AdminLeadPayoutSnapshot } from "@/components/admin/lead-detail/AdminLeadPayoutSnapshot";
@@ -259,7 +259,7 @@ export default function AdminLeadDetail() {
 
       <div className="space-y-3">
         <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold pt-2">Lifecycle</h2>
-        <AdminLeadLifecycleProgress lead={lead} />
+        <LeadLifecycleStepper lead={lead} />
         <AdminLeadDuplicateContext lead={lead} />
         <AdminEditRequestPanel leadId={lead.id} onChanged={loadAll} />
       </div>
