@@ -5,8 +5,10 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { useAuth } from "@/hooks/useAuth";
 import { usePartnerContext } from "@/hooks/usePartnerContext";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
-import { FlaskConical, Plus, Upload, Zap } from "lucide-react";
+import { ArrowLeft, FlaskConical, Plus, Upload, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { HeaderSlotProvider, useHeaderSlot } from "@/components/layout/HeaderSlotContext";
+import { cn } from "@/lib/utils";
 
 function SimulationBanner() {
   const { isSimulating, effectivePartnerName } = usePartnerContext();
@@ -27,10 +29,6 @@ function getGreeting() {
   return "Good evening";
 }
 
-/**
- * Dashboard-only header content. Rendered INSIDE the existing top white header
- * strip (no extra band added). Activated on the partner dashboard route only.
- */
 function DashboardHeaderContent({ fullName }: { fullName: string }) {
   const navigate = useNavigate();
   return (
@@ -55,6 +53,50 @@ function DashboardHeaderContent({ fullName }: { fullName: string }) {
   );
 }
 
+function AppShell({ children, isDashboard, fullName }: { children: ReactNode; isDashboard: boolean; fullName: string }) {
+  const { headerContent, hideSidebarTrigger, backTo } = useHeaderSlot();
+  const navigate = useNavigate();
+  const slotActive = !!headerContent || hideSidebarTrigger;
+
+  return (
+    <div className="min-h-screen flex w-full">
+      <AppSidebar />
+      <div className="flex-1 flex flex-col">
+        <SimulationBanner />
+        <header
+          className={cn(
+            "flex items-center gap-3 border-b px-4",
+            slotActive ? "min-h-14 py-2 h-auto" : "h-14"
+          )}
+        >
+          {hideSidebarTrigger ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0 h-8 w-8"
+              onClick={() => navigate(backTo ?? "/leads")}
+              aria-label="Back"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          ) : (
+            <SidebarTrigger />
+          )}
+          {headerContent ? (
+            headerContent
+          ) : isDashboard ? (
+            <DashboardHeaderContent fullName={fullName} />
+          ) : (
+            <div className="flex-1" />
+          )}
+          <NotificationBell />
+        </header>
+        <main className="flex-1 px-4 lg:px-6 py-5">{children}</main>
+      </div>
+    </div>
+  );
+}
+
 export function AppLayout({ children }: { children: ReactNode }) {
   const { user, appUser, loading } = useAuth();
   const location = useLocation();
@@ -69,33 +111,19 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
   if (!user) return <Navigate to="/login" replace />;
 
-  // Block admins from rendering inside the partner shell — they belong in /admin/*.
   if (appUser && (appUser.role === "super_admin" || appUser.role === "admin")) {
     return <Navigate to="/admin" replace />;
   }
 
-  // Partner dashboard route only — render greeting + CTA buttons inside the
-  // existing white top header strip (no new band inserted).
   const isDashboard = location.pathname === "/";
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <AppSidebar />
-        <div className="flex-1 flex flex-col">
-          <SimulationBanner />
-          <header className="h-14 flex items-center gap-3 border-b px-4">
-            <SidebarTrigger />
-            {isDashboard ? (
-              <DashboardHeaderContent fullName={appUser?.full_name ?? "User"} />
-            ) : (
-              <div className="flex-1" />
-            )}
-            <NotificationBell />
-          </header>
-          <main className="flex-1 px-4 lg:px-6 py-5">{children}</main>
-        </div>
-      </div>
+      <HeaderSlotProvider>
+        <AppShell isDashboard={isDashboard} fullName={appUser?.full_name ?? "User"}>
+          {children}
+        </AppShell>
+      </HeaderSlotProvider>
     </SidebarProvider>
   );
 }

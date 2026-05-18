@@ -1,9 +1,10 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LeadDetailHeader } from "@/components/lead-detail/LeadDetailHeader";
+import { LeadDetailHeaderInline } from "@/components/lead-detail/LeadDetailHeaderInline";
+import { useHeaderSlot } from "@/components/layout/HeaderSlotContext";
 
 import { LeadProfileSection } from "@/components/lead-detail/LeadProfileSection";
 import { LeadLifecycleProgress } from "@/components/lead-detail/LeadLifecycleProgress";
@@ -85,6 +86,42 @@ export default function LeadDetail() {
     loadData();
   }, [loadData]);
 
+  const { setHeaderContent, setHideSidebarTrigger, setBackTo } = useHeaderSlot();
+
+  const pendingRequest = editRequests.find((r) => r.status === "pending") ?? null;
+  const appliedEditCount = editRequests.filter(
+    (r) => r.status === "applied" && r.applied_changes && Object.keys(r.applied_changes as Record<string, unknown>).length > 0
+  ).length;
+  const isDraftLead = lead?.current_stage === "draft";
+
+  const headerNode = useMemo(() => {
+    if (!lead) return null;
+    return (
+      <LeadDetailHeaderInline
+        lead={lead}
+        submittedByName={submittedByName}
+        isDraft={isDraftLead}
+        hasPendingEditRequest={!!pendingRequest}
+        appliedEditCount={appliedEditCount}
+        onRequestEdit={() => setEditDialogOpen(true)}
+      />
+    );
+  }, [lead, submittedByName, isDraftLead, pendingRequest, appliedEditCount]);
+
+  useEffect(() => {
+    setHideSidebarTrigger(true);
+    setBackTo("/leads");
+    return () => {
+      setHideSidebarTrigger(false);
+      setBackTo(null);
+      setHeaderContent(null);
+    };
+  }, [setHideSidebarTrigger, setBackTo, setHeaderContent]);
+
+  useEffect(() => {
+    setHeaderContent(headerNode);
+  }, [headerNode, setHeaderContent]);
+
   const refreshNotes = async () => {
     if (!id) return;
     const { data } = await supabase.from("lead_notes").select("*").eq("lead_id", id).order("created_at", { ascending: false });
@@ -117,25 +154,10 @@ export default function LeadDetail() {
     );
   }
 
-  const isDraft = lead.current_stage === "draft";
-  const pendingRequest = editRequests.find((r) => r.status === "pending") ?? null;
   const latestRequest = pendingRequest ?? editRequests[0] ?? null;
-  // Only count applied requests that actually modified fields (matches DB rule)
-  const appliedEditCount = editRequests.filter(
-    (r) => r.status === "applied" && r.applied_changes && Object.keys(r.applied_changes as Record<string, unknown>).length > 0
-  ).length;
 
   return (
     <div className="max-w-screen-2xl mx-auto space-y-6">
-      <LeadDetailHeader
-        lead={lead}
-        submittedByName={submittedByName}
-        isDraft={isDraft}
-        hasPendingEditRequest={!!pendingRequest}
-        appliedEditCount={appliedEditCount}
-        onRequestEdit={() => setEditDialogOpen(true)}
-      />
-
       <LeadEditRequestBanner request={latestRequest} />
 
       <LeadLifecycleProgress lead={lead} />
