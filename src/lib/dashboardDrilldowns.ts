@@ -1,4 +1,5 @@
 import type { Tables } from "@/integrations/supabase/types";
+import { formatINR as fmtINR } from "@/lib/formatCurrency";
 
 export type CardKey =
   | "total_earned"
@@ -57,7 +58,7 @@ export interface DrilldownData {
   stageLabelByKey: Map<string, string>;
 }
 
-const fmtINR = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+
 const fullName = (l: Lead) =>
   [l.student_first_name, l.student_last_name].filter(Boolean).join(" ") || l.student_full_name || "—";
 

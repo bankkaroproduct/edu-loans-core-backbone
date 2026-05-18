@@ -4,6 +4,7 @@ import type { LeadRow } from "@/lib/sendToLender/buildDraft";
 import { formatDisplayLabel } from "@/lib/formatDisplayLabel";
 import { formatStageLabel } from "@/components/dashboard/StageBadge";
 import { formatEmploymentLabel } from "@/lib/bre/employmentDisplay";
+import { formatINR } from "@/lib/formatCurrency";
 
 const Row = ({ label, value }: { label: string; value: React.ReactNode }) => (
   <div className="flex justify-between gap-3 py-1.5 text-sm border-b border-border/40 last:border-0">
@@ -47,11 +48,7 @@ export function CaseSummaryCard({ lead }: { lead: LeadRow }) {
           <Row label="Intake" value={`${lead.intake_term ?? ""} ${lead.intake_year ?? ""}`.trim()} />
           <Row
             label="Loan Required"
-            value={
-              lead.loan_amount_required != null
-                ? `₹ ${Number(lead.loan_amount_required).toLocaleString("en-IN")}`
-                : "—"
-            }
+            value={lead.loan_amount_required != null ? formatINR(lead.loan_amount_required) : "—"}
           />
         </div>
 
@@ -63,11 +60,7 @@ export function CaseSummaryCard({ lead }: { lead: LeadRow }) {
           <Row label="Relation" value={lead.coapplicant_relation ? formatDisplayLabel(lead.coapplicant_relation) : null} />
           <Row
             label="Income"
-            value={
-              lead.coapplicant_income != null
-                ? `₹ ${Number(lead.coapplicant_income).toLocaleString("en-IN")}`
-                : "—"
-            }
+            value={lead.coapplicant_income != null ? formatINR(lead.coapplicant_income) : "—"}
           />
           <Row label="Employment" value={lead.coapplicant_employment_type ? formatEmploymentLabel(lead.coapplicant_employment_type) : null} />
         </div>

@@ -61,6 +61,7 @@ import {
 import { getPremiereMatches } from "@/lib/premiere/lookup";
 import { getSeedForLender } from "@/lib/bre/lenderScorecard/seeds";
 import type { Tables } from "@/integrations/supabase/types";
+import { formatINR } from "@/lib/formatCurrency";
 import { formatDisplayLabel } from "@/lib/formatDisplayLabel";
 
 
@@ -699,7 +700,7 @@ function LenderMatchFailureSummary({
     ) {
       if (Number.isFinite(loan) && loan > 0 && Number.isFinite(inc) && inc > 0) {
         out.push(
-          `Requested loan of ₹${loan.toLocaleString("en-IN")} against co-applicant income of ₹${inc.toLocaleString("en-IN")}/month is a difficult combination for automated lender thresholds — most rules expect stronger income support.`,
+          `Requested loan of ${formatINR(loan)} against co-applicant income of ${formatINR(inc)}/month is a difficult combination for automated lender thresholds — most rules expect stronger income support.`,
         );
       } else {
         out.push(
@@ -743,8 +744,8 @@ function LenderMatchFailureSummary({
       if (lead.course_category) parts.push(formatDisplayLabel(lead.course_category));
       else if (lead.course_name) parts.push(formatDisplayLabel(lead.course_name));
       if (lead.intended_study_country) parts.push(formatDisplayLabel(lead.intended_study_country));
-      if (Number.isFinite(loan) && loan > 0) parts.push(`₹${loan.toLocaleString("en-IN")} loan`);
-      if (Number.isFinite(inc) && inc > 0) parts.push(`₹${inc.toLocaleString("en-IN")}/month income`);
+      if (Number.isFinite(loan) && loan > 0) parts.push(`${formatINR(loan)} loan`);
+      if (Number.isFinite(inc) && inc > 0) parts.push(`${formatINR(inc)}/month income`);
       if (lead.coapplicant_relation) parts.push(`${formatDisplayLabel(lead.coapplicant_relation)} co-applicant`);
       if (parts.length >= 2) {
         out.push(
@@ -1268,7 +1269,7 @@ function LenderOptionCards({
         </div>
         {loanRange && (
           <div className="text-[11px] text-muted-foreground tabular-nums">
-            ₹{loanRange.min.toLocaleString("en-IN")} – ₹{loanRange.max.toLocaleString("en-IN")}
+            {formatINR(loanRange.min)} – {formatINR(loanRange.max)}
           </div>
         )}
       </div>
@@ -1530,7 +1531,7 @@ function LenderCard({
         {l.projected_loan_amount != null && (
           <Chip
             icon={<IndianRupee className="h-3 w-3" />}
-            label={`₹${Math.round(l.projected_loan_amount).toLocaleString("en-IN")}`}
+            label={formatINR(Math.round(l.projected_loan_amount))}
             accent
           />
         )}
@@ -1637,7 +1638,7 @@ function RankImpactPanel({ mod }: { mod: RankModifierResult }) {
   const changedRate = baseRate != null && adjRate != null && adjRate !== baseRate;
 
   const fmtMoney = (n: number | null | undefined) =>
-    n == null ? "—" : `₹${Math.round(n).toLocaleString("en-IN")}`;
+    n == null ? "—" : formatINR(Math.round(n));
   const fmtRate = (n: number | null | undefined) => (n == null ? "—" : `${n}%`);
 
   const loanPctLabel =
@@ -1724,7 +1725,7 @@ function RecommendationRationale({
 
   if (projectedLoanAmount != null && projectedLoanAmount > 0) {
     bullets.push(
-      `Loan amount ₹${Math.round(projectedLoanAmount).toLocaleString("en-IN")} fits lender range`,
+      `Loan amount ${formatINR(Math.round(projectedLoanAmount))} fits lender range`,
     );
   }
 
@@ -1847,7 +1848,7 @@ function formatPfLabel(l: BreResult["eligible_lenders"][number]): string | null 
     return `PF: ${l.pf_pct}%${gst}`;
   }
   if (l.pf_flat != null) {
-    return `PF: ₹${Math.round(l.pf_flat).toLocaleString("en-IN")}${gst}`;
+    return `PF: ${formatINR(Math.round(l.pf_flat))}${gst}`;
   }
   return null;
 }

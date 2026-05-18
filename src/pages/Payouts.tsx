@@ -16,6 +16,7 @@ import { PayoutStatusLegend } from "@/components/payouts/PayoutStatusLegend";
 import { PayoutEmptyState } from "@/components/payouts/PayoutEmptyState";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { PageSkeleton } from "@/components/shared/PageSkeleton";
+import { formatINR } from "@/lib/formatCurrency";
 
 type PayoutRecord = Tables<"partner_payout_records">;
 type PayoutRule = Tables<"partner_payout_rules">;
@@ -300,7 +301,7 @@ export default function Payouts() {
                         <TableRow key={r.id}>
                           <TableCell>{fmt(r.payout_basis)}</TableCell>
                           <TableCell>
-                            {r.payout_amount ? `₹${Number(r.payout_amount).toLocaleString("en-IN")}` : ""}
+                            {r.payout_amount ? formatINR(r.payout_amount) : ""}
                             {r.payout_percent ? ` ${r.payout_percent}%` : ""}
                           </TableCell>
                           <TableCell>

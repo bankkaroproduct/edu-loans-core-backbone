@@ -5,6 +5,7 @@ import { Wallet } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatStageLabel } from "@/components/dashboard/StageBadge";
 import type { Tables } from "@/integrations/supabase/types";
+import { formatINR } from "@/lib/formatCurrency";
 
 type PayoutRecord = Tables<"partner_payout_records">;
 
@@ -48,7 +49,7 @@ export function LeadPayoutSnapshot({ payouts, leadId }: Props) {
             <div key={p.id} className="flex items-center justify-between rounded-md border p-2.5">
               <div className="space-y-0.5">
                 <p className="text-sm font-medium">
-                  {p.payout_amount ? `₹${Number(p.payout_amount).toLocaleString("en-IN")}` : "Amount pending"}
+                  {p.payout_amount ? formatINR(p.payout_amount) : "Amount pending"}
                 </p>
                 <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                   {p.payout_triggered_at && <span>Triggered {fmtDate(p.payout_triggered_at)}</span>}

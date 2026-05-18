@@ -3,6 +3,7 @@ import { CreditCard, Clock, CheckCircle, Wallet, AlertTriangle } from "lucide-re
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { formatINR } from "@/lib/formatCurrency";
 
 export interface PayoutSummary {
   totalAccrued: number;
@@ -17,10 +18,6 @@ export interface PayoutSummary {
     status: string;
     updatedAt: string;
   }[];
-}
-
-function formatINR(n: number) {
-  return `₹${n.toLocaleString("en-IN")}`;
 }
 
 export function PayoutSnapshot({ data, loading }: { data: PayoutSummary; loading: boolean }) {

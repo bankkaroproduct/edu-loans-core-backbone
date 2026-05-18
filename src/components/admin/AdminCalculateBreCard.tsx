@@ -39,6 +39,7 @@ import {
 } from "@/lib/bre/rankModifier";
 import type { BreLenderRule, BreResult, BucketKey, ParameterTrace } from "@/lib/bre/types";
 import type { Tables } from "@/integrations/supabase/types";
+import { formatINR } from "@/lib/formatCurrency";
 
 type Lead = Tables<"student_leads">;
 
@@ -649,7 +650,7 @@ function LenderOptionsList({
           <div className="text-[11px] text-muted-foreground">
             {loanRange && (
               <>
-                ₹{loanRange.min.toLocaleString("en-IN")} – ₹{loanRange.max.toLocaleString("en-IN")}
+                {formatINR(loanRange.min)} – {formatINR(loanRange.max)}
               </>
             )}
             {rateRange && (
@@ -685,7 +686,7 @@ function LenderOptionsList({
           const changedLoan = mod && adjLoan !== l.projected_loan_amount && l.projected_loan_amount != null;
           const changedRate = mod && adjRate !== l.projected_rate && l.projected_rate != null;
           const fmtMoney = (n: number | null | undefined) =>
-            n == null ? "—" : `₹${Math.round(n).toLocaleString("en-IN")}`;
+            n == null ? "—" : formatINR(Math.round(n));
           const fmtRate = (n: number | null | undefined) => (n == null ? "—" : `${n}%`);
           const loanPctLabel =
             mod && mod.loanModifierPct !== 0
@@ -722,7 +723,7 @@ function LenderOptionsList({
                 )}
                 {adjLoan != null && (
                   <span className={changedLoan ? "text-foreground font-medium" : ""}>
-                    {" · "}₹{Math.round(adjLoan).toLocaleString("en-IN")}
+                    {" · "}{formatINR(Math.round(adjLoan))}
                   </span>
                 )}
               </div>

@@ -4,6 +4,7 @@ import {
   Upload, CreditCard, XCircle, Eye, Send, Ban, Wallet,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatINR } from "@/lib/formatCurrency";
 
 export interface KPIData {
   totalLeads: number;
@@ -50,7 +51,7 @@ const accentIconColor: Record<Accent, string> = {
 };
 
 function formatValue(val: number, fmt?: "currency") {
-  if (fmt === "currency") return `₹${val.toLocaleString("en-IN")}`;
+  if (fmt === "currency") return formatINR(val);
   return val.toLocaleString("en-IN");
 }
 

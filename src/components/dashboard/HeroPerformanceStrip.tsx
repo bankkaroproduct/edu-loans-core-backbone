@@ -3,6 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { KPIData } from "./KPICards";
 import type { CardKey } from "@/lib/dashboardDrilldowns";
+import { formatINR } from "@/lib/formatCurrency";
 
 export interface LoanMetric {
   key: "active" | "sanctioned" | "disbursed";
@@ -16,10 +17,6 @@ export interface SecondaryLoanMetric {
   label: string;
   count: number;
   amount: number;
-}
-
-function formatINR(n: number) {
-  return `₹${n.toLocaleString("en-IN")}`;
 }
 
 interface Props {

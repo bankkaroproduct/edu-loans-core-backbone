@@ -609,6 +609,7 @@ export function AdminLeadProfileSection({ lead, submittedByName, onSaved }: Prop
           <Field
             label="Co-Applicant Income"
             value={lead.coapplicant_income ? String(lead.coapplicant_income) : null}
+            displayNode={lead.coapplicant_income ? <>{formatINR(lead.coapplicant_income)}</> : undefined}
             editable={ed("coapplicant_income", {
               inputType: "number",
               formatDisplay: (v) => formatINR(v),

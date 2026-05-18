@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { ArrowUpDown, ExternalLink } from "lucide-react";
+import { formatINR } from "@/lib/formatCurrency";
 
 export interface PayoutRecordRow {
   id: string;
@@ -33,7 +34,6 @@ const STATUS_BADGE: Record<string, string> = {
 
 const fmt = (s: string) => s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
-const fmtINR = (n: number | null) => n != null ? `₹${n.toLocaleString("en-IN")}` : "—";
 
 export type SortField = "updated_at" | "payout_amount" | "payout_status";
 export type SortDir = "asc" | "desc";
@@ -86,7 +86,7 @@ export function PayoutRecordsTable({ records, sortField, sortDir, onSort }: Prop
               <TableCell className="text-xs text-muted-foreground max-w-[120px] truncate">{r.submitted_by ?? "—"}</TableCell>
               <TableCell className="text-xs">{r.trigger_stage ? fmt(r.trigger_stage) : "—"}</TableCell>
               <TableCell className="text-xs">{r.payout_basis ? fmt(r.payout_basis) : "—"}</TableCell>
-              <TableCell className="font-medium">{fmtINR(r.payout_amount)}</TableCell>
+              <TableCell className="font-medium">{formatINR(r.payout_amount)}</TableCell>
               <TableCell>
                 <Badge variant="outline" className={`text-[10px] ${STATUS_BADGE[r.payout_status] ?? ""}`}>
                   {fmt(r.payout_status)}

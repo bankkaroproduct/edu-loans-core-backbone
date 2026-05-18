@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, AlertTriangle, Database, FileWarning } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { formatINR } from "@/lib/formatCurrency";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { canEditBre, normalizeBrePermission, isReadOnlyBre } from "@/lib/bre/permissions";
@@ -702,7 +703,7 @@ function KnockoutRulesPanel({
         <KV k="Excluded states" v={cov.excluded_states?.length ? cov.excluded_states.join(", ") : "—"} />
         <KV
           k="Scorecard income floor"
-          v={<span className="flex items-center gap-2">₹{incomeFloor.toLocaleString("en-IN")} <ProvenanceBadge tag={incomeFloorProv} /></span>}
+          v={<span className="flex items-center gap-2">{formatINR(incomeFloor)} <ProvenanceBadge tag={incomeFloorProv} /></span>}
         />
       </CardContent>
     </Card>
