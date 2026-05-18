@@ -215,15 +215,15 @@ export default function StudentDocuments() {
               </div>
 
               {/* Summary Strip */}
-              {counts.total > 0 && (
+              {effectiveCounts.total > 0 && (
                 <div className="mb-5 grid grid-cols-3 gap-2 sm:grid-cols-6">
                   {[
-                    { label: "Total", value: counts.total, color: "text-foreground" },
-                    { label: "Pending", value: counts.pending, color: "text-muted-foreground" },
-                    { label: "Uploaded", value: counts.uploaded, color: "text-blue-600" },
-                    { label: "Reviewing", value: counts.under_review, color: "text-amber-600" },
-                    { label: "Verified", value: counts.verified, color: "text-emerald-600" },
-                    { label: "Action", value: counts.action_needed, color: counts.action_needed > 0 ? "text-red-600" : "text-muted-foreground" },
+                    { label: "Total", value: effectiveCounts.total, color: "text-foreground" },
+                    { label: "Pending", value: effectiveCounts.pending, color: "text-muted-foreground" },
+                    { label: "Uploaded", value: effectiveCounts.uploaded, color: "text-blue-600" },
+                    { label: "Reviewing", value: effectiveCounts.under_review, color: "text-amber-600" },
+                    { label: "Verified", value: effectiveCounts.verified, color: "text-emerald-600" },
+                    { label: "Action", value: effectiveCounts.action_needed, color: effectiveCounts.action_needed > 0 ? "text-red-600" : "text-muted-foreground" },
                   ].map(c => (
                     <div key={c.label} className="rounded-lg border bg-card px-3 py-2 text-center">
                       <p className={`text-lg font-bold ${c.color}`}>{c.value}</p>
@@ -231,6 +231,12 @@ export default function StudentDocuments() {
                     </div>
                   ))}
                 </div>
+              )}
+
+              {hiddenAcademicCount > 0 && (
+                <p className="mb-3 text-[11px] italic text-muted-foreground">
+                  Some academic documents are not applicable based on your highest qualification and have been hidden.
+                </p>
               )}
 
               {/* Document Checklist */}
