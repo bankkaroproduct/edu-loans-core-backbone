@@ -345,6 +345,7 @@ Deno.serve(async (req) => {
           updated_at: lead.updated_at,
           student_full_name: lead.student_full_name || `${lead.student_first_name ?? ""} ${lead.student_last_name ?? ""}`.trim() || null,
           coapplicant_name: lead.coapplicant_name || null,
+          highest_qualification: lead.highest_qualification ?? null,
         },
       });
     }
