@@ -436,6 +436,11 @@ export default function StudentDocuments() {
         onOpenChange={(open) => !open && setSampleOpen(null)}
         sample={sampleOpen}
       />
+      <DocumentGuidanceModal
+        open={!!guidanceOpen}
+        onOpenChange={(open) => !open && setGuidanceOpen(null)}
+        guidance={guidanceOpen}
+      />
     </div>
   );
 }
