@@ -1,5 +1,4 @@
 import { Clock, Activity, CheckCircle2, Banknote, XCircle, Wallet, Hourglass, Info, CalendarRange } from "lucide-react";
-import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { KPIData } from "./KPICards";
@@ -32,40 +31,39 @@ interface Props {
 
 type Accent = "success" | "warning" | "info" | "indigo" | "destructive" | "neutral";
 
-const accentStyles: Record<Accent, { border: string; iconBg: string; iconText: string; valueText: string }> = {
+const accentStyles: Record<Accent, { bar: string; iconBg: string; iconText: string; valueText: string }> = {
   success: {
-    border: "border-l-success",
+    bar: "bg-success",
     iconBg: "bg-success/10",
     iconText: "text-success",
     valueText: "text-success",
   },
   warning: {
-    border: "border-l-warning",
+    bar: "bg-warning",
     iconBg: "bg-warning/10",
     iconText: "text-warning",
     valueText: "text-warning",
   },
   info: {
-    border: "border-l-info",
+    bar: "bg-info",
     iconBg: "bg-info/10",
     iconText: "text-info",
     valueText: "text-foreground",
   },
   indigo: {
-    // Use info token with deeper text — keeps to design system
-    border: "border-l-info",
+    bar: "bg-info",
     iconBg: "bg-info/15",
     iconText: "text-info",
     valueText: "text-foreground",
   },
   destructive: {
-    border: "border-l-destructive",
+    bar: "bg-destructive",
     iconBg: "bg-destructive/10",
     iconText: "text-destructive",
     valueText: "text-foreground",
   },
   neutral: {
-    border: "border-l-muted-foreground/40",
+    bar: "bg-muted-foreground/40",
     iconBg: "bg-muted",
     iconText: "text-muted-foreground",
     valueText: "text-foreground",
@@ -81,55 +79,57 @@ interface KPICardProps {
   accent: Accent;
   loading: boolean;
   onClick?: () => void;
-  size?: "lg" | "md";
 }
 
-function KPICard({ label, primary, secondary, tooltip, Icon, accent, loading, onClick, size = "md" }: KPICardProps) {
+function KPICard({ label, primary, secondary, tooltip, Icon, accent, loading, onClick }: KPICardProps) {
   const s = accentStyles[accent];
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Card
+        <div
           onClick={onClick}
           className={cn(
-            "relative cursor-pointer transition-all border-l-4 hover:shadow-md hover:-translate-y-0.5",
-            s.border,
-            size === "lg" ? "p-5" : "p-4",
+            "group relative cursor-pointer rounded-lg bg-card border border-border/60 pl-3.5 pr-3 py-2.5",
+            "shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all",
+            "hover:shadow-md hover:-translate-y-0.5 hover:border-border",
+            "overflow-hidden",
           )}
         >
-          <div className="flex items-start gap-3">
-            <div className={cn("shrink-0 rounded-lg p-2.5", s.iconBg)}>
-              <Icon className={cn("h-5 w-5", s.iconText)} />
+          {/* Left accent bar */}
+          <span className={cn("absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full", s.bar)} />
+
+          <div className="flex items-center gap-2.5">
+            <div className={cn("shrink-0 rounded-md p-1.5", s.iconBg)}>
+              <Icon className={cn("h-4 w-4", s.iconText)} />
             </div>
             <div className="min-w-0 flex-1">
               {loading ? (
                 <>
-                  <Skeleton className="h-6 w-24 mb-1" />
-                  {secondary && <Skeleton className="h-3 w-20" />}
+                  <Skeleton className="h-5 w-20 mb-1" />
+                  <Skeleton className="h-3 w-16" />
                 </>
               ) : (
                 <>
-                  <p
-                    className={cn(
-                      "font-extrabold tracking-tight truncate",
-                      size === "lg" ? "text-2xl sm:text-3xl" : "text-xl sm:text-2xl",
-                      s.valueText,
-                    )}
-                  >
+                  <div className={cn("font-bold tracking-tight text-lg sm:text-xl leading-tight truncate", s.valueText)}>
                     {primary}
-                  </p>
-                  {secondary && (
-                    <p className="text-xs text-muted-foreground mt-0.5 truncate">{secondary}</p>
-                  )}
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <p className="text-[11px] font-medium text-foreground/70 truncate" title={label}>
+                      {label}
+                    </p>
+                    {secondary && (
+                      <>
+                        <span className="text-muted-foreground/40 text-[10px]">·</span>
+                        <p className="text-[11px] text-muted-foreground truncate">{secondary}</p>
+                      </>
+                    )}
+                  </div>
                 </>
               )}
-              <p className="text-xs font-medium text-muted-foreground mt-1 truncate" title={label}>
-                {label}
-              </p>
             </div>
-            <Info className="h-3 w-3 text-muted-foreground/50 absolute top-2 right-2" aria-label="Definition" />
+            <Info className="h-3 w-3 text-muted-foreground/40 shrink-0 self-start mt-0.5" aria-label="Definition" />
           </div>
-        </Card>
+        </div>
       </TooltipTrigger>
       <TooltipContent side="bottom" className="max-w-xs text-xs">
         {tooltip}
@@ -138,11 +138,15 @@ function KPICard({ label, primary, secondary, tooltip, Icon, accent, loading, on
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function SectionDivider({ children, rightSlot }: { children: React.ReactNode; rightSlot?: React.ReactNode }) {
   return (
-    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-      {children}
-    </p>
+    <div className="flex items-center gap-3 mb-2">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground shrink-0">
+        {children}
+      </p>
+      <div className="flex-1 h-px bg-border/60" />
+      {rightSlot}
+    </div>
   );
 }
 
@@ -206,22 +210,25 @@ export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetric
   const open = (key: CardKey) => onCardClick?.(key);
   const { rangeLabel, fieldLabel } = useDashboardDateFilter();
 
-  return (
-    <div className="space-y-5">
-      {/* Active filter context caption */}
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <CalendarRange className="h-3.5 w-3.5" />
-        <span>
-          Showing: <span className="font-medium text-foreground">{rangeLabel}</span>
-          <span className="mx-1.5 opacity-50">·</span>
-          <span className="font-medium text-foreground">{fieldLabel}</span>
-        </span>
-      </div>
+  const filterCaption = (
+    <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground shrink-0">
+      <CalendarRange className="h-3 w-3" />
+      <span>
+        <span className="font-medium text-foreground">{rangeLabel}</span>
+        <span className="mx-1 opacity-50">·</span>
+        <span className="font-medium text-foreground">{fieldLabel}</span>
+      </span>
+    </span>
+  );
 
-      {/* Money / Payout row */}
+  const payoutReleased = secondaryLoanMetrics?.find((m) => m.key === "payout_released");
+
+  return (
+    <div className="space-y-3">
+      {/* Money / Payouts row */}
       <section>
-        <SectionLabel>Money & Payouts</SectionLabel>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <SectionDivider rightSlot={filterCaption}>Money &amp; Payouts</SectionDivider>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <KPICard
             label="Total Accrued Payout"
             primary={formatINR(kpiData.paidPayout)}
@@ -230,7 +237,6 @@ export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetric
             accent="success"
             loading={loading}
             onClick={() => open("total_earned")}
-            size="lg"
           />
           <KPICard
             label="Pending Payout Amount"
@@ -240,31 +246,26 @@ export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetric
             accent="warning"
             loading={loading}
             onClick={() => open("pending_payout_amount")}
-            size="lg"
           />
-          {secondaryLoanMetrics?.find((m) => m.key === "payout_released") && (() => {
-            const m = secondaryLoanMetrics.find((x) => x.key === "payout_released")!;
-            return (
-              <KPICard
-                label="Total Payout Released"
-                primary={formatINR(m.amount)}
-                secondary={`${m.count} ${m.count === 1 ? "record" : "records"}`}
-                tooltip={secondaryMetricTooltips.payout_released}
-                Icon={Wallet}
-                accent="success"
-                loading={loading}
-                onClick={() => open("payout_released")}
-                size="lg"
-              />
-            );
-          })()}
+          {payoutReleased && (
+            <KPICard
+              label="Total Payout Released"
+              primary={formatINR(payoutReleased.amount)}
+              secondary={`${payoutReleased.count} ${payoutReleased.count === 1 ? "record" : "records"}`}
+              tooltip={secondaryMetricTooltips.payout_released}
+              Icon={Wallet}
+              accent="success"
+              loading={loading}
+              onClick={() => open("payout_released")}
+            />
+          )}
         </div>
       </section>
 
       {/* Pipeline row */}
       <section>
-        <SectionLabel>Loan Pipeline</SectionLabel>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <SectionDivider>Loan Pipeline</SectionDivider>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {loanMetrics.map((m) => {
             const Icon = loanIconMap[m.key];
             const label = loanLabelOverride[m.key] ?? m.label;
@@ -273,12 +274,16 @@ export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetric
                 key={m.key}
                 label={label}
                 primary={
-                  <span className="flex items-baseline gap-2">
+                  <span className="flex items-baseline gap-1.5">
                     <span>{m.count}</span>
-                    <span className="text-xs font-medium text-muted-foreground">{m.count === 1 ? "lead" : "leads"}</span>
+                    <span className="text-[11px] font-medium text-muted-foreground">
+                      {m.count === 1 ? "lead" : "leads"}
+                    </span>
+                    {m.amount > 0 && (
+                      <span className="text-xs font-semibold text-foreground/80 ml-1">{formatINR(m.amount)}</span>
+                    )}
                   </span>
                 }
-                secondary={formatINR(m.amount)}
                 tooltip={loanMetricTooltips[m.key]}
                 Icon={Icon}
                 accent={loanAccent[m.key]}
@@ -293,31 +298,28 @@ export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetric
       {/* Outcome / Exception row */}
       {secondaryLoanMetrics && secondaryLoanMetrics.length > 0 && (
         <section>
-          <SectionLabel>Outcomes</SectionLabel>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <SectionDivider>Outcomes</SectionDivider>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {secondaryLoanMetrics
-              .filter((m) => m.key !== "payout_released") // already shown in Money row
+              .filter((m) => m.key !== "payout_released")
               .map((m) => {
                 const Icon = secondaryIconMap[m.key];
                 const label = secondaryLabelOverride[m.key] ?? m.label;
-                const primary =
-                  m.key === "payout_pending" ? (
-                    <span className="flex items-baseline gap-2">
-                      <span>{m.count}</span>
-                      <span className="text-xs font-medium text-muted-foreground">records</span>
-                    </span>
-                  ) : (
-                    <span className="flex items-baseline gap-2">
-                      <span>{m.count}</span>
-                      <span className="text-xs font-medium text-muted-foreground">{m.count === 1 ? "lead" : "leads"}</span>
-                    </span>
-                  );
+                const unit = m.key === "payout_pending" ? "records" : m.count === 1 ? "lead" : "leads";
+                const primary = (
+                  <span className="flex items-baseline gap-1.5">
+                    <span>{m.count}</span>
+                    <span className="text-[11px] font-medium text-muted-foreground">{unit}</span>
+                    {m.amount > 0 && (
+                      <span className="text-xs font-semibold text-foreground/80 ml-1">{formatINR(m.amount)}</span>
+                    )}
+                  </span>
+                );
                 return (
                   <KPICard
                     key={m.key}
                     label={label}
                     primary={primary}
-                    secondary={formatINR(m.amount)}
                     tooltip={secondaryMetricTooltips[m.key]}
                     Icon={Icon}
                     accent={secondaryAccent[m.key]}
