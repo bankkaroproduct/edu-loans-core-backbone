@@ -407,6 +407,11 @@ export function DocumentChecklist({ requirements, documents, onUpload, leadId, h
         onOpenChange={(o) => { if (!o) setSampleOpen(null); }}
         sample={sampleOpen}
       />
+      <DocumentGuidanceModal
+        open={!!guidanceOpen}
+        onOpenChange={(o) => { if (!o) setGuidanceOpen(null); }}
+        guidance={guidanceOpen}
+      />
     </Card>
   );
 }
