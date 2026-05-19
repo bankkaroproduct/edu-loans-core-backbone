@@ -76,14 +76,14 @@ function PipelineCard({
             className="absolute top-0 left-0 right-0 h-[3px]"
             style={{ backgroundColor: accentColor }}
           />
-          <div className="mb-1.5 flex items-center gap-2">
+          <div className="mb-1.5 flex items-center gap-2 text-sm">
             <span
               className="flex h-6 w-6 items-center justify-center rounded-full"
               style={{ backgroundColor: `${accentColor}25`, color: accentColor }}
             >
               <Icon size={13} />
             </span>
-            <span className="text-xs text-white/50">{label}</span>
+            <span className="text-white/50 text-sm">{label}</span>
           </div>
           {loading ? (
             <>
@@ -92,8 +92,8 @@ function PipelineCard({
             </>
           ) : (
             <>
-              <div className="text-2xl font-medium text-white">{count}</div>
-              <div className="mt-0.5 text-xs text-white/35">{formatCompactINR(amount)}</div>
+              <div className="font-medium text-white text-2xl">{count}</div>
+              <div className="mt-0.5 text-white/35 text-sm">{formatCompactINR(amount)}</div>
             </>
           )}
         </button>
@@ -124,7 +124,7 @@ function MetricRow({ dotColor, label, value, isZero, tooltip, loading, onClick }
           onClick={onClick}
           className="w-full flex items-center justify-between py-1.5 border-b border-white/[0.06] last:border-b-0 text-left transition-colors hover:bg-white/[0.03] -mx-1 px-1 rounded focus:outline-none focus:ring-1 focus:ring-white/20"
         >
-          <span className="flex items-center gap-2 text-[13px] text-white/50">
+          <span className="flex items-center gap-2 text-white/50 text-xs">
             <span
               className="inline-block h-[7px] w-[7px] rounded-full flex-shrink-0"
               style={{ backgroundColor: dotColor }}
@@ -180,19 +180,18 @@ export function HeroPerformanceStrip({
   return (
     <div className="rounded-2xl bg-[#1a1d21] p-5 space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-[15px] font-semibold text-white">Overview</h2>
-        <span className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.05] px-2.5 py-1.5 text-xs text-white/50">
-          <Calendar size={13} />
-          <span className="font-medium text-white/70">{rangeLabel}</span>
+      <div className="flex flex-col items-start gap-1">
+        <h2 className="text-white text-lg font-bold">OVERVIEW</h2>
+        <div className="flex flex-col text-sm text-white/50">
+          <span>{rangeLabel}</span>
           <span className="opacity-50">·</span>
           <span>{fieldLabel}</span>
-        </span>
+        </div>
       </div>
 
       {/* Pipeline — primary row */}
       <div>
-        <p className="mb-2 text-[11px] font-medium uppercase tracking-wider text-white/30">
+        <p className="mb-2 font-medium uppercase tracking-wider text-white/30 text-sm">
           Loan pipeline
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -232,7 +231,7 @@ export function HeroPerformanceStrip({
       {/* Secondary row — Money + Outcomes */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="rounded-xl bg-white/[0.04] border border-white/[0.06] p-3.5">
-          <p className="mb-2 text-[11px] font-medium uppercase tracking-wider text-white/30">
+          <p className="mb-2 font-medium uppercase tracking-wider text-white/30 text-sm">
             Money &amp; payouts
           </p>
           <MetricRow
@@ -265,7 +264,7 @@ export function HeroPerformanceStrip({
         </div>
 
         <div className="rounded-xl bg-white/[0.04] border border-white/[0.06] p-3.5">
-          <p className="mb-2 text-[11px] font-medium uppercase tracking-wider text-white/30">
+          <p className="mb-2 font-medium uppercase tracking-wider text-white/30 text-sm">
             Outcomes
           </p>
           <MetricRow
