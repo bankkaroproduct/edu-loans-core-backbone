@@ -1223,7 +1223,6 @@ function LenderOptionCards({
     return a.lender_code.localeCompare(b.lender_code);
   });
 
-  // Compare stored ranks to the new live display order and surface a single
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between flex-wrap gap-2">
