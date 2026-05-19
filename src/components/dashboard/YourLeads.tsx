@@ -112,7 +112,7 @@ const CHIPS: { key: ChipKey; label: string }[] = [
   { key: "disbursed", label: "Disbursed" },
 ];
 
-export function YourLeads({ leads, loading }: { leads: Lead[]; loading: boolean }) {
+export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loading: boolean; payouts?: PayoutRecord[] }) {
   const navigate = useNavigate();
 
   // Restore persisted state
