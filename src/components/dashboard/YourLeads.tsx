@@ -77,11 +77,11 @@ interface Filters {
 
 const EMPTY_FILTERS: Filters = {
   stages: [], sources: [], destinations: [], intakes: [],
-  dateField: "submitted", dateRange: "",
+  dateField: "submitted", dateRange: "3m",
   dateFrom: "", dateTo: "", loanMin: "", loanMax: "",
 };
 
-const STORAGE_KEY = "dashboard.yourLeads.v3";
+const STORAGE_KEY = "dashboard.yourLeads.v4";
 
 function fmtDate(s: string) {
   return new Date(s).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
