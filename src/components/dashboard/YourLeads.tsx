@@ -107,7 +107,7 @@ function activeFilterCount(f: Filters): number {
     (f.sources.length ? 1 : 0) +
     (f.destinations.length ? 1 : 0) +
     (f.intakes.length ? 1 : 0) +
-    (f.submittedFrom || f.submittedTo ? 1 : 0) +
+    (f.dateRange ? 1 : 0) +
     (f.loanMin || f.loanMax ? 1 : 0)
   );
 }
