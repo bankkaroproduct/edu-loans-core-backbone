@@ -71,15 +71,15 @@ const statusTone: Record<string, BadgeTone> = {
 };
 
 /**
- * @deprecated For new code, use `formatLabel` from `@/lib/labels.ts`
- * which is acronym-aware (BRE, KYC, PAN, UPI, etc.). This helper does
- * naive title-case and will produce incorrect output for acronyms
- * ("Bre" instead of "BRE"). Existing callers are intentionally left
- * unchanged; only the lifecycle stepper was migrated.
+ * Acronym-aware stage/status label formatter.
+ * Delegates to the shared `formatDisplayLabel` so values like
+ * `bre_evaluated` render as "BRE Evaluated" (not "Bre Evaluated").
  */
+import { formatDisplayLabel } from "@/lib/formatDisplayLabel";
+
 export function formatStageLabel(stage: string) {
   if (stage === "active") return "Active";
-  return stage.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return formatDisplayLabel(stage, stage);
 }
 
 export function StageBadge({ stage, className }: { stage: string; className?: string }) {
