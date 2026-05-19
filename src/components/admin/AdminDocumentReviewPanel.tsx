@@ -535,6 +535,11 @@ function DocReviewRow({
         onOpenChange={setSampleOpen}
         sample={sample}
       />
+      <DocumentGuidanceModal
+        open={guidanceOpen}
+        onOpenChange={setGuidanceOpen}
+        guidance={guidance}
+      />
     </div>
   );
 }
