@@ -10,11 +10,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { Tables } from "@/integrations/supabase/types";
+import { formatINR } from "@/lib/formatCurrency";
+import { formatStageLabel } from "./StageBadge";
 
 type Lead = Tables<"student_leads">;
+type PayoutRecord = Tables<"partner_payout_records">;
 
 type ChipKey = "all" | "attention" | "documents_pending" | "sent_to_lender" | "disbursed";
 type SortKey =
@@ -109,7 +112,7 @@ const CHIPS: { key: ChipKey; label: string }[] = [
   { key: "disbursed", label: "Disbursed" },
 ];
 
-export function YourLeads({ leads, loading }: { leads: Lead[]; loading: boolean }) {
+export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loading: boolean; payouts?: PayoutRecord[] }) {
   const navigate = useNavigate();
 
   // Restore persisted state
@@ -147,6 +150,15 @@ export function YourLeads({ leads, loading }: { leads: Lead[]; loading: boolean 
     return Array.from(set).sort();
   }, [leads]);
 
+  // Most-recent payout record per lead (payouts arrive ordered by created_at desc)
+  const payoutByLead = useMemo(() => {
+    const m = new Map<string, PayoutRecord>();
+    for (const p of payouts) {
+      if (p.lead_id && !m.has(p.lead_id)) m.set(p.lead_id, p);
+    }
+    return m;
+  }, [payouts]);
+
   const visible = useMemo(() => {
     let rows = leads.filter((l) => matchesChip(l, chip));
 
@@ -176,8 +188,20 @@ export function YourLeads({ leads, loading }: { leads: Lead[]; loading: boolean 
         case "updated_desc": return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
         case "created_desc": return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         case "created_asc": return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-        case "amount_desc": return (b.loan_amount_required ?? 0) - (a.loan_amount_required ?? 0);
-        case "amount_asc": return (a.loan_amount_required ?? 0) - (b.loan_amount_required ?? 0);
+        case "amount_desc": {
+          const av = a.loan_amount_required, bv = b.loan_amount_required;
+          if (av == null && bv == null) return 0;
+          if (av == null) return 1;
+          if (bv == null) return -1;
+          return bv - av;
+        }
+        case "amount_asc": {
+          const av = a.loan_amount_required, bv = b.loan_amount_required;
+          if (av == null && bv == null) return 0;
+          if (av == null) return 1;
+          if (bv == null) return -1;
+          return av - bv;
+        }
         case "stage_progression": return (STAGE_ORDER[a.current_stage] ?? 99) - (STAGE_ORDER[b.current_stage] ?? 99);
         case "attention_first": {
           const aA = isAttention(a) ? 0 : 1;
@@ -408,12 +432,28 @@ export function YourLeads({ leads, loading }: { leads: Lead[]; loading: boolean 
                   <TableHead className="hidden lg:table-cell">Course</TableHead>
                   <TableHead>Stage</TableHead>
                   <TableHead className="hidden sm:table-cell">Status</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 hover:text-foreground"
+                      onClick={() => setSort(sort === "amount_desc" ? "amount_asc" : "amount_desc")}
+                    >
+                      Loan Amount
+                      {sort === "amount_desc" ? <ArrowDown className="h-3 w-3" />
+                        : sort === "amount_asc" ? <ArrowUp className="h-3 w-3" />
+                        : <ArrowUpDown className="h-3 w-3 opacity-50" />}
+                    </button>
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap text-right hidden md:table-cell">Expected Payout</TableHead>
+                  <TableHead className="whitespace-nowrap hidden lg:table-cell">Payout Status</TableHead>
                   <TableHead className="whitespace-nowrap">Submitted On</TableHead>
                   <TableHead className="text-right whitespace-nowrap">Updated</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {visible.map((lead) => (
+                {visible.map((lead) => {
+                  const p = payoutByLead.get(lead.id);
+                  return (
                   <TableRow
                     key={lead.id}
                     className="cursor-pointer h-12"
@@ -433,6 +473,19 @@ export function YourLeads({ leads, loading }: { leads: Lead[]; loading: boolean 
                     <TableCell className="hidden sm:table-cell">
                       <StatusBadge status={lead.current_status} />
                     </TableCell>
+                    <TableCell className="text-right text-sm whitespace-nowrap tabular-nums">
+                      {lead.loan_amount_required != null ? formatINR(lead.loan_amount_required) : "—"}
+                    </TableCell>
+                    <TableCell className="text-right text-sm whitespace-nowrap hidden md:table-cell tabular-nums">
+                      {p && p.payout_amount != null
+                        ? formatINR(p.payout_amount)
+                        : <span className="text-muted-foreground italic">Not calculated</span>}
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      {p?.payout_status
+                        ? <Badge variant="secondary" className="font-normal">{formatStageLabel(p.payout_status)}</Badge>
+                        : <span className="text-xs text-muted-foreground italic">Not calculated</span>}
+                    </TableCell>
                     <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                       {fmtDate(lead.created_at)}
                     </TableCell>
@@ -440,7 +493,8 @@ export function YourLeads({ leads, loading }: { leads: Lead[]; loading: boolean 
                       {fmtDate(lead.updated_at)}
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

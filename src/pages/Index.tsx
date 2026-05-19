@@ -290,7 +290,7 @@ export default function Dashboard() {
       <div className="space-y-6">
         {isFirstRun && <OnboardingEmptyState partnerName={partnerName} />}
 
-        <YourLeads leads={leads} loading={loading} />
+        <YourLeads leads={leads} loading={loading} payouts={payoutRecords} />
 
         <PayoutSnapshot data={payoutSummary} loading={loading} />
 
