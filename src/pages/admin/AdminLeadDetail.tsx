@@ -259,7 +259,18 @@ export default function AdminLeadDetail() {
 
       <div className="space-y-3">
         <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold pt-2">Lifecycle</h2>
-        <LeadLifecycleStepper lead={lead} />
+        <LeadLifecycleStepper
+          lead={lead}
+          headerRight={
+            <AdminStageStatusPanel
+              lead={lead}
+              unverifiedRequiredCount={unverifiedRequiredCount}
+              hasSanctionInHistory={hasSanctionInHistory}
+              onChanged={loadAll}
+              variant="inline"
+            />
+          }
+        />
         <AdminLeadDuplicateContext lead={lead} />
         <AdminEditRequestPanel leadId={lead.id} onChanged={loadAll} />
       </div>
@@ -284,12 +295,6 @@ export default function AdminLeadDetail() {
               of truth for the partner / student-direct profile. */}
           <LeadCommunicationPanel lead={lead} />
 
-          <AdminStageStatusPanel
-            lead={lead}
-            unverifiedRequiredCount={unverifiedRequiredCount}
-            hasSanctionInHistory={hasSanctionInHistory}
-            onChanged={loadAll}
-          />
 
           <AdminLeadPayoutSnapshot payouts={payouts} leadId={lead.id} />
         </div>

@@ -31,9 +31,10 @@ interface Props {
   unverifiedRequiredCount: number;
   hasSanctionInHistory: boolean;
   onChanged: () => void;
+  variant?: "card" | "inline";
 }
 
-export function AdminStageStatusPanel({ lead, unverifiedRequiredCount, hasSanctionInHistory, onChanged }: Props) {
+export function AdminStageStatusPanel({ lead, unverifiedRequiredCount, hasSanctionInHistory, onChanged, variant = "card" }: Props) {
   const [statusMaster, setStatusMaster] = useState<StatusMaster[]>([]);
   const [stageOpen, setStageOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
@@ -50,6 +51,50 @@ export function AdminStageStatusPanel({ lead, unverifiedRequiredCount, hasSancti
   const currentStage = lead.current_stage as LeadStage;
   const terminal = isTerminal(currentStage);
   const allowedNext = ALLOWED_TRANSITIONS[currentStage] ?? [];
+
+  const dialogs = (
+    <>
+      <ChangeStageDialog
+        open={stageOpen}
+        onOpenChange={setStageOpen}
+        lead={lead}
+        statusMaster={statusMaster}
+        unverifiedRequiredCount={unverifiedRequiredCount}
+        hasSanctionInHistory={hasSanctionInHistory}
+        onSuccess={() => { setStageOpen(false); onChanged(); }}
+      />
+      <UpdateStatusDialog
+        open={statusOpen}
+        onOpenChange={setStatusOpen}
+        lead={lead}
+        statusMaster={statusMaster}
+        onSuccess={() => { setStatusOpen(false); onChanged(); }}
+      />
+    </>
+  );
+
+  if (variant === "inline") {
+    return (
+      <div className="flex flex-col sm:items-end gap-1.5">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+          <Settings2 className="h-3 w-3 text-primary" /> Stage &amp; Status Control
+        </span>
+        {terminal ? (
+          <span className="text-[11px] text-muted-foreground italic">Terminal stage — no transitions</span>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="default" className="h-7 px-2.5 text-xs" onClick={() => setStageOpen(true)} disabled={allowedNext.length === 0}>
+              Update Stage
+            </Button>
+            <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs" onClick={() => setStatusOpen(true)} disabled={statusMaster.length === 0}>
+              Update Status
+            </Button>
+          </div>
+        )}
+        {dialogs}
+      </div>
+    );
+  }
 
   return (
     <Card>
@@ -81,24 +126,7 @@ export function AdminStageStatusPanel({ lead, unverifiedRequiredCount, hasSancti
           </div>
         )}
       </CardContent>
-
-      <ChangeStageDialog
-        open={stageOpen}
-        onOpenChange={setStageOpen}
-        lead={lead}
-        statusMaster={statusMaster}
-        unverifiedRequiredCount={unverifiedRequiredCount}
-        hasSanctionInHistory={hasSanctionInHistory}
-        onSuccess={() => { setStageOpen(false); onChanged(); }}
-      />
-
-      <UpdateStatusDialog
-        open={statusOpen}
-        onOpenChange={setStatusOpen}
-        lead={lead}
-        statusMaster={statusMaster}
-        onSuccess={() => { setStatusOpen(false); onChanged(); }}
-      />
+      {dialogs}
     </Card>
   );
 }
