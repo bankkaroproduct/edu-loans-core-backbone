@@ -8,7 +8,9 @@ import {
   FileText, ShieldCheck, Ban, RotateCcw, Info, History, ShieldAlert, HelpCircle, ImageIcon
 } from "lucide-react";
 import { SampleDocumentModal } from "@/components/documents/SampleDocumentModal";
+import { DocumentGuidanceModal } from "@/components/documents/DocumentGuidanceModal";
 import { findSampleForDocument, getHelperText, type DocumentSample } from "@/lib/documentSamples";
+import { findGuidanceForDocument, type DocumentGuidance } from "@/lib/documentGuidance";
 import { partitionRequirementsByApplicability } from "@/lib/documentApplicability";
 
 type ValidationFlag = "ok" | "warn_name" | "warn_type" | "review_needed" | "inconclusive";
