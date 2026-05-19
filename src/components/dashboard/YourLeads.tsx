@@ -310,12 +310,12 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
                     <Label className="text-xs font-semibold mb-2 block">Source</Label>
                     <div className="grid grid-cols-3 gap-1.5">
                       {SOURCE_OPTIONS.map((o) => (
-                        <label key={o.value} className="flex items-center gap-2 text-xs cursor-pointer">
+                        <label key={o.value} className="flex items-center gap-2 text-xs cursor-pointer min-w-0" title={o.label}>
                           <Checkbox
                             checked={draftFilters.sources.includes(o.value)}
                             onCheckedChange={() => setDraftFilters({ ...draftFilters, sources: toggleArr(draftFilters.sources, o.value) })}
                           />
-                          {o.label}
+                          <span className="truncate">{o.label}</span>
                         </label>
                       ))}
                     </div>
@@ -324,14 +324,14 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
                   {destinationOptions.length > 0 && (
                     <div>
                       <Label className="text-xs font-semibold mb-2 block">Destination</Label>
-                      <div className="grid grid-cols-3 gap-1.5 max-h-24 overflow-y-auto">
+                      <div className="grid grid-cols-2 gap-1.5 max-h-32 overflow-y-auto pr-1">
                         {destinationOptions.map((d) => (
-                          <label key={d.value} className="flex items-center gap-2 text-xs cursor-pointer">
+                          <label key={d.value} className="flex items-center gap-2 text-xs cursor-pointer min-w-0" title={d.label}>
                             <Checkbox
                               checked={draftFilters.destinations.includes(d.value)}
                               onCheckedChange={() => setDraftFilters({ ...draftFilters, destinations: toggleArr(draftFilters.destinations, d.value) })}
                             />
-                            {d.label}
+                            <span className="truncate">{d.label}</span>
                           </label>
                         ))}
                       </div>
@@ -341,14 +341,14 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
                   {intakeOptions.length > 0 && (
                     <div>
                       <Label className="text-xs font-semibold mb-2 block">Intake</Label>
-                      <div className="grid grid-cols-3 gap-1.5 max-h-24 overflow-y-auto">
+                      <div className="grid grid-cols-3 gap-1.5 max-h-32 overflow-y-auto pr-1">
                         {intakeOptions.map((i) => (
-                          <label key={i.value} className="flex items-center gap-2 text-xs cursor-pointer">
+                          <label key={i.value} className="flex items-center gap-2 text-xs cursor-pointer min-w-0" title={i.label}>
                             <Checkbox
                               checked={draftFilters.intakes.includes(i.value)}
                               onCheckedChange={() => setDraftFilters({ ...draftFilters, intakes: toggleArr(draftFilters.intakes, i.value) })}
                             />
-                            {i.label}
+                            <span className="truncate">{i.label}</span>
                           </label>
                         ))}
                       </div>
