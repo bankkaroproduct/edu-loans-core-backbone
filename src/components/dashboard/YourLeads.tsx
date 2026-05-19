@@ -15,7 +15,9 @@ import { useNavigate } from "react-router-dom";
 import type { Tables } from "@/integrations/supabase/types";
 import { formatINR } from "@/lib/formatCurrency";
 import { formatStageLabel } from "./StageBadge";
-import { intakeSessionLabel } from "@/lib/intakeSession";
+import { buildIntakeSessionOptions } from "@/lib/intakeSession";
+import { formatDisplayLabel } from "@/lib/formatDisplayLabel";
+import { useLeadMasterData } from "@/hooks/useLeadMasterData";
 
 type Lead = Tables<"student_leads">;
 type PayoutRecord = Tables<"partner_payout_records">;
@@ -75,11 +77,11 @@ interface Filters {
 
 const EMPTY_FILTERS: Filters = {
   stages: [], sources: [], destinations: [], intakes: [],
-  dateField: "submitted", dateRange: "",
+  dateField: "submitted", dateRange: "3m",
   dateFrom: "", dateTo: "", loanMin: "", loanMax: "",
 };
 
-const STORAGE_KEY = "dashboard.yourLeads.v3";
+const STORAGE_KEY = "dashboard.yourLeads.v4";
 
 function fmtDate(s: string) {
   return new Date(s).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
@@ -107,7 +109,7 @@ function activeFilterCount(f: Filters): number {
     (f.sources.length ? 1 : 0) +
     (f.destinations.length ? 1 : 0) +
     (f.intakes.length ? 1 : 0) +
-    (f.dateRange ? 1 : 0) +
+    (f.dateRange && f.dateRange !== "3m" ? 1 : 0) +
     (f.loanMin || f.loanMax ? 1 : 0)
   );
 }
@@ -144,31 +146,25 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
     } catch { /* ignore */ }
   }, [chip, sort, filters]);
 
-  // Derive destination/intake options from data
+  const { intakes: intakeMasterRows } = useLeadMasterData();
+
+  // Destination options — display label is formatted (e.g. "india" → "India"),
+  // but the underlying value used for filtering stays exactly as stored.
   const destinationOptions = useMemo(() => {
     const set = new Set<string>();
     leads.forEach((l) => l.intended_study_country && set.add(l.intended_study_country));
-    return Array.from(set).sort();
+    return Array.from(set)
+      .map((value) => ({ value, label: formatDisplayLabel(value) }))
+      .sort((a, b) => a.label.localeCompare(b.label));
   }, [leads]);
 
-  // Clean intake options: skip nulls/empties, label as Jul-Sep-2026 style,
-  // sort chronologically. Composite key `${term}|${year}` used for filtering.
-  const intakeOptions = useMemo(() => {
-    const map = new Map<string, { value: string; label: string; term: string; year: number }>();
-    leads.forEach((l) => {
-      const term = l.intake_term;
-      const year = l.intake_year;
-      if (!term || !year) return;
-      const value = `${term}|${year}`;
-      if (!map.has(value)) {
-        map.set(value, { value, label: intakeSessionLabel(term, year), term, year });
-      }
-    });
-    const QUARTER: Record<string, number> = { Spring: 1, Summer: 2, Fall: 3, Winter: 4 };
-    return Array.from(map.values()).sort(
-      (a, b) => a.year * 10 + (QUARTER[a.term] ?? 99) - (b.year * 10 + (QUARTER[b.term] ?? 99)),
-    );
-  }, [leads]);
+  // Intake options come from the product-wide intake master (not just the
+  // currently visible leads). Helper handles null-safety, dedupe, and the
+  // canonical "Jul-Sep-2026" label format.
+  const intakeOptions = useMemo(
+    () => buildIntakeSessionOptions(intakeMasterRows),
+    [intakeMasterRows],
+  );
 
   // Most-recent payout record per lead (payouts arrive ordered by created_at desc)
   const payoutByLead = useMemo(() => {
@@ -330,12 +326,12 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
                       <Label className="text-xs font-semibold mb-2 block">Destination</Label>
                       <div className="grid grid-cols-3 gap-1.5 max-h-24 overflow-y-auto">
                         {destinationOptions.map((d) => (
-                          <label key={d} className="flex items-center gap-2 text-xs cursor-pointer">
+                          <label key={d.value} className="flex items-center gap-2 text-xs cursor-pointer">
                             <Checkbox
-                              checked={draftFilters.destinations.includes(d)}
-                              onCheckedChange={() => setDraftFilters({ ...draftFilters, destinations: toggleArr(draftFilters.destinations, d) })}
+                              checked={draftFilters.destinations.includes(d.value)}
+                              onCheckedChange={() => setDraftFilters({ ...draftFilters, destinations: toggleArr(draftFilters.destinations, d.value) })}
                             />
-                            {d}
+                            {d.label}
                           </label>
                         ))}
                       </div>
@@ -540,7 +536,7 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
                       {lead.student_full_name ?? `${lead.student_first_name} ${lead.student_last_name ?? ""}`.trim()}
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-sm">
-                      {lead.intended_study_country}
+                      {formatDisplayLabel(lead.intended_study_country)}
                     </TableCell>
                     <TableCell className="hidden lg:table-cell text-sm max-w-[140px] truncate">
                       {lead.course_name}
