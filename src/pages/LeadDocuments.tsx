@@ -42,7 +42,7 @@ export default function LeadDocuments() {
 
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto space-y-6 py-4">
+      <div className="max-w-screen-2xl mx-auto space-y-6 py-4">
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-16 w-full" />
         <Skeleton className="h-64 w-full" />
@@ -52,7 +52,7 @@ export default function LeadDocuments() {
 
   if (notFound || !lead) {
     return (
-      <div className="max-w-5xl mx-auto text-center py-20 space-y-3">
+      <div className="max-w-screen-2xl mx-auto text-center py-20 space-y-3">
         <h2 className="text-xl font-semibold text-foreground">Lead Not Found</h2>
         <p className="text-muted-foreground">This lead doesn't exist or you don't have permission to view its documents.</p>
         <button onClick={() => navigate("/leads")} className="text-sm text-primary hover:underline">
@@ -65,7 +65,7 @@ export default function LeadDocuments() {
   const studentName = lead.student_full_name || `${lead.student_first_name} ${lead.student_last_name ?? ""}`.trim();
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-screen-2xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
