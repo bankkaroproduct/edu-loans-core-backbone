@@ -371,8 +371,8 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
                     <Label className="text-xs font-semibold block">Date Filter</Label>
                     <div className="grid grid-cols-2 gap-2">
                       <Select
-                        value={draftFilters.dateField}
-                        onValueChange={(v) => setDraftFilters({ ...draftFilters, dateField: v as DateField })}
+                        value={draftDate.dateField}
+                        onValueChange={(v) => setDraftDate({ ...draftDate, dateField: v as DateField })}
                       >
                         <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -381,10 +381,10 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
                         </SelectContent>
                       </Select>
                       <Select
-                        value={draftFilters.dateRange || "3m"}
+                        value={draftDate.dateRange || "3m"}
                         onValueChange={(v) =>
-                          setDraftFilters({
-                            ...draftFilters,
+                          setDraftDate({
+                            ...draftDate,
                             dateRange: v as DateRange,
                             ...(v !== "custom" ? { dateFrom: "", dateTo: "" } : {}),
                           })
@@ -400,15 +400,15 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
                         </SelectContent>
                       </Select>
                     </div>
-                    {draftFilters.dateRange === "custom" && (
+                    {draftDate.dateRange === "custom" && (
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
                           <Label className="text-[10px] text-muted-foreground">From (dd-mm-yyyy)</Label>
                           <Input
                             type="date"
                             className="h-8 text-xs"
-                            value={draftFilters.dateFrom}
-                            onChange={(e) => setDraftFilters({ ...draftFilters, dateFrom: e.target.value })}
+                            value={draftDate.dateFrom}
+                            onChange={(e) => setDraftDate({ ...draftDate, dateFrom: e.target.value })}
                           />
                         </div>
                         <div className="space-y-1">
@@ -416,8 +416,8 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
                           <Input
                             type="date"
                             className="h-8 text-xs"
-                            value={draftFilters.dateTo}
-                            onChange={(e) => setDraftFilters({ ...draftFilters, dateTo: e.target.value })}
+                            value={draftDate.dateTo}
+                            onChange={(e) => setDraftDate({ ...draftDate, dateTo: e.target.value })}
                           />
                         </div>
                       </div>
