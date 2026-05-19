@@ -353,7 +353,7 @@ export function YourLeads({ leads, loading }: { leads: Lead[]; loading: boolean 
                 <SelectItem value="amount_desc">Highest Loan Amount</SelectItem>
                 <SelectItem value="amount_asc">Lowest Loan Amount</SelectItem>
                 <SelectItem value="stage_progression">Stage Progression</SelectItem>
-                <SelectItem value="attention_first">Needs Attention First</SelectItem>
+                <SelectItem value="attention_first">Action Required First</SelectItem>
               </SelectContent>
             </Select>
 
