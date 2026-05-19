@@ -302,11 +302,13 @@ function DocReviewRow({
   const [busy, setBusy] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [sampleOpen, setSampleOpen] = useState(false);
+  const [guidanceOpen, setGuidanceOpen] = useState(false);
 
   const displayName = req.document_master?.display_name ?? null;
   const docName = req.document_master?.document_name ?? null;
   const helperText = getHelperText(displayName, docName);
   const sample: DocumentSample | null = findSampleForDocument(displayName, docName);
+  const guidance: DocumentGuidance | null = findGuidanceForDocument(displayName, docName);
 
   const status = (doc?.verification_status ?? req.status) as EffectiveDocStatus;
   const badgeVariant = STATUS_BADGE_VARIANT[status] ?? STATUS_BADGE_VARIANT.not_uploaded;
