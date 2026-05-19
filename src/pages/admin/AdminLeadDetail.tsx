@@ -259,7 +259,18 @@ export default function AdminLeadDetail() {
 
       <div className="space-y-3">
         <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold pt-2">Lifecycle</h2>
-        <LeadLifecycleStepper lead={lead} />
+        <LeadLifecycleStepper
+          lead={lead}
+          headerRight={
+            <AdminStageStatusPanel
+              lead={lead}
+              unverifiedRequiredCount={unverifiedRequiredCount}
+              hasSanctionInHistory={hasSanctionInHistory}
+              onChanged={loadAll}
+              variant="inline"
+            />
+          }
+        />
         <AdminLeadDuplicateContext lead={lead} />
         <AdminEditRequestPanel leadId={lead.id} onChanged={loadAll} />
       </div>
