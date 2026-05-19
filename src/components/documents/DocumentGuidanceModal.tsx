@@ -32,10 +32,12 @@ interface Props {
   guidance: DocumentGuidance | null;
 }
 
-const FALLBACK_LINE = "Check the official portal or contact your EduLoans counsellor.";
+const FALLBACK_LINE =
+  "Use the official portal for this document. If you’re unsure, contact the official customer support of that portal or your EduLoans counsellor.";
 
 function SourceItem({ src }: { src: GuidanceSource }) {
   const showLink = src.verification === "verified" && isPublishableUrl(src.url);
+  const showFallback = !showLink && src.verification === "needs_verification";
   return (
     <li className="flex items-start gap-2 text-sm">
       <Building2 className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground" />
@@ -46,7 +48,7 @@ function SourceItem({ src }: { src: GuidanceSource }) {
             {src.type}
           </span>
         </div>
-        {showLink ? (
+        {showLink && (
           <a
             href={src.url}
             target="_blank"
@@ -56,7 +58,8 @@ function SourceItem({ src }: { src: GuidanceSource }) {
             {src.url}
             <ExternalLink className="h-3 w-3 shrink-0" />
           </a>
-        ) : (
+        )}
+        {showFallback && (
           <p className="text-xs text-muted-foreground">{FALLBACK_LINE}</p>
         )}
       </div>
