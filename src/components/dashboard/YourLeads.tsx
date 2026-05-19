@@ -536,7 +536,7 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
                       {lead.student_full_name ?? `${lead.student_first_name} ${lead.student_last_name ?? ""}`.trim()}
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-sm">
-                      {lead.intended_study_country}
+                      {formatDisplayLabel(lead.intended_study_country)}
                     </TableCell>
                     <TableCell className="hidden lg:table-cell text-sm max-w-[140px] truncate">
                       {lead.course_name}
