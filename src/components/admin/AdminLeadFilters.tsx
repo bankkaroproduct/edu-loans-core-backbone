@@ -203,11 +203,12 @@ function SearchableSelect({
                     setOpen(false);
                   }}
                   className="text-xs"
+                  title={o.label}
                 >
                   <Check
-                    className={cn("mr-2 h-3.5 w-3.5", value === o.value ? "opacity-100" : "opacity-0")}
+                    className={cn("mr-2 h-3.5 w-3.5 shrink-0", value === o.value ? "opacity-100" : "opacity-0")}
                   />
-                  {o.label}
+                  <span className="truncate">{o.label}</span>
                 </CommandItem>
               ))}
             </CommandGroup>
