@@ -122,7 +122,7 @@ export function AdminTopMetrics({ data, loading, error, onRetry, activeLendersCo
         <StatTile
           label="Action needed today"
           value={data?.pendingAdminActions}
-          sub={data ? `Requests: ${fmt(data.requestsPendingApproval)} • Docs: ${fmt(data.documentsPendingReview)}` : undefined}
+          sub={data ? `Review Due: ${fmt(data.reviewDue)} • Follow-up Required: ${fmt(data.followUpRequired)}` : undefined}
           icon={Inbox}
           tone="amber"
           loading={loading}

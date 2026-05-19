@@ -1,11 +1,40 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import {
+  ACTION_NEEDED_EXCLUDED_STAGES,
+  REVIEW_DUE_SELECT_COLUMNS,
+  countMissingMandatory,
+  REVIEW_DUE_THRESHOLD,
+} from "@/lib/adminActionNeeded";
 
 type StageEnum = Database["public"]["Enums"]["lead_stage_enum"];
 type StatusEnum = Database["public"]["Enums"]["lead_status_enum"];
 
 const ROW_LIMIT = 20;
+
+export interface ReviewDueLeadRow {
+  id: string;
+  lead_uuid: string;
+  lead_id: string | null;
+  student_name: string;
+  partner_name: string | null;
+  current_stage: StageEnum;
+  current_status: StatusEnum;
+  missing_count: number;
+  updated_at: string;
+}
+
+export interface FollowUpLeadRow {
+  id: string;
+  lead_uuid: string;
+  lead_id: string | null;
+  student_name: string;
+  partner_name: string | null;
+  current_stage: StageEnum;
+  current_status: StatusEnum;
+  updated_at: string;
+}
 
 export interface PendingRequestRow {
   id: string;
@@ -83,111 +112,78 @@ interface DrillState<T> {
 const initial = <T,>(empty: T): DrillState<T> => ({ rows: empty, loading: false, error: null });
 
 export function useActionNeededDrilldown(open: boolean) {
-  const [requests, setRequests] = useState<DrillState<PendingRequestRow[]>>(initial([]));
-  const [documents, setDocuments] = useState<DrillState<PendingDocumentRow[]>>(initial([]));
+  const [reviewDue, setReviewDue] = useState<DrillState<ReviewDueLeadRow[]>>(initial([]));
+  const [followUp, setFollowUp] = useState<DrillState<FollowUpLeadRow[]>>(initial([]));
 
   const fetchAll = useCallback(async () => {
-    setRequests((s) => ({ ...s, loading: true, error: null }));
-    setDocuments((s) => ({ ...s, loading: true, error: null }));
+    setReviewDue((s) => ({ ...s, loading: true, error: null }));
+    setFollowUp((s) => ({ ...s, loading: true, error: null }));
 
-    // Pending edit requests
+    const excludedClause = `(${ACTION_NEEDED_EXCLUDED_STAGES.join(",")})`;
+
+    // Review Due — leads with > 5 missing mandatory fields, excluding draft/closed stages
     try {
-      const { data: reqs, error } = await supabase
-        .from("lead_edit_requests")
-        .select("id, lead_id, partner_id, partner_reason, created_at")
-        .eq("status", "pending")
-        .order("created_at", { ascending: false })
-        .limit(ROW_LIMIT);
+      const { data, error } = await supabase
+        .from("student_leads")
+        .select(REVIEW_DUE_SELECT_COLUMNS)
+        .eq("is_archived", false)
+        .not("current_stage", "in", excludedClause)
+        .order("updated_at", { ascending: false });
       if (error) throw error;
 
-      const leadIds = [...new Set((reqs ?? []).map((r) => r.lead_id))];
-      const partnerIds = [...new Set((reqs ?? []).map((r) => r.partner_id))];
-      const [leadsRes, partnerMap] = await Promise.all([
-        leadIds.length
-          ? supabase
-              .from("student_leads")
-              .select("id, lead_id, student_full_name, student_first_name, student_last_name")
-              .in("id", leadIds)
-          : Promise.resolve({ data: [] as any[] }),
-        resolvePartners(partnerIds),
-      ]);
-      const leadMap: Record<string, any> = {};
-      (leadsRes.data ?? []).forEach((l: any) => { leadMap[l.id] = l; });
+      const filtered = (data ?? [])
+        .map((l: any) => ({ ...l, missing_count: countMissingMandatory(l) }))
+        .filter((l: any) => l.missing_count > REVIEW_DUE_THRESHOLD)
+        .slice(0, ROW_LIMIT);
 
-      const rows: PendingRequestRow[] = (reqs ?? []).map((r) => {
-        const l = leadMap[r.lead_id] ?? {};
-        return {
-          id: r.id,
-          lead_uuid: r.lead_id,
-          lead_id: l.lead_id ?? null,
-          student_name: studentName(l),
-          partner_name: partnerMap[r.partner_id] ?? null,
-          created_at: r.created_at,
-          partner_reason: r.partner_reason,
-        };
-      });
-      setRequests({ rows, loading: false, error: null });
+      const partnerMap = await resolvePartners(filtered.map((l: any) => l.partner_id));
+      const rows: ReviewDueLeadRow[] = filtered.map((l: any) => ({
+        id: l.id,
+        lead_uuid: l.id,
+        lead_id: l.lead_id ?? null,
+        student_name: studentName(l),
+        partner_name: l.partner_id ? partnerMap[l.partner_id] ?? null : null,
+        current_stage: l.current_stage,
+        current_status: l.current_status,
+        missing_count: l.missing_count,
+        updated_at: l.updated_at,
+      }));
+      setReviewDue({ rows, loading: false, error: null });
     } catch (e: any) {
-      setRequests({ rows: [], loading: false, error: e?.message ?? "Failed" });
+      setReviewDue({ rows: [], loading: false, error: e?.message ?? "Failed" });
     }
 
-    // Documents to verify
+    // Follow-up Required — open leads, excluding draft/closed stages
     try {
-      const { data: docs, error } = await supabase
-        .from("lead_documents")
-        .select("id, lead_id, file_name, uploaded_at, document_type_id")
-        .eq("is_latest", true)
-        .eq("verification_status", "uploaded")
-        .order("uploaded_at", { ascending: false })
+      const { data, error } = await supabase
+        .from("student_leads")
+        .select("id, lead_id, student_full_name, student_first_name, student_last_name, partner_id, current_stage, current_status, updated_at")
+        .eq("is_archived", false)
+        .not("current_stage", "in", excludedClause)
+        .order("updated_at", { ascending: true })
         .limit(ROW_LIMIT);
       if (error) throw error;
 
-      const leadIds = [...new Set((docs ?? []).map((d) => d.lead_id))];
-      const docTypeIds = [...new Set((docs ?? []).map((d) => d.document_type_id).filter(Boolean) as string[])];
-      const [leadsRes, docTypesRes] = await Promise.all([
-        leadIds.length
-          ? supabase
-              .from("student_leads")
-              .select("id, lead_id, student_full_name, student_first_name, student_last_name, partner_id")
-              .in("id", leadIds)
-          : Promise.resolve({ data: [] as any[] }),
-        docTypeIds.length
-          ? supabase
-              .from("document_master")
-              .select("id, document_name, display_name")
-              .in("id", docTypeIds)
-          : Promise.resolve({ data: [] as any[] }),
-      ]);
-      const leadMap: Record<string, any> = {};
-      (leadsRes.data ?? []).forEach((l: any) => { leadMap[l.id] = l; });
-      const docTypeMap: Record<string, any> = {};
-      (docTypesRes.data ?? []).forEach((d: any) => { docTypeMap[d.id] = d; });
-      const partnerMap = await resolvePartners(
-        Object.values(leadMap).map((l: any) => l.partner_id),
-      );
-
-      const rows: PendingDocumentRow[] = (docs ?? []).map((d) => {
-        const l = leadMap[d.lead_id] ?? {};
-        const dt = d.document_type_id ? docTypeMap[d.document_type_id] : null;
-        return {
-          id: d.id,
-          lead_uuid: d.lead_id,
-          lead_id: l.lead_id ?? null,
-          student_name: studentName(l),
-          partner_name: l.partner_id ? partnerMap[l.partner_id] ?? null : null,
-          document_name: dt?.display_name ?? dt?.document_name ?? d.file_name,
-          uploaded_at: d.uploaded_at,
-        };
-      });
-      setDocuments({ rows, loading: false, error: null });
+      const partnerMap = await resolvePartners((data ?? []).map((l: any) => l.partner_id));
+      const rows: FollowUpLeadRow[] = (data ?? []).map((l: any) => ({
+        id: l.id,
+        lead_uuid: l.id,
+        lead_id: l.lead_id ?? null,
+        student_name: studentName(l),
+        partner_name: l.partner_id ? partnerMap[l.partner_id] ?? null : null,
+        current_stage: l.current_stage,
+        current_status: l.current_status,
+        updated_at: l.updated_at,
+      }));
+      setFollowUp({ rows, loading: false, error: null });
     } catch (e: any) {
-      setDocuments({ rows: [], loading: false, error: e?.message ?? "Failed" });
+      setFollowUp({ rows: [], loading: false, error: e?.message ?? "Failed" });
     }
   }, []);
 
   useEffect(() => { if (open) fetchAll(); }, [open, fetchAll]);
 
-  return { requests, documents, refetch: fetchAll };
+  return { reviewDue, followUp, refetch: fetchAll };
 }
 
 export function useActivePipelineDrilldown(open: boolean) {

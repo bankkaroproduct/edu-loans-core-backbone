@@ -1,13 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import {
+  ACTION_NEEDED_EXCLUDED_STAGES,
+  REVIEW_DUE_SELECT_COLUMNS,
+  isReviewDue,
+} from "@/lib/adminActionNeeded";
 
 type StageEnum = Database["public"]["Enums"]["lead_stage_enum"];
 type StatusEnum = Database["public"]["Enums"]["lead_status_enum"];
 
 export interface AdminMetrics {
   totalLeads: number;
+  // pendingAdminActions = reviewDue + followUpRequired (new Action Needed Today logic)
   pendingAdminActions: number;
+  reviewDue: number;
+  followUpRequired: number;
+  // Retained for unrelated cards (AdminLeadQueue inline chips) — not used by Action Needed Today.
   requestsPendingApproval: number;
   documentsPendingReview: number;
   sentToLender: number;
@@ -105,8 +114,25 @@ export function useAdminDashboard() {
     setMetrics((s) => ({ ...s, loading: true, error: null }));
     try {
       const leadsBase = () => supabase.from("student_leads").select("*", { count: "exact", head: true }).eq("is_archived", false);
+
+      // Follow-up Required: open leads (not draft, not closed/final)
+      const followUpQuery = leadsBase().not(
+        "current_stage",
+        "in",
+        `(${ACTION_NEEDED_EXCLUDED_STAGES.join(",")})`,
+      );
+
+      // Review Due: fetch the same open universe with the 16 mandatory columns,
+      // count missing per row in JS, keep rows with > 5 missing.
+      const reviewDueQuery = supabase
+        .from("student_leads")
+        .select(REVIEW_DUE_SELECT_COLUMNS)
+        .eq("is_archived", false)
+        .not("current_stage", "in", `(${ACTION_NEEDED_EXCLUDED_STAGES.join(",")})`);
+
       const [
         total, pendingReq, docsToVerify, sentLender, sanction, disb, activePart,
+        followUp, reviewDueRows,
       ] = await Promise.all([
         leadsBase(),
         supabase.from("lead_edit_requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
@@ -115,19 +141,25 @@ export function useAdminDashboard() {
         leadsBase().eq("current_stage", "sanction_received"),
         leadsBase().eq("current_stage", "disbursed"),
         supabase.from("partner_organizations").select("*", { count: "exact", head: true }).eq("status", "active").eq("is_archived", false),
+        followUpQuery,
+        reviewDueQuery,
       ]);
-      const errs = [total.error, pendingReq.error, docsToVerify.error, sentLender.error, sanction.error, disb.error, activePart.error].filter(Boolean);
+      const errs = [total.error, pendingReq.error, docsToVerify.error, sentLender.error, sanction.error, disb.error, activePart.error, followUp.error, reviewDueRows.error].filter(Boolean);
       if (errs.length) throw errs[0];
 
       const requestsPendingApproval = pendingReq.count ?? 0;
       const documentsPendingReview = docsToVerify.count ?? 0;
+      const followUpRequired = followUp.count ?? 0;
+      const reviewDue = (reviewDueRows.data ?? []).filter((l: any) => isReviewDue(l)).length;
 
       setMetrics({
         loading: false,
         error: null,
         data: {
           totalLeads: total.count ?? 0,
-          pendingAdminActions: requestsPendingApproval + documentsPendingReview,
+          pendingAdminActions: reviewDue + followUpRequired,
+          reviewDue,
+          followUpRequired,
           requestsPendingApproval,
           documentsPendingReview,
           sentToLender: sentLender.count ?? 0,
