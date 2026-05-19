@@ -31,9 +31,10 @@ interface Props {
   unverifiedRequiredCount: number;
   hasSanctionInHistory: boolean;
   onChanged: () => void;
+  variant?: "card" | "inline";
 }
 
-export function AdminStageStatusPanel({ lead, unverifiedRequiredCount, hasSanctionInHistory, onChanged }: Props) {
+export function AdminStageStatusPanel({ lead, unverifiedRequiredCount, hasSanctionInHistory, onChanged, variant = "card" }: Props) {
   const [statusMaster, setStatusMaster] = useState<StatusMaster[]>([]);
   const [stageOpen, setStageOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
