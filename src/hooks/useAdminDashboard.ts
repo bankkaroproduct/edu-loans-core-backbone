@@ -1,13 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import {
+  ACTION_NEEDED_EXCLUDED_STAGES,
+  REVIEW_DUE_SELECT_COLUMNS,
+  isReviewDue,
+} from "@/lib/adminActionNeeded";
 
 type StageEnum = Database["public"]["Enums"]["lead_stage_enum"];
 type StatusEnum = Database["public"]["Enums"]["lead_status_enum"];
 
 export interface AdminMetrics {
   totalLeads: number;
+  // pendingAdminActions = reviewDue + followUpRequired (new Action Needed Today logic)
   pendingAdminActions: number;
+  reviewDue: number;
+  followUpRequired: number;
+  // Retained for unrelated cards (AdminLeadQueue inline chips) — not used by Action Needed Today.
   requestsPendingApproval: number;
   documentsPendingReview: number;
   sentToLender: number;
