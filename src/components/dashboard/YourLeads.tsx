@@ -18,12 +18,7 @@ import { formatStageLabel } from "./StageBadge";
 import { buildIntakeSessionOptions } from "@/lib/intakeSession";
 import { formatDisplayLabel } from "@/lib/formatDisplayLabel";
 import { useLeadMasterData } from "@/hooks/useLeadMasterData";
-import {
-  useDashboardDateFilter,
-  DEFAULT_DATE_FILTER,
-  type DateField,
-  type DateRange,
-} from "./DashboardDateFilterContext";
+import { useDashboardDateFilter } from "./DashboardDateFilterContext";
 
 
 type Lead = Tables<"student_leads">;
