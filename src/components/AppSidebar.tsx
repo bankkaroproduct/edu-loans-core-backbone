@@ -51,6 +51,9 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
+        <div className={collapsed ? "flex justify-center pt-2" : "flex justify-end px-2 pt-2"}>
+          <SidebarTrigger />
+        </div>
         <SidebarGroup>
           <SidebarGroupLabel>
             {!collapsed && "EduLoans Portal"}
