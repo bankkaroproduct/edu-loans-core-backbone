@@ -185,14 +185,30 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
     if (filters.stages.length) rows = rows.filter((l) => filters.stages.includes(l.current_stage));
     if (filters.sources.length) rows = rows.filter((l) => filters.sources.includes(l.source_type));
     if (filters.destinations.length) rows = rows.filter((l) => filters.destinations.includes(l.intended_study_country));
-    if (filters.intakes.length) rows = rows.filter((l) => filters.intakes.includes(`${l.intake_term} ${l.intake_year}`));
-    if (filters.submittedFrom) {
-      const from = new Date(filters.submittedFrom).getTime();
-      rows = rows.filter((l) => new Date(l.created_at).getTime() >= from);
+    if (filters.intakes.length) {
+      rows = rows.filter((l) => {
+        if (!l.intake_term || !l.intake_year) return false;
+        return filters.intakes.includes(`${l.intake_term}|${l.intake_year}`);
+      });
     }
-    if (filters.submittedTo) {
-      const to = new Date(filters.submittedTo).getTime() + 86400000;
-      rows = rows.filter((l) => new Date(l.created_at).getTime() <= to);
+    // Date filter — operates on either created_at or updated_at.
+    const dateCol = filters.dateField === "updated" ? "updated_at" : "created_at";
+    const now = Date.now();
+    const rangeDays: Record<Exclude<DateRange, "" | "custom">, number> = {
+      "7d": 7, "1m": 30, "3m": 90, "1y": 365,
+    };
+    if (filters.dateRange && filters.dateRange !== "custom") {
+      const from = now - rangeDays[filters.dateRange] * 86400000;
+      rows = rows.filter((l) => new Date(l[dateCol] as string).getTime() >= from);
+    } else if (filters.dateRange === "custom") {
+      if (filters.dateFrom) {
+        const from = new Date(filters.dateFrom).getTime();
+        rows = rows.filter((l) => new Date(l[dateCol] as string).getTime() >= from);
+      }
+      if (filters.dateTo) {
+        const to = new Date(filters.dateTo).getTime() + 86400000;
+        rows = rows.filter((l) => new Date(l[dateCol] as string).getTime() <= to);
+      }
     }
     if (filters.loanMin) {
       const min = Number(filters.loanMin);
