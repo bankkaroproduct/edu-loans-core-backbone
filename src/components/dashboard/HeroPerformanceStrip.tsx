@@ -1,9 +1,13 @@
-import { Clock, Activity, CheckCircle2, Banknote, XCircle, Wallet, Hourglass, Info, CalendarRange } from "lucide-react";
+import {
+  TrendingUp,
+  CircleCheck,
+  Banknote,
+  Calendar,
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { KPIData } from "./KPICards";
 import type { CardKey } from "@/lib/dashboardDrilldowns";
-import { formatINR, formatINRInWords } from "@/lib/formatCurrency";
 import { useDashboardDateFilter } from "./DashboardDateFilterContext";
 import { cn } from "@/lib/utils";
 
@@ -29,123 +33,70 @@ interface Props {
   onCardClick?: (key: CardKey) => void;
 }
 
-type Accent = "success" | "warning" | "info" | "indigo" | "destructive" | "neutral";
+// Local compact INR formatter for the dark hero. Keeps existing
+// formatINR/formatINRInWords helpers in src/lib/formatCurrency.ts untouched.
+function formatCompactINR(amount: number | null | undefined): string {
+  if (amount === null || amount === undefined || !Number.isFinite(amount)) return "₹0";
+  if (amount === 0) return "₹0";
+  if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(2)} Cr`;
+  if (amount >= 100000) return `₹${Math.round(amount / 100000)}L`;
+  return `₹${amount.toLocaleString("en-IN")}`;
+}
 
-const accentStyles: Record<Accent, { bar: string; iconBg: string; iconText: string; valueText: string; cardBg: string }> = {
-  success: {
-    bar: "bg-success",
-    iconBg: "bg-success/15",
-    iconText: "text-success",
-    valueText: "text-success",
-    cardBg: "bg-success/[0.06] border-success/20 hover:border-success/40",
-  },
-  warning: {
-    bar: "bg-warning",
-    iconBg: "bg-warning/15",
-    iconText: "text-warning",
-    valueText: "text-warning",
-    cardBg: "bg-warning/[0.06] border-warning/20 hover:border-warning/40",
-  },
-  info: {
-    bar: "bg-info",
-    iconBg: "bg-info/15",
-    iconText: "text-info",
-    valueText: "text-foreground",
-    cardBg: "bg-info/[0.06] border-info/20 hover:border-info/40",
-  },
-  indigo: {
-    bar: "bg-info",
-    iconBg: "bg-info/15",
-    iconText: "text-info",
-    valueText: "text-foreground",
-    cardBg: "bg-info/[0.06] border-info/20 hover:border-info/40",
-  },
-  destructive: {
-    bar: "bg-destructive",
-    iconBg: "bg-destructive/15",
-    iconText: "text-destructive",
-    valueText: "text-foreground",
-    cardBg: "bg-destructive/[0.06] border-destructive/20 hover:border-destructive/40",
-  },
-  neutral: {
-    bar: "bg-muted-foreground/40",
-    iconBg: "bg-muted",
-    iconText: "text-muted-foreground",
-    valueText: "text-foreground",
-    cardBg: "bg-muted/40 border-border/60 hover:border-border",
-  },
-};
-
-interface KPICardProps {
+interface PipelineCardProps {
+  icon: React.ElementType;
   label: string;
-  primary: React.ReactNode;
-  amountWords?: string | null;
-  secondary?: React.ReactNode;
+  count: number;
+  amount: number;
+  accentColor: string;
   tooltip: string;
-  Icon: React.ElementType;
-  accent: Accent;
   loading: boolean;
   onClick?: () => void;
 }
 
-function KPICard({ label, primary, amountWords, secondary, tooltip, Icon, accent, loading, onClick }: KPICardProps) {
-  const s = accentStyles[accent];
+function PipelineCard({
+  icon: Icon,
+  label,
+  count,
+  amount,
+  accentColor,
+  tooltip,
+  loading,
+  onClick,
+}: PipelineCardProps) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <div
+        <button
+          type="button"
           onClick={onClick}
-          className={cn(
-            "group relative cursor-pointer rounded-lg border pl-3.5 pr-3 py-2.5",
-            "shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all",
-            "hover:shadow-md hover:-translate-y-0.5",
-            "overflow-hidden",
-            s.cardBg,
-          )}
+          className="relative overflow-hidden text-left rounded-xl bg-white/[0.07] backdrop-blur-sm p-4 border border-white/[0.08] transition-colors hover:bg-white/[0.10] focus:outline-none focus:ring-2 focus:ring-white/20"
         >
-          {/* Left accent bar */}
-          <span className={cn("absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full", s.bar)} />
-
-          <div className="flex items-start gap-2.5">
-            <div className={cn("shrink-0 rounded-md p-1.5 mt-0.5", s.iconBg)}>
-              <Icon className={cn("h-4 w-4", s.iconText)} />
-            </div>
-            <div className="min-w-0 flex-1">
-              {loading ? (
-                <>
-                  <Skeleton className="h-5 w-20 mb-1" />
-                  <Skeleton className="h-3 w-16" />
-                </>
-              ) : (
-                <>
-                  <div className={cn("font-extrabold tracking-tight text-lg sm:text-xl leading-tight truncate", s.valueText)}>
-                    {primary}
-                  </div>
-                  {amountWords && (
-                    <p
-                      className="text-[10px] text-muted-foreground/80 leading-tight truncate mt-0.5 first-letter:uppercase"
-                      title={amountWords}
-                    >
-                      {amountWords}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <p className="text-[11px] font-medium text-foreground/70 truncate" title={label}>
-                      {label}
-                    </p>
-                    {secondary && (
-                      <>
-                        <span className="text-muted-foreground/40 text-[10px]">·</span>
-                        <p className="text-[11px] text-muted-foreground truncate">{secondary}</p>
-                      </>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-            <Info className="h-3 w-3 text-muted-foreground/40 shrink-0 self-start mt-0.5" aria-label="Definition" />
+          <span
+            className="absolute top-0 left-0 right-0 h-[3px]"
+            style={{ backgroundColor: accentColor }}
+          />
+          <div className="mb-1.5 flex items-center gap-2">
+            <span
+              className="flex h-6 w-6 items-center justify-center rounded-full"
+              style={{ backgroundColor: `${accentColor}25`, color: accentColor }}
+            >
+              <Icon size={13} />
+            </span>
+            <span className="text-xs text-white/50">{label}</span>
           </div>
-        </div>
+          {loading ? (
+            <>
+              <Skeleton className="h-7 w-12 mb-1 bg-white/10" />
+              <Skeleton className="h-3 w-16 bg-white/10" />
+            </>
+          ) : (
+            <>
+              <div className="text-2xl font-medium text-white">{count}</div>
+              <div className="mt-0.5 text-xs text-white/35">{formatCompactINR(amount)}</div>
+            </>
+          )}
+        </button>
       </TooltipTrigger>
       <TooltipContent side="bottom" className="max-w-xs text-xs">
         {tooltip}
@@ -154,35 +105,47 @@ function KPICard({ label, primary, amountWords, secondary, tooltip, Icon, accent
   );
 }
 
-function SectionDivider({ children, rightSlot }: { children: React.ReactNode; rightSlot?: React.ReactNode }) {
-  return (
-    <div className="flex items-center gap-3 mb-2">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground shrink-0">
-        {children}
-      </p>
-      <div className="flex-1 h-px bg-border/60" />
-      {rightSlot}
-    </div>
-  );
+interface MetricRowProps {
+  dotColor: string;
+  label: string;
+  value: React.ReactNode;
+  isZero: boolean;
+  tooltip: string;
+  loading: boolean;
+  onClick?: () => void;
 }
 
-const loanIconMap: Record<LoanMetric["key"], React.ElementType> = {
-  active: Activity,
-  sanctioned: CheckCircle2,
-  disbursed: Banknote,
-};
-
-const secondaryIconMap: Record<SecondaryLoanMetric["key"], React.ElementType> = {
-  rejected: XCircle,
-  payout_released: Wallet,
-  payout_pending: Hourglass,
-};
-
-const loanAccent: Record<LoanMetric["key"], Accent> = {
-  active: "info",
-  sanctioned: "indigo",
-  disbursed: "indigo",
-};
+function MetricRow({ dotColor, label, value, isZero, tooltip, loading, onClick }: MetricRowProps) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={onClick}
+          className="w-full flex items-center justify-between py-1.5 border-b border-white/[0.06] last:border-b-0 text-left transition-colors hover:bg-white/[0.03] -mx-1 px-1 rounded focus:outline-none focus:ring-1 focus:ring-white/20"
+        >
+          <span className="flex items-center gap-2 text-[13px] text-white/50">
+            <span
+              className="inline-block h-[7px] w-[7px] rounded-full flex-shrink-0"
+              style={{ backgroundColor: dotColor }}
+            />
+            {label}
+          </span>
+          {loading ? (
+            <Skeleton className="h-4 w-16 bg-white/10" />
+          ) : (
+            <span className={cn("text-sm font-medium", isZero ? "text-white/20" : "text-white/90")}>
+              {value}
+            </span>
+          )}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="left" className="max-w-xs text-xs">
+        {tooltip}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 
 const loanMetricTooltips: Record<LoanMetric["key"], string> = {
   active: "Submitted leads currently in the pipeline. Excludes drafts, sanctioned, disbursed, rejected, and dropped.",
@@ -196,172 +159,146 @@ const secondaryMetricTooltips: Record<SecondaryLoanMetric["key"], string> = {
   payout_pending: "Number of payout records pending, triggered, or approved but not yet paid.",
 };
 
-const secondaryAccent: Record<SecondaryLoanMetric["key"], Accent> = {
-  rejected: "destructive",
-  payout_released: "success",
-  payout_pending: "neutral",
-};
-
-const loanLabelOverride: Partial<Record<LoanMetric["key"], string>> = {
-  active: "Active Loan Pipeline",
-};
-
-const secondaryLabelOverride: Partial<Record<SecondaryLoanMetric["key"], string>> = {
-  rejected: "Rejected & Dropped",
-};
-
-const loanMetricCardKey: Record<LoanMetric["key"], CardKey> = {
-  active: "active",
-  sanctioned: "sanctioned",
-  disbursed: "disbursed",
-};
-
-const secondaryMetricCardKey: Record<SecondaryLoanMetric["key"], CardKey> = {
-  rejected: "rejected",
-  payout_released: "payout_released",
-  payout_pending: "payout_pending",
-};
-
-export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetrics, loading, onCardClick }: Props) {
+export function HeroPerformanceStrip({
+  kpiData,
+  loanMetrics,
+  secondaryLoanMetrics,
+  loading,
+  onCardClick,
+}: Props) {
   const open = (key: CardKey) => onCardClick?.(key);
   const { rangeLabel, fieldLabel } = useDashboardDateFilter();
 
-  const filterCaption = (
-    <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground shrink-0">
-      <CalendarRange className="h-3 w-3" />
-      <span>
-        <span className="font-medium text-foreground">{rangeLabel}</span>
-        <span className="mx-1 opacity-50">·</span>
-        <span className="font-medium text-foreground">{fieldLabel}</span>
-      </span>
-    </span>
-  );
+  const active = loanMetrics.find((m) => m.key === "active");
+  const sanctioned = loanMetrics.find((m) => m.key === "sanctioned");
+  const disbursed = loanMetrics.find((m) => m.key === "disbursed");
 
+  const rejected = secondaryLoanMetrics?.find((m) => m.key === "rejected");
   const payoutReleased = secondaryLoanMetrics?.find((m) => m.key === "payout_released");
+  const payoutPending = secondaryLoanMetrics?.find((m) => m.key === "payout_pending");
 
   return (
-    <div className="space-y-3">
-      {/* Money / Payouts row */}
-      <section>
-        <SectionDivider rightSlot={filterCaption}>Money &amp; Payouts</SectionDivider>
+    <div className="rounded-2xl bg-[#1a1d21] p-5 space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-[15px] font-semibold text-white">Overview</h2>
+        <span className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.05] px-2.5 py-1.5 text-xs text-white/50">
+          <Calendar size={13} />
+          <span className="font-medium text-white/70">{rangeLabel}</span>
+          <span className="opacity-50">·</span>
+          <span>{fieldLabel}</span>
+        </span>
+      </div>
+
+      {/* Pipeline — primary row */}
+      <div>
+        <p className="mb-2 text-[11px] font-medium uppercase tracking-wider text-white/30">
+          Loan pipeline
+        </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <KPICard
-            label="Total Accrued Payout"
-            primary={formatINR(kpiData.paidPayout)}
-            amountWords={formatINRInWords(kpiData.paidPayout)}
+          <PipelineCard
+            icon={TrendingUp}
+            label="Active pipeline"
+            count={active?.count ?? 0}
+            amount={active?.amount ?? 0}
+            accentColor="#3B82F6"
+            tooltip={loanMetricTooltips.active}
+            loading={loading}
+            onClick={() => open("active")}
+          />
+          <PipelineCard
+            icon={CircleCheck}
+            label="Sanctioned"
+            count={sanctioned?.count ?? 0}
+            amount={sanctioned?.amount ?? 0}
+            accentColor="#14B8A6"
+            tooltip={loanMetricTooltips.sanctioned}
+            loading={loading}
+            onClick={() => open("sanctioned")}
+          />
+          <PipelineCard
+            icon={Banknote}
+            label="Disbursed"
+            count={disbursed?.count ?? 0}
+            amount={disbursed?.amount ?? 0}
+            accentColor="#22C55E"
+            tooltip={loanMetricTooltips.disbursed}
+            loading={loading}
+            onClick={() => open("disbursed")}
+          />
+        </div>
+      </div>
+
+      {/* Secondary row — Money + Outcomes */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="rounded-xl bg-white/[0.04] border border-white/[0.06] p-3.5">
+          <p className="mb-2 text-[11px] font-medium uppercase tracking-wider text-white/30">
+            Money &amp; payouts
+          </p>
+          <MetricRow
+            dotColor="#14B8A6"
+            label="Accrued"
+            value={formatCompactINR(kpiData.paidPayout)}
+            isZero={!kpiData.paidPayout}
             tooltip="Total commission accrued — pending + triggered + approved + paid. Includes amounts not yet released to your bank."
-            Icon={Wallet}
-            accent="success"
             loading={loading}
             onClick={() => open("total_earned")}
           />
-          <KPICard
-            label="Pending Payout Amount"
-            primary={formatINR(kpiData.pendingPayout)}
-            amountWords={formatINRInWords(kpiData.pendingPayout)}
+          <MetricRow
+            dotColor="#F59E0B"
+            label="Pending"
+            value={formatCompactINR(kpiData.pendingPayout)}
+            isZero={!kpiData.pendingPayout}
             tooltip="Total ₹ value of payout records that are pending, triggered, or approved but not yet paid out."
-            Icon={Clock}
-            accent="warning"
             loading={loading}
             onClick={() => open("pending_payout_amount")}
           />
-          {payoutReleased && (
-            <KPICard
-              label="Total Payout Released"
-              primary={formatINR(payoutReleased.amount)}
-              amountWords={formatINRInWords(payoutReleased.amount)}
-              secondary={`${payoutReleased.count} ${payoutReleased.count === 1 ? "record" : "records"}`}
-              tooltip={secondaryMetricTooltips.payout_released}
-              Icon={Wallet}
-              accent="success"
-              loading={loading}
-              onClick={() => open("payout_released")}
-            />
-          )}
+          <MetricRow
+            dotColor="#6B7280"
+            label="Released"
+            value={formatCompactINR(payoutReleased?.amount ?? 0)}
+            isZero={!payoutReleased?.amount}
+            tooltip={secondaryMetricTooltips.payout_released}
+            loading={loading}
+            onClick={() => open("payout_released")}
+          />
         </div>
-      </section>
 
-      {/* Pipeline row */}
-      <section>
-        <SectionDivider>Loan Pipeline</SectionDivider>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {loanMetrics.map((m) => {
-            const Icon = loanIconMap[m.key];
-            const label = loanLabelOverride[m.key] ?? m.label;
-            const hasAmount = m.amount > 0;
-            return (
-              <KPICard
-                key={m.key}
-                label={label}
-                primary={
-                  <span className="flex flex-col leading-tight">
-                    <span className="flex items-baseline gap-1.5">
-                      <span>{m.count}</span>
-                      <span className="text-[11px] font-medium text-muted-foreground">
-                        {m.count === 1 ? "lead" : "leads"}
-                      </span>
-                    </span>
-                    {hasAmount && (
-                      <span className="text-sm font-semibold text-foreground/80 mt-0.5">
-                        {formatINR(m.amount)}
-                      </span>
-                    )}
+        <div className="rounded-xl bg-white/[0.04] border border-white/[0.06] p-3.5">
+          <p className="mb-2 text-[11px] font-medium uppercase tracking-wider text-white/30">
+            Outcomes
+          </p>
+          <MetricRow
+            dotColor="#EF4444"
+            label="Rejected / dropped"
+            value={
+              (rejected?.count ?? 0) > 0 ? (
+                <span>
+                  {rejected!.count}{" "}
+                  <span className="text-xs font-normal text-white/30">
+                    · {formatCompactINR(rejected!.amount)}
                   </span>
-                }
-                amountWords={hasAmount ? formatINRInWords(m.amount) : null}
-                tooltip={loanMetricTooltips[m.key]}
-                Icon={Icon}
-                accent={loanAccent[m.key]}
-                loading={loading}
-                onClick={() => open(loanMetricCardKey[m.key])}
-              />
-            );
-          })}
+                </span>
+              ) : (
+                "0"
+              )
+            }
+            isZero={!rejected?.count}
+            tooltip={secondaryMetricTooltips.rejected}
+            loading={loading}
+            onClick={() => open("rejected")}
+          />
+          <MetricRow
+            dotColor="#F59E0B"
+            label="Pending payouts"
+            value={payoutPending?.count ?? 0}
+            isZero={!payoutPending?.count}
+            tooltip={secondaryMetricTooltips.payout_pending}
+            loading={loading}
+            onClick={() => open("payout_pending")}
+          />
         </div>
-      </section>
-
-      {/* Outcome / Exception row */}
-      {secondaryLoanMetrics && secondaryLoanMetrics.length > 0 && (
-        <section>
-          <SectionDivider>Outcomes</SectionDivider>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {secondaryLoanMetrics
-              .filter((m) => m.key !== "payout_released")
-              .map((m) => {
-                const Icon = secondaryIconMap[m.key];
-                const label = secondaryLabelOverride[m.key] ?? m.label;
-                const unit = m.key === "payout_pending" ? "records" : m.count === 1 ? "lead" : "leads";
-                const hasAmount = m.amount > 0;
-                const primary = (
-                  <span className="flex flex-col leading-tight">
-                    <span className="flex items-baseline gap-1.5">
-                      <span>{m.count}</span>
-                      <span className="text-[11px] font-medium text-muted-foreground">{unit}</span>
-                    </span>
-                    {hasAmount && (
-                      <span className="text-sm font-semibold text-foreground/80 mt-0.5">
-                        {formatINR(m.amount)}
-                      </span>
-                    )}
-                  </span>
-                );
-                return (
-                  <KPICard
-                    key={m.key}
-                    label={label}
-                    primary={primary}
-                    amountWords={hasAmount ? formatINRInWords(m.amount) : null}
-                    tooltip={secondaryMetricTooltips[m.key]}
-                    Icon={Icon}
-                    accent={secondaryAccent[m.key]}
-                    loading={loading}
-                    onClick={() => open(secondaryMetricCardKey[m.key])}
-                  />
-                );
-              })}
-        </div>
-      </section>
-      )}
+      </div>
     </div>
   );
 }
