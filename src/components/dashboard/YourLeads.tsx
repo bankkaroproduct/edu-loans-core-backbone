@@ -473,6 +473,19 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
                     <TableCell className="hidden sm:table-cell">
                       <StatusBadge status={lead.current_status} />
                     </TableCell>
+                    <TableCell className="text-right text-sm whitespace-nowrap tabular-nums">
+                      {lead.loan_amount_required != null ? formatINR(lead.loan_amount_required) : "—"}
+                    </TableCell>
+                    <TableCell className="text-right text-sm whitespace-nowrap hidden md:table-cell tabular-nums">
+                      {p && p.payout_amount != null
+                        ? formatINR(p.payout_amount)
+                        : <span className="text-muted-foreground italic">Not calculated</span>}
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      {p?.payout_status
+                        ? <Badge variant="secondary" className="font-normal">{formatStageLabel(p.payout_status)}</Badge>
+                        : <span className="text-xs text-muted-foreground italic">Not calculated</span>}
+                    </TableCell>
                     <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                       {fmtDate(lead.created_at)}
                     </TableCell>
@@ -480,7 +493,8 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
                       {fmtDate(lead.updated_at)}
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
