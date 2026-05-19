@@ -150,6 +150,15 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
     return Array.from(set).sort();
   }, [leads]);
 
+  // Most-recent payout record per lead (payouts arrive ordered by created_at desc)
+  const payoutByLead = useMemo(() => {
+    const m = new Map<string, PayoutRecord>();
+    for (const p of payouts) {
+      if (p.lead_id && !m.has(p.lead_id)) m.set(p.lead_id, p);
+    }
+    return m;
+  }, [payouts]);
+
   const visible = useMemo(() => {
     let rows = leads.filter((l) => matchesChip(l, chip));
 
