@@ -120,6 +120,7 @@ interface Props {
 
 export function DocumentChecklist({ requirements, documents, onUpload, leadId, hideNudge = false, highestQualification }: Props) {
   const [sampleOpen, setSampleOpen] = useState<DocumentSample | null>(null);
+  const [guidanceOpen, setGuidanceOpen] = useState<DocumentGuidance | null>(null);
   // Group documents by document_type_id
   const docsByType = new Map<string, DocFile[]>();
   documents.forEach(doc => {
