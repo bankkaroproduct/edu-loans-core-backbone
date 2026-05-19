@@ -1,4 +1,4 @@
-import { Clock, AlertTriangle, Activity, CheckCircle2, Banknote, XCircle, Wallet, Hourglass, Info } from "lucide-react";
+import { Clock, Activity, CheckCircle2, Banknote, XCircle, Wallet, Hourglass, Info } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { KPIData } from "./KPICards";
@@ -63,13 +63,6 @@ export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetric
       icon: Clock,
       tooltip: "Total ₹ value of payout records that are pending, triggered, or approved but not yet paid out.",
     },
-    {
-      key: "needs_attention",
-      label: "Needs Attention",
-      value: kpiData.needsAttention.toString(),
-      icon: AlertTriangle,
-      tooltip: "Leads on hold, with documents pending, awaiting reupload, query raised, pending info, in credit query, or flagged as duplicate. Click to filter the Leads page.",
-    },
   ];
 
   // Tooltip definitions for the loan business metrics row.
@@ -102,7 +95,7 @@ export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetric
     <div className="bg-primary text-primary-foreground rounded-2xl shadow-xl overflow-hidden">
       <div className="p-6 sm:p-8 lg:p-10">
         {/* Hero Metrics — earnings/attention */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
           {heroMetrics.map((m) => {
             const Icon = m.icon;
             return (

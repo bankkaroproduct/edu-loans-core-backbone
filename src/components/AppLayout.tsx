@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { NotificationBell } from "@/components/NotificationBell";
 import { useAuth } from "@/hooks/useAuth";
@@ -69,7 +69,7 @@ function AppShell({ children, isDashboard, fullName }: { children: ReactNode; is
             slotActive ? "min-h-14 py-2 h-auto" : "h-14"
           )}
         >
-          {hideSidebarTrigger ? (
+          {hideSidebarTrigger && (
             <Button
               variant="ghost"
               size="icon"
@@ -79,8 +79,6 @@ function AppShell({ children, isDashboard, fullName }: { children: ReactNode; is
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
-          ) : (
-            <SidebarTrigger />
           )}
           {headerContent ? (
             headerContent
