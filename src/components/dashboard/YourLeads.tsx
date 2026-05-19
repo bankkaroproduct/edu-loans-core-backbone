@@ -179,8 +179,20 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
         case "updated_desc": return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
         case "created_desc": return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         case "created_asc": return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-        case "amount_desc": return (b.loan_amount_required ?? 0) - (a.loan_amount_required ?? 0);
-        case "amount_asc": return (a.loan_amount_required ?? 0) - (b.loan_amount_required ?? 0);
+        case "amount_desc": {
+          const av = a.loan_amount_required, bv = b.loan_amount_required;
+          if (av == null && bv == null) return 0;
+          if (av == null) return 1;
+          if (bv == null) return -1;
+          return bv - av;
+        }
+        case "amount_asc": {
+          const av = a.loan_amount_required, bv = b.loan_amount_required;
+          if (av == null && bv == null) return 0;
+          if (av == null) return 1;
+          if (bv == null) return -1;
+          return av - bv;
+        }
         case "stage_progression": return (STAGE_ORDER[a.current_stage] ?? 99) - (STAGE_ORDER[b.current_stage] ?? 99);
         case "attention_first": {
           const aA = isAttention(a) ? 0 : 1;
