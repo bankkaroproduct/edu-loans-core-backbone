@@ -242,21 +242,24 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
       }
     });
     return sorted.slice(0, 12);
-  }, [leads, chip, sort, filters]);
+  }, [leads, chip, sort, filters, dateCtx]);
 
-  const fcount = activeFilterCount(filters);
+  const fcount = activeFilterCount(filters, dateCtx.dateRange);
 
   const toggleArr = (arr: string[], v: string) =>
     arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
 
   const applyDraft = () => {
     setFilters(draftFilters);
+    dateCtx.setDateFilter(draftDate);
     setOpen(false);
   };
 
   const resetAll = () => {
     setDraftFilters(EMPTY_FILTERS);
     setFilters(EMPTY_FILTERS);
+    setDraftDate({ dateField: "submitted", dateRange: "3m", dateFrom: "", dateTo: "" });
+    dateCtx.resetDateFilter();
     setChip("all");
   };
 
