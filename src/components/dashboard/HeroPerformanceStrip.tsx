@@ -73,6 +73,7 @@ const accentStyles: Record<Accent, { bar: string; iconBg: string; iconText: stri
 interface KPICardProps {
   label: string;
   primary: React.ReactNode;
+  amountWords?: string | null;
   secondary?: React.ReactNode;
   tooltip: string;
   Icon: React.ElementType;
@@ -81,7 +82,7 @@ interface KPICardProps {
   onClick?: () => void;
 }
 
-function KPICard({ label, primary, secondary, tooltip, Icon, accent, loading, onClick }: KPICardProps) {
+function KPICard({ label, primary, amountWords, secondary, tooltip, Icon, accent, loading, onClick }: KPICardProps) {
   const s = accentStyles[accent];
   return (
     <Tooltip>
@@ -98,8 +99,8 @@ function KPICard({ label, primary, secondary, tooltip, Icon, accent, loading, on
           {/* Left accent bar */}
           <span className={cn("absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full", s.bar)} />
 
-          <div className="flex items-center gap-2.5">
-            <div className={cn("shrink-0 rounded-md p-1.5", s.iconBg)}>
+          <div className="flex items-start gap-2.5">
+            <div className={cn("shrink-0 rounded-md p-1.5 mt-0.5", s.iconBg)}>
               <Icon className={cn("h-4 w-4", s.iconText)} />
             </div>
             <div className="min-w-0 flex-1">
@@ -113,6 +114,14 @@ function KPICard({ label, primary, secondary, tooltip, Icon, accent, loading, on
                   <div className={cn("font-bold tracking-tight text-lg sm:text-xl leading-tight truncate", s.valueText)}>
                     {primary}
                   </div>
+                  {amountWords && (
+                    <p
+                      className="text-[10px] text-muted-foreground/80 leading-tight truncate mt-0.5 first-letter:uppercase"
+                      title={amountWords}
+                    >
+                      {amountWords}
+                    </p>
+                  )}
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <p className="text-[11px] font-medium text-foreground/70 truncate" title={label}>
                       {label}
