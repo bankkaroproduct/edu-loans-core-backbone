@@ -104,7 +104,6 @@ function activeFilterCount(f: Filters): number {
 
 const CHIPS: { key: ChipKey; label: string }[] = [
   { key: "all", label: "All Leads" },
-  { key: "attention", label: "Needs Attention" },
   { key: "documents_pending", label: "Documents Pending" },
   { key: "sent_to_lender", label: "Sent to Lender" },
   { key: "disbursed", label: "Disbursed" },
