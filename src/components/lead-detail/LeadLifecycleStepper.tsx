@@ -20,27 +20,30 @@ const TERMINAL_STAGES = ["rejected", "dropped", "on_hold"];
 
 interface Props {
   lead: Lead;
+  headerRight?: React.ReactNode;
 }
 
-export function LeadLifecycleStepper({ lead }: Props) {
+export function LeadLifecycleStepper({ lead, headerRight }: Props) {
   const currentIdx = STAGE_ORDER.indexOf(lead.current_stage);
   const isTerminal = TERMINAL_STAGES.includes(lead.current_stage);
 
   return (
     <Card className="rounded-xl border-border/60 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-      <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
+      <CardHeader className="pb-3 flex flex-row items-start justify-between gap-3 space-y-0">
         <CardTitle className="text-sm font-semibold flex items-center gap-2">
           <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10">
             <Activity className="h-3.5 w-3.5 text-primary" />
           </span>
           Lead Lifecycle
         </CardTitle>
-        <Badge
-          variant="outline"
-          className="text-[10px] font-medium bg-primary/5 border-primary/20 text-primary"
-        >
-          {formatLabel(lead.current_stage)} · {formatLabel(lead.current_status)}
-        </Badge>
+        {headerRight ?? (
+          <Badge
+            variant="outline"
+            className="text-[10px] font-medium bg-primary/5 border-primary/20 text-primary"
+          >
+            {formatLabel(lead.current_stage)} · {formatLabel(lead.current_status)}
+          </Badge>
+        )}
       </CardHeader>
       <CardContent className="space-y-5">
         {isTerminal && (
