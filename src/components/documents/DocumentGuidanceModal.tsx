@@ -129,7 +129,7 @@ export function DocumentGuidanceModal({ open, onOpenChange, guidance }: Props) {
                 {Object.entries(guidance.bank_specific_steps).map(([bank, txt]) => (
                   <p key={bank} className="text-xs text-muted-foreground">
                     <span className="font-medium text-foreground">{bank}: </span>
-                    {txt}
+                    {txt as string}
                   </p>
                 ))}
               </div>
