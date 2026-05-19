@@ -9,7 +9,9 @@ import { useStudentAuth } from "@/hooks/useStudentAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { StudentDocumentUploadDialog } from "@/components/student/StudentDocumentUploadDialog";
 import { SampleDocumentModal } from "@/components/documents/SampleDocumentModal";
+import { DocumentGuidanceModal } from "@/components/documents/DocumentGuidanceModal";
 import { findSampleForDocument, getHelperText, type DocumentSample } from "@/lib/documentSamples";
+import { findGuidanceForDocument, type DocumentGuidance } from "@/lib/documentGuidance";
 import { isRequirementApplicable } from "@/lib/documentApplicability";
 import type { LeadDocRequirement } from "@/hooks/useLeadDocumentsData";
 import {
@@ -77,6 +79,7 @@ export default function StudentDocuments() {
   const [leadSummary, setLeadSummary] = useState<LeadSummary | null>(null);
   const [uploadTarget, setUploadTarget] = useState<DocumentRequirement | null>(null);
   const [sampleOpen, setSampleOpen] = useState<DocumentSample | null>(null);
+  const [guidanceOpen, setGuidanceOpen] = useState<DocumentGuidance | null>(null);
 
   useEffect(() => {
     if (!isVerified) { navigate("/student/login"); return; }
@@ -249,6 +252,7 @@ export default function StudentDocuments() {
                   const StatusIcon = config.icon;
                   const helperText = getHelperText(req.document_name);
                   const sample = findSampleForDocument(req.document_name);
+                  const guidance = findGuidanceForDocument(req.document_name);
 
                   return (
                     <Card key={req.id} className={`overflow-hidden transition-shadow hover:shadow-sm ${isActionNeeded ? "border-red-200" : ""}`}>
@@ -264,7 +268,7 @@ export default function StudentDocuments() {
                               )}
                             </div>
 
-                            {(helperText || sample) && (
+                            {(helperText || sample || guidance) && (
                               <div className="mt-1 flex flex-wrap items-start gap-1.5 text-xs text-muted-foreground">
                                 {helperText && <span className="leading-snug">{helperText}</span>}
                                 {sample && (
@@ -274,6 +278,16 @@ export default function StudentDocuments() {
                                     className="inline-flex shrink-0 items-center gap-1 text-primary hover:underline"
                                   >
                                     <ImageIcon className="h-3 w-3" /> View Sample
+                                  </button>
+                                )}
+                                {sample && guidance && <span className="text-muted-foreground/60 shrink-0">|</span>}
+                                {guidance && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setGuidanceOpen(guidance)}
+                                    className="inline-flex shrink-0 items-center gap-1 text-primary hover:underline"
+                                  >
+                                    <HelpCircle className="h-3 w-3" /> How to get this document?
                                   </button>
                                 )}
                               </div>
@@ -421,6 +435,11 @@ export default function StudentDocuments() {
         open={!!sampleOpen}
         onOpenChange={(open) => !open && setSampleOpen(null)}
         sample={sampleOpen}
+      />
+      <DocumentGuidanceModal
+        open={!!guidanceOpen}
+        onOpenChange={(open) => !open && setGuidanceOpen(null)}
+        guidance={guidanceOpen}
       />
     </div>
   );
