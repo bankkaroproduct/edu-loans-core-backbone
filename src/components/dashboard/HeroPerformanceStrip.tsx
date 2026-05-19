@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { KPIData } from "./KPICards";
 import type { CardKey } from "@/lib/dashboardDrilldowns";
-import { formatINR } from "@/lib/formatCurrency";
+import { formatINR, formatINRInWords } from "@/lib/formatCurrency";
 import { useDashboardDateFilter } from "./DashboardDateFilterContext";
 import { cn } from "@/lib/utils";
 
@@ -73,6 +73,7 @@ const accentStyles: Record<Accent, { bar: string; iconBg: string; iconText: stri
 interface KPICardProps {
   label: string;
   primary: React.ReactNode;
+  amountWords?: string | null;
   secondary?: React.ReactNode;
   tooltip: string;
   Icon: React.ElementType;
@@ -81,7 +82,7 @@ interface KPICardProps {
   onClick?: () => void;
 }
 
-function KPICard({ label, primary, secondary, tooltip, Icon, accent, loading, onClick }: KPICardProps) {
+function KPICard({ label, primary, amountWords, secondary, tooltip, Icon, accent, loading, onClick }: KPICardProps) {
   const s = accentStyles[accent];
   return (
     <Tooltip>
@@ -98,8 +99,8 @@ function KPICard({ label, primary, secondary, tooltip, Icon, accent, loading, on
           {/* Left accent bar */}
           <span className={cn("absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full", s.bar)} />
 
-          <div className="flex items-center gap-2.5">
-            <div className={cn("shrink-0 rounded-md p-1.5", s.iconBg)}>
+          <div className="flex items-start gap-2.5">
+            <div className={cn("shrink-0 rounded-md p-1.5 mt-0.5", s.iconBg)}>
               <Icon className={cn("h-4 w-4", s.iconText)} />
             </div>
             <div className="min-w-0 flex-1">
@@ -113,6 +114,14 @@ function KPICard({ label, primary, secondary, tooltip, Icon, accent, loading, on
                   <div className={cn("font-bold tracking-tight text-lg sm:text-xl leading-tight truncate", s.valueText)}>
                     {primary}
                   </div>
+                  {amountWords && (
+                    <p
+                      className="text-[10px] text-muted-foreground/80 leading-tight truncate mt-0.5 first-letter:uppercase"
+                      title={amountWords}
+                    >
+                      {amountWords}
+                    </p>
+                  )}
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <p className="text-[11px] font-medium text-foreground/70 truncate" title={label}>
                       {label}
@@ -232,6 +241,7 @@ export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetric
           <KPICard
             label="Total Accrued Payout"
             primary={formatINR(kpiData.paidPayout)}
+            amountWords={formatINRInWords(kpiData.paidPayout)}
             tooltip="Total commission accrued — pending + triggered + approved + paid. Includes amounts not yet released to your bank."
             Icon={Wallet}
             accent="success"
@@ -241,6 +251,7 @@ export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetric
           <KPICard
             label="Pending Payout Amount"
             primary={formatINR(kpiData.pendingPayout)}
+            amountWords={formatINRInWords(kpiData.pendingPayout)}
             tooltip="Total ₹ value of payout records that are pending, triggered, or approved but not yet paid out."
             Icon={Clock}
             accent="warning"
@@ -251,6 +262,7 @@ export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetric
             <KPICard
               label="Total Payout Released"
               primary={formatINR(payoutReleased.amount)}
+              amountWords={formatINRInWords(payoutReleased.amount)}
               secondary={`${payoutReleased.count} ${payoutReleased.count === 1 ? "record" : "records"}`}
               tooltip={secondaryMetricTooltips.payout_released}
               Icon={Wallet}
@@ -269,21 +281,27 @@ export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetric
           {loanMetrics.map((m) => {
             const Icon = loanIconMap[m.key];
             const label = loanLabelOverride[m.key] ?? m.label;
+            const hasAmount = m.amount > 0;
             return (
               <KPICard
                 key={m.key}
                 label={label}
                 primary={
-                  <span className="flex items-baseline gap-1.5">
-                    <span>{m.count}</span>
-                    <span className="text-[11px] font-medium text-muted-foreground">
-                      {m.count === 1 ? "lead" : "leads"}
+                  <span className="flex flex-col leading-tight">
+                    <span className="flex items-baseline gap-1.5">
+                      <span>{m.count}</span>
+                      <span className="text-[11px] font-medium text-muted-foreground">
+                        {m.count === 1 ? "lead" : "leads"}
+                      </span>
                     </span>
-                    {m.amount > 0 && (
-                      <span className="text-xs font-semibold text-foreground/80 ml-1">{formatINR(m.amount)}</span>
+                    {hasAmount && (
+                      <span className="text-sm font-semibold text-foreground/80 mt-0.5">
+                        {formatINR(m.amount)}
+                      </span>
                     )}
                   </span>
                 }
+                amountWords={hasAmount ? formatINRInWords(m.amount) : null}
                 tooltip={loanMetricTooltips[m.key]}
                 Icon={Icon}
                 accent={loanAccent[m.key]}
@@ -306,12 +324,17 @@ export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetric
                 const Icon = secondaryIconMap[m.key];
                 const label = secondaryLabelOverride[m.key] ?? m.label;
                 const unit = m.key === "payout_pending" ? "records" : m.count === 1 ? "lead" : "leads";
+                const hasAmount = m.amount > 0;
                 const primary = (
-                  <span className="flex items-baseline gap-1.5">
-                    <span>{m.count}</span>
-                    <span className="text-[11px] font-medium text-muted-foreground">{unit}</span>
-                    {m.amount > 0 && (
-                      <span className="text-xs font-semibold text-foreground/80 ml-1">{formatINR(m.amount)}</span>
+                  <span className="flex flex-col leading-tight">
+                    <span className="flex items-baseline gap-1.5">
+                      <span>{m.count}</span>
+                      <span className="text-[11px] font-medium text-muted-foreground">{unit}</span>
+                    </span>
+                    {hasAmount && (
+                      <span className="text-sm font-semibold text-foreground/80 mt-0.5">
+                        {formatINR(m.amount)}
+                      </span>
                     )}
                   </span>
                 );
@@ -320,6 +343,7 @@ export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetric
                     key={m.key}
                     label={label}
                     primary={primary}
+                    amountWords={hasAmount ? formatINRInWords(m.amount) : null}
                     tooltip={secondaryMetricTooltips[m.key]}
                     Icon={Icon}
                     accent={secondaryAccent[m.key]}
@@ -328,8 +352,8 @@ export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetric
                   />
                 );
               })}
-          </div>
-        </section>
+        </div>
+      </section>
       )}
     </div>
   );
