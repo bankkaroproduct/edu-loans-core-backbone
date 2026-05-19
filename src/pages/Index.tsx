@@ -15,6 +15,10 @@ type DocSummary = { pending: number; underReview: number; verified: number; reje
 import { PayoutSnapshot, type PayoutSummary } from "@/components/dashboard/PayoutSnapshot";
 import { SystemHelp } from "@/components/dashboard/SystemHelp";
 import { OnboardingEmptyState } from "@/components/dashboard/OnboardingEmptyState";
+import {
+  DashboardDateFilterProvider,
+  useDashboardDateFilter,
+} from "@/components/dashboard/DashboardDateFilterContext";
 
 type Lead = Tables<"student_leads">;
 type Batch = Tables<"bulk_upload_batches">;
