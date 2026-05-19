@@ -241,6 +241,7 @@ export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetric
           <KPICard
             label="Total Accrued Payout"
             primary={formatINR(kpiData.paidPayout)}
+            amountWords={formatINRInWords(kpiData.paidPayout)}
             tooltip="Total commission accrued — pending + triggered + approved + paid. Includes amounts not yet released to your bank."
             Icon={Wallet}
             accent="success"
@@ -250,6 +251,7 @@ export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetric
           <KPICard
             label="Pending Payout Amount"
             primary={formatINR(kpiData.pendingPayout)}
+            amountWords={formatINRInWords(kpiData.pendingPayout)}
             tooltip="Total ₹ value of payout records that are pending, triggered, or approved but not yet paid out."
             Icon={Clock}
             accent="warning"
@@ -260,6 +262,7 @@ export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetric
             <KPICard
               label="Total Payout Released"
               primary={formatINR(payoutReleased.amount)}
+              amountWords={formatINRInWords(payoutReleased.amount)}
               secondary={`${payoutReleased.count} ${payoutReleased.count === 1 ? "record" : "records"}`}
               tooltip={secondaryMetricTooltips.payout_released}
               Icon={Wallet}
@@ -278,21 +281,27 @@ export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetric
           {loanMetrics.map((m) => {
             const Icon = loanIconMap[m.key];
             const label = loanLabelOverride[m.key] ?? m.label;
+            const hasAmount = m.amount > 0;
             return (
               <KPICard
                 key={m.key}
                 label={label}
                 primary={
-                  <span className="flex items-baseline gap-1.5">
-                    <span>{m.count}</span>
-                    <span className="text-[11px] font-medium text-muted-foreground">
-                      {m.count === 1 ? "lead" : "leads"}
+                  <span className="flex flex-col leading-tight">
+                    <span className="flex items-baseline gap-1.5">
+                      <span>{m.count}</span>
+                      <span className="text-[11px] font-medium text-muted-foreground">
+                        {m.count === 1 ? "lead" : "leads"}
+                      </span>
                     </span>
-                    {m.amount > 0 && (
-                      <span className="text-xs font-semibold text-foreground/80 ml-1">{formatINR(m.amount)}</span>
+                    {hasAmount && (
+                      <span className="text-sm font-semibold text-foreground/80 mt-0.5">
+                        {formatINR(m.amount)}
+                      </span>
                     )}
                   </span>
                 }
+                amountWords={hasAmount ? formatINRInWords(m.amount) : null}
                 tooltip={loanMetricTooltips[m.key]}
                 Icon={Icon}
                 accent={loanAccent[m.key]}
@@ -315,12 +324,17 @@ export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetric
                 const Icon = secondaryIconMap[m.key];
                 const label = secondaryLabelOverride[m.key] ?? m.label;
                 const unit = m.key === "payout_pending" ? "records" : m.count === 1 ? "lead" : "leads";
+                const hasAmount = m.amount > 0;
                 const primary = (
-                  <span className="flex items-baseline gap-1.5">
-                    <span>{m.count}</span>
-                    <span className="text-[11px] font-medium text-muted-foreground">{unit}</span>
-                    {m.amount > 0 && (
-                      <span className="text-xs font-semibold text-foreground/80 ml-1">{formatINR(m.amount)}</span>
+                  <span className="flex flex-col leading-tight">
+                    <span className="flex items-baseline gap-1.5">
+                      <span>{m.count}</span>
+                      <span className="text-[11px] font-medium text-muted-foreground">{unit}</span>
+                    </span>
+                    {hasAmount && (
+                      <span className="text-sm font-semibold text-foreground/80 mt-0.5">
+                        {formatINR(m.amount)}
+                      </span>
                     )}
                   </span>
                 );
@@ -329,6 +343,7 @@ export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetric
                     key={m.key}
                     label={label}
                     primary={primary}
+                    amountWords={hasAmount ? formatINRInWords(m.amount) : null}
                     tooltip={secondaryMetricTooltips[m.key]}
                     Icon={Icon}
                     accent={secondaryAccent[m.key]}
@@ -337,8 +352,8 @@ export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetric
                   />
                 );
               })}
-          </div>
-        </section>
+        </div>
+      </section>
       )}
     </div>
   );
