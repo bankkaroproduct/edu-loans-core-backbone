@@ -104,7 +104,6 @@ function activeFilterCount(f: Filters): number {
 
 const CHIPS: { key: ChipKey; label: string }[] = [
   { key: "all", label: "All Leads" },
-  { key: "attention", label: "Needs Attention" },
   { key: "documents_pending", label: "Documents Pending" },
   { key: "sent_to_lender", label: "Sent to Lender" },
   { key: "disbursed", label: "Disbursed" },
@@ -354,7 +353,7 @@ export function YourLeads({ leads, loading }: { leads: Lead[]; loading: boolean 
                 <SelectItem value="amount_desc">Highest Loan Amount</SelectItem>
                 <SelectItem value="amount_asc">Lowest Loan Amount</SelectItem>
                 <SelectItem value="stage_progression">Stage Progression</SelectItem>
-                <SelectItem value="attention_first">Needs Attention First</SelectItem>
+                <SelectItem value="attention_first">Action Required First</SelectItem>
               </SelectContent>
             </Select>
 
