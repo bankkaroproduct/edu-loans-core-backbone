@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { KPIData } from "./KPICards";
 import type { CardKey } from "@/lib/dashboardDrilldowns";
-import { formatINR } from "@/lib/formatCurrency";
+import { formatINR, formatINRInWords } from "@/lib/formatCurrency";
 import { useDashboardDateFilter } from "./DashboardDateFilterContext";
 import { cn } from "@/lib/utils";
 
