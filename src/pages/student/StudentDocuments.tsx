@@ -252,6 +252,7 @@ export default function StudentDocuments() {
                   const StatusIcon = config.icon;
                   const helperText = getHelperText(req.document_name);
                   const sample = findSampleForDocument(req.document_name);
+                  const guidance = findGuidanceForDocument(req.document_name);
 
                   return (
                     <Card key={req.id} className={`overflow-hidden transition-shadow hover:shadow-sm ${isActionNeeded ? "border-red-200" : ""}`}>
@@ -267,7 +268,7 @@ export default function StudentDocuments() {
                               )}
                             </div>
 
-                            {(helperText || sample) && (
+                            {(helperText || sample || guidance) && (
                               <div className="mt-1 flex flex-wrap items-start gap-1.5 text-xs text-muted-foreground">
                                 {helperText && <span className="leading-snug">{helperText}</span>}
                                 {sample && (
@@ -277,6 +278,16 @@ export default function StudentDocuments() {
                                     className="inline-flex shrink-0 items-center gap-1 text-primary hover:underline"
                                   >
                                     <ImageIcon className="h-3 w-3" /> View Sample
+                                  </button>
+                                )}
+                                {sample && guidance && <span className="text-muted-foreground/60 shrink-0">|</span>}
+                                {guidance && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setGuidanceOpen(guidance)}
+                                    className="inline-flex shrink-0 items-center gap-1 text-primary hover:underline"
+                                  >
+                                    <HelpCircle className="h-3 w-3" /> How to get this document?
                                   </button>
                                 )}
                               </div>
