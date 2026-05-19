@@ -95,7 +95,7 @@ export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetric
     <div className="bg-primary text-primary-foreground rounded-2xl shadow-xl overflow-hidden">
       <div className="p-6 sm:p-8 lg:p-10">
         {/* Hero Metrics — earnings/attention */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
           {heroMetrics.map((m) => {
             const Icon = m.icon;
             return (
