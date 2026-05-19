@@ -146,31 +146,25 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
     } catch { /* ignore */ }
   }, [chip, sort, filters]);
 
-  // Derive destination/intake options from data
+  const { intakes: intakeMasterRows } = useLeadMasterData();
+
+  // Destination options — display label is formatted (e.g. "india" → "India"),
+  // but the underlying value used for filtering stays exactly as stored.
   const destinationOptions = useMemo(() => {
     const set = new Set<string>();
     leads.forEach((l) => l.intended_study_country && set.add(l.intended_study_country));
-    return Array.from(set).sort();
+    return Array.from(set)
+      .map((value) => ({ value, label: formatDisplayLabel(value) }))
+      .sort((a, b) => a.label.localeCompare(b.label));
   }, [leads]);
 
-  // Clean intake options: skip nulls/empties, label as Jul-Sep-2026 style,
-  // sort chronologically. Composite key `${term}|${year}` used for filtering.
-  const intakeOptions = useMemo(() => {
-    const map = new Map<string, { value: string; label: string; term: string; year: number }>();
-    leads.forEach((l) => {
-      const term = l.intake_term;
-      const year = l.intake_year;
-      if (!term || !year) return;
-      const value = `${term}|${year}`;
-      if (!map.has(value)) {
-        map.set(value, { value, label: intakeSessionLabel(term, year), term, year });
-      }
-    });
-    const QUARTER: Record<string, number> = { Spring: 1, Summer: 2, Fall: 3, Winter: 4 };
-    return Array.from(map.values()).sort(
-      (a, b) => a.year * 10 + (QUARTER[a.term] ?? 99) - (b.year * 10 + (QUARTER[b.term] ?? 99)),
-    );
-  }, [leads]);
+  // Intake options come from the product-wide intake master (not just the
+  // currently visible leads). Helper handles null-safety, dedupe, and the
+  // canonical "Jul-Sep-2026" label format.
+  const intakeOptions = useMemo(
+    () => buildIntakeSessionOptions(intakeMasterRows),
+    [intakeMasterRows],
+  );
 
   // Most-recent payout record per lead (payouts arrive ordered by created_at desc)
   const payoutByLead = useMemo(() => {
