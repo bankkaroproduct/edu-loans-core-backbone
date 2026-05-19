@@ -57,23 +57,29 @@ const STAGE_ORDER: Record<string, number> = {
   credit_query: 8, sanction_received: 9, disbursed: 10, on_hold: 11, rejected: 12, dropped: 13,
 };
 
+type DateField = "submitted" | "updated";
+type DateRange = "" | "7d" | "1m" | "3m" | "1y" | "custom";
+
 interface Filters {
   stages: string[];
   sources: string[];
   destinations: string[];
-  intakes: string[];
-  submittedFrom: string;
-  submittedTo: string;
+  intakes: string[]; // composite keys: `${term}|${year}`
+  dateField: DateField;
+  dateRange: DateRange;
+  dateFrom: string;
+  dateTo: string;
   loanMin: string;
   loanMax: string;
 }
 
 const EMPTY_FILTERS: Filters = {
   stages: [], sources: [], destinations: [], intakes: [],
-  submittedFrom: "", submittedTo: "", loanMin: "", loanMax: "",
+  dateField: "submitted", dateRange: "",
+  dateFrom: "", dateTo: "", loanMin: "", loanMax: "",
 };
 
-const STORAGE_KEY = "dashboard.yourLeads.v2";
+const STORAGE_KEY = "dashboard.yourLeads.v3";
 
 function fmtDate(s: string) {
   return new Date(s).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
