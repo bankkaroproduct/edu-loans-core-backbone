@@ -347,34 +347,74 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
                       <Label className="text-xs font-semibold mb-2 block">Intake</Label>
                       <div className="grid grid-cols-3 gap-1.5 max-h-24 overflow-y-auto">
                         {intakeOptions.map((i) => (
-                          <label key={i} className="flex items-center gap-2 text-xs cursor-pointer">
+                          <label key={i.value} className="flex items-center gap-2 text-xs cursor-pointer">
                             <Checkbox
-                              checked={draftFilters.intakes.includes(i)}
-                              onCheckedChange={() => setDraftFilters({ ...draftFilters, intakes: toggleArr(draftFilters.intakes, i) })}
+                              checked={draftFilters.intakes.includes(i.value)}
+                              onCheckedChange={() => setDraftFilters({ ...draftFilters, intakes: toggleArr(draftFilters.intakes, i.value) })}
                             />
-                            {i}
+                            {i.label}
                           </label>
                         ))}
                       </div>
                     </div>
                   )}
 
-                  <div>
-                    <Label className="text-xs font-semibold mb-2 block">Submitted Date</Label>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold block">Date Filter</Label>
                     <div className="grid grid-cols-2 gap-2">
-                      <Input
-                        type="date"
-                        className="h-8 text-xs"
-                        value={draftFilters.submittedFrom}
-                        onChange={(e) => setDraftFilters({ ...draftFilters, submittedFrom: e.target.value })}
-                      />
-                      <Input
-                        type="date"
-                        className="h-8 text-xs"
-                        value={draftFilters.submittedTo}
-                        onChange={(e) => setDraftFilters({ ...draftFilters, submittedTo: e.target.value })}
-                      />
+                      <Select
+                        value={draftFilters.dateField}
+                        onValueChange={(v) => setDraftFilters({ ...draftFilters, dateField: v as DateField })}
+                      >
+                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="submitted">Submitted Date</SelectItem>
+                          <SelectItem value="updated">Updated Date</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        value={draftFilters.dateRange || "any"}
+                        onValueChange={(v) =>
+                          setDraftFilters({
+                            ...draftFilters,
+                            dateRange: v === "any" ? "" : (v as DateRange),
+                            ...(v !== "custom" ? { dateFrom: "", dateTo: "" } : {}),
+                          })
+                        }
+                      >
+                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Any time" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="any">Any time</SelectItem>
+                          <SelectItem value="7d">Last 7 Days</SelectItem>
+                          <SelectItem value="1m">Last Month</SelectItem>
+                          <SelectItem value="3m">Last 3 Months</SelectItem>
+                          <SelectItem value="1y">Last Year</SelectItem>
+                          <SelectItem value="custom">Custom</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
+                    {draftFilters.dateRange === "custom" && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">From (dd-mm-yyyy)</Label>
+                          <Input
+                            type="date"
+                            className="h-8 text-xs"
+                            value={draftFilters.dateFrom}
+                            onChange={(e) => setDraftFilters({ ...draftFilters, dateFrom: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">To (dd-mm-yyyy)</Label>
+                          <Input
+                            type="date"
+                            className="h-8 text-xs"
+                            value={draftFilters.dateTo}
+                            onChange={(e) => setDraftFilters({ ...draftFilters, dateTo: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div>
