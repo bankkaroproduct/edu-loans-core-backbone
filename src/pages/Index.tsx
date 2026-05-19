@@ -28,6 +28,14 @@ type StageHistory = Tables<"lead_stage_history">;
 type Note = Tables<"lead_notes">;
 
 export default function Dashboard() {
+  return (
+    <DashboardDateFilterProvider>
+      <PartnerDashboardContent />
+    </DashboardDateFilterProvider>
+  );
+}
+
+function PartnerDashboardContent() {
   const { appUser } = useAuth();
   const { agentUserId } = useRoleAccess();
   const { effectivePartnerId } = usePartnerContext();
