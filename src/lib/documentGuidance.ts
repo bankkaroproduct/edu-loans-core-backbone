@@ -7,6 +7,8 @@
  */
 import { GUIDANCE_ENTRIES, type DocumentGuidance } from "@/data/documentGuidance";
 
+export type { DocumentGuidance } from "@/data/documentGuidance";
+
 const normalize = (s: string): string =>
   s
     .toLowerCase()
