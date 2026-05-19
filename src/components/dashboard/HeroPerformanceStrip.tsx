@@ -118,7 +118,7 @@ function KPICard({ label, primary, amountWords, secondary, tooltip, Icon, accent
                 </>
               ) : (
                 <>
-                  <div className={cn("font-bold tracking-tight text-lg sm:text-xl leading-tight truncate", s.valueText)}>
+                  <div className={cn("font-extrabold tracking-tight text-lg sm:text-xl leading-tight truncate", s.valueText)}>
                     {primary}
                   </div>
                   {amountWords && (
