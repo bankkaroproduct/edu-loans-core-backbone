@@ -471,9 +471,6 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
                       <div>
                         Profile could not clear BRE thresholds. These are tentative lender options based on available profile data and require manual lender validation. Final approval, loan amount, and interest rate may vary.
                       </div>
-                      <div className="mt-1 text-amber-900/80 dark:text-amber-200/80">
-                        BRE result remains Not Cleared. These options are shown only to support manual lender discussion.
-                      </div>
                     </div>
                   </div>
                 )}
@@ -1227,31 +1224,6 @@ function LenderOptionCards({
   });
 
   // Compare stored ranks to the new live display order and surface a single
-  // subtle note when they differ. Stored ranks themselves are not mutated.
-  const hasStoredRanks = ordered.some((l) => storedMatches.get(l.lender_id)?.rank != null);
-  const ranksDifferFromLive =
-    hasStoredRanks &&
-    ordered.some((l, i) => {
-      const storedRank = storedMatches.get(l.lender_id)?.rank ?? null;
-      return storedRank != null && storedRank !== i + 1;
-    });
-
-  // Phase 2 — section-level route rationale (single source of truth for the
-  // primary route on this lead). Drives the small line above the cards plus
-  // the per-card route label fallback when engine roi_range_source is generic.
-  const routeRationale = (() => {
-    switch (collateralState) {
-      case "secured":
-        return "Showing rates for the Secured route (collateral provided).";
-      case "secured_review_needed":
-        return "Showing rates for the Secured route — collateral details pending verification.";
-      case "unsecured":
-        return "Showing rates for the Unsecured route (no collateral provided).";
-      default:
-        return null;
-    }
-  })();
-
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between flex-wrap gap-2">
@@ -1265,29 +1237,6 @@ function LenderOptionCards({
         )}
       </div>
 
-      {routeRationale && (
-        <p className="text-[11px] text-foreground/80 flex items-start gap-1.5">
-          <Info className="h-3 w-3 shrink-0 mt-0.5" />
-          <span>{routeRationale}</span>
-        </p>
-      )}
-
-      <p className="text-[11px] text-muted-foreground italic flex items-start gap-1.5">
-        <Info className="h-3 w-3 shrink-0 mt-0.5" />
-        <span>
-          Order reflects live BRE engine rank. Adjusted projection is used only as a tiebreaker.
-        </span>
-      </p>
-
-      {ranksDifferFromLive && (
-        <p className="text-[11px] text-muted-foreground/90 italic flex items-start gap-1.5">
-          <Info className="h-3 w-3 shrink-0 mt-0.5" />
-          <span>
-            Stored recommendation ranks differ from the live display ranking. Stored ranks have
-            not been recomputed.
-          </span>
-        </p>
-      )}
 
       <ol className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
         {ordered.slice(0, 8).map((l, idx) => {
