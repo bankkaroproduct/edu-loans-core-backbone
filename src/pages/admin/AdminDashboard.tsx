@@ -87,8 +87,8 @@ export default function AdminDashboard() {
         open={drilldown === "action"}
         onOpenChange={closeDrill}
         totalCount={metrics.data?.pendingAdminActions ?? 0}
-        requestsCount={metrics.data?.requestsPendingApproval ?? 0}
-        documentsCount={metrics.data?.documentsPendingReview ?? 0}
+        reviewDueCount={metrics.data?.reviewDue ?? 0}
+        followUpCount={metrics.data?.followUpRequired ?? 0}
       />
       <ActivePipelineDrillDown
         open={drilldown === "pipeline"}
