@@ -74,18 +74,13 @@ interface Filters {
   sources: string[];
   destinations: string[];
   intakes: string[]; // composite keys: `${term}|${year}`
-  dateField: DateField;
-  dateRange: DateRange;
-  dateFrom: string;
-  dateTo: string;
   loanMin: string;
   loanMax: string;
 }
 
 const EMPTY_FILTERS: Filters = {
   stages: [], sources: [], destinations: [], intakes: [],
-  dateField: "submitted", dateRange: "3m",
-  dateFrom: "", dateTo: "", loanMin: "", loanMax: "",
+  loanMin: "", loanMax: "",
 };
 
 const STORAGE_KEY = "dashboard.yourLeads.v4";
