@@ -18,6 +18,8 @@ import { formatStageLabel } from "./StageBadge";
 import { buildIntakeSessionOptions } from "@/lib/intakeSession";
 import { formatDisplayLabel } from "@/lib/formatDisplayLabel";
 import { useLeadMasterData } from "@/hooks/useLeadMasterData";
+import { useDashboardDateFilter } from "./DashboardDateFilterContext";
+
 
 type Lead = Tables<"student_leads">;
 type PayoutRecord = Tables<"partner_payout_records">;
@@ -67,18 +69,13 @@ interface Filters {
   sources: string[];
   destinations: string[];
   intakes: string[]; // composite keys: `${term}|${year}`
-  dateField: DateField;
-  dateRange: DateRange;
-  dateFrom: string;
-  dateTo: string;
   loanMin: string;
   loanMax: string;
 }
 
 const EMPTY_FILTERS: Filters = {
   stages: [], sources: [], destinations: [], intakes: [],
-  dateField: "submitted", dateRange: "3m",
-  dateFrom: "", dateTo: "", loanMin: "", loanMax: "",
+  loanMin: "", loanMax: "",
 };
 
 const STORAGE_KEY = "dashboard.yourLeads.v4";
@@ -103,13 +100,13 @@ function matchesChip(l: Lead, chip: ChipKey): boolean {
   }
 }
 
-function activeFilterCount(f: Filters): number {
+function activeFilterCount(f: Filters, dateRange: DateRange): number {
   return (
     (f.stages.length ? 1 : 0) +
     (f.sources.length ? 1 : 0) +
     (f.destinations.length ? 1 : 0) +
     (f.intakes.length ? 1 : 0) +
-    (f.dateRange && f.dateRange !== "3m" ? 1 : 0) +
+    (dateRange && dateRange !== "3m" ? 1 : 0) +
     (f.loanMin || f.loanMax ? 1 : 0)
   );
 }
@@ -123,23 +120,39 @@ const CHIPS: { key: ChipKey; label: string }[] = [
 
 export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loading: boolean; payouts?: PayoutRecord[] }) {
   const navigate = useNavigate();
+  const dateCtx = useDashboardDateFilter();
 
-  // Restore persisted state
+  // Restore persisted state. Legacy blobs may contain date fields under
+  // `filters` (pre-shared-context); we strip them silently — the shared date
+  // context owns those values now and persists to its own key.
   const persisted = useMemo(() => {
     if (typeof window === "undefined") return null;
     try {
       const raw = sessionStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : null;
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (parsed?.filters) {
+        const { dateField: _df, dateRange: _dr, dateFrom: _from, dateTo: _to, ...rest } = parsed.filters;
+        parsed.filters = rest;
+      }
+      return parsed;
     } catch { return null; }
   }, []);
 
   const [chip, setChip] = useState<ChipKey>(persisted?.chip ?? "all");
   const [sort, setSort] = useState<SortKey>(persisted?.sort ?? "updated_desc");
-  const [filters, setFilters] = useState<Filters>(persisted?.filters ?? EMPTY_FILTERS);
+  const [filters, setFilters] = useState<Filters>({ ...EMPTY_FILTERS, ...(persisted?.filters ?? {}) });
   const [draftFilters, setDraftFilters] = useState<Filters>(filters);
+  // Draft copy of date filter (popover working state). Synced from context on open.
+  const [draftDate, setDraftDate] = useState({
+    dateField: dateCtx.dateField,
+    dateRange: dateCtx.dateRange,
+    dateFrom: dateCtx.dateFrom,
+    dateTo: dateCtx.dateTo,
+  });
   const [open, setOpen] = useState(false);
 
-  // Persist
+  // Persist non-date filters only. Date filter lives in shared context with its own key.
   useEffect(() => {
     try {
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ chip, sort, filters }));
@@ -187,25 +200,10 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
         return filters.intakes.includes(`${l.intake_term}|${l.intake_year}`);
       });
     }
-    // Date filter — operates on either created_at or updated_at.
-    const dateCol = filters.dateField === "updated" ? "updated_at" : "created_at";
-    const now = Date.now();
-    const rangeDays: Record<Exclude<DateRange, "" | "custom">, number> = {
-      "7d": 7, "1m": 30, "3m": 90, "1y": 365,
-    };
-    if (filters.dateRange && filters.dateRange !== "custom") {
-      const from = now - rangeDays[filters.dateRange] * 86400000;
-      rows = rows.filter((l) => new Date(l[dateCol] as string).getTime() >= from);
-    } else if (filters.dateRange === "custom") {
-      if (filters.dateFrom) {
-        const from = new Date(filters.dateFrom).getTime();
-        rows = rows.filter((l) => new Date(l[dateCol] as string).getTime() >= from);
-      }
-      if (filters.dateTo) {
-        const to = new Date(filters.dateTo).getTime() + 86400000;
-        rows = rows.filter((l) => new Date(l[dateCol] as string).getTime() <= to);
-      }
-    }
+    // Date filter — sourced from shared context. Operates on either created_at or updated_at.
+    rows = rows.filter((l) =>
+      dateCtx.isDateInRange(l.created_at, { updatedIso: l.updated_at }),
+    );
     if (filters.loanMin) {
       const min = Number(filters.loanMin);
       rows = rows.filter((l) => (l.loan_amount_required ?? 0) >= min);
@@ -244,21 +242,24 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
       }
     });
     return sorted.slice(0, 12);
-  }, [leads, chip, sort, filters]);
+  }, [leads, chip, sort, filters, dateCtx]);
 
-  const fcount = activeFilterCount(filters);
+  const fcount = activeFilterCount(filters, dateCtx.dateRange);
 
   const toggleArr = (arr: string[], v: string) =>
     arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
 
   const applyDraft = () => {
     setFilters(draftFilters);
+    dateCtx.setDateFilter(draftDate);
     setOpen(false);
   };
 
   const resetAll = () => {
     setDraftFilters(EMPTY_FILTERS);
     setFilters(EMPTY_FILTERS);
+    setDraftDate({ dateField: "submitted", dateRange: "3m", dateFrom: "", dateTo: "" });
+    dateCtx.resetDateFilter();
     setChip("all");
   };
 
@@ -279,7 +280,18 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <CardTitle className="text-base">Your Leads</CardTitle>
           <div className="flex items-center gap-2 ml-auto">
-            <Popover open={open} onOpenChange={(o) => { setOpen(o); if (o) setDraftFilters(filters); }}>
+            <Popover open={open} onOpenChange={(o) => {
+              setOpen(o);
+              if (o) {
+                setDraftFilters(filters);
+                setDraftDate({
+                  dateField: dateCtx.dateField,
+                  dateRange: dateCtx.dateRange,
+                  dateFrom: dateCtx.dateFrom,
+                  dateTo: dateCtx.dateTo,
+                });
+              }
+            }}>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="h-8 relative">
                   <SlidersHorizontal className="h-3.5 w-3.5 mr-1" />
@@ -359,8 +371,8 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
                     <Label className="text-xs font-semibold block">Date Filter</Label>
                     <div className="grid grid-cols-2 gap-2">
                       <Select
-                        value={draftFilters.dateField}
-                        onValueChange={(v) => setDraftFilters({ ...draftFilters, dateField: v as DateField })}
+                        value={draftDate.dateField}
+                        onValueChange={(v) => setDraftDate({ ...draftDate, dateField: v as DateField })}
                       >
                         <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -369,10 +381,10 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
                         </SelectContent>
                       </Select>
                       <Select
-                        value={draftFilters.dateRange || "3m"}
+                        value={draftDate.dateRange || "3m"}
                         onValueChange={(v) =>
-                          setDraftFilters({
-                            ...draftFilters,
+                          setDraftDate({
+                            ...draftDate,
                             dateRange: v as DateRange,
                             ...(v !== "custom" ? { dateFrom: "", dateTo: "" } : {}),
                           })
@@ -388,15 +400,15 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
                         </SelectContent>
                       </Select>
                     </div>
-                    {draftFilters.dateRange === "custom" && (
+                    {draftDate.dateRange === "custom" && (
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
                           <Label className="text-[10px] text-muted-foreground">From (dd-mm-yyyy)</Label>
                           <Input
                             type="date"
                             className="h-8 text-xs"
-                            value={draftFilters.dateFrom}
-                            onChange={(e) => setDraftFilters({ ...draftFilters, dateFrom: e.target.value })}
+                            value={draftDate.dateFrom}
+                            onChange={(e) => setDraftDate({ ...draftDate, dateFrom: e.target.value })}
                           />
                         </div>
                         <div className="space-y-1">
@@ -404,8 +416,8 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
                           <Input
                             type="date"
                             className="h-8 text-xs"
-                            value={draftFilters.dateTo}
-                            onChange={(e) => setDraftFilters({ ...draftFilters, dateTo: e.target.value })}
+                            value={draftDate.dateTo}
+                            onChange={(e) => setDraftDate({ ...draftDate, dateTo: e.target.value })}
                           />
                         </div>
                       </div>

@@ -15,6 +15,10 @@ type DocSummary = { pending: number; underReview: number; verified: number; reje
 import { PayoutSnapshot, type PayoutSummary } from "@/components/dashboard/PayoutSnapshot";
 import { SystemHelp } from "@/components/dashboard/SystemHelp";
 import { OnboardingEmptyState } from "@/components/dashboard/OnboardingEmptyState";
+import {
+  DashboardDateFilterProvider,
+  useDashboardDateFilter,
+} from "@/components/dashboard/DashboardDateFilterContext";
 
 type Lead = Tables<"student_leads">;
 type Batch = Tables<"bulk_upload_batches">;
@@ -24,10 +28,19 @@ type StageHistory = Tables<"lead_stage_history">;
 type Note = Tables<"lead_notes">;
 
 export default function Dashboard() {
+  return (
+    <DashboardDateFilterProvider>
+      <PartnerDashboardContent />
+    </DashboardDateFilterProvider>
+  );
+}
+
+function PartnerDashboardContent() {
   const { appUser } = useAuth();
   const { agentUserId } = useRoleAccess();
   const { effectivePartnerId } = usePartnerContext();
   const navigate = useNavigate();
+  const dateCtx = useDashboardDateFilter();
   const [loading, setLoading] = useState(true);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
@@ -140,31 +153,34 @@ export default function Dashboard() {
     fetchData();
   }, [effectivePartnerId, agentUserId]);
 
+  // Shared date predicate from context. Applied upstream of every hero memo so
+  // hero KPIs honour the same window the Your Leads table is showing.
+  // Date column choice (created_at vs updated_at) follows the user's `dateField`
+  // toggle and is encoded in `isDateInRange` via the `updatedIso` opt-in.
+  const filteredLeads = useMemo(
+    () => leads.filter((l) => dateCtx.isDateInRange(l.created_at, { updatedIso: l.updated_at })),
+    [leads, dateCtx],
+  );
+  const filteredPayoutRecords = useMemo(
+    () => payoutRecords.filter((p) => dateCtx.isDateInRange(p.created_at, { updatedIso: p.updated_at })),
+    [payoutRecords, dateCtx],
+  );
+
   // Slim KPI memo — only fields the HeroPerformanceStrip consumes
   // (paidPayout, pendingPayout, needsAttention). KPICards block was removed.
   const kpiData = useMemo<KPIData>(() => {
     // "Pending Payout" (top hero) = AMOUNT awaiting release: pending + triggered + approved-not-yet-paid.
-    // We treat 'approved' as still-pending from the partner's POV (it's been
-    // accrued but not released to them yet).
-    const pendingPayoutRecs = payoutRecords.filter(
+    const pendingPayoutRecs = filteredPayoutRecords.filter(
       (p) => p.payout_status === "pending" || p.payout_status === "triggered" || p.payout_status === "approved",
     );
-    // "Total Earned" = COMMISSION ACCRUED across all non-reversed states.
-    // Distinguishes accrued (earned) from released (paid). Without this,
-    // disbursed leads with approved-but-unpaid commissions would silently
-    // show ₹0 earned — exactly the bug reported.
-    const earnedRecs = payoutRecords.filter(
+    // "Total Accrued Payout" = COMMISSION ACCRUED across all non-reversed states.
+    const earnedRecs = filteredPayoutRecords.filter(
       (p) => p.payout_status === "pending" || p.payout_status === "triggered" ||
              p.payout_status === "approved" || p.payout_status === "paid",
     );
-    // "Needs Attention" — must reconcile EXACTLY with the Leads page
-    // `?attention=true` filter (see src/pages/Leads.tsx:needsAttention).
-    // ATTENTION_STAGES = on_hold, documents_pending, credit_query
-    // ATTENTION_STATUSES = pending_info, reupload_needed, query_raised
-    // PLUS duplicate_flag.
     const ATTENTION_STAGES = new Set(["on_hold", "documents_pending", "credit_query"]);
     const ATTENTION_STATUSES = new Set(["pending_info", "reupload_needed", "query_raised"]);
-    const needsAttention = leads.filter(
+    const needsAttention = filteredLeads.filter(
       (l) =>
         ATTENTION_STAGES.has(l.current_stage) ||
         ATTENTION_STATUSES.has(l.current_status) ||
@@ -185,47 +201,37 @@ export default function Dashboard() {
       paidPayout: earnedRecs.reduce((s, p) => s + (p.payout_amount ?? 0), 0),
       needsAttention: needsAttention.length,
     };
-  }, [leads, payoutRecords]);
+  }, [filteredLeads, filteredPayoutRecords]);
 
-  // Loan metrics for hero — independent of any UI filter, partner-scoped via RLS.
-  // Active = strictly: in-pipeline submitted leads. Excludes drafts (not yet
-  // submitted), terminal stages (disbursed/rejected/dropped), AND sanctioned
-  // (shown separately in its own card).
   const loanMetrics = useMemo<LoanMetric[]>(() => {
     const excludedActive = new Set([
       "draft", "disbursed", "rejected", "dropped", "sanction_received",
     ]);
     const sumAmount = (rows: Lead[]) => rows.reduce((s, l) => s + (l.loan_amount_required ?? 0), 0);
 
-    const active = leads.filter((l) => !excludedActive.has(l.current_stage));
-    // Cumulative: leads currently AT sanction_received UNION leads that EVER
-    // reached sanction_received (including those subsequently disbursed).
-    // Guarantees sanctioned_count >= disbursed_count.
-    const sanctioned = leads.filter(
+    const active = filteredLeads.filter((l) => !excludedActive.has(l.current_stage));
+    const sanctioned = filteredLeads.filter(
       (l) => l.current_stage === "sanction_received" || sanctionedEverIds.has(l.id),
     );
-    const disbursed = leads.filter((l) => l.current_stage === "disbursed");
+    const disbursed = filteredLeads.filter((l) => l.current_stage === "disbursed");
 
     return [
       { key: "active", label: "Total Loan Active", count: active.length, amount: sumAmount(active) },
       { key: "sanctioned", label: "Total Loan Sanctioned", count: sanctioned.length, amount: sumAmount(sanctioned) },
       { key: "disbursed", label: "Total Disbursed", count: disbursed.length, amount: sumAmount(disbursed) },
     ];
-  }, [leads, sanctionedEverIds]);
+  }, [filteredLeads, sanctionedEverIds]);
 
-  // Secondary loan/payout metrics — visually de-emphasized supporting context.
-  // Note: top-row "Pending Payout" shows AMOUNT; this row's "Pending Payout
-  // Records" shows COUNT (same underlying record set, different aggregation).
   const secondaryLoanMetrics = useMemo<SecondaryLoanMetric[]>(() => {
     const sumAmount = (rows: Lead[]) => rows.reduce((s, l) => s + (l.loan_amount_required ?? 0), 0);
-    const rejected = leads.filter((l) => ["rejected", "dropped"].includes(l.current_stage));
+    const rejected = filteredLeads.filter((l) => ["rejected", "dropped"].includes(l.current_stage));
 
     const sumPayout = (statuses: string[]) =>
-      payoutRecords
+      filteredPayoutRecords
         .filter((p) => statuses.includes(p.payout_status))
         .reduce((s, p) => s + (p.payout_amount ?? 0), 0);
     const countPayout = (statuses: string[]) =>
-      payoutRecords.filter((p) => statuses.includes(p.payout_status)).length;
+      filteredPayoutRecords.filter((p) => statuses.includes(p.payout_status)).length;
 
     const pendingStatuses = ["pending", "triggered", "approved"];
 
@@ -234,7 +240,7 @@ export default function Dashboard() {
       { key: "payout_released", label: "Total Payout Released", count: countPayout(["paid"]), amount: sumPayout(["paid"]) },
       { key: "payout_pending", label: "Pending Payout Records", count: countPayout(pendingStatuses), amount: sumPayout(pendingStatuses) },
     ];
-  }, [leads, payoutRecords]);
+  }, [filteredLeads, filteredPayoutRecords]);
 
   const docSummary = useMemo<DocSummary>(() => ({
     pending: docReqs.filter((d) => d.status === "not_uploaded").length,

@@ -167,7 +167,7 @@ export function buildDrilldown(card: CardKey, d: DrilldownData): DrilldownView {
         (p) => p.id,
       );
       return {
-        title: "Total Earned",
+        title: "Total Accrued Payout",
         subtitle: `${fmtINR(total)} across ${earned.length} payout record${earned.length === 1 ? "" : "s"}`,
         segments: segments.length ? segments : null,
         records: earned
