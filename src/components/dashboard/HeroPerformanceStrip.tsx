@@ -63,13 +63,6 @@ export function HeroPerformanceStrip({ kpiData, loanMetrics, secondaryLoanMetric
       icon: Clock,
       tooltip: "Total ₹ value of payout records that are pending, triggered, or approved but not yet paid out.",
     },
-    {
-      key: "needs_attention",
-      label: "Needs Attention",
-      value: kpiData.needsAttention.toString(),
-      icon: AlertTriangle,
-      tooltip: "Leads on hold, with documents pending, awaiting reupload, query raised, pending info, in credit query, or flagged as duplicate. Click to filter the Leads page.",
-    },
   ];
 
   // Tooltip definitions for the loan business metrics row.
