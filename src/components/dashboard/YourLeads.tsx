@@ -120,23 +120,39 @@ const CHIPS: { key: ChipKey; label: string }[] = [
 
 export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loading: boolean; payouts?: PayoutRecord[] }) {
   const navigate = useNavigate();
+  const dateCtx = useDashboardDateFilter();
 
-  // Restore persisted state
+  // Restore persisted state. Legacy blobs may contain date fields under
+  // `filters` (pre-shared-context); we strip them silently — the shared date
+  // context owns those values now and persists to its own key.
   const persisted = useMemo(() => {
     if (typeof window === "undefined") return null;
     try {
       const raw = sessionStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : null;
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (parsed?.filters) {
+        const { dateField: _df, dateRange: _dr, dateFrom: _from, dateTo: _to, ...rest } = parsed.filters;
+        parsed.filters = rest;
+      }
+      return parsed;
     } catch { return null; }
   }, []);
 
   const [chip, setChip] = useState<ChipKey>(persisted?.chip ?? "all");
   const [sort, setSort] = useState<SortKey>(persisted?.sort ?? "updated_desc");
-  const [filters, setFilters] = useState<Filters>(persisted?.filters ?? EMPTY_FILTERS);
+  const [filters, setFilters] = useState<Filters>({ ...EMPTY_FILTERS, ...(persisted?.filters ?? {}) });
   const [draftFilters, setDraftFilters] = useState<Filters>(filters);
+  // Draft copy of date filter (popover working state). Synced from context on open.
+  const [draftDate, setDraftDate] = useState({
+    dateField: dateCtx.dateField,
+    dateRange: dateCtx.dateRange,
+    dateFrom: dateCtx.dateFrom,
+    dateTo: dateCtx.dateTo,
+  });
   const [open, setOpen] = useState(false);
 
-  // Persist
+  // Persist non-date filters only. Date filter lives in shared context with its own key.
   useEffect(() => {
     try {
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ chip, sort, filters }));
