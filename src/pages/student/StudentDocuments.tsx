@@ -79,6 +79,7 @@ export default function StudentDocuments() {
   const [leadSummary, setLeadSummary] = useState<LeadSummary | null>(null);
   const [uploadTarget, setUploadTarget] = useState<DocumentRequirement | null>(null);
   const [sampleOpen, setSampleOpen] = useState<DocumentSample | null>(null);
+  const [guidanceOpen, setGuidanceOpen] = useState<DocumentGuidance | null>(null);
 
   useEffect(() => {
     if (!isVerified) { navigate("/student/login"); return; }
