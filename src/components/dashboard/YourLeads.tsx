@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import type { Tables } from "@/integrations/supabase/types";
 import { formatINR } from "@/lib/formatCurrency";
 import { formatStageLabel } from "./StageBadge";
+import { intakeSessionLabel } from "@/lib/intakeSession";
 
 type Lead = Tables<"student_leads">;
 type PayoutRecord = Tables<"partner_payout_records">;
