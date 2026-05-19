@@ -10,11 +10,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { Tables } from "@/integrations/supabase/types";
+import { formatINR } from "@/lib/formatCurrency";
+import { formatStageLabel } from "./StageBadge";
 
 type Lead = Tables<"student_leads">;
+type PayoutRecord = Tables<"partner_payout_records">;
 
 type ChipKey = "all" | "attention" | "documents_pending" | "sent_to_lender" | "disbursed";
 type SortKey =
