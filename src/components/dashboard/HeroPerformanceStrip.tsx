@@ -96,10 +96,11 @@ function KPICard({ label, primary, amountWords, secondary, tooltip, Icon, accent
         <div
           onClick={onClick}
           className={cn(
-            "group relative cursor-pointer rounded-lg bg-card border border-border/60 pl-3.5 pr-3 py-2.5",
+            "group relative cursor-pointer rounded-lg border pl-3.5 pr-3 py-2.5",
             "shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all",
-            "hover:shadow-md hover:-translate-y-0.5 hover:border-border",
+            "hover:shadow-md hover:-translate-y-0.5",
             "overflow-hidden",
+            s.cardBg,
           )}
         >
           {/* Left accent bar */}
