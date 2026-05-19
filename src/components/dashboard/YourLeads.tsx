@@ -100,13 +100,13 @@ function matchesChip(l: Lead, chip: ChipKey): boolean {
   }
 }
 
-function activeFilterCount(f: Filters): number {
+function activeFilterCount(f: Filters, dateRange: DateRange): number {
   return (
     (f.stages.length ? 1 : 0) +
     (f.sources.length ? 1 : 0) +
     (f.destinations.length ? 1 : 0) +
     (f.intakes.length ? 1 : 0) +
-    (f.dateRange && f.dateRange !== "3m" ? 1 : 0) +
+    (dateRange && dateRange !== "3m" ? 1 : 0) +
     (f.loanMin || f.loanMax ? 1 : 0)
   );
 }
