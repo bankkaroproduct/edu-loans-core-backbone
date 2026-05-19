@@ -295,12 +295,6 @@ export default function AdminLeadDetail() {
               of truth for the partner / student-direct profile. */}
           <LeadCommunicationPanel lead={lead} />
 
-          <AdminStageStatusPanel
-            lead={lead}
-            unverifiedRequiredCount={unverifiedRequiredCount}
-            hasSanctionInHistory={hasSanctionInHistory}
-            onChanged={loadAll}
-          />
 
           <AdminLeadPayoutSnapshot payouts={payouts} leadId={lead.id} />
         </div>
