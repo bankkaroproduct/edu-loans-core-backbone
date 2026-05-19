@@ -40,6 +40,7 @@ function PartnerDashboardContent() {
   const { agentUserId } = useRoleAccess();
   const { effectivePartnerId } = usePartnerContext();
   const navigate = useNavigate();
+  const dateCtx = useDashboardDateFilter();
   const [loading, setLoading] = useState(true);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [batches, setBatches] = useState<Batch[]>([]);
