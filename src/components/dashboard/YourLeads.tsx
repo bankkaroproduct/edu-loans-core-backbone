@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import type { Tables } from "@/integrations/supabase/types";
 import { formatINR } from "@/lib/formatCurrency";
 import { formatStageLabel } from "./StageBadge";
+import { intakeSessionLabel } from "@/lib/intakeSession";
 
 type Lead = Tables<"student_leads">;
 type PayoutRecord = Tables<"partner_payout_records">;
@@ -56,23 +57,29 @@ const STAGE_ORDER: Record<string, number> = {
   credit_query: 8, sanction_received: 9, disbursed: 10, on_hold: 11, rejected: 12, dropped: 13,
 };
 
+type DateField = "submitted" | "updated";
+type DateRange = "" | "7d" | "1m" | "3m" | "1y" | "custom";
+
 interface Filters {
   stages: string[];
   sources: string[];
   destinations: string[];
-  intakes: string[];
-  submittedFrom: string;
-  submittedTo: string;
+  intakes: string[]; // composite keys: `${term}|${year}`
+  dateField: DateField;
+  dateRange: DateRange;
+  dateFrom: string;
+  dateTo: string;
   loanMin: string;
   loanMax: string;
 }
 
 const EMPTY_FILTERS: Filters = {
   stages: [], sources: [], destinations: [], intakes: [],
-  submittedFrom: "", submittedTo: "", loanMin: "", loanMax: "",
+  dateField: "submitted", dateRange: "",
+  dateFrom: "", dateTo: "", loanMin: "", loanMax: "",
 };
 
-const STORAGE_KEY = "dashboard.yourLeads.v2";
+const STORAGE_KEY = "dashboard.yourLeads.v3";
 
 function fmtDate(s: string) {
   return new Date(s).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
@@ -100,7 +107,7 @@ function activeFilterCount(f: Filters): number {
     (f.sources.length ? 1 : 0) +
     (f.destinations.length ? 1 : 0) +
     (f.intakes.length ? 1 : 0) +
-    (f.submittedFrom || f.submittedTo ? 1 : 0) +
+    (f.dateRange ? 1 : 0) +
     (f.loanMin || f.loanMax ? 1 : 0)
   );
 }
@@ -144,10 +151,23 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
     return Array.from(set).sort();
   }, [leads]);
 
+  // Clean intake options: skip nulls/empties, label as Jul-Sep-2026 style,
+  // sort chronologically. Composite key `${term}|${year}` used for filtering.
   const intakeOptions = useMemo(() => {
-    const set = new Set<string>();
-    leads.forEach((l) => set.add(`${l.intake_term} ${l.intake_year}`));
-    return Array.from(set).sort();
+    const map = new Map<string, { value: string; label: string; term: string; year: number }>();
+    leads.forEach((l) => {
+      const term = l.intake_term;
+      const year = l.intake_year;
+      if (!term || !year) return;
+      const value = `${term}|${year}`;
+      if (!map.has(value)) {
+        map.set(value, { value, label: intakeSessionLabel(term, year), term, year });
+      }
+    });
+    const QUARTER: Record<string, number> = { Spring: 1, Summer: 2, Fall: 3, Winter: 4 };
+    return Array.from(map.values()).sort(
+      (a, b) => a.year * 10 + (QUARTER[a.term] ?? 99) - (b.year * 10 + (QUARTER[b.term] ?? 99)),
+    );
   }, [leads]);
 
   // Most-recent payout record per lead (payouts arrive ordered by created_at desc)
@@ -165,14 +185,30 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
     if (filters.stages.length) rows = rows.filter((l) => filters.stages.includes(l.current_stage));
     if (filters.sources.length) rows = rows.filter((l) => filters.sources.includes(l.source_type));
     if (filters.destinations.length) rows = rows.filter((l) => filters.destinations.includes(l.intended_study_country));
-    if (filters.intakes.length) rows = rows.filter((l) => filters.intakes.includes(`${l.intake_term} ${l.intake_year}`));
-    if (filters.submittedFrom) {
-      const from = new Date(filters.submittedFrom).getTime();
-      rows = rows.filter((l) => new Date(l.created_at).getTime() >= from);
+    if (filters.intakes.length) {
+      rows = rows.filter((l) => {
+        if (!l.intake_term || !l.intake_year) return false;
+        return filters.intakes.includes(`${l.intake_term}|${l.intake_year}`);
+      });
     }
-    if (filters.submittedTo) {
-      const to = new Date(filters.submittedTo).getTime() + 86400000;
-      rows = rows.filter((l) => new Date(l.created_at).getTime() <= to);
+    // Date filter — operates on either created_at or updated_at.
+    const dateCol = filters.dateField === "updated" ? "updated_at" : "created_at";
+    const now = Date.now();
+    const rangeDays: Record<Exclude<DateRange, "" | "custom">, number> = {
+      "7d": 7, "1m": 30, "3m": 90, "1y": 365,
+    };
+    if (filters.dateRange && filters.dateRange !== "custom") {
+      const from = now - rangeDays[filters.dateRange] * 86400000;
+      rows = rows.filter((l) => new Date(l[dateCol] as string).getTime() >= from);
+    } else if (filters.dateRange === "custom") {
+      if (filters.dateFrom) {
+        const from = new Date(filters.dateFrom).getTime();
+        rows = rows.filter((l) => new Date(l[dateCol] as string).getTime() >= from);
+      }
+      if (filters.dateTo) {
+        const to = new Date(filters.dateTo).getTime() + 86400000;
+        rows = rows.filter((l) => new Date(l[dateCol] as string).getTime() <= to);
+      }
     }
     if (filters.loanMin) {
       const min = Number(filters.loanMin);
@@ -311,34 +347,74 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
                       <Label className="text-xs font-semibold mb-2 block">Intake</Label>
                       <div className="grid grid-cols-3 gap-1.5 max-h-24 overflow-y-auto">
                         {intakeOptions.map((i) => (
-                          <label key={i} className="flex items-center gap-2 text-xs cursor-pointer">
+                          <label key={i.value} className="flex items-center gap-2 text-xs cursor-pointer">
                             <Checkbox
-                              checked={draftFilters.intakes.includes(i)}
-                              onCheckedChange={() => setDraftFilters({ ...draftFilters, intakes: toggleArr(draftFilters.intakes, i) })}
+                              checked={draftFilters.intakes.includes(i.value)}
+                              onCheckedChange={() => setDraftFilters({ ...draftFilters, intakes: toggleArr(draftFilters.intakes, i.value) })}
                             />
-                            {i}
+                            {i.label}
                           </label>
                         ))}
                       </div>
                     </div>
                   )}
 
-                  <div>
-                    <Label className="text-xs font-semibold mb-2 block">Submitted Date</Label>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold block">Date Filter</Label>
                     <div className="grid grid-cols-2 gap-2">
-                      <Input
-                        type="date"
-                        className="h-8 text-xs"
-                        value={draftFilters.submittedFrom}
-                        onChange={(e) => setDraftFilters({ ...draftFilters, submittedFrom: e.target.value })}
-                      />
-                      <Input
-                        type="date"
-                        className="h-8 text-xs"
-                        value={draftFilters.submittedTo}
-                        onChange={(e) => setDraftFilters({ ...draftFilters, submittedTo: e.target.value })}
-                      />
+                      <Select
+                        value={draftFilters.dateField}
+                        onValueChange={(v) => setDraftFilters({ ...draftFilters, dateField: v as DateField })}
+                      >
+                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="submitted">Submitted Date</SelectItem>
+                          <SelectItem value="updated">Updated Date</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        value={draftFilters.dateRange || "any"}
+                        onValueChange={(v) =>
+                          setDraftFilters({
+                            ...draftFilters,
+                            dateRange: v === "any" ? "" : (v as DateRange),
+                            ...(v !== "custom" ? { dateFrom: "", dateTo: "" } : {}),
+                          })
+                        }
+                      >
+                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Any time" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="any">Any time</SelectItem>
+                          <SelectItem value="7d">Last 7 Days</SelectItem>
+                          <SelectItem value="1m">Last Month</SelectItem>
+                          <SelectItem value="3m">Last 3 Months</SelectItem>
+                          <SelectItem value="1y">Last Year</SelectItem>
+                          <SelectItem value="custom">Custom</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
+                    {draftFilters.dateRange === "custom" && (
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">From (dd-mm-yyyy)</Label>
+                          <Input
+                            type="date"
+                            className="h-8 text-xs"
+                            value={draftFilters.dateFrom}
+                            onChange={(e) => setDraftFilters({ ...draftFilters, dateFrom: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">To (dd-mm-yyyy)</Label>
+                          <Input
+                            type="date"
+                            className="h-8 text-xs"
+                            value={draftFilters.dateTo}
+                            onChange={(e) => setDraftFilters({ ...draftFilters, dateTo: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div>
