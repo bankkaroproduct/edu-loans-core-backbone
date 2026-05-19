@@ -1,11 +1,40 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import {
+  ACTION_NEEDED_EXCLUDED_STAGES,
+  REVIEW_DUE_SELECT_COLUMNS,
+  countMissingMandatory,
+  REVIEW_DUE_THRESHOLD,
+} from "@/lib/adminActionNeeded";
 
 type StageEnum = Database["public"]["Enums"]["lead_stage_enum"];
 type StatusEnum = Database["public"]["Enums"]["lead_status_enum"];
 
 const ROW_LIMIT = 20;
+
+export interface ReviewDueLeadRow {
+  id: string;
+  lead_uuid: string;
+  lead_id: string | null;
+  student_name: string;
+  partner_name: string | null;
+  current_stage: StageEnum;
+  current_status: StatusEnum;
+  missing_count: number;
+  updated_at: string;
+}
+
+export interface FollowUpLeadRow {
+  id: string;
+  lead_uuid: string;
+  lead_id: string | null;
+  student_name: string;
+  partner_name: string | null;
+  current_stage: StageEnum;
+  current_status: StatusEnum;
+  updated_at: string;
+}
 
 export interface PendingRequestRow {
   id: string;
