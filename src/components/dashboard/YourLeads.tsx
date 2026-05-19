@@ -280,7 +280,18 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <CardTitle className="text-base">Your Leads</CardTitle>
           <div className="flex items-center gap-2 ml-auto">
-            <Popover open={open} onOpenChange={(o) => { setOpen(o); if (o) setDraftFilters(filters); }}>
+            <Popover open={open} onOpenChange={(o) => {
+              setOpen(o);
+              if (o) {
+                setDraftFilters(filters);
+                setDraftDate({
+                  dateField: dateCtx.dateField,
+                  dateRange: dateCtx.dateRange,
+                  dateFrom: dateCtx.dateFrom,
+                  dateTo: dateCtx.dateTo,
+                });
+              }
+            }}>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="h-8 relative">
                   <SlidersHorizontal className="h-3.5 w-3.5 mr-1" />
