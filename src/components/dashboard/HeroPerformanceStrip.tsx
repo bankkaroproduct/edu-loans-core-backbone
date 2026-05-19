@@ -31,42 +31,48 @@ interface Props {
 
 type Accent = "success" | "warning" | "info" | "indigo" | "destructive" | "neutral";
 
-const accentStyles: Record<Accent, { bar: string; iconBg: string; iconText: string; valueText: string }> = {
+const accentStyles: Record<Accent, { bar: string; iconBg: string; iconText: string; valueText: string; cardBg: string }> = {
   success: {
     bar: "bg-success",
-    iconBg: "bg-success/10",
+    iconBg: "bg-success/15",
     iconText: "text-success",
     valueText: "text-success",
+    cardBg: "bg-success/[0.06] border-success/20 hover:border-success/40",
   },
   warning: {
     bar: "bg-warning",
-    iconBg: "bg-warning/10",
+    iconBg: "bg-warning/15",
     iconText: "text-warning",
     valueText: "text-warning",
+    cardBg: "bg-warning/[0.06] border-warning/20 hover:border-warning/40",
   },
   info: {
     bar: "bg-info",
-    iconBg: "bg-info/10",
+    iconBg: "bg-info/15",
     iconText: "text-info",
     valueText: "text-foreground",
+    cardBg: "bg-info/[0.06] border-info/20 hover:border-info/40",
   },
   indigo: {
     bar: "bg-info",
     iconBg: "bg-info/15",
     iconText: "text-info",
     valueText: "text-foreground",
+    cardBg: "bg-info/[0.06] border-info/20 hover:border-info/40",
   },
   destructive: {
     bar: "bg-destructive",
-    iconBg: "bg-destructive/10",
+    iconBg: "bg-destructive/15",
     iconText: "text-destructive",
     valueText: "text-foreground",
+    cardBg: "bg-destructive/[0.06] border-destructive/20 hover:border-destructive/40",
   },
   neutral: {
     bar: "bg-muted-foreground/40",
     iconBg: "bg-muted",
     iconText: "text-muted-foreground",
     valueText: "text-foreground",
+    cardBg: "bg-muted/40 border-border/60 hover:border-border",
   },
 };
 
@@ -90,10 +96,11 @@ function KPICard({ label, primary, amountWords, secondary, tooltip, Icon, accent
         <div
           onClick={onClick}
           className={cn(
-            "group relative cursor-pointer rounded-lg bg-card border border-border/60 pl-3.5 pr-3 py-2.5",
+            "group relative cursor-pointer rounded-lg border pl-3.5 pr-3 py-2.5",
             "shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all",
-            "hover:shadow-md hover:-translate-y-0.5 hover:border-border",
+            "hover:shadow-md hover:-translate-y-0.5",
             "overflow-hidden",
+            s.cardBg,
           )}
         >
           {/* Left accent bar */}
@@ -111,7 +118,7 @@ function KPICard({ label, primary, amountWords, secondary, tooltip, Icon, accent
                 </>
               ) : (
                 <>
-                  <div className={cn("font-bold tracking-tight text-lg sm:text-xl leading-tight truncate", s.valueText)}>
+                  <div className={cn("font-extrabold tracking-tight text-lg sm:text-xl leading-tight truncate", s.valueText)}>
                     {primary}
                   </div>
                   {amountWords && (
