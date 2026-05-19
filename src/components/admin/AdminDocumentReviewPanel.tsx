@@ -380,7 +380,7 @@ function DocReviewRow({
         <Badge variant={badgeVariant} className="text-[10px] shrink-0">{badgeLabel}</Badge>
       </button>
 
-      {(helperText || sample) && (
+      {(helperText || sample || guidance) && (
         <div className="px-2.5 pb-2 -mt-1 flex items-start gap-1.5 flex-wrap text-xs text-muted-foreground">
           {helperText && <span className="leading-snug">{helperText}</span>}
           {sample && (
@@ -390,6 +390,16 @@ function DocReviewRow({
               className="inline-flex items-center gap-1 text-primary hover:underline shrink-0"
             >
               <ImageIcon className="h-3 w-3" /> View Sample
+            </button>
+          )}
+          {sample && guidance && <span className="text-muted-foreground/60 shrink-0">|</span>}
+          {guidance && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setGuidanceOpen(true); }}
+              className="inline-flex items-center gap-1 text-primary hover:underline shrink-0"
+            >
+              <HelpCircle className="h-3 w-3" /> How to get this document?
             </button>
           )}
         </div>
