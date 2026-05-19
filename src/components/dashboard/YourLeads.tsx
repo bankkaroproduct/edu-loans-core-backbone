@@ -369,18 +369,17 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
                         </SelectContent>
                       </Select>
                       <Select
-                        value={draftFilters.dateRange || "any"}
+                        value={draftFilters.dateRange || "3m"}
                         onValueChange={(v) =>
                           setDraftFilters({
                             ...draftFilters,
-                            dateRange: v === "any" ? "" : (v as DateRange),
+                            dateRange: v as DateRange,
                             ...(v !== "custom" ? { dateFrom: "", dateTo: "" } : {}),
                           })
                         }
                       >
-                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Any time" /></SelectTrigger>
+                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="any">Any time</SelectItem>
                           <SelectItem value="7d">Last 7 Days</SelectItem>
                           <SelectItem value="1m">Last Month</SelectItem>
                           <SelectItem value="3m">Last 3 Months</SelectItem>
