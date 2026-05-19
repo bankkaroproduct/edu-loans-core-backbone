@@ -9,7 +9,9 @@ import { useStudentAuth } from "@/hooks/useStudentAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { StudentDocumentUploadDialog } from "@/components/student/StudentDocumentUploadDialog";
 import { SampleDocumentModal } from "@/components/documents/SampleDocumentModal";
+import { DocumentGuidanceModal } from "@/components/documents/DocumentGuidanceModal";
 import { findSampleForDocument, getHelperText, type DocumentSample } from "@/lib/documentSamples";
+import { findGuidanceForDocument, type DocumentGuidance } from "@/lib/documentGuidance";
 import { isRequirementApplicable } from "@/lib/documentApplicability";
 import type { LeadDocRequirement } from "@/hooks/useLeadDocumentsData";
 import {
