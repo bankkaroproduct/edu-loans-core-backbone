@@ -432,12 +432,28 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
                   <TableHead className="hidden lg:table-cell">Course</TableHead>
                   <TableHead>Stage</TableHead>
                   <TableHead className="hidden sm:table-cell">Status</TableHead>
+                  <TableHead className="whitespace-nowrap text-right">
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 hover:text-foreground"
+                      onClick={() => setSort(sort === "amount_desc" ? "amount_asc" : "amount_desc")}
+                    >
+                      Loan Amount
+                      {sort === "amount_desc" ? <ArrowDown className="h-3 w-3" />
+                        : sort === "amount_asc" ? <ArrowUp className="h-3 w-3" />
+                        : <ArrowUpDown className="h-3 w-3 opacity-50" />}
+                    </button>
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap text-right hidden md:table-cell">Expected Payout</TableHead>
+                  <TableHead className="whitespace-nowrap hidden lg:table-cell">Payout Status</TableHead>
                   <TableHead className="whitespace-nowrap">Submitted On</TableHead>
                   <TableHead className="text-right whitespace-nowrap">Updated</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {visible.map((lead) => (
+                {visible.map((lead) => {
+                  const p = payoutByLead.get(lead.id);
+                  return (
                   <TableRow
                     key={lead.id}
                     className="cursor-pointer h-12"
