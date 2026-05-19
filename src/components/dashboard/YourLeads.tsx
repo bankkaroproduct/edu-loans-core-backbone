@@ -326,12 +326,12 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
                       <Label className="text-xs font-semibold mb-2 block">Destination</Label>
                       <div className="grid grid-cols-3 gap-1.5 max-h-24 overflow-y-auto">
                         {destinationOptions.map((d) => (
-                          <label key={d} className="flex items-center gap-2 text-xs cursor-pointer">
+                          <label key={d.value} className="flex items-center gap-2 text-xs cursor-pointer">
                             <Checkbox
-                              checked={draftFilters.destinations.includes(d)}
-                              onCheckedChange={() => setDraftFilters({ ...draftFilters, destinations: toggleArr(draftFilters.destinations, d) })}
+                              checked={draftFilters.destinations.includes(d.value)}
+                              onCheckedChange={() => setDraftFilters({ ...draftFilters, destinations: toggleArr(draftFilters.destinations, d.value) })}
                             />
-                            {d}
+                            {d.label}
                           </label>
                         ))}
                       </div>
