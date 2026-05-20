@@ -347,12 +347,12 @@ export function partitionRequirementsWithReasons(
 
   for (const r of requirements) {
     const decision = decideApplicability(r, ctx);
-    if (decision.applicable) {
+    if (decision.applicable === true) {
       applicable.push(r);
-      continue;
+    } else if (decision.reason !== "country") {
+      const reason = decision.reason;
+      (groups[reason] ??= []).push(r);
     }
-    if (decision.reason === "country") continue; // silently suppressed
-    (groups[decision.reason] ??= []).push(r);
   }
 
   return { applicable, notApplicableGroups: groups, level };
