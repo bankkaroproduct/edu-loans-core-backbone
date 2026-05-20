@@ -390,11 +390,11 @@ export default function AdminLeads() {
       .channel("admin-leads-queue")
       .on("postgres_changes", { event: "*", schema: "public", table: "student_leads" }, () => {
         if (t) clearTimeout(t);
-        t = setTimeout(() => fetchPage(), 600);
+        t = setTimeout(() => { fetchPage(); fetchHighPriorityIds(); }, 600);
       })
       .subscribe();
     return () => { if (t) clearTimeout(t); supabase.removeChannel(channel); };
-  }, [fetchPage]);
+  }, [fetchPage, fetchHighPriorityIds]);
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
