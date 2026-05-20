@@ -97,7 +97,7 @@ export function LeadDetailHeaderInline({
         )}
         <StageBadge stage={lead.current_stage} />
         <StatusBadge status={lead.current_status} />
-        {needsAttention && <Badge variant="destructive" className="text-xs">Needs Attention</Badge>}
+        
         {lead.duplicate_flag && (
           <Badge variant="outline" className="text-xs border-orange-300 text-orange-700 bg-orange-50">
             Duplicate
