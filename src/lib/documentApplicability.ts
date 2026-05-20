@@ -244,8 +244,7 @@ function isExplicitlyNonSalaried(value: string | null | undefined): boolean {
 
 export type ApplicabilityDecision =
   | { applicable: true }
-  | { applicable: false; reason: NotApplicableReason }
-  | { applicable: false; reason: "country"; silent: true };
+  | { applicable: false; reason: NotApplicableReason | "country" };
 
 /**
  * Decide applicability for a single requirement under the given lead context.
@@ -273,8 +272,8 @@ export function decideApplicability(
     if (c === "united_states" || c === "united_kingdom" || c === "australia") {
       return { applicable: true };
     }
-    // Silent suppression for other / unknown destinations.
-    return { applicable: false, reason: "country", silent: true };
+    // Silent suppression for other / unknown destinations — consumers skip "country".
+    return { applicable: false, reason: "country" };
   }
   if (conditional === "PROPERTY_DOC") {
     if (ctx.collateral_available === true) return { applicable: true };
