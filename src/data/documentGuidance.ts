@@ -333,7 +333,7 @@ export const GUIDANCE_ENTRIES: DocumentGuidance[] = [
     privacy_note: "Upload only through EduLoans secure upload.",
   },
   {
-    canonical_name: "I-20 (USA)",
+    canonical_name: "I-20 (United States)",
     short_helper_line:
       "Download the I-20 from your US university's international student portal after accepting your offer.",
     where_to_get: [va("US University's International Student / ISSS Portal", "university")],
@@ -356,7 +356,7 @@ export const GUIDANCE_ENTRIES: DocumentGuidance[] = [
     privacy_note: "I-20 contains your SEVIS ID. Upload only through EduLoans secure upload.",
   },
   {
-    canonical_name: "CAS — Confirmation of Acceptance for Studies (UK)",
+    canonical_name: "CAS — Confirmation of Acceptance for Studies (United Kingdom)",
     short_helper_line:
       "Your UK university emails the CAS statement or makes it available on the student portal after you accept and pay the deposit.",
     where_to_get: [va("UK University's Student Portal / Admissions Office", "university")],

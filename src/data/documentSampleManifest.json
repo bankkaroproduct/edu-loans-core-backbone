@@ -202,8 +202,8 @@
       "section_name": "03_Admission_Study_Intent",
       "sample_file": "i20_cas_coe_sample.png",
       "relative_path": "03_Admission_Study_Intent/i20_cas_coe_sample.png",
-      "helper_text": "Country-specific admission confirmation document: I-20 for USA, CAS for UK, CoE for Australia.",
-      "sample_instruction": "Upload the applicable country-specific confirmation document. I-20 for USA, CAS for UK, CoE for Australia.",
+      "helper_text": "Country-specific admission confirmation document: I-20 for United States, CAS for United Kingdom, CoE for Australia.",
+      "sample_instruction": "Upload the applicable country-specific confirmation document. I-20 for United States, CAS for United Kingdom, CoE for Australia.",
       "important_visible_fields": [
         "Document type (I-20 / CAS / CoE)",
         "Student name",

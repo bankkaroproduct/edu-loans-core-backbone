@@ -93,7 +93,7 @@ const FALLBACK_HELPER: Record<string, string> = {
   "Post-Graduation Marksheet": "Post-graduation marksheet, if applicable.",
   "Post-Graduation Degree Certificate": "Post-graduation degree certificate, if applicable.",
   "Admission/Offer Letter": "Official offer/admission letter from the university or institution.",
-  "I-20/CAS/CoE": "Country-specific admission confirmation document: I-20 for USA, CAS for UK, CoE for Australia.",
+  "I-20/CAS/CoE": "Country-specific admission confirmation document: I-20 for United States, CAS for United Kingdom, CoE for Australia.",
   "IELTS/TOEFL Score": "English language test scorecard, if available or required.",
   "GRE Score Card": "GRE official scorecard, if available or required.",
   "Co-applicant Photograph": "Co-applicant's passport-size photograph with clear face and plain background.",
