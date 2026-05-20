@@ -139,6 +139,10 @@ export default function AdminLeads() {
     total: number; pendingReview: number; withLender: number; sanction: number;
   }>({ total: 0, pendingReview: 0, withLender: 0, sanction: 0 });
 
+  // Clickable stat-card filter (frontend-only intersection with current filters)
+  const [cardFilter, setCardFilter] = useState<CardFilterKey>("none");
+  const [highPriorityIds, setHighPriorityIds] = useState<string[] | null>(null);
+
   // Debounce search
   const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
