@@ -446,11 +446,34 @@ export function DocumentChecklist({
             );
           })}
         </Accordion>
-        {naRequirements.length > 0 && (
-          <p className="text-[11px] text-muted-foreground italic px-1 pt-1">
-            Some academic documents are not applicable based on highest qualification and have been hidden.
-          </p>
-        )}
+        {NOT_APPLICABLE_REASON_ORDER.map((reason) => {
+          const rows = notApplicableGroups[reason as NotApplicableReason] ?? [];
+          if (rows.length === 0) return null;
+          return (
+            <NaAccordion key={reason} type="multiple" className="w-full">
+              <NaAccordionItem
+                value={`not-applicable-${reason}`}
+                className="border rounded-md mb-2 border-dashed"
+              >
+                <NaAccordionTrigger className="px-3 py-2.5 hover:no-underline">
+                  <div className="flex items-center justify-between gap-3 flex-1 min-w-0">
+                    <div className="min-w-0 text-left">
+                      <p className="text-sm font-semibold truncate text-muted-foreground">
+                        {NOT_APPLICABLE_REASON_LABEL[reason as NotApplicableReason]}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="text-[10px] shrink-0">
+                      {rows.length} hidden
+                    </Badge>
+                  </div>
+                </NaAccordionTrigger>
+                <NaAccordionContent className="px-3 pb-3 space-y-2">
+                  {rows.map((req) => renderRow(req as DocRequirement))}
+                </NaAccordionContent>
+              </NaAccordionItem>
+            </NaAccordion>
+          );
+        })}
       </CardContent>
       <SampleDocumentModal
         open={!!sampleOpen}
