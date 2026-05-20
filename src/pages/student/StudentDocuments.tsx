@@ -144,7 +144,7 @@ export default function StudentDocuments() {
       collateral_available: leadSummary?.collateral_available ?? null,
       coapplicant_employment_type: leadSummary?.coapplicant_employment_type ?? null,
     });
-    if (decision.applicable) {
+    if (decision.applicable === true) {
       applicableRequirements.push(r);
     } else if (decision.reason !== "country") {
       hiddenByReason[decision.reason].push(r);
