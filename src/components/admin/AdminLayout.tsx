@@ -22,39 +22,28 @@ function AdminShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen flex w-full bg-muted/30">
       <AdminSidebar />
       <div className="flex-1 flex flex-col min-w-0">
-        {slotActive && (
-          <header
-            className={cn(
-              "flex items-center gap-3 border-b border-border/60 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 sticky top-0 z-20",
-              "min-h-14 py-2 h-auto"
-            )}
-          >
-            {hideSidebarTrigger ? (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="shrink-0 h-8 w-8"
-                onClick={() => navigate(backTo ?? "/admin/leads")}
-                aria-label="Back"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-            ) : (
-              <SidebarTrigger />
-            )}
-            {headerContent}
-          </header>
-        )}
-        <main className="flex-1 px-6 py-7">
-          {slotActive ? (
-            children
-          ) : (
-            <div className="flex items-start gap-4 min-w-0">
-              <SidebarTrigger className="shrink-0 h-8 w-8 mt-0.5" />
-              <div className="flex-1 min-w-0">{children}</div>
-            </div>
+        <header
+          className={cn(
+            "flex items-center gap-3 border-b border-border/60 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 sticky top-0 z-20",
+            slotActive ? "min-h-14 py-2 h-auto" : "h-14"
           )}
-        </main>
+        >
+          {hideSidebarTrigger ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0 h-8 w-8"
+              onClick={() => navigate(backTo ?? "/admin/leads")}
+              aria-label="Back"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          ) : (
+            <SidebarTrigger />
+          )}
+          {headerContent}
+        </header>
+        <main className="flex-1 px-6 py-7 min-w-0">{children}</main>
       </div>
     </div>
   );
