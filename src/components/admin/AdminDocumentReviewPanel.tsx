@@ -31,7 +31,14 @@ import {
   SECTION_STATUS_LABEL,
   SECTION_STATUS_VARIANT,
 } from "@/lib/documentSections";
-import { partitionRequirementsByApplicability } from "@/lib/documentApplicability";
+import {
+  partitionRequirementsWithReasons,
+  NOT_APPLICABLE_REASON_ORDER,
+  NOT_APPLICABLE_REASON_LABEL,
+  type LeadApplicabilityContext,
+  type NotApplicableReason,
+} from "@/lib/documentApplicability";
+import { getAdmissionDocLabelForCountry } from "@/lib/countryAliases";
 import type { DocRequirement } from "@/pages/LeadDocuments";
 import type { LeadNameFields } from "@/lib/referenceName";
 import type { LeadDocFile, LeadDocRequirement } from "@/hooks/useLeadDocumentsData";
@@ -75,8 +82,11 @@ interface Props {
    *  full Documents page render from the exact same in-memory snapshot. */
   documents?: LeadDocument[];
   onChanged: () => void;
-  /** Lead's highest_qualification — drives smart academic-doc applicability. */
-  highestQualification?: string | null;
+  /** Full lead context driving smart applicability (qualification, country,
+   *  collateral, co-applicant employment type). When omitted, defaults to an
+   *  empty context — qualification-only legacy behavior is preserved via the
+   *  conservative defaults inside the applicability engine. */
+  applicabilityContext?: LeadApplicabilityContext;
 }
 
 const STATUS_BADGE: Record<string, { variant: "default" | "secondary" | "outline" | "destructive"; label: string }> = {
@@ -90,7 +100,7 @@ const STATUS_BADGE: Record<string, { variant: "default" | "secondary" | "outline
   not_applicable: { variant: "outline", label: "N/A" },
 };
 
-export function AdminDocumentReviewPanel({ leadId, lead, requirements, documents, onChanged, highestQualification }: Props) {
+export function AdminDocumentReviewPanel({ leadId, lead, requirements, documents, onChanged, applicabilityContext }: Props) {
   const [docsByType, setDocsByType] = useState<Record<string, LeadDocument | null>>({});
   const [versionCountByType, setVersionCountByType] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(documents === undefined);
