@@ -31,7 +31,14 @@ import {
   SECTION_STATUS_LABEL,
   SECTION_STATUS_VARIANT,
 } from "@/lib/documentSections";
-import { partitionRequirementsByApplicability } from "@/lib/documentApplicability";
+import {
+  partitionRequirementsWithReasons,
+  NOT_APPLICABLE_REASON_ORDER,
+  NOT_APPLICABLE_REASON_LABEL,
+  type LeadApplicabilityContext,
+  type NotApplicableReason,
+} from "@/lib/documentApplicability";
+import { getAdmissionDocLabelForCountry } from "@/lib/countryAliases";
 import type { DocRequirement } from "@/pages/LeadDocuments";
 import type { LeadNameFields } from "@/lib/referenceName";
 import type { LeadDocFile, LeadDocRequirement } from "@/hooks/useLeadDocumentsData";
@@ -75,8 +82,11 @@ interface Props {
    *  full Documents page render from the exact same in-memory snapshot. */
   documents?: LeadDocument[];
   onChanged: () => void;
-  /** Lead's highest_qualification — drives smart academic-doc applicability. */
-  highestQualification?: string | null;
+  /** Full lead context driving smart applicability (qualification, country,
+   *  collateral, co-applicant employment type). When omitted, defaults to an
+   *  empty context — qualification-only legacy behavior is preserved via the
+   *  conservative defaults inside the applicability engine. */
+  applicabilityContext?: LeadApplicabilityContext;
 }
 
 const STATUS_BADGE: Record<string, { variant: "default" | "secondary" | "outline" | "destructive"; label: string }> = {
@@ -90,7 +100,7 @@ const STATUS_BADGE: Record<string, { variant: "default" | "secondary" | "outline
   not_applicable: { variant: "outline", label: "N/A" },
 };
 
-export function AdminDocumentReviewPanel({ leadId, lead, requirements, documents, onChanged, highestQualification }: Props) {
+export function AdminDocumentReviewPanel({ leadId, lead, requirements, documents, onChanged, applicabilityContext }: Props) {
   const [docsByType, setDocsByType] = useState<Record<string, LeadDocument | null>>({});
   const [versionCountByType, setVersionCountByType] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(documents === undefined);
@@ -155,14 +165,27 @@ export function AdminDocumentReviewPanel({ leadId, lead, requirements, documents
     onChanged();
   };
 
-  // Smart academic applicability — non-applicable academic docs are split out
-  // so they don't count toward readiness denominators but remain viewable.
-  const { applicable: applicableRequirements, notApplicable: naRequirements } = useMemo(
-    () => partitionRequirementsByApplicability(
-      requirements as unknown as LeadDocRequirement[],
-      highestQualification,
-    ),
-    [requirements, highestQualification],
+  // Smart applicability — non-applicable docs split out by reason so they
+  // don't count toward readiness denominators but remain operationally visible
+  // (one dashed accordion per reason). Country-mismatched I-20/CAS/CoE rows
+  // are silently suppressed by the engine.
+  const ctx: LeadApplicabilityContext = applicabilityContext ?? {};
+  const { applicable: applicableRequirements, notApplicableGroups } = useMemo(
+    () =>
+      partitionRequirementsWithReasons(
+        requirements as unknown as LeadDocRequirement[],
+        ctx,
+      ),
+    [
+      requirements,
+      ctx.highest_qualification,
+      ctx.intended_study_country,
+      ctx.collateral_available,
+      ctx.coapplicant_employment_type,
+    ],
+  );
+  const admissionDocOverrideLabel = getAdmissionDocLabelForCountry(
+    ctx.intended_study_country,
   );
 
   // Group requirements into the 7 spec sections (frontend-only grouping by document_code).
@@ -233,6 +256,7 @@ export function AdminDocumentReviewPanel({ leadId, lead, requirements, documents
                         doc={docsByType[req.document_type_id] ?? null}
                         versionCount={versionCountByType[req.document_type_id] ?? 0}
                         onChanged={handleAfterUpload}
+                        admissionDocOverrideLabel={admissionDocOverrideLabel}
                       />
                     ))}
                   </AccordionContent>
@@ -242,39 +266,48 @@ export function AdminDocumentReviewPanel({ leadId, lead, requirements, documents
           </Accordion>
         )}
 
-        {/* Collapsed "Not Applicable" section — operational visibility for admin.
+        {/* Collapsed "Not Applicable" sections — one per reason.
             Excluded from readiness counts; uploaded files (if any) remain viewable. */}
-        {!loading && naRequirements.length > 0 && (
-          <Accordion type="multiple" className="w-full">
-            <AccordionItem value="not-applicable" className="border rounded-md mb-2 border-dashed">
-              <AccordionTrigger className="px-3 py-2.5 hover:no-underline">
-                <div className="flex items-center justify-between gap-3 flex-1 min-w-0">
-                  <div className="min-w-0 text-left">
-                    <p className="text-sm font-semibold truncate text-muted-foreground">
-                      Not Applicable based on highest qualification
-                    </p>
-                  </div>
-                  <Badge variant="outline" className="text-[10px] shrink-0">
-                    {naRequirements.length} hidden
-                  </Badge>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-3 pb-3 space-y-2">
-                {naRequirements.map((req) => (
-                  <DocReviewRow
-                    key={req.id}
-                    req={req as unknown as DocRequirementInput}
-                    leadId={leadId}
-                    lead={lead ?? null}
-                    doc={docsByType[req.document_type_id] ?? null}
-                    versionCount={versionCountByType[req.document_type_id] ?? 0}
-                    onChanged={handleAfterUpload}
-                  />
-                ))}
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        )}
+        {!loading &&
+          NOT_APPLICABLE_REASON_ORDER.map((reason) => {
+            const rows = notApplicableGroups[reason as NotApplicableReason] ?? [];
+            if (rows.length === 0) return null;
+            return (
+              <Accordion key={reason} type="multiple" className="w-full">
+                <AccordionItem
+                  value={`not-applicable-${reason}`}
+                  className="border rounded-md mb-2 border-dashed"
+                >
+                  <AccordionTrigger className="px-3 py-2.5 hover:no-underline">
+                    <div className="flex items-center justify-between gap-3 flex-1 min-w-0">
+                      <div className="min-w-0 text-left">
+                        <p className="text-sm font-semibold truncate text-muted-foreground">
+                          {NOT_APPLICABLE_REASON_LABEL[reason as NotApplicableReason]}
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="text-[10px] shrink-0">
+                        {rows.length} hidden
+                      </Badge>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-3 pb-3 space-y-2">
+                    {rows.map((req) => (
+                      <DocReviewRow
+                        key={req.id}
+                        req={req as unknown as DocRequirementInput}
+                        leadId={leadId}
+                        lead={lead ?? null}
+                        doc={docsByType[req.document_type_id] ?? null}
+                        versionCount={versionCountByType[req.document_type_id] ?? 0}
+                        onChanged={handleAfterUpload}
+                        admissionDocOverrideLabel={admissionDocOverrideLabel}
+                      />
+                    ))}
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            );
+          })}
       </CardContent>
     </Card>
   );
@@ -283,7 +316,7 @@ export function AdminDocumentReviewPanel({ leadId, lead, requirements, documents
 // -----------------------------------------------------------------------------
 
 function DocReviewRow({
-  req, leadId, lead, doc, versionCount, onChanged,
+  req, leadId, lead, doc, versionCount, onChanged, admissionDocOverrideLabel,
 }: {
   req: DocRequirementInput;
   leadId: string;
@@ -291,6 +324,9 @@ function DocReviewRow({
   doc: LeadDocument | null;
   versionCount: number;
   onChanged: () => void;
+  /** When set, the combined I-20/CAS/CoE master row is relabeled to the
+   *  country-specific short label ("I-20" | "CAS" | "CoE"). Presentation only. */
+  admissionDocOverrideLabel?: "I-20" | "CAS" | "CoE" | null;
 }) {
   const { userId, role } = useRoleAccess();
   const [expanded, setExpanded] = useState(false);
@@ -301,6 +337,10 @@ function DocReviewRow({
   const [sampleOpen, setSampleOpen] = useState(false);
   const [guidanceOpen, setGuidanceOpen] = useState(false);
 
+  const isI20CasRow = (req.document_master?.document_code ?? "").toUpperCase() === "I20_CAS";
+  const baseDisplay = req.document_master?.display_name ?? req.document_master?.document_name ?? "Document";
+  const effectiveDisplay =
+    isI20CasRow && admissionDocOverrideLabel ? admissionDocOverrideLabel : baseDisplay;
   const displayName = req.document_master?.display_name ?? null;
   const docName = req.document_master?.document_name ?? null;
   const helperText = getHelperText(displayName, docName);
@@ -370,7 +410,7 @@ function DocReviewRow({
         <div className="flex items-center gap-2 min-w-0">
           {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
           <span className="text-sm font-medium truncate">
-            {req.document_master?.display_name ?? req.document_master?.document_name ?? "Document"}
+            {effectiveDisplay}
           </span>
           {req.required_flag && <span className="text-[10px] text-muted-foreground">(required)</span>}
         </div>

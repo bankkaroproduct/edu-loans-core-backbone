@@ -120,6 +120,12 @@ export default function LeadDocuments() {
             leadId={lead.id}
             hideNudge={isAdminContext}
             highestQualification={lead.highest_qualification}
+            applicabilityContext={{
+              highest_qualification: lead.highest_qualification ?? null,
+              intended_study_country: lead.intended_study_country ?? null,
+              collateral_available: lead.collateral_available ?? null,
+              coapplicant_employment_type: lead.coapplicant_employment_type ?? null,
+            }}
           />
         </>
       )}

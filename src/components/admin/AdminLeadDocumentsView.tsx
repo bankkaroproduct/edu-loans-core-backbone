@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { AdminDocumentReviewPanel } from "@/components/admin/AdminDocumentReviewPanel";
 import { buildAdminDocViewModel } from "@/lib/leadDocumentViewModel";
-import { partitionRequirementsByApplicability } from "@/lib/documentApplicability";
+import { partitionRequirementsWithReasons } from "@/lib/documentApplicability";
 import type {
   LeadDocFile,
   LeadDocRequirement,
@@ -46,12 +46,24 @@ export function AdminLeadDocumentsView({
   documents,
   onChanged,
 }: Props) {
-  // Filter out non-applicable academic docs so readiness counts exclude them.
+  // Filter out non-applicable docs (qualification + country + collateral +
+  // employment) so readiness counts exclude them. Country-mismatched I-20/CAS/
+  // CoE rows are silently suppressed (no hidden accordion).
   const applicableRequirements = useMemo(
     () =>
-      partitionRequirementsByApplicability(requirements, lead?.highest_qualification ?? null)
-        .applicable,
-    [requirements, lead?.highest_qualification],
+      partitionRequirementsWithReasons(requirements, {
+        highest_qualification: lead?.highest_qualification ?? null,
+        intended_study_country: lead?.intended_study_country ?? null,
+        collateral_available: lead?.collateral_available ?? null,
+        coapplicant_employment_type: lead?.coapplicant_employment_type ?? null,
+      }).applicable,
+    [
+      requirements,
+      lead?.highest_qualification,
+      lead?.intended_study_country,
+      lead?.collateral_available,
+      lead?.coapplicant_employment_type,
+    ],
   );
 
   const vm = useMemo(
@@ -197,7 +209,12 @@ export function AdminLeadDocumentsView({
           requirements={requirements as never[]}
           documents={documents as never[]}
           onChanged={onChanged}
-          highestQualification={lead?.highest_qualification ?? null}
+          applicabilityContext={{
+            highest_qualification: lead?.highest_qualification ?? null,
+            intended_study_country: lead?.intended_study_country ?? null,
+            collateral_available: lead?.collateral_available ?? null,
+            coapplicant_employment_type: lead?.coapplicant_employment_type ?? null,
+          }}
         />
       )}
     </div>

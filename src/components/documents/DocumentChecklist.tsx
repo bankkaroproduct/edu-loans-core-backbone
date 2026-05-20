@@ -11,7 +11,14 @@ import { SampleDocumentModal } from "@/components/documents/SampleDocumentModal"
 import { DocumentGuidanceModal } from "@/components/documents/DocumentGuidanceModal";
 import { findSampleForDocument, getHelperText, type DocumentSample } from "@/lib/documentSamples";
 import { findGuidanceForDocument, type DocumentGuidance } from "@/lib/documentGuidance";
-import { partitionRequirementsByApplicability } from "@/lib/documentApplicability";
+import {
+  partitionRequirementsWithReasons,
+  NOT_APPLICABLE_REASON_ORDER,
+  NOT_APPLICABLE_REASON_LABEL,
+  type LeadApplicabilityContext,
+  type NotApplicableReason,
+} from "@/lib/documentApplicability";
+import { getAdmissionDocLabelForCountry } from "@/lib/countryAliases";
 
 type ValidationFlag = "ok" | "warn_name" | "warn_type" | "review_needed" | "inconclusive";
 
@@ -118,7 +125,28 @@ interface Props {
   highestQualification?: string | null;
 }
 
-export function DocumentChecklist({ requirements, documents, onUpload, leadId, hideNudge = false, highestQualification }: Props) {
+interface Props {
+  requirements: DocRequirement[];
+  documents: DocFile[];
+  onUpload: (req: DocRequirement) => void;
+  leadId: string;
+  hideNudge?: boolean;
+  /** Legacy — used as fallback when applicabilityContext is not supplied. */
+  highestQualification?: string | null;
+  /** Full lead context (qualification + country + collateral + co-applicant
+   *  employment) driving the smart applicability engine. Optional for back-compat. */
+  applicabilityContext?: LeadApplicabilityContext;
+}
+
+export function DocumentChecklist({
+  requirements,
+  documents,
+  onUpload,
+  leadId,
+  hideNudge = false,
+  highestQualification,
+  applicabilityContext,
+}: Props) {
   const [sampleOpen, setSampleOpen] = useState<DocumentSample | null>(null);
   const [guidanceOpen, setGuidanceOpen] = useState<DocumentGuidance | null>(null);
   // Group documents by document_type_id
@@ -131,11 +159,27 @@ export function DocumentChecklist({ requirements, documents, onUpload, leadId, h
     }
   });
 
-  // Filter out non-applicable academic docs based on highest qualification.
-  // Unknown qualification → no filtering (preserves current behavior).
-  const { applicable: applicableRequirements, notApplicable: naRequirements } = useMemo(
-    () => partitionRequirementsByApplicability(requirements, highestQualification),
-    [requirements, highestQualification],
+  // Smart applicability — qualification + country + collateral + co-applicant
+  // employment. Country-mismatched I-20/CAS/CoE rows are silently suppressed.
+  const effectiveCtx: LeadApplicabilityContext = applicabilityContext ?? {
+    highest_qualification: highestQualification ?? null,
+  };
+  const { applicable: applicableRequirements, notApplicableGroups } = useMemo(
+    () =>
+      partitionRequirementsWithReasons(
+        requirements as never[],
+        effectiveCtx,
+      ),
+    [
+      requirements,
+      effectiveCtx.highest_qualification,
+      effectiveCtx.intended_study_country,
+      effectiveCtx.collateral_available,
+      effectiveCtx.coapplicant_employment_type,
+    ],
+  );
+  const admissionDocOverrideLabel = getAdmissionDocLabelForCountry(
+    effectiveCtx.intended_study_country,
   );
 
   // Group requirements into the 7 spec sections (frontend-only grouping by document_code).
@@ -184,6 +228,13 @@ export function DocumentChecklist({ requirements, documents, onUpload, leadId, h
     const isActionable = ["not_uploaded", "rejected", "reupload_needed"].includes(req.status);
     const isReupload = ["rejected", "reupload_needed"].includes(req.status);
     const isBlocker = isReupload;
+    const isI20CasRow = (req.document_master?.document_code ?? "").toUpperCase() === "I20_CAS";
+    const baseRowLabel =
+      (req.document_master as { display_name?: string | null } | null | undefined)?.display_name ??
+      req.document_master?.document_name ??
+      "Document";
+    const rowLabel =
+      isI20CasRow && admissionDocOverrideLabel ? admissionDocOverrideLabel : baseRowLabel;
 
     return (
             <div
@@ -197,7 +248,7 @@ export function DocumentChecklist({ requirements, documents, onUpload, leadId, h
                     {/* Document name + badges */}
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className={`text-sm font-medium ${isBlocker ? "text-destructive" : ""}`}>
-                        {(req.document_master as { display_name?: string | null } | null | undefined)?.display_name ?? req.document_master?.document_name ?? "Document"}
+                        {rowLabel}
                       </p>
                       {req.document_master?.document_category && (
                         <Badge variant="outline" className="text-[9px]">{req.document_master.document_category}</Badge>
@@ -396,11 +447,34 @@ export function DocumentChecklist({ requirements, documents, onUpload, leadId, h
             );
           })}
         </Accordion>
-        {naRequirements.length > 0 && (
-          <p className="text-[11px] text-muted-foreground italic px-1 pt-1">
-            Some academic documents are not applicable based on highest qualification and have been hidden.
-          </p>
-        )}
+        {NOT_APPLICABLE_REASON_ORDER.map((reason) => {
+          const rows = notApplicableGroups[reason as NotApplicableReason] ?? [];
+          if (rows.length === 0) return null;
+          return (
+            <Accordion key={reason} type="multiple" className="w-full">
+              <AccordionItem
+                value={`not-applicable-${reason}`}
+                className="border rounded-md mb-2 border-dashed"
+              >
+                <AccordionTrigger className="px-3 py-2.5 hover:no-underline">
+                  <div className="flex items-center justify-between gap-3 flex-1 min-w-0">
+                    <div className="min-w-0 text-left">
+                      <p className="text-sm font-semibold truncate text-muted-foreground">
+                        {NOT_APPLICABLE_REASON_LABEL[reason as NotApplicableReason]}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="text-[10px] shrink-0">
+                      {rows.length} hidden
+                    </Badge>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-3 pb-3 space-y-2">
+                  {rows.map((req) => renderRow(req as DocRequirement))}
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          );
+        })}
       </CardContent>
       <SampleDocumentModal
         open={!!sampleOpen}
