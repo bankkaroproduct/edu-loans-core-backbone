@@ -45,11 +45,15 @@ function AdminShell({ children }: { children: ReactNode }) {
             {headerContent}
           </header>
         )}
-        <main className="flex-1 px-6 py-7 relative">
-          {!slotActive && (
-            <SidebarTrigger className="absolute left-4 top-6 z-10 h-8 w-8" />
+        <main className="flex-1 px-6 py-7">
+          {slotActive ? (
+            children
+          ) : (
+            <div className="flex items-start gap-4 min-w-0">
+              <SidebarTrigger className="shrink-0 h-8 w-8 mt-0.5" />
+              <div className="flex-1 min-w-0">{children}</div>
+            </div>
           )}
-          {children}
         </main>
       </div>
     </div>
