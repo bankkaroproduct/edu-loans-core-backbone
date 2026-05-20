@@ -198,19 +198,53 @@
       "priority_level": 3
     },
     {
-      "document_name": "I-20/CAS/CoE",
+      "document_name": "I-20 (USA)",
       "section_name": "03_Admission_Study_Intent",
-      "sample_file": "i20_cas_coe_sample.png",
-      "relative_path": "03_Admission_Study_Intent/i20_cas_coe_sample.png",
-      "helper_text": "Country-specific admission confirmation document: I-20 for USA, CAS for UK, CoE for Australia.",
-      "sample_instruction": "Upload the applicable country-specific confirmation document. I-20 for USA, CAS for UK, CoE for Australia.",
+      "sample_file": "i20_usa_sample.png",
+      "relative_path": "03_Admission_Study_Intent/i20_usa_sample.png",
+      "helper_text": "I-20 form issued by the US institution confirming admission and SEVIS details.",
+      "sample_instruction": "Upload the I-20 form issued by your US institution showing student name, SEVIS ID, programme, and start date.",
       "important_visible_fields": [
-        "Document type (I-20 / CAS / CoE)",
         "Student name",
-        "Institution",
+        "SEVIS ID",
+        "Institution name",
+        "Programme of study",
         "Programme start date",
-        "Reference number (SEVIS / CAS / CoE)",
-        "Country tag"
+        "School official signature"
+      ],
+      "priority_level": 3
+    },
+    {
+      "document_name": "CAS (UK)",
+      "section_name": "03_Admission_Study_Intent",
+      "sample_file": "cas_uk_sample.png",
+      "relative_path": "03_Admission_Study_Intent/cas_uk_sample.png",
+      "helper_text": "CAS (Confirmation of Acceptance for Studies) letter issued by the UK institution.",
+      "sample_instruction": "Upload the CAS letter or statement from your UK institution showing CAS number, student name, course, and start date.",
+      "important_visible_fields": [
+        "Student name",
+        "CAS number",
+        "Institution name",
+        "Course / programme",
+        "Course start date",
+        "Sponsor licence number"
+      ],
+      "priority_level": 3
+    },
+    {
+      "document_name": "CoE (Australia)",
+      "section_name": "03_Admission_Study_Intent",
+      "sample_file": "coe_australia_sample.png",
+      "relative_path": "03_Admission_Study_Intent/coe_australia_sample.png",
+      "helper_text": "CoE (Confirmation of Enrolment) issued by the Australian institution.",
+      "sample_instruction": "Upload the CoE issued by your Australian institution showing CoE number, student name, course, and dates.",
+      "important_visible_fields": [
+        "Student name",
+        "CoE number",
+        "Provider name and CRICOS code",
+        "Course name and CRICOS code",
+        "Course start and end dates",
+        "Tuition fees"
       ],
       "priority_level": 3
     },
@@ -374,7 +408,7 @@
       "priority_level": 3
     }
   ],
-  "count": 21,
+  "count": 23,
   "watermark": "SAMPLE ONLY \u2014 NOT A REAL DOCUMENT",
   "asset_size_px": "1200x800",
   "format": "PNG",
