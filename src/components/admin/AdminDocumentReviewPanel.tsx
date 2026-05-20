@@ -165,14 +165,27 @@ export function AdminDocumentReviewPanel({ leadId, lead, requirements, documents
     onChanged();
   };
 
-  // Smart academic applicability — non-applicable academic docs are split out
-  // so they don't count toward readiness denominators but remain viewable.
-  const { applicable: applicableRequirements, notApplicable: naRequirements } = useMemo(
-    () => partitionRequirementsByApplicability(
-      requirements as unknown as LeadDocRequirement[],
-      highestQualification,
-    ),
-    [requirements, highestQualification],
+  // Smart applicability — non-applicable docs split out by reason so they
+  // don't count toward readiness denominators but remain operationally visible
+  // (one dashed accordion per reason). Country-mismatched I-20/CAS/CoE rows
+  // are silently suppressed by the engine.
+  const ctx: LeadApplicabilityContext = applicabilityContext ?? {};
+  const { applicable: applicableRequirements, notApplicableGroups } = useMemo(
+    () =>
+      partitionRequirementsWithReasons(
+        requirements as unknown as LeadDocRequirement[],
+        ctx,
+      ),
+    [
+      requirements,
+      ctx.highest_qualification,
+      ctx.intended_study_country,
+      ctx.collateral_available,
+      ctx.coapplicant_employment_type,
+    ],
+  );
+  const admissionDocOverrideLabel = getAdmissionDocLabelForCountry(
+    ctx.intended_study_country,
   );
 
   // Group requirements into the 7 spec sections (frontend-only grouping by document_code).
