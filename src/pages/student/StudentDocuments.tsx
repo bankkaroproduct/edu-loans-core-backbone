@@ -12,7 +12,8 @@ import { SampleDocumentModal } from "@/components/documents/SampleDocumentModal"
 import { DocumentGuidanceModal } from "@/components/documents/DocumentGuidanceModal";
 import { findSampleForDocument, getHelperText, type DocumentSample } from "@/lib/documentSamples";
 import { findGuidanceForDocument, type DocumentGuidance } from "@/lib/documentGuidance";
-import { isRequirementApplicable } from "@/lib/documentApplicability";
+import { decideApplicability } from "@/lib/documentApplicability";
+import { getAdmissionDocLabelForCountry } from "@/lib/countryAliases";
 import type { LeadDocRequirement } from "@/hooks/useLeadDocumentsData";
 import {
   CheckCircle2, AlertTriangle, Upload, Eye, RefreshCw, FileText, Clock,
@@ -58,6 +59,9 @@ interface LeadSummary {
   student_full_name?: string | null;
   coapplicant_name?: string | null;
   highest_qualification?: string | null;
+  intended_study_country?: string | null;
+  collateral_available?: boolean | null;
+  coapplicant_employment_type?: string | null;
 }
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> = {
