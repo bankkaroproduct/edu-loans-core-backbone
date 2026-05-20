@@ -13,7 +13,7 @@ import { formatINRCompact } from "@/lib/formatCurrency";
 
 import { AdminLeadFilters, type AdminLeadFilterState } from "@/components/admin/AdminLeadFilters";
 import { applyBusinessFilters as applySharedBusinessFilters } from "@/lib/leadBusinessFilters";
-import { useAdminDashboard } from "@/hooks/useAdminDashboard";
+
 import {
   ACTION_NEEDED_EXCLUDED_STAGES,
   REVIEW_DUE_SELECT_COLUMNS,
@@ -93,7 +93,7 @@ function studentInitials(name: string): string {
 export default function AdminLeads() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { metrics: adminMetrics } = useAdminDashboard();
+  
 
   // Master data
   const [stages, setStages] = useState<{ stage_key: StageEnum; stage_label: string }[]>([]);
@@ -136,8 +136,8 @@ export default function AdminLeads() {
 
   // Health strip counts (filter-aware: same WHERE except status/stage overrides)
   const [healthCounts, setHealthCounts] = useState<{
-    total: number; pendingReview: number; withLender: number; sanction: number;
-  }>({ total: 0, pendingReview: 0, withLender: 0, sanction: 0 });
+    total: number; pendingReview: number; withLender: number; sanction: number; highPriority: number;
+  }>({ total: 0, pendingReview: 0, withLender: 0, sanction: 0, highPriority: 0 });
 
   // Clickable stat-card filter (frontend-only intersection with current filters)
   const [cardFilter, setCardFilter] = useState<CardFilterKey>("none");
@@ -313,7 +313,7 @@ export default function AdminLeads() {
   // Fetch filter-aware health counts (lightweight head:true).
   // Total = current filters; the others = current filters with their own stage/status override.
   const fetchHealthCounts = useCallback(async () => {
-    const buildCount = (overrideStage?: StageEnum, overrideStatuses?: StatusEnum[]) => {
+    const buildCount = (overrideStage?: StageEnum, overrideStatuses?: StatusEnum[], restrictIds?: string[]) => {
       let q: any = supabase.from("student_leads")
         .select("*", { count: "exact", head: true })
         .eq("is_archived", false);
@@ -345,21 +345,29 @@ export default function AdminLeads() {
       if (t) {
         q = q.or(`student_full_name.ilike.%${t}%,student_first_name.ilike.%${t}%,student_last_name.ilike.%${t}%,student_phone.ilike.%${t}%,lead_id.ilike.%${t}%`);
       }
+      if (restrictIds) {
+        q = q.in("id", restrictIds.length > 0 ? restrictIds : [HIGH_PRIORITY_EMPTY_SENTINEL]);
+      }
       return q;
     };
-    const [tot, pend, lender, sanc] = await Promise.all([
+    const hpPromise = highPriorityIds === null
+      ? Promise.resolve({ count: 0 } as any)
+      : buildCount(undefined, undefined, highPriorityIds);
+    const [tot, pend, lender, sanc, hp] = await Promise.all([
       buildCount(),
       buildCount(undefined, ["new", "awaiting_verification", "pending_info"] as StatusEnum[]),
       buildCount("sent_to_lender" as StageEnum),
       buildCount("sanction_received" as StageEnum),
+      hpPromise,
     ]);
     setHealthCounts({
       total: tot.count ?? 0,
       pendingReview: pend.count ?? 0,
       withLender: lender.count ?? 0,
       sanction: sanc.count ?? 0,
+      highPriority: hp.count ?? 0,
     });
-  }, [filters, applyBusinessFilters]);
+  }, [filters, applyBusinessFilters, highPriorityIds]);
 
   useEffect(() => { fetchHealthCounts(); }, [fetchHealthCounts]);
 
@@ -498,7 +506,7 @@ export default function AdminLeads() {
           {
             cardKey: "high_priority" as CardFilterKey,
             label: "High Priority Leads",
-            value: adminMetrics.data?.pendingAdminActions ?? 0,
+            value: healthCounts.highPriority,
             sub: "Stale follow-ups · critical-stage pending actions",
             icon: AlertCircle,
             iconBg: "bg-amber-100 dark:bg-amber-500/15",

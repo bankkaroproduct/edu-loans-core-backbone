@@ -74,7 +74,6 @@ export default function AdminDashboard() {
             filters={filters}
             onFiltersChange={setFilters}
             pipelineStages={pipeline.data}
-            metrics={metrics.data}
           />
         </div>
         <div>
