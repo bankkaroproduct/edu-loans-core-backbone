@@ -313,7 +313,7 @@ export default function AdminLeads() {
   // Fetch filter-aware health counts (lightweight head:true).
   // Total = current filters; the others = current filters with their own stage/status override.
   const fetchHealthCounts = useCallback(async () => {
-    const buildCount = (overrideStage?: StageEnum, overrideStatuses?: StatusEnum[]) => {
+    const buildCount = (overrideStage?: StageEnum, overrideStatuses?: StatusEnum[], restrictIds?: string[]) => {
       let q: any = supabase.from("student_leads")
         .select("*", { count: "exact", head: true })
         .eq("is_archived", false);
@@ -345,21 +345,29 @@ export default function AdminLeads() {
       if (t) {
         q = q.or(`student_full_name.ilike.%${t}%,student_first_name.ilike.%${t}%,student_last_name.ilike.%${t}%,student_phone.ilike.%${t}%,lead_id.ilike.%${t}%`);
       }
+      if (restrictIds) {
+        q = q.in("id", restrictIds.length > 0 ? restrictIds : [HIGH_PRIORITY_EMPTY_SENTINEL]);
+      }
       return q;
     };
-    const [tot, pend, lender, sanc] = await Promise.all([
+    const hpPromise = highPriorityIds === null
+      ? Promise.resolve({ count: 0 } as any)
+      : buildCount(undefined, undefined, highPriorityIds);
+    const [tot, pend, lender, sanc, hp] = await Promise.all([
       buildCount(),
       buildCount(undefined, ["new", "awaiting_verification", "pending_info"] as StatusEnum[]),
       buildCount("sent_to_lender" as StageEnum),
       buildCount("sanction_received" as StageEnum),
+      hpPromise,
     ]);
     setHealthCounts({
       total: tot.count ?? 0,
       pendingReview: pend.count ?? 0,
       withLender: lender.count ?? 0,
       sanction: sanc.count ?? 0,
+      highPriority: hp.count ?? 0,
     });
-  }, [filters, applyBusinessFilters]);
+  }, [filters, applyBusinessFilters, highPriorityIds]);
 
   useEffect(() => { fetchHealthCounts(); }, [fetchHealthCounts]);
 
