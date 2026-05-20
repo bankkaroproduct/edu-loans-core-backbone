@@ -51,9 +51,9 @@ export function AdminLeadQueue({ data, loading, error, onRetry, filters, onFilte
           tone: "amber",
         },
         {
-          label: "Docs to verify",
-          count: metrics.documentsPendingReview,
-          to: "/admin/leads?stage=documents_under_review",
+          label: "High Priority Leads",
+          count: metrics.pendingAdminActions,
+          to: "/admin/leads?status=awaiting_verification",
           tone: "amber",
         },
         {
