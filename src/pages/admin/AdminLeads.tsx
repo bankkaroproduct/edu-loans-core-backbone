@@ -506,7 +506,7 @@ export default function AdminLeads() {
           {
             cardKey: "high_priority" as CardFilterKey,
             label: "High Priority Leads",
-            value: adminMetrics.data?.pendingAdminActions ?? 0,
+            value: healthCounts.highPriority,
             sub: "Stale follow-ups · critical-stage pending actions",
             icon: AlertCircle,
             iconBg: "bg-amber-100 dark:bg-amber-500/15",
