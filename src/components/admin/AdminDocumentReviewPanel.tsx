@@ -256,6 +256,7 @@ export function AdminDocumentReviewPanel({ leadId, lead, requirements, documents
                         doc={docsByType[req.document_type_id] ?? null}
                         versionCount={versionCountByType[req.document_type_id] ?? 0}
                         onChanged={handleAfterUpload}
+                        admissionDocOverrideLabel={admissionDocOverrideLabel}
                       />
                     ))}
                   </AccordionContent>
@@ -265,39 +266,48 @@ export function AdminDocumentReviewPanel({ leadId, lead, requirements, documents
           </Accordion>
         )}
 
-        {/* Collapsed "Not Applicable" section — operational visibility for admin.
+        {/* Collapsed "Not Applicable" sections — one per reason.
             Excluded from readiness counts; uploaded files (if any) remain viewable. */}
-        {!loading && naRequirements.length > 0 && (
-          <Accordion type="multiple" className="w-full">
-            <AccordionItem value="not-applicable" className="border rounded-md mb-2 border-dashed">
-              <AccordionTrigger className="px-3 py-2.5 hover:no-underline">
-                <div className="flex items-center justify-between gap-3 flex-1 min-w-0">
-                  <div className="min-w-0 text-left">
-                    <p className="text-sm font-semibold truncate text-muted-foreground">
-                      Not Applicable based on highest qualification
-                    </p>
-                  </div>
-                  <Badge variant="outline" className="text-[10px] shrink-0">
-                    {naRequirements.length} hidden
-                  </Badge>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-3 pb-3 space-y-2">
-                {naRequirements.map((req) => (
-                  <DocReviewRow
-                    key={req.id}
-                    req={req as unknown as DocRequirementInput}
-                    leadId={leadId}
-                    lead={lead ?? null}
-                    doc={docsByType[req.document_type_id] ?? null}
-                    versionCount={versionCountByType[req.document_type_id] ?? 0}
-                    onChanged={handleAfterUpload}
-                  />
-                ))}
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        )}
+        {!loading &&
+          NOT_APPLICABLE_REASON_ORDER.map((reason) => {
+            const rows = notApplicableGroups[reason as NotApplicableReason] ?? [];
+            if (rows.length === 0) return null;
+            return (
+              <Accordion key={reason} type="multiple" className="w-full">
+                <AccordionItem
+                  value={`not-applicable-${reason}`}
+                  className="border rounded-md mb-2 border-dashed"
+                >
+                  <AccordionTrigger className="px-3 py-2.5 hover:no-underline">
+                    <div className="flex items-center justify-between gap-3 flex-1 min-w-0">
+                      <div className="min-w-0 text-left">
+                        <p className="text-sm font-semibold truncate text-muted-foreground">
+                          {NOT_APPLICABLE_REASON_LABEL[reason as NotApplicableReason]}
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="text-[10px] shrink-0">
+                        {rows.length} hidden
+                      </Badge>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-3 pb-3 space-y-2">
+                    {rows.map((req) => (
+                      <DocReviewRow
+                        key={req.id}
+                        req={req as unknown as DocRequirementInput}
+                        leadId={leadId}
+                        lead={lead ?? null}
+                        doc={docsByType[req.document_type_id] ?? null}
+                        versionCount={versionCountByType[req.document_type_id] ?? 0}
+                        onChanged={handleAfterUpload}
+                        admissionDocOverrideLabel={admissionDocOverrideLabel}
+                      />
+                    ))}
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            );
+          })}
       </CardContent>
     </Card>
   );
