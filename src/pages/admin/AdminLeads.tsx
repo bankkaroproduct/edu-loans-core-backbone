@@ -85,6 +85,7 @@ function studentInitials(name: string): string {
 export default function AdminLeads() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { metrics: adminMetrics } = useAdminDashboard();
 
   // Master data
   const [stages, setStages] = useState<{ stage_key: StageEnum; stage_label: string }[]>([]);
