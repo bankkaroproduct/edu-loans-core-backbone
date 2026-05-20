@@ -40,34 +40,6 @@ export function AdminLeadQueue({ data, loading, error, onRetry, filters, onFilte
     return filters.sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
   };
 
-  // Quick chips: navigate to /admin/leads with appropriate URL filters pre-applied.
-  const chips = metrics
-    ? [
-        {
-          label: "Pending review",
-          count: metrics.requestsPendingApproval,
-          to: "/admin/leads?status=awaiting_verification",
-          tone: "amber",
-        },
-        {
-          label: "High Priority Leads",
-          count: metrics.pendingAdminActions,
-          to: "/admin/leads?status=awaiting_verification",
-          tone: "amber",
-        },
-        {
-          label: "Sent to Lender",
-          count: metrics.sentToLender,
-          to: "/admin/leads?stage=sent_to_lender",
-          tone: "primary",
-        },
-      ]
-    : [];
-
-  const chipToneClass = (tone: string) =>
-    tone === "amber"
-      ? "border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-900"
-      : "border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary";
 
   return (
     <Card className="rounded-2xl border-border/60 shadow-sm overflow-hidden">
