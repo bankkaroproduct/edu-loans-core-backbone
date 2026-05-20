@@ -346,6 +346,9 @@ Deno.serve(async (req) => {
           student_full_name: lead.student_full_name || `${lead.student_first_name ?? ""} ${lead.student_last_name ?? ""}`.trim() || null,
           coapplicant_name: lead.coapplicant_name || null,
           highest_qualification: lead.highest_qualification ?? null,
+          intended_study_country: lead.intended_study_country ?? null,
+          collateral_available: lead.collateral_available ?? null,
+          coapplicant_employment_type: lead.coapplicant_employment_type ?? null,
         },
       });
     }

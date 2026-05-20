@@ -297,7 +297,7 @@ export default function StudentDocuments() {
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
-                              <h3 className="text-sm font-semibold text-foreground">{req.document_name}</h3>
+                              <h3 className="text-sm font-semibold text-foreground">{(req.document_code ?? "").toUpperCase() === "I20_CAS" && admissionDocOverrideLabel ? admissionDocOverrideLabel : req.document_name}</h3>
                               {req.required ? (
                                 <Badge variant="outline" className="text-[10px]">Required</Badge>
                               ) : (
