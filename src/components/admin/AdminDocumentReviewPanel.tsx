@@ -253,9 +253,6 @@ export function AdminDocumentReviewPanel({ leadId, lead, requirements, documents
                     <p className="text-sm font-semibold truncate text-muted-foreground">
                       Not Applicable based on highest qualification
                     </p>
-                    <p className="text-[11px] text-muted-foreground truncate">
-                      Hidden from readiness — uploaded files (if any) remain viewable.
-                    </p>
                   </div>
                   <Badge variant="outline" className="text-[10px] shrink-0">
                     {naRequirements.length} hidden
