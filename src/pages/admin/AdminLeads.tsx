@@ -306,7 +306,7 @@ export default function AdminLeads() {
     } finally {
       setLoading(false);
     }
-  }, [filters, sortKey, sortDir, page, applyBusinessFilters]);
+  }, [filters, sortKey, sortDir, page, applyBusinessFilters, cardFilter, highPriorityIds]);
 
   useEffect(() => { fetchPage(); }, [fetchPage]);
 
