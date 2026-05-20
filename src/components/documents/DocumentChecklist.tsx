@@ -19,12 +19,6 @@ import {
   type NotApplicableReason,
 } from "@/lib/documentApplicability";
 import { getAdmissionDocLabelForCountry } from "@/lib/countryAliases";
-import {
-  Accordion as NaAccordion,
-  AccordionContent as NaAccordionContent,
-  AccordionItem as NaAccordionItem,
-  AccordionTrigger as NaAccordionTrigger,
-} from "@/components/ui/accordion";
 
 type ValidationFlag = "ok" | "warn_name" | "warn_type" | "review_needed" | "inconclusive";
 
