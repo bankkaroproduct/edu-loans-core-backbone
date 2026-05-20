@@ -100,13 +100,12 @@ function matchesChip(l: Lead, chip: ChipKey): boolean {
   }
 }
 
-function activeFilterCount(f: Filters, dateRange: DateRange): number {
+function activeFilterCount(f: Filters): number {
   return (
     (f.stages.length ? 1 : 0) +
     (f.sources.length ? 1 : 0) +
     (f.destinations.length ? 1 : 0) +
     (f.intakes.length ? 1 : 0) +
-    (dateRange && dateRange !== "3m" ? 1 : 0) +
     (f.loanMin || f.loanMax ? 1 : 0)
   );
 }
@@ -244,7 +243,7 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
     return sorted.slice(0, 12);
   }, [leads, chip, sort, filters, dateCtx]);
 
-  const fcount = activeFilterCount(filters, dateCtx.dateRange);
+  const fcount = activeFilterCount(filters);
 
   const toggleArr = (arr: string[], v: string) =>
     arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v];
@@ -367,62 +366,7 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
                     </div>
                   )}
 
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold block">Date Filter</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Select
-                        value={draftDate.dateField}
-                        onValueChange={(v) => setDraftDate({ ...draftDate, dateField: v as DateField })}
-                      >
-                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="submitted">Submitted Date</SelectItem>
-                          <SelectItem value="updated">Updated Date</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Select
-                        value={draftDate.dateRange || "3m"}
-                        onValueChange={(v) =>
-                          setDraftDate({
-                            ...draftDate,
-                            dateRange: v as DateRange,
-                            ...(v !== "custom" ? { dateFrom: "", dateTo: "" } : {}),
-                          })
-                        }
-                      >
-                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="7d">Last 7 Days</SelectItem>
-                          <SelectItem value="1m">Last Month</SelectItem>
-                          <SelectItem value="3m">Last 3 Months</SelectItem>
-                          <SelectItem value="1y">Last Year</SelectItem>
-                          <SelectItem value="custom">Custom</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    {draftDate.dateRange === "custom" && (
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                          <Label className="text-[10px] text-muted-foreground">From (dd-mm-yyyy)</Label>
-                          <Input
-                            type="date"
-                            className="h-8 text-xs"
-                            value={draftDate.dateFrom}
-                            onChange={(e) => setDraftDate({ ...draftDate, dateFrom: e.target.value })}
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-[10px] text-muted-foreground">To (dd-mm-yyyy)</Label>
-                          <Input
-                            type="date"
-                            className="h-8 text-xs"
-                            value={draftDate.dateTo}
-                            onChange={(e) => setDraftDate({ ...draftDate, dateTo: e.target.value })}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  {/* Date filter moved to page-level DashboardFilterBar */}
 
                   <div>
                     <Label className="text-xs font-semibold mb-2 block">Loan Amount (₹)</Label>

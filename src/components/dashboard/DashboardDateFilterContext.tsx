@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 export type DateField = "submitted" | "updated";
-export type DateRange = "" | "7d" | "1m" | "3m" | "1y" | "custom";
+export type DateRange = "" | "7d" | "1m" | "this_month" | "3m" | "6m" | "1y" | "custom";
 
 export interface DashboardDateFilterState {
   dateField: DateField;
@@ -65,15 +65,18 @@ const RANGE_LABELS: Record<DateRange, string> = {
   "": "All",
   "7d": "Last 7 Days",
   "1m": "Last Month",
+  this_month: "This Month",
   "3m": "Last 3 Months",
+  "6m": "Last 6 Months",
   "1y": "Last Year",
   custom: "Custom",
 };
 
-const RANGE_DAYS: Record<Exclude<DateRange, "" | "custom">, number> = {
+const RANGE_DAYS: Record<Exclude<DateRange, "" | "custom" | "this_month">, number> = {
   "7d": 7,
   "1m": 30,
   "3m": 90,
+  "6m": 180,
   "1y": 365,
 };
 
@@ -117,6 +120,11 @@ export function DashboardDateFilterProvider({ children }: { children: ReactNode 
           if (t > to) return false;
         }
         return true;
+      }
+      if (state.dateRange === "this_month") {
+        const now = new Date();
+        const from = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+        return t >= from;
       }
       const days = RANGE_DAYS[state.dateRange];
       const from = Date.now() - days * 86400000;
