@@ -113,7 +113,21 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    font-family: theme("fontFamily.sans");
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  /* Browsers reset form controls to system fonts by default — force inheritance
+     so inputs/buttons/selects render in Inter like surrounding text. */
+  input,
+  button,
+  select,
+  textarea,
+  optgroup {
+    font-family: inherit;
   }
 }
