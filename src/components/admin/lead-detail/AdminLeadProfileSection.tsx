@@ -81,7 +81,7 @@ function Field({
 }) {
   const hasValue = value !== null && value !== undefined && value !== "";
   return (
-    <div className="min-w-0 space-y-0.5 overflow-hidden">
+    <div className="min-w-0 space-y-0.5">
       <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
         {label}
       </span>
