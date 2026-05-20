@@ -113,12 +113,23 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
-  html {
+  html,
+  body {
     font-family: theme("fontFamily.sans");
   }
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  #root {
+    font-family: inherit;
+  }
+
+  /* Defeat any Radix/shadcn primitive that might set its own font-family. */
+  [data-sidebar],
+  [data-sidebar="sidebar"] {
+    font-family: inherit;
   }
 
   /* Browsers reset form controls to system fonts by default — force inheritance

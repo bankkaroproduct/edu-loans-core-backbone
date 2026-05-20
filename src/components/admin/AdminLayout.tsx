@@ -19,7 +19,7 @@ function AdminShell({ children }: { children: ReactNode }) {
   const slotActive = !!headerContent || hideSidebarTrigger;
 
   return (
-    <div className="min-h-screen flex w-full bg-muted/30">
+    <div className="min-h-screen flex w-full bg-muted/30 font-sans">
       <AdminSidebar />
       <div className="flex-1 flex flex-col min-w-0">
         {slotActive && (

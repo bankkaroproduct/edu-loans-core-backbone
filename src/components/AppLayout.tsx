@@ -59,7 +59,7 @@ function AppShell({ children, isDashboard, fullName }: { children: ReactNode; is
   const slotActive = !!headerContent || hideSidebarTrigger;
 
   return (
-    <div className="min-h-screen flex w-full">
+    <div className="min-h-screen flex w-full font-sans">
       <AppSidebar />
       <div className="flex-1 flex flex-col">
         <SimulationBanner />
