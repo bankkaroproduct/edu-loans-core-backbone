@@ -73,24 +73,6 @@ export function AdminLeadQueue({ data, loading, error, onRetry, filters, onFilte
         </div>
       </div>
 
-      {/* Quick chips */}
-      {chips.length > 0 && (
-        <div className="flex flex-wrap gap-2 px-6 pt-4">
-          {chips.map((c) => (
-            <button
-              key={c.label}
-              type="button"
-              onClick={() => navigate(c.to)}
-              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${chipToneClass(c.tone)}`}
-            >
-              <span>{c.label}</span>
-              <span className="rounded-full bg-background/70 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums">
-                {c.count.toLocaleString("en-IN")}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
 
       <div className="px-6 py-4">
         {loading && (
