@@ -77,14 +77,6 @@ export function AdminSidebar() {
     <Sidebar collapsible="icon">
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>
-            {!collapsed && (
-              <span className={`flex items-center gap-1.5 ${sectionLabelClass}`}>
-                <Shield className="h-3.5 w-3.5 text-primary" />
-                Admin Console
-              </span>
-            )}
-          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {adminItems.map((item) => (
