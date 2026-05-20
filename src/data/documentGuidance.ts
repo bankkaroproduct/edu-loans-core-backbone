@@ -356,7 +356,7 @@ export const GUIDANCE_ENTRIES: DocumentGuidance[] = [
     privacy_note: "I-20 contains your SEVIS ID. Upload only through EduLoans secure upload.",
   },
   {
-    canonical_name: "CAS — Confirmation of Acceptance for Studies (UK)",
+    canonical_name: "CAS — Confirmation of Acceptance for Studies (United Kingdom)",
     short_helper_line:
       "Your UK university emails the CAS statement or makes it available on the student portal after you accept and pay the deposit.",
     where_to_get: [va("UK University's Student Portal / Admissions Office", "university")],
