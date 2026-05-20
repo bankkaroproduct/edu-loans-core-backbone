@@ -410,7 +410,7 @@ function DocReviewRow({
         <div className="flex items-center gap-2 min-w-0">
           {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
           <span className="text-sm font-medium truncate">
-            {req.document_master?.display_name ?? req.document_master?.document_name ?? "Document"}
+            {effectiveDisplay}
           </span>
           {req.required_flag && <span className="text-[10px] text-muted-foreground">(required)</span>}
         </div>
