@@ -444,12 +444,12 @@ export function DocumentChecklist({
           const rows = notApplicableGroups[reason as NotApplicableReason] ?? [];
           if (rows.length === 0) return null;
           return (
-            <NaAccordion key={reason} type="multiple" className="w-full">
-              <NaAccordionItem
+            <Accordion key={reason} type="multiple" className="w-full">
+              <AccordionItem
                 value={`not-applicable-${reason}`}
                 className="border rounded-md mb-2 border-dashed"
               >
-                <NaAccordionTrigger className="px-3 py-2.5 hover:no-underline">
+                <AccordionTrigger className="px-3 py-2.5 hover:no-underline">
                   <div className="flex items-center justify-between gap-3 flex-1 min-w-0">
                     <div className="min-w-0 text-left">
                       <p className="text-sm font-semibold truncate text-muted-foreground">
@@ -460,12 +460,12 @@ export function DocumentChecklist({
                       {rows.length} hidden
                     </Badge>
                   </div>
-                </NaAccordionTrigger>
-                <NaAccordionContent className="px-3 pb-3 space-y-2">
+                </AccordionTrigger>
+                <AccordionContent className="px-3 pb-3 space-y-2">
                   {rows.map((req) => renderRow(req as DocRequirement))}
-                </NaAccordionContent>
-              </NaAccordionItem>
-            </NaAccordion>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           );
         })}
       </CardContent>
