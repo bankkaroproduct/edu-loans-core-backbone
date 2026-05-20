@@ -565,7 +565,7 @@ export function InlineEditField({
           return null;
         })()}
         {!confirming ? (
-          <span className="inline-flex items-center gap-1 whitespace-nowrap">
+          <span className="flex flex-wrap items-center gap-1 w-full">
             <Button size="sm" className="h-6 px-2 text-[11px]" onClick={askConfirm} disabled={saving}>
               Save
             </Button>
@@ -574,16 +574,18 @@ export function InlineEditField({
             </Button>
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1.5 rounded border bg-muted/40 p-1.5 whitespace-nowrap">
+          <span className="flex flex-wrap items-center gap-1.5 rounded border bg-muted/40 p-1.5 w-full">
             <span className="text-[11px]">Save this information?</span>
-            <Button size="sm" className="h-6 px-2 text-[11px]" onClick={save} disabled={saving}>
-              {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
-              Yes
-            </Button>
-            <Button size="sm" variant="outline" className="h-6 px-2 text-[11px]" onClick={cancel} disabled={saving}>
-              <X className="h-3 w-3" />
-              No
-            </Button>
+            <span className="inline-flex items-center gap-1.5 flex-shrink-0">
+              <Button size="sm" className="h-6 px-2 text-[11px]" onClick={save} disabled={saving}>
+                {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                Yes
+              </Button>
+              <Button size="sm" variant="outline" className="h-6 px-2 text-[11px]" onClick={cancel} disabled={saving}>
+                <X className="h-3 w-3" />
+                No
+              </Button>
+            </span>
           </span>
         )}
       </span>
