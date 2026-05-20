@@ -352,9 +352,8 @@ export function partitionRequirementsWithReasons(
       applicable.push(r);
       continue;
     }
-    if ("silent" in decision && decision.silent) continue; // hide entirely
-    const reason = decision.reason as NotApplicableReason;
-    (groups[reason] ??= []).push(r);
+    if (decision.reason === "country") continue; // silently suppressed
+    (groups[decision.reason] ??= []).push(r);
   }
 
   return { applicable, notApplicableGroups: groups, level };
