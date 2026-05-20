@@ -15,11 +15,19 @@ import { AdminLeadFilters, type AdminLeadFilterState } from "@/components/admin/
 import { applyBusinessFilters as applySharedBusinessFilters } from "@/lib/leadBusinessFilters";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import {
+  ACTION_NEEDED_EXCLUDED_STAGES,
+  REVIEW_DUE_SELECT_COLUMNS,
+  isReviewDue,
+} from "@/lib/adminActionNeeded";
+import {
   AlertCircle, ArrowDown, ArrowUp, ArrowUpDown, BadgeCheck, ChevronLeft, ChevronRight,
   Clock, Inbox, Layers, Pencil, RefreshCw, Send, SlidersHorizontal,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Database } from "@/integrations/supabase/types";
+
+type CardFilterKey = "none" | "high_priority" | "sent_to_lender" | "sanction_received";
+const HIGH_PRIORITY_EMPTY_SENTINEL = "00000000-0000-0000-0000-000000000000";
 
 type StageEnum = Database["public"]["Enums"]["lead_stage_enum"];
 type StatusEnum = Database["public"]["Enums"]["lead_status_enum"];
@@ -130,6 +138,10 @@ export default function AdminLeads() {
   const [healthCounts, setHealthCounts] = useState<{
     total: number; pendingReview: number; withLender: number; sanction: number;
   }>({ total: 0, pendingReview: 0, withLender: 0, sanction: 0 });
+
+  // Clickable stat-card filter (frontend-only intersection with current filters)
+  const [cardFilter, setCardFilter] = useState<CardFilterKey>("none");
+  const [highPriorityIds, setHighPriorityIds] = useState<string[] | null>(null);
 
   // Debounce search
   const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -243,6 +255,15 @@ export default function AdminLeads() {
             `student_full_name.ilike.%${t}%,student_first_name.ilike.%${t}%,student_last_name.ilike.%${t}%,student_phone.ilike.%${t}%,lead_id.ilike.%${t}%`
           );
         }
+        // Card-filter intersection (Total = none)
+        if (cardFilter === "high_priority") {
+          const ids = (highPriorityIds && highPriorityIds.length > 0) ? highPriorityIds : [HIGH_PRIORITY_EMPTY_SENTINEL];
+          q = q.in("id", ids);
+        } else if (cardFilter === "sent_to_lender") {
+          q = q.eq("current_stage", "sent_to_lender");
+        } else if (cardFilter === "sanction_received") {
+          q = q.eq("current_stage", "sanction_received");
+        }
         return q;
       };
 
@@ -285,7 +306,7 @@ export default function AdminLeads() {
     } finally {
       setLoading(false);
     }
-  }, [filters, sortKey, sortDir, page, applyBusinessFilters]);
+  }, [filters, sortKey, sortDir, page, applyBusinessFilters, cardFilter, highPriorityIds]);
 
   useEffect(() => { fetchPage(); }, [fetchPage]);
 
@@ -342,6 +363,26 @@ export default function AdminLeads() {
 
   useEffect(() => { fetchHealthCounts(); }, [fetchHealthCounts]);
 
+  // Fetch the set of "High Priority Leads" IDs — mirrors useAdminDashboard.fetchMetrics
+  // so the card-filter intersection matches what the High Priority tile represents.
+  const fetchHighPriorityIds = useCallback(async () => {
+    try {
+      const excl = `(${ACTION_NEEDED_EXCLUDED_STAGES.join(",")})`;
+      const [followUp, reviewRows] = await Promise.all([
+        supabase.from("student_leads").select("id").eq("is_archived", false).not("current_stage", "in", excl),
+        supabase.from("student_leads").select(REVIEW_DUE_SELECT_COLUMNS).eq("is_archived", false).not("current_stage", "in", excl),
+      ]);
+      const ids = new Set<string>();
+      (followUp.data ?? []).forEach((r: any) => { if (r?.id) ids.add(r.id); });
+      (reviewRows.data ?? []).filter((l: any) => isReviewDue(l)).forEach((l: any) => { if (l?.id) ids.add(l.id); });
+      setHighPriorityIds(Array.from(ids));
+    } catch {
+      setHighPriorityIds([]);
+    }
+  }, []);
+
+  useEffect(() => { fetchHighPriorityIds(); }, [fetchHighPriorityIds]);
+
   // Realtime: debounced refresh on student_leads changes
   useEffect(() => {
     let t: ReturnType<typeof setTimeout> | null = null;
@@ -349,11 +390,11 @@ export default function AdminLeads() {
       .channel("admin-leads-queue")
       .on("postgres_changes", { event: "*", schema: "public", table: "student_leads" }, () => {
         if (t) clearTimeout(t);
-        t = setTimeout(() => fetchPage(), 600);
+        t = setTimeout(() => { fetchPage(); fetchHighPriorityIds(); }, 600);
       })
       .subscribe();
     return () => { if (t) clearTimeout(t); supabase.removeChannel(channel); };
-  }, [fetchPage]);
+  }, [fetchPage, fetchHighPriorityIds]);
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
@@ -441,72 +482,102 @@ export default function AdminLeads() {
         </Button>
       </PageHeader>
 
-      {/* Pipeline Summary Cards — premium tiles */}
+      {/* Pipeline Summary Cards — clickable stat tiles */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        {[
+        {([
           {
+            cardKey: "none" as CardFilterKey,
             label: "Total in queue",
             value: healthCounts.total,
             sub: "Matching current filters",
             icon: Layers,
             iconBg: "bg-slate-100 dark:bg-slate-500/15",
             iconFg: "text-slate-700 dark:text-slate-300",
+            disabled: false,
           },
           {
+            cardKey: "high_priority" as CardFilterKey,
             label: "High Priority Leads",
             value: adminMetrics.data?.pendingAdminActions ?? 0,
             sub: "Stale follow-ups · critical-stage pending actions",
             icon: AlertCircle,
             iconBg: "bg-amber-100 dark:bg-amber-500/15",
             iconFg: "text-amber-700 dark:text-amber-400",
+            disabled: highPriorityIds === null,
           },
           {
+            cardKey: "sent_to_lender" as CardFilterKey,
             label: "Sent to Lender",
             value: healthCounts.withLender,
             sub: "Awaiting lender decision",
             icon: Send,
             iconBg: "bg-primary/10",
             iconFg: "text-primary",
+            disabled: false,
           },
           {
+            cardKey: "sanction_received" as CardFilterKey,
             label: "Sanction Received",
             value: healthCounts.sanction,
             sub: "Sanction in hand",
             icon: BadgeCheck,
             iconBg: "bg-emerald-100 dark:bg-emerald-500/15",
             iconFg: "text-emerald-700 dark:text-emerald-400",
+            disabled: false,
           },
-        ].map((tile) => {
+        ]).map((tile) => {
           const Icon = tile.icon;
+          // "Total in queue" never shows an active ring — it's a reset, not a filter.
+          const isActive = tile.cardKey !== "none" && cardFilter === tile.cardKey;
+          const handleClick = () => {
+            if (tile.disabled) return;
+            if (tile.cardKey === "none") {
+              setCardFilter("none");
+            } else {
+              setCardFilter((cur) => (cur === tile.cardKey ? "none" : tile.cardKey));
+            }
+            setPage(1);
+          };
           return (
-            <Card
+            <button
               key={tile.label}
-              className="p-5 transition-shadow hover:shadow-md"
+              type="button"
+              onClick={handleClick}
+              aria-pressed={isActive}
+              disabled={tile.disabled}
+              className="text-left rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="space-y-2 min-w-0 flex-1">
-                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider leading-tight">
-                    {tile.label}
-                  </p>
-                  {loading ? (
-                    <Skeleton className="h-9 w-20" />
-                  ) : (
-                    <p className="text-3xl font-bold tabular-nums leading-none text-foreground">
-                      {tile.value.toLocaleString("en-IN")}
+              <Card
+                className={`p-5 transition-all hover:shadow-md ${
+                  isActive ? "ring-2 ring-primary border-primary bg-primary/5" : ""
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-2 min-w-0 flex-1">
+                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider leading-tight">
+                      {tile.label}
                     </p>
-                  )}
-                  <p className="text-[11px] text-muted-foreground leading-snug line-clamp-2">
-                    {tile.sub}
-                  </p>
+                    {loading ? (
+                      <Skeleton className="h-9 w-20" />
+                    ) : (
+                      <p className="text-3xl font-bold tabular-nums leading-none text-foreground">
+                        {tile.value.toLocaleString("en-IN")}
+                      </p>
+                    )}
+                    <p className="text-[11px] text-muted-foreground leading-snug line-clamp-2">
+                      {tile.sub}
+                    </p>
+                  </div>
+                  <div className={`rounded-xl p-2.5 shrink-0 ${tile.iconBg}`}>
+                    <Icon className={`h-5 w-5 ${tile.iconFg}`} />
+                  </div>
                 </div>
-                <div className={`rounded-xl p-2.5 shrink-0 ${tile.iconBg}`}>
-                  <Icon className={`h-5 w-5 ${tile.iconFg}`} />
-                </div>
-              </div>
-            </Card>
+              </Card>
+            </button>
           );
         })}
       </div>
+
 
       {/* Control Bar — Filters & Search */}
       <Card className="overflow-hidden">
