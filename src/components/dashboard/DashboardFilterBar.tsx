@@ -1,75 +1,93 @@
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { CalendarRange } from "lucide-react";
-import { useDashboardDateFilter, type DateRange } from "./DashboardDateFilterContext";
+import { cn } from "@/lib/utils";
+import {
+  resolveDateWindow,
+  useDashboardDateFilter,
+  type DateRange,
+} from "./DashboardDateFilterContext";
+
+const PRESETS: { value: DateRange; label: string }[] = [
+  { value: "this_month", label: "This Month" },
+  { value: "3m", label: "Last 3 Months" },
+  { value: "6m", label: "Last 6 Months" },
+  { value: "custom", label: "Custom" },
+];
+
+function fmt(d: Date): string {
+  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+}
 
 /**
- * Page-level filter bar for the partner Dashboard.
- * Drives both the summary stats table and the leads table below via the
- * shared DashboardDateFilterContext.
+ * Overview card header row: title + filter pills + date display.
+ * Renders without its own card border — it lives inside the shared Overview card.
  */
 export function DashboardFilterBar() {
   const ctx = useDashboardDateFilter();
+  const active = ctx.dateRange || "3m";
 
-  const onRangeChange = (v: string) => {
-    const next = v as DateRange;
+  const onPick = (v: DateRange) => {
     ctx.setDateFilter({
-      dateRange: next,
-      ...(next !== "custom" ? { dateFrom: "", dateTo: "" } : {}),
+      dateRange: v,
+      ...(v !== "custom" ? { dateFrom: "", dateTo: "" } : {}),
     });
   };
 
+  const win = resolveDateWindow(active, ctx.dateFrom, ctx.dateTo);
+  const dateDisplay = win ? `${fmt(win.start)} – ${fmt(win.end)}` : "All time";
+
   return (
-    <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-card p-3">
-      <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-        <CalendarRange className="h-4 w-4 text-muted-foreground" />
-        Date range
-      </div>
+    <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+      <h2 className="text-sm font-medium text-foreground">Overview</h2>
 
-      <div className="space-y-1">
-        <Label className="text-[10px] text-muted-foreground">Period</Label>
-        <Select value={ctx.dateRange || "3m"} onValueChange={onRangeChange}>
-          <SelectTrigger className="h-9 w-[180px] text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="this_month">This Month</SelectItem>
-            <SelectItem value="3m">Last 3 Months</SelectItem>
-            <SelectItem value="6m">Last 6 Months</SelectItem>
-            <SelectItem value="custom">Custom Date Range</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <div className="flex flex-wrap items-center gap-1">
+        <div className="flex items-center gap-0.5">
+          {PRESETS.map((p) => {
+            const isActive = active === p.value;
+            return (
+              <button
+                key={p.value}
+                type="button"
+                onClick={() => onPick(p.value)}
+                className={cn(
+                  "h-7 rounded-md px-2.5 text-xs transition-colors",
+                  isActive
+                    ? "bg-secondary font-medium text-foreground"
+                    : "font-normal text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {p.label}
+              </button>
+            );
+          })}
+        </div>
 
-      {ctx.dateRange === "custom" && (
-        <>
-          <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">From</Label>
+        <div className="mx-2 h-5 w-px bg-border" />
+
+        {active === "custom" ? (
+          <div className="flex items-center gap-1.5">
+            <CalendarRange className="h-3.5 w-3.5 text-muted-foreground" />
             <Input
               type="date"
-              className="h-9 w-[160px] text-sm"
+              className="h-7 w-[140px] text-xs"
               value={ctx.dateFrom}
               onChange={(e) => ctx.setDateFilter({ dateFrom: e.target.value })}
             />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">To</Label>
+            <span className="text-xs text-muted-foreground">–</span>
             <Input
               type="date"
-              className="h-9 w-[160px] text-sm"
+              className="h-7 w-[140px] text-xs"
               value={ctx.dateTo}
               onChange={(e) => ctx.setDateFilter({ dateTo: e.target.value })}
             />
           </div>
-        </>
-      )}
+        ) : (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <CalendarRange className="h-3.5 w-3.5" />
+            <span className="tabular-nums">{dateDisplay}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
