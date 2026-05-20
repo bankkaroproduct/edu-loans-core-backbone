@@ -363,6 +363,26 @@ export default function AdminLeads() {
 
   useEffect(() => { fetchHealthCounts(); }, [fetchHealthCounts]);
 
+  // Fetch the set of "High Priority Leads" IDs — mirrors useAdminDashboard.fetchMetrics
+  // so the card-filter intersection matches what the High Priority tile represents.
+  const fetchHighPriorityIds = useCallback(async () => {
+    try {
+      const excl = `(${ACTION_NEEDED_EXCLUDED_STAGES.join(",")})`;
+      const [followUp, reviewRows] = await Promise.all([
+        supabase.from("student_leads").select("id").eq("is_archived", false).not("current_stage", "in", excl),
+        supabase.from("student_leads").select(REVIEW_DUE_SELECT_COLUMNS).eq("is_archived", false).not("current_stage", "in", excl),
+      ]);
+      const ids = new Set<string>();
+      (followUp.data ?? []).forEach((r: any) => { if (r?.id) ids.add(r.id); });
+      (reviewRows.data ?? []).filter((l: any) => isReviewDue(l)).forEach((l: any) => { if (l?.id) ids.add(l.id); });
+      setHighPriorityIds(Array.from(ids));
+    } catch {
+      setHighPriorityIds([]);
+    }
+  }, []);
+
+  useEffect(() => { fetchHighPriorityIds(); }, [fetchHighPriorityIds]);
+
   // Realtime: debounced refresh on student_leads changes
   useEffect(() => {
     let t: ReturnType<typeof setTimeout> | null = null;
