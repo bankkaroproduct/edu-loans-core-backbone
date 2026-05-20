@@ -136,8 +136,8 @@ export default function AdminLeads() {
 
   // Health strip counts (filter-aware: same WHERE except status/stage overrides)
   const [healthCounts, setHealthCounts] = useState<{
-    total: number; pendingReview: number; withLender: number; sanction: number;
-  }>({ total: 0, pendingReview: 0, withLender: 0, sanction: 0 });
+    total: number; pendingReview: number; withLender: number; sanction: number; highPriority: number;
+  }>({ total: 0, pendingReview: 0, withLender: 0, sanction: 0, highPriority: 0 });
 
   // Clickable stat-card filter (frontend-only intersection with current filters)
   const [cardFilter, setCardFilter] = useState<CardFilterKey>("none");
