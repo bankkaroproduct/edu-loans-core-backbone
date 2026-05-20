@@ -482,72 +482,102 @@ export default function AdminLeads() {
         </Button>
       </PageHeader>
 
-      {/* Pipeline Summary Cards — premium tiles */}
+      {/* Pipeline Summary Cards — clickable stat tiles */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        {[
+        {([
           {
+            cardKey: "none" as CardFilterKey,
             label: "Total in queue",
             value: healthCounts.total,
             sub: "Matching current filters",
             icon: Layers,
             iconBg: "bg-slate-100 dark:bg-slate-500/15",
             iconFg: "text-slate-700 dark:text-slate-300",
+            disabled: false,
           },
           {
+            cardKey: "high_priority" as CardFilterKey,
             label: "High Priority Leads",
             value: adminMetrics.data?.pendingAdminActions ?? 0,
             sub: "Stale follow-ups · critical-stage pending actions",
             icon: AlertCircle,
             iconBg: "bg-amber-100 dark:bg-amber-500/15",
             iconFg: "text-amber-700 dark:text-amber-400",
+            disabled: highPriorityIds === null,
           },
           {
+            cardKey: "sent_to_lender" as CardFilterKey,
             label: "Sent to Lender",
             value: healthCounts.withLender,
             sub: "Awaiting lender decision",
             icon: Send,
             iconBg: "bg-primary/10",
             iconFg: "text-primary",
+            disabled: false,
           },
           {
+            cardKey: "sanction_received" as CardFilterKey,
             label: "Sanction Received",
             value: healthCounts.sanction,
             sub: "Sanction in hand",
             icon: BadgeCheck,
             iconBg: "bg-emerald-100 dark:bg-emerald-500/15",
             iconFg: "text-emerald-700 dark:text-emerald-400",
+            disabled: false,
           },
-        ].map((tile) => {
+        ]).map((tile) => {
           const Icon = tile.icon;
+          // "Total in queue" never shows an active ring — it's a reset, not a filter.
+          const isActive = tile.cardKey !== "none" && cardFilter === tile.cardKey;
+          const handleClick = () => {
+            if (tile.disabled) return;
+            if (tile.cardKey === "none") {
+              setCardFilter("none");
+            } else {
+              setCardFilter((cur) => (cur === tile.cardKey ? "none" : tile.cardKey));
+            }
+            setPage(1);
+          };
           return (
-            <Card
+            <button
               key={tile.label}
-              className="p-5 transition-shadow hover:shadow-md"
+              type="button"
+              onClick={handleClick}
+              aria-pressed={isActive}
+              disabled={tile.disabled}
+              className="text-left rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="space-y-2 min-w-0 flex-1">
-                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider leading-tight">
-                    {tile.label}
-                  </p>
-                  {loading ? (
-                    <Skeleton className="h-9 w-20" />
-                  ) : (
-                    <p className="text-3xl font-bold tabular-nums leading-none text-foreground">
-                      {tile.value.toLocaleString("en-IN")}
+              <Card
+                className={`p-5 transition-all hover:shadow-md ${
+                  isActive ? "ring-2 ring-primary border-primary bg-primary/5" : ""
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-2 min-w-0 flex-1">
+                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider leading-tight">
+                      {tile.label}
                     </p>
-                  )}
-                  <p className="text-[11px] text-muted-foreground leading-snug line-clamp-2">
-                    {tile.sub}
-                  </p>
+                    {loading ? (
+                      <Skeleton className="h-9 w-20" />
+                    ) : (
+                      <p className="text-3xl font-bold tabular-nums leading-none text-foreground">
+                        {tile.value.toLocaleString("en-IN")}
+                      </p>
+                    )}
+                    <p className="text-[11px] text-muted-foreground leading-snug line-clamp-2">
+                      {tile.sub}
+                    </p>
+                  </div>
+                  <div className={`rounded-xl p-2.5 shrink-0 ${tile.iconBg}`}>
+                    <Icon className={`h-5 w-5 ${tile.iconFg}`} />
+                  </div>
                 </div>
-                <div className={`rounded-xl p-2.5 shrink-0 ${tile.iconBg}`}>
-                  <Icon className={`h-5 w-5 ${tile.iconFg}`} />
-                </div>
-              </div>
-            </Card>
+              </Card>
+            </button>
           );
         })}
       </div>
+
 
       {/* Control Bar — Filters & Search */}
       <Card className="overflow-hidden">
