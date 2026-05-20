@@ -17,7 +17,6 @@ interface Props {
   filters: LeadQueueFilters;
   onFiltersChange: (f: LeadQueueFilters) => void;
   pipelineStages: PipelineStage[];
-  metrics?: AdminMetrics | null;
 }
 
 function sourceLabel(row: AdminLeadRow): string {
@@ -25,7 +24,7 @@ function sourceLabel(row: AdminLeadRow): string {
   return row.partner_display_name ? `Partner: ${row.partner_display_name}` : "Partner Lead";
 }
 
-export function AdminLeadQueue({ data, loading, error, onRetry, filters, onFiltersChange, pipelineStages, metrics }: Props) {
+export function AdminLeadQueue({ data, loading, error, onRetry, filters, onFiltersChange, pipelineStages }: Props) {
   const navigate = useNavigate();
 
   const toggleSort = (col: "updated_at" | "created_at") => {
