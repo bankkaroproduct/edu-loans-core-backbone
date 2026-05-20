@@ -119,10 +119,18 @@ export default function StudentDocuments() {
 
   if (!isVerified) return null;
 
-  // Smart academic applicability — hide non-applicable academic docs from the
-  // student view and recompute readiness counts from the filtered list so
-  // hidden docs never appear as "missing".
-  const applicableRequirements = requirements.filter((r) => {
+  // Smart applicability — hide non-applicable docs (qualification + country +
+  // collateral + co-applicant employment) from the student view and recompute
+  // readiness counts so hidden docs never appear as "missing".
+  // Reasons grouped for the dashed "Not Applicable" hints; country mismatches
+  // are silently suppressed.
+  const applicableRequirements: DocumentRequirement[] = [];
+  const hiddenByReason: Record<"qualification" | "collateral" | "employment", DocumentRequirement[]> = {
+    qualification: [],
+    collateral: [],
+    employment: [],
+  };
+  for (const r of requirements) {
     const adapted = {
       document_master: {
         document_code: r.document_code ?? null,
@@ -130,9 +138,24 @@ export default function StudentDocuments() {
         document_name: r.document_name,
       },
     } as unknown as LeadDocRequirement;
-    return isRequirementApplicable(adapted, leadSummary?.highest_qualification ?? null);
-  });
-  const hiddenAcademicCount = requirements.length - applicableRequirements.length;
+    const decision = decideApplicability(adapted, {
+      highest_qualification: leadSummary?.highest_qualification ?? null,
+      intended_study_country: leadSummary?.intended_study_country ?? null,
+      collateral_available: leadSummary?.collateral_available ?? null,
+      coapplicant_employment_type: leadSummary?.coapplicant_employment_type ?? null,
+    });
+    if (decision.applicable) {
+      applicableRequirements.push(r);
+    } else if (decision.reason !== "country") {
+      hiddenByReason[decision.reason].push(r);
+    }
+  }
+  const admissionDocOverrideLabel = getAdmissionDocLabelForCountry(
+    leadSummary?.intended_study_country ?? null,
+  );
+  const hiddenAcademicCount = hiddenByReason.qualification.length;
+  const hiddenCollateralCount = hiddenByReason.collateral.length;
+  const hiddenEmploymentCount = hiddenByReason.employment.length;
 
   const effectiveCounts: DocCounts = {
     total: applicableRequirements.length,
@@ -241,8 +264,18 @@ export default function StudentDocuments() {
               )}
 
               {hiddenAcademicCount > 0 && (
+                <p className="mb-1 text-[11px] italic text-muted-foreground">
+                  Not Applicable based on highest qualification — {hiddenAcademicCount} hidden.
+                </p>
+              )}
+              {hiddenCollateralCount > 0 && (
+                <p className="mb-1 text-[11px] italic text-muted-foreground">
+                  Not Applicable based on collateral information provided — {hiddenCollateralCount} hidden.
+                </p>
+              )}
+              {hiddenEmploymentCount > 0 && (
                 <p className="mb-3 text-[11px] italic text-muted-foreground">
-                  Some academic documents are not applicable based on your highest qualification and have been hidden.
+                  Not Applicable based on employment type — {hiddenEmploymentCount} hidden.
                 </p>
               )}
 
