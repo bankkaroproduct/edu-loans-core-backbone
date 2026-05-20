@@ -1,6 +1,6 @@
 import { ReactNode, CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -29,7 +29,7 @@ function AdminShell({ children }: { children: ReactNode }) {
               "min-h-14 py-2 h-auto"
             )}
           >
-            {hideSidebarTrigger ? (
+            {hideSidebarTrigger && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -39,21 +39,12 @@ function AdminShell({ children }: { children: ReactNode }) {
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-            ) : (
-              <SidebarTrigger />
             )}
             {headerContent}
           </header>
         )}
         <main className="flex-1 px-6 py-7">
-          {slotActive ? (
-            children
-          ) : (
-            <div className="flex items-start gap-4 min-w-0">
-              <SidebarTrigger className="shrink-0 h-8 w-8 mt-0.5" />
-              <div className="flex-1 min-w-0">{children}</div>
-            </div>
-          )}
+          {children}
         </main>
       </div>
     </div>
