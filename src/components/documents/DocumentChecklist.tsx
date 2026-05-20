@@ -228,6 +228,13 @@ export function DocumentChecklist({
     const isActionable = ["not_uploaded", "rejected", "reupload_needed"].includes(req.status);
     const isReupload = ["rejected", "reupload_needed"].includes(req.status);
     const isBlocker = isReupload;
+    const isI20CasRow = (req.document_master?.document_code ?? "").toUpperCase() === "I20_CAS";
+    const baseRowLabel =
+      (req.document_master as { display_name?: string | null } | null | undefined)?.display_name ??
+      req.document_master?.document_name ??
+      "Document";
+    const rowLabel =
+      isI20CasRow && admissionDocOverrideLabel ? admissionDocOverrideLabel : baseRowLabel;
 
     return (
             <div
@@ -241,7 +248,7 @@ export function DocumentChecklist({
                     {/* Document name + badges */}
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className={`text-sm font-medium ${isBlocker ? "text-destructive" : ""}`}>
-                        {(req.document_master as { display_name?: string | null } | null | undefined)?.display_name ?? req.document_master?.document_name ?? "Document"}
+                        {rowLabel}
                       </p>
                       {req.document_master?.document_category && (
                         <Badge variant="outline" className="text-[9px]">{req.document_master.document_category}</Badge>
