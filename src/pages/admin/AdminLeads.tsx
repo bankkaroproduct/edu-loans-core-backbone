@@ -13,9 +13,10 @@ import { formatINRCompact } from "@/lib/formatCurrency";
 
 import { AdminLeadFilters, type AdminLeadFilterState } from "@/components/admin/AdminLeadFilters";
 import { applyBusinessFilters as applySharedBusinessFilters } from "@/lib/leadBusinessFilters";
+import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import {
   AlertCircle, ArrowDown, ArrowUp, ArrowUpDown, BadgeCheck, ChevronLeft, ChevronRight,
-  Clock, FileSearch, Inbox, Layers, Pencil, RefreshCw, Send, SlidersHorizontal,
+  Clock, Inbox, Layers, Pencil, RefreshCw, Send, SlidersHorizontal,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Database } from "@/integrations/supabase/types";
@@ -84,6 +85,7 @@ function studentInitials(name: string): string {
 export default function AdminLeads() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { metrics: adminMetrics } = useAdminDashboard();
 
   // Master data
   const [stages, setStages] = useState<{ stage_key: StageEnum; stage_label: string }[]>([]);
@@ -375,12 +377,6 @@ export default function AdminLeads() {
       apply: () => { setFilters({ ...filters, status: "awaiting_verification" as StatusEnum, stage: "all" }); setPage(1); },
     },
     {
-      label: "Docs to verify",
-      icon: FileSearch,
-      active: filters.stage === "documents_under_review",
-      apply: () => { setFilters({ ...filters, stage: "documents_under_review" as StageEnum, status: "all" }); setPage(1); },
-    },
-    {
       label: "Sent to Lender",
       icon: Send,
       active: filters.stage === "sent_to_lender",
@@ -457,9 +453,9 @@ export default function AdminLeads() {
             iconFg: "text-slate-700 dark:text-slate-300",
           },
           {
-            label: "Pending review",
-            value: healthCounts.pendingReview,
-            sub: "New · Awaiting verification · Pending info",
+            label: "High Priority Leads",
+            value: adminMetrics.data?.pendingAdminActions ?? 0,
+            sub: "Stale follow-ups · critical-stage pending actions",
             icon: AlertCircle,
             iconBg: "bg-amber-100 dark:bg-amber-500/15",
             iconFg: "text-amber-700 dark:text-amber-400",
