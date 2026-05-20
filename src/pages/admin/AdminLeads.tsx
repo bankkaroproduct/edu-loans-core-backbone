@@ -15,11 +15,19 @@ import { AdminLeadFilters, type AdminLeadFilterState } from "@/components/admin/
 import { applyBusinessFilters as applySharedBusinessFilters } from "@/lib/leadBusinessFilters";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import {
+  ACTION_NEEDED_EXCLUDED_STAGES,
+  REVIEW_DUE_SELECT_COLUMNS,
+  isReviewDue,
+} from "@/lib/adminActionNeeded";
+import {
   AlertCircle, ArrowDown, ArrowUp, ArrowUpDown, BadgeCheck, ChevronLeft, ChevronRight,
   Clock, Inbox, Layers, Pencil, RefreshCw, Send, SlidersHorizontal,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Database } from "@/integrations/supabase/types";
+
+type CardFilterKey = "none" | "high_priority" | "sent_to_lender" | "sanction_received";
+const HIGH_PRIORITY_EMPTY_SENTINEL = "00000000-0000-0000-0000-000000000000";
 
 type StageEnum = Database["public"]["Enums"]["lead_stage_enum"];
 type StatusEnum = Database["public"]["Enums"]["lead_status_enum"];
