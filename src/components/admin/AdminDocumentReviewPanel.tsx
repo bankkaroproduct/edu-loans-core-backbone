@@ -316,7 +316,7 @@ export function AdminDocumentReviewPanel({ leadId, lead, requirements, documents
 // -----------------------------------------------------------------------------
 
 function DocReviewRow({
-  req, leadId, lead, doc, versionCount, onChanged,
+  req, leadId, lead, doc, versionCount, onChanged, admissionDocOverrideLabel,
 }: {
   req: DocRequirementInput;
   leadId: string;
@@ -324,6 +324,9 @@ function DocReviewRow({
   doc: LeadDocument | null;
   versionCount: number;
   onChanged: () => void;
+  /** When set, the combined I-20/CAS/CoE master row is relabeled to the
+   *  country-specific short label ("I-20" | "CAS" | "CoE"). Presentation only. */
+  admissionDocOverrideLabel?: "I-20" | "CAS" | "CoE" | null;
 }) {
   const { userId, role } = useRoleAccess();
   const [expanded, setExpanded] = useState(false);
@@ -334,6 +337,10 @@ function DocReviewRow({
   const [sampleOpen, setSampleOpen] = useState(false);
   const [guidanceOpen, setGuidanceOpen] = useState(false);
 
+  const isI20CasRow = (req.document_master?.document_code ?? "").toUpperCase() === "I20_CAS";
+  const baseDisplay = req.document_master?.display_name ?? req.document_master?.document_name ?? "Document";
+  const effectiveDisplay =
+    isI20CasRow && admissionDocOverrideLabel ? admissionDocOverrideLabel : baseDisplay;
   const displayName = req.document_master?.display_name ?? null;
   const docName = req.document_master?.document_name ?? null;
   const helperText = getHelperText(displayName, docName);
