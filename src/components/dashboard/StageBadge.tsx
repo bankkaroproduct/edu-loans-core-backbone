@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
  *   premiere = admin-only premiere highlight (consumers opt-in)
  */
 const BADGE_BASE =
-  "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium border";
+  "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium border";
 
 const TONE = {
   emerald: "bg-emerald-50 text-emerald-700 border-emerald-200",
