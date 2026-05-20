@@ -17,6 +17,30 @@ export const DEFAULT_DATE_FILTER: DashboardDateFilterState = {
   dateTo: "",
 };
 
+/** Resolve the active [start,end] date window for display/computation. */
+export function resolveDateWindow(
+  dateRange: DateRange,
+  dateFrom: string,
+  dateTo: string,
+): { start: Date; end: Date } | null {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (dateRange === "this_month") {
+    return { start: new Date(now.getFullYear(), now.getMonth(), 1), end: today };
+  }
+  if (dateRange === "custom") {
+    if (dateFrom && dateTo) return { start: new Date(dateFrom), end: new Date(dateTo) };
+    if (dateFrom) return { start: new Date(dateFrom), end: today };
+    return null;
+  }
+  const days: Record<string, number> = { "7d": 7, "1m": 30, "3m": 90, "6m": 180, "1y": 365 };
+  const d = days[dateRange];
+  if (!d) return null;
+  const start = new Date(today);
+  start.setDate(start.getDate() - (d - 1));
+  return { start, end: today };
+}
+
 const SHARED_KEY = "dashboard.sharedDateFilter.v1";
 const LEGACY_KEY = "dashboard.yourLeads.v4"; // one-time migration source
 
