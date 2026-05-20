@@ -376,12 +376,6 @@ export default function AdminLeads() {
       apply: () => { setFilters({ ...filters, status: "awaiting_verification" as StatusEnum, stage: "all" }); setPage(1); },
     },
     {
-      label: "Docs to verify",
-      icon: FileSearch,
-      active: filters.stage === "documents_under_review",
-      apply: () => { setFilters({ ...filters, stage: "documents_under_review" as StageEnum, status: "all" }); setPage(1); },
-    },
-    {
       label: "Sent to Lender",
       icon: Send,
       active: filters.stage === "sent_to_lender",
