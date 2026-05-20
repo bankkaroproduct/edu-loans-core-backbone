@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { StageBadge, StatusBadge } from "@/components/dashboard/StageBadge";
 import { ArrowDown, ArrowUp, ArrowUpDown, Inbox, AlertCircle, RefreshCw } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import type { AdminLeadRow, AdminMetrics, LeadQueueFilters, PipelineStage } from "@/hooks/useAdminDashboard";
+import type { AdminLeadRow, LeadQueueFilters, PipelineStage } from "@/hooks/useAdminDashboard";
 
 interface Props {
   data: AdminLeadRow[];
