@@ -165,11 +165,27 @@ export function DocumentChecklist({
     }
   });
 
-  // Filter out non-applicable academic docs based on highest qualification.
-  // Unknown qualification → no filtering (preserves current behavior).
-  const { applicable: applicableRequirements, notApplicable: naRequirements } = useMemo(
-    () => partitionRequirementsByApplicability(requirements, highestQualification),
-    [requirements, highestQualification],
+  // Smart applicability — qualification + country + collateral + co-applicant
+  // employment. Country-mismatched I-20/CAS/CoE rows are silently suppressed.
+  const effectiveCtx: LeadApplicabilityContext = applicabilityContext ?? {
+    highest_qualification: highestQualification ?? null,
+  };
+  const { applicable: applicableRequirements, notApplicableGroups } = useMemo(
+    () =>
+      partitionRequirementsWithReasons(
+        requirements as never[],
+        effectiveCtx,
+      ),
+    [
+      requirements,
+      effectiveCtx.highest_qualification,
+      effectiveCtx.intended_study_country,
+      effectiveCtx.collateral_available,
+      effectiveCtx.coapplicant_employment_type,
+    ],
+  );
+  const admissionDocOverrideLabel = getAdmissionDocLabelForCountry(
+    effectiveCtx.intended_study_country,
   );
 
   // Group requirements into the 7 spec sections (frontend-only grouping by document_code).
