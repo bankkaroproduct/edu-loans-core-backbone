@@ -453,9 +453,9 @@ export default function AdminLeads() {
             iconFg: "text-slate-700 dark:text-slate-300",
           },
           {
-            label: "Pending review",
-            value: healthCounts.pendingReview,
-            sub: "New · Awaiting verification · Pending info",
+            label: "High Priority Leads",
+            value: adminMetrics.data?.pendingAdminActions ?? 0,
+            sub: "Stale follow-ups · critical-stage pending actions",
             icon: AlertCircle,
             iconBg: "bg-amber-100 dark:bg-amber-500/15",
             iconFg: "text-amber-700 dark:text-amber-400",
