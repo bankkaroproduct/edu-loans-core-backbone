@@ -1,13 +1,23 @@
 /**
- * Smart academic document applicability — display/readiness only.
+ * Smart document applicability — display/readiness only.
  *
- * Decides whether an academic document row should be shown in the checklist
- * based on the lead's `highest_qualification`. Non-academic docs are always
- * applicable. Unknown qualification → all applicable (safe fallback).
+ * Decides whether a document row should be shown in the checklist based on
+ * lead context:
+ *   - highest_qualification (academic docs)
+ *   - intended_study_country (I-20 / CAS / CoE row)
+ *   - collateral_available (property documents)
+ *   - coapplicant_employment_type (salary slips)
+ *
+ * Non-applicable rows are either:
+ *   - bucketed into a `notApplicableGroups` map by reason, so consumers can
+ *     render the existing dashed "Not Applicable" accordion per reason; or
+ *   - silently suppressed (country-specific admission docs for destinations
+ *     that don't use I-20/CAS/CoE — Canada, Germany, etc.)
  *
  * No backend, schema, RLS, or status logic is touched.
  */
 import type { LeadDocRequirement } from "@/hooks/useLeadDocumentsData";
+import { normalizeCountry } from "@/lib/countryAliases";
 
 export type AcademicLevel =
   | "tenth"
@@ -24,6 +34,17 @@ export type AcademicDocKey =
   | "GRAD_DEGREE"
   | "PG_MARK"
   | "PG_DEGREE";
+
+/** Reasons a row may be moved into the "Not Applicable" buckets. */
+export type NotApplicableReason = "qualification" | "collateral" | "employment";
+
+/** Lead context fed into the applicability engine. All fields optional/nullable. */
+export interface LeadApplicabilityContext {
+  highest_qualification?: string | null;
+  intended_study_country?: string | null;
+  collateral_available?: boolean | null;
+  coapplicant_employment_type?: string | null;
+}
 
 /**
  * Normalize the `highest_qualification` text to an academic level.
@@ -78,7 +99,7 @@ function normName(s: string | null | undefined): string {
  * Tries document_code first, then display_name / document_name with fuzzy
  * keyword matching so the logic still works if codes drift.
  *
- * Returns null for non-academic documents (always applicable).
+ * Returns null for non-academic documents.
  */
 export function classifyAcademicDoc(
   req: LeadDocRequirement,
@@ -126,6 +147,32 @@ export function classifyAcademicDoc(
   return null;
 }
 
+export type ConditionalDocKey = "I20_CAS" | "PROPERTY_DOC" | "SALARY_SLIP";
+
+/**
+ * Classify a requirement as one of the conditional non-academic docs.
+ * Code-first, then a forgiving name fallback.
+ */
+export function classifyConditionalDoc(req: LeadDocRequirement): ConditionalDocKey | null {
+  const code = (req.document_master?.document_code ?? "").toUpperCase().trim();
+  if (code === "I20_CAS") return "I20_CAS";
+  if (code === "PROPERTY_DOC") return "PROPERTY_DOC";
+  if (code === "SALARY_SLIP") return "SALARY_SLIP";
+
+  const name = `${normName(req.document_master?.display_name)} ${normName(
+    req.document_master?.document_name,
+  )}`.trim();
+  if (!name) return null;
+  if (/\b(i\s*20|i20|cas|coe|confirmation of enrolment|confirmation of enrollment)\b/.test(name)) {
+    return "I20_CAS";
+  }
+  if (/\b(property|collateral)\b/.test(name)) return "PROPERTY_DOC";
+  if (/\b(salary slip|salary slips|payslip|payslips|pay slip|pay slips)\b/.test(name)) {
+    return "SALARY_SLIP";
+  }
+  return null;
+}
+
 /**
  * Applicability per academic level. Diploma is treated conservatively —
  * same as 12th (we don't currently have separate Diploma doc types).
@@ -150,7 +197,6 @@ const APPLICABILITY: Record<AcademicLevel, Record<AcademicDocKey, boolean>> = {
     PG_MARK: false,
     PG_DEGREE: false,
   },
-  // Diploma: same as 12th (no Diploma doc type exists yet — do NOT show grad/PG).
   diploma: {
     MARK_10: true,
     MARK_12: true,
@@ -185,12 +231,77 @@ const APPLICABILITY: Record<AcademicLevel, Record<AcademicDocKey, boolean>> = {
   },
 };
 
+/** Internal: only explicitly non-salaried employment types suppress Salary Slip. */
+function isExplicitlyNonSalaried(value: string | null | undefined): boolean {
+  if (!value) return false;
+  const v = value.trim().toLowerCase();
+  if (!v) return false;
+  if (/\b(self[\s-]?employed|self employment|self-employment)\b/.test(v)) return true;
+  if (/\b(business\s*owner|businessman|business person|entrepreneur|proprietor)\b/.test(v)) return true;
+  if (/\b(retired|retiree|pensioner)\b/.test(v)) return true;
+  return false;
+}
+
+export type ApplicabilityDecision =
+  | { applicable: true }
+  | { applicable: false; reason: NotApplicableReason }
+  | { applicable: false; reason: "country"; silent: true };
+
+/**
+ * Decide applicability for a single requirement under the given lead context.
+ * Returns either applicable=true, or applicable=false with the reason it was
+ * hidden. Country-mismatched admission docs return `silent: true` so callers
+ * suppress them from UI entirely (no hidden accordion).
+ */
+export function decideApplicability(
+  req: LeadDocRequirement,
+  ctx: LeadApplicabilityContext,
+): ApplicabilityDecision {
+  // Academic
+  const academic = classifyAcademicDoc(req);
+  if (academic) {
+    const level = normalizeQualificationLevel(ctx.highest_qualification);
+    return APPLICABILITY[level][academic]
+      ? { applicable: true }
+      : { applicable: false, reason: "qualification" };
+  }
+
+  // Conditional non-academic
+  const conditional = classifyConditionalDoc(req);
+  if (conditional === "I20_CAS") {
+    const c = normalizeCountry(ctx.intended_study_country);
+    if (c === "united_states" || c === "united_kingdom" || c === "australia") {
+      return { applicable: true };
+    }
+    // Silent suppression for other / unknown destinations.
+    return { applicable: false, reason: "country", silent: true };
+  }
+  if (conditional === "PROPERTY_DOC") {
+    if (ctx.collateral_available === true) return { applicable: true };
+    if (ctx.collateral_available === false) {
+      return { applicable: false, reason: "collateral" };
+    }
+    // null/undefined collateral → keep visible (conservative — same spirit as
+    // unknown qualification not hiding academic docs).
+    return { applicable: true };
+  }
+  if (conditional === "SALARY_SLIP") {
+    if (isExplicitlyNonSalaried(ctx.coapplicant_employment_type)) {
+      return { applicable: false, reason: "employment" };
+    }
+    return { applicable: true };
+  }
+
+  return { applicable: true };
+}
+
+/** Backwards-compatible helper used by older call sites. */
 export function isRequirementApplicable(
   req: LeadDocRequirement,
   qualification: string | null | undefined,
 ): boolean {
   const key = classifyAcademicDoc(req);
-  if (!key) return true; // non-academic — always applicable
+  if (!key) return true; // non-academic — always applicable via this legacy API
   const level = normalizeQualificationLevel(qualification);
   return APPLICABILITY[level][key];
 }
@@ -201,6 +312,7 @@ export interface PartitionedRequirements {
   level: AcademicLevel;
 }
 
+/** Legacy — qualification-only partition. Kept for back-compat. */
 export function partitionRequirementsByApplicability(
   requirements: LeadDocRequirement[],
   qualification: string | null | undefined,
@@ -214,3 +326,49 @@ export function partitionRequirementsByApplicability(
   }
   return { applicable, notApplicable, level };
 }
+
+export interface PartitionedWithReasons {
+  applicable: LeadDocRequirement[];
+  /** Buckets per reason — only populated when at least one row is hidden for that reason. */
+  notApplicableGroups: Partial<Record<NotApplicableReason, LeadDocRequirement[]>>;
+  level: AcademicLevel;
+}
+
+/**
+ * Partition requirements using the full lead context. Rows that are silently
+ * suppressed (e.g. I-20 for a Canada lead) appear in neither bucket.
+ */
+export function partitionRequirementsWithReasons(
+  requirements: LeadDocRequirement[],
+  ctx: LeadApplicabilityContext,
+): PartitionedWithReasons {
+  const level = normalizeQualificationLevel(ctx.highest_qualification);
+  const applicable: LeadDocRequirement[] = [];
+  const groups: Partial<Record<NotApplicableReason, LeadDocRequirement[]>> = {};
+
+  for (const r of requirements) {
+    const decision = decideApplicability(r, ctx);
+    if (decision.applicable) {
+      applicable.push(r);
+      continue;
+    }
+    if ("silent" in decision && decision.silent) continue; // hide entirely
+    const reason = decision.reason as NotApplicableReason;
+    (groups[reason] ??= []).push(r);
+  }
+
+  return { applicable, notApplicableGroups: groups, level };
+}
+
+/** Stable display order for the 3 reason accordions. */
+export const NOT_APPLICABLE_REASON_ORDER: NotApplicableReason[] = [
+  "qualification",
+  "collateral",
+  "employment",
+];
+
+export const NOT_APPLICABLE_REASON_LABEL: Record<NotApplicableReason, string> = {
+  qualification: "Not Applicable based on highest qualification",
+  collateral: "Not Applicable based on collateral information provided",
+  employment: "Not Applicable based on employment type",
+};
