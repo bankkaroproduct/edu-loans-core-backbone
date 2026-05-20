@@ -13,9 +13,10 @@ import { formatINRCompact } from "@/lib/formatCurrency";
 
 import { AdminLeadFilters, type AdminLeadFilterState } from "@/components/admin/AdminLeadFilters";
 import { applyBusinessFilters as applySharedBusinessFilters } from "@/lib/leadBusinessFilters";
+import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import {
   AlertCircle, ArrowDown, ArrowUp, ArrowUpDown, BadgeCheck, ChevronLeft, ChevronRight,
-  Clock, FileSearch, Inbox, Layers, Pencil, RefreshCw, Send, SlidersHorizontal,
+  Clock, Inbox, Layers, Pencil, RefreshCw, Send, SlidersHorizontal,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Database } from "@/integrations/supabase/types";
