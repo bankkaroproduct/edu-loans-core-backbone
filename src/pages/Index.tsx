@@ -112,13 +112,16 @@ function PartnerDashboardContent() {
 
   return (
     <div className="space-y-6 max-w-screen-2xl mx-auto">
-      <DashboardFilterBar />
-
-      <DashboardStatsTable
-        leads={filteredLeads}
-        sanctionedEverIds={sanctionedEverIds}
-        loading={loading}
-      />
+      <section className="overflow-hidden rounded-xl border bg-card shadow-sm">
+        <DashboardFilterBar />
+        <div className="border-t border-border">
+          <DashboardStatsTable
+            leads={filteredLeads}
+            sanctionedEverIds={sanctionedEverIds}
+            loading={loading}
+          />
+        </div>
+      </section>
 
       <div className="space-y-6">
         {isFirstRun && <OnboardingEmptyState partnerName={partnerName} />}
