@@ -255,6 +255,15 @@ export default function AdminLeads() {
             `student_full_name.ilike.%${t}%,student_first_name.ilike.%${t}%,student_last_name.ilike.%${t}%,student_phone.ilike.%${t}%,lead_id.ilike.%${t}%`
           );
         }
+        // Card-filter intersection (Total = none)
+        if (cardFilter === "high_priority") {
+          const ids = (highPriorityIds && highPriorityIds.length > 0) ? highPriorityIds : [HIGH_PRIORITY_EMPTY_SENTINEL];
+          q = q.in("id", ids);
+        } else if (cardFilter === "sent_to_lender") {
+          q = q.eq("current_stage", "sent_to_lender");
+        } else if (cardFilter === "sanction_received") {
+          q = q.eq("current_stage", "sanction_received");
+        }
         return q;
       };
 
