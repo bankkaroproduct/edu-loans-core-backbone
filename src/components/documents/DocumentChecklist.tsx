@@ -11,7 +11,20 @@ import { SampleDocumentModal } from "@/components/documents/SampleDocumentModal"
 import { DocumentGuidanceModal } from "@/components/documents/DocumentGuidanceModal";
 import { findSampleForDocument, getHelperText, type DocumentSample } from "@/lib/documentSamples";
 import { findGuidanceForDocument, type DocumentGuidance } from "@/lib/documentGuidance";
-import { partitionRequirementsByApplicability } from "@/lib/documentApplicability";
+import {
+  partitionRequirementsWithReasons,
+  NOT_APPLICABLE_REASON_ORDER,
+  NOT_APPLICABLE_REASON_LABEL,
+  type LeadApplicabilityContext,
+  type NotApplicableReason,
+} from "@/lib/documentApplicability";
+import { getAdmissionDocLabelForCountry } from "@/lib/countryAliases";
+import {
+  Accordion as NaAccordion,
+  AccordionContent as NaAccordionContent,
+  AccordionItem as NaAccordionItem,
+  AccordionTrigger as NaAccordionTrigger,
+} from "@/components/ui/accordion";
 
 type ValidationFlag = "ok" | "warn_name" | "warn_type" | "review_needed" | "inconclusive";
 
@@ -118,7 +131,28 @@ interface Props {
   highestQualification?: string | null;
 }
 
-export function DocumentChecklist({ requirements, documents, onUpload, leadId, hideNudge = false, highestQualification }: Props) {
+interface Props {
+  requirements: DocRequirement[];
+  documents: DocFile[];
+  onUpload: (req: DocRequirement) => void;
+  leadId: string;
+  hideNudge?: boolean;
+  /** Legacy — used as fallback when applicabilityContext is not supplied. */
+  highestQualification?: string | null;
+  /** Full lead context (qualification + country + collateral + co-applicant
+   *  employment) driving the smart applicability engine. Optional for back-compat. */
+  applicabilityContext?: LeadApplicabilityContext;
+}
+
+export function DocumentChecklist({
+  requirements,
+  documents,
+  onUpload,
+  leadId,
+  hideNudge = false,
+  highestQualification,
+  applicabilityContext,
+}: Props) {
   const [sampleOpen, setSampleOpen] = useState<DocumentSample | null>(null);
   const [guidanceOpen, setGuidanceOpen] = useState<DocumentGuidance | null>(null);
   // Group documents by document_type_id
