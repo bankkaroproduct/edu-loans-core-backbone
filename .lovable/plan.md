@@ -1,79 +1,43 @@
-# Broader Read-Only BRE QA Plan
-
-## Objective
-Run BRE simulation across **all 98 non-draft, non-archived leads** to verify stability, mapping correctness, and absence of side effects. **No writes, no code changes, no DB schema/master data/lifecycle/lender/communication changes.**
+# Replace View Sample document images
 
 ## Scope
-- Leads filter: `current_stage <> 'draft' AND is_archived = false` → **98 leads**.
-- Engine path: same as `AdminLenderRecommendations.tsx`:
-  1. `buildBreProfileFromLead(lead)` (sync mapper)
-  2. Patch `university.university_tier` from `universities_master.ranking_bucket` (matched=true → "unranked" if bucket null, mirrors approved fix)
-  3. `evaluate(profile, activeCfg, activeRules)`
-- Active config + active lender rules loaded once.
+Replace 11 sample images with the new uploads. Sample images are referenced ONLY through `src/data/documentSampleManifest.json` (mirrored in `public/document_samples/document_sample_manifest.json` + `.csv`). All three portals consume `findSampleForDocument()` from `src/lib/documentSamples.ts`, so one set of updates cascades everywhere.
 
-## Method
-Add ONE new script: `scripts/bre-broad-qa.ts` (read-only, ad-hoc; NOT wired into the app). Bootstrap with the existing `bre-harness-bootstrap.ts` pattern. Runs via `bun` against `SUPABASE_URL` + `SERVICE_ROLE_KEY` env vars.
+## File replacements (overwrite in place — no code refs change)
 
-The script performs **only SELECT queries**:
-- `bre_scoring_configs` (active), `bre_lender_rules` (active)
-- `student_leads` (98 active rows)
-- `universities_master` (batched by `university_id`)
-- Snapshot counts before/after on `lead_lender_matches`, `lead_stage_history`, `communication_logs` to **prove no writes**.
-- Snapshot per-lead `current_stage`, `current_status`, `updated_at`, `assigned_admin_id` before/after to **prove no lifecycle/lender mutation**.
+| New upload | Target path |
+|---|---|
+| 01_salary_slip.png | public/document_samples/06_Coapplicant_Financial_Documents/salary_slips_sample.png |
+| 02_bank_statement.png | public/document_samples/06_Coapplicant_Financial_Documents/bank_statements_sample.png |
+| 03_itr_acknowledgement.png | public/document_samples/06_Coapplicant_Financial_Documents/income_tax_returns_sample.png |
+| 04_offer_letter.png | public/document_samples/03_Admission_Study_Intent/admission_offer_letter_sample.png |
+| 08_degree_certificate.png | public/document_samples/02_Education_Academic_History/graduation_degree_certificate_sample.png |
+| 09_marksheet_10th.png | public/document_samples/02_Education_Academic_History/10th_marksheet_sample.png |
+| 10_marksheet_12th.png | public/document_samples/02_Education_Academic_History/12th_marksheet_sample.png |
+| 11_property_sale_deed.png | public/document_samples/07_Collateral_Secured_Loan_Documents/property_documents_sample.png |
 
-No INSERT/UPDATE/DELETE anywhere. No edge-function invocation. No "Run BRE" UI button (which is itself read-only but also unnecessary here).
+## I-20 / CAS / CoE — split into 3 entries (per user choice)
 
-## Per-Lead Checks Captured
-1. **Crash-free** (`evaluate` throws? → recorded with lead_id + message).
-2. **Bucket calculation** — Student / University / Co-applicant scores returned.
-3. **Rejection reasons** — tallied across all leads, top 15 reported.
-4. **University tier on matched leads** — count of leads where `university_id` resolved AND `university_tier` ended up null (should be 0 after the fix).
-5. **Fuzzy raw-name path** — sync mapper returns null tier when no `university_id`; matches UI's behavior on these leads (no false-positive matches).
-6. **Course level (`course_category`)** — derived vs missing counts.
-7. **English proficiency source** — named-test / Other-Test-Scores fallback / missing.
-8. **Lender availability vs bucket gating** — if any eligible lender is returned while a bucket is below `bucket_threshold`, flagged as suspicious.
+1. Add 3 new image files under `public/document_samples/03_Admission_Study_Intent/`:
+   - `i20_usa_sample.png` (from 05_i20_usa.png)
+   - `cas_uk_sample.png` (from 06_cas_uk.png)
+   - `coe_australia_sample.png` (from 07_coe_australia.png)
+2. Delete the old combined `i20_cas_coe_sample.png`.
+3. Update `src/data/documentSampleManifest.json` AND `public/document_samples/document_sample_manifest.json` + `.csv`: remove the single "I-20/CAS/CoE" entry, replace with three separate entries:
+   - `I-20 (USA)` → i20_usa_sample.png
+   - `CAS (UK)` → cas_uk_sample.png
+   - `CoE (Australia)` → coe_australia_sample.png
+   Each keeps the same `section_name`, `helper_text` style, `sample_instruction`, and `important_visible_fields` scoped to the country.
+4. Update `src/lib/documentSamples.ts`:
+   - `ALIASES`: map `"i20"` → `"I-20 (USA)"`, `"cas"` → `"CAS (UK)"`, `"coe"` → `"CoE (Australia)"`, plus variants (`"i 20"`, `"cas letter"`, `"confirmation of enrolment"`, etc.). Drop the combined `"i20 cas coe"` alias.
+   - `FALLBACK_HELPER`: remove `"I-20/CAS/CoE"` key, add the three new canonical keys with country-specific helper copy.
 
-## Write-Verification Outputs
-The report ends with hard before/after deltas:
-- Mutated leads: must be **0**
-- `lead_lender_matches` Δ: must be **0**
-- `lead_stage_history` Δ: must be **0**
-- `communication_logs` Δ: must be **0**
+## Not changed
+- No modal/component logic or styling
+- No "How to get this document?" feature
+- No upload, validation, checklist, backend, or routing changes
+- Untouched samples: Candidate Photograph, PAN, Aadhaar, Passport, Co-applicant Photograph/PAN/Aadhaar, Graduation Marksheet, Post-Graduation Marksheet, Post-Graduation Degree Certificate, IELTS/TOEFL, GRE
 
-If any Δ ≠ 0, that is reported as a finding (not auto-fixed).
-
-## Final Summary Report Sections
-- Total leads checked
-- Crashes/errors (with lead IDs)
-- Passed checks vs failed checks vs not-verified
-- University tier mapping correctness (0 expected null for matched)
-- Course level derivation counts
-- English proficiency source breakdown
-- Top recurring rejection reasons (top 15)
-- Suspicious mapping cases (lender + failing bucket)
-- Confirmation of zero writes (with Δ counts)
-- Confirmation no assignment / status / communication changed
-
-## What I Will NOT Touch
-- ❌ Any source file under `src/`
-- ❌ DB schema, RLS, master data, leads, documents
-- ❌ Lender assignment, lender rules, scoring config
-- ❌ Lifecycle/status, payout, communication
-- ❌ Student Portal, Partner Portal
-- ❌ Any "Run BRE", "Send to Lender", or workflow buttons in the UI
-
-The only artifact created is `scripts/bre-broad-qa.ts` (a dev-only QA script, not imported by the app). After QA, I can delete it if you prefer; it has no runtime effect either way.
-
-## Risks
-- **None to data.** Script does only `SELECT`s and uses the in-memory engine.
-- Possible runtime errors in `evaluate` for unusual lead shapes — these are CAUGHT and reported, not propagated.
-
-## Rollback
-Nothing to roll back — no code or data is mutated. If asked, I will delete `scripts/bre-broad-qa.ts` after QA.
-
-## What I Need From You
-Approve switching to default mode so I can:
-1. Create `scripts/bre-broad-qa.ts`
-2. Run it once with `bun scripts/bre-harness-bootstrap.ts` style invocation (read-only)
-3. Paste the full summary report back into chat
-4. (Optional) delete the script
+## Verification
+- Confirm `findSampleForDocument("I-20")`, `"CAS"`, `"CoE"`, `"Salary Slip"`, `"10th Marksheet"`, `"Property Sale Deed"` resolve to the correct new images.
+- Spot-check the View Sample modal on student/partner/admin document pages (all use `SampleDocumentModal`).
