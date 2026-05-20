@@ -209,7 +209,12 @@ export function AdminLeadDocumentsView({
           requirements={requirements as never[]}
           documents={documents as never[]}
           onChanged={onChanged}
-          highestQualification={lead?.highest_qualification ?? null}
+          applicabilityContext={{
+            highest_qualification: lead?.highest_qualification ?? null,
+            intended_study_country: lead?.intended_study_country ?? null,
+            collateral_available: lead?.collateral_available ?? null,
+            coapplicant_employment_type: lead?.coapplicant_employment_type ?? null,
+          }}
         />
       )}
     </div>
