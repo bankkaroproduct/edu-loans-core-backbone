@@ -12,6 +12,7 @@ import { ExternalLink, ClipboardCheck, Eye, Search } from "lucide-react";
 import { ViewRequestDialog } from "@/components/admin/ViewRequestDialog";
 import { PageHeader } from "@/components/shared/PageHeader";
 import type { Tables } from "@/integrations/supabase/types";
+import { ReadOnlyBanner } from "@/components/admin/ReadOnlyBanner";
 
 type EditRequest = Tables<"lead_edit_requests">;
 type Lead = Pick<Tables<"student_leads">, "id" | "lead_id" | "student_full_name" | "student_first_name" | "student_last_name">;
@@ -190,6 +191,8 @@ export default function AdminEditRequests() {
         title="Requests & Approvals"
         description="Partner-raised edit requests across all leads · all-time view."
       />
+      <ReadOnlyBanner />
+
 
 
       {/* Summary cards (all-time) */}
