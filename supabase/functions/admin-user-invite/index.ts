@@ -36,13 +36,35 @@ Deno.serve(async (req) => {
   const origin = req.headers.get("origin") ?? "";
   const redirectTo = origin ? `${origin}/admin/login` : undefined;
 
-  // Invite via Supabase Auth (sends email; user sets own password).
-  const { data: invited, error: inviteErr } = await service.auth.admin.inviteUserByEmail(email, {
-    data: { full_name: fullName },
-    redirectTo,
-  });
-  if (inviteErr || !invited?.user) {
-    return jsonResponse({ error: inviteErr?.message ?? "invite failed" }, 400);
+  const tempPassword = typeof body.temp_password === "string" ? body.temp_password.trim() : "";
+  const useTempPassword = tempPassword.length > 0;
+  if (useTempPassword && tempPassword.length < 8) {
+    return jsonResponse({ error: "temp_password must be at least 8 characters" }, 400);
+  }
+
+  let authUserId: string;
+  if (useTempPassword) {
+    // Create the auth user directly with a temporary password. Mark metadata
+    // so the frontend can prompt a forced change on first login.
+    const { data: created, error: createErr } = await service.auth.admin.createUser({
+      email,
+      password: tempPassword,
+      email_confirm: true,
+      user_metadata: { full_name: fullName, must_change_password: true },
+    });
+    if (createErr || !created?.user) {
+      return jsonResponse({ error: createErr?.message ?? "user creation failed" }, 400);
+    }
+    authUserId = created.user.id;
+  } else {
+    const { data: invited, error: inviteErr } = await service.auth.admin.inviteUserByEmail(email, {
+      data: { full_name: fullName },
+      redirectTo,
+    });
+    if (inviteErr || !invited?.user) {
+      return jsonResponse({ error: inviteErr?.message ?? "invite failed" }, 400);
+    }
+    authUserId = invited.user.id;
   }
 
   // Insert / update app user row (handle_new_auth_user trigger may have inserted
