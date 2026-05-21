@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { Check, Shield, TrendingUp, Users, Banknote, AlertTriangle } from "lucide-react";
+import { Check, Shield, TrendingUp, Users, Banknote, AlertTriangle, Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
   const { user, appUser, loading } = useAuth();
@@ -118,6 +118,7 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -197,7 +198,25 @@ function LoginForm() {
       </div>
       <div className="space-y-2">
         <Label htmlFor="login-password">Password</Label>
-        <Input id="login-password" type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} required />
+        <div className="relative">
+          <Input
+            id="login-password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            required
+            className="pr-10"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(v => !v)}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+          >
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
       </div>
       <Button type="submit" className="h-11 w-full" disabled={submitting}>
         {submitting ? "Signing in..." : "Sign In"}
