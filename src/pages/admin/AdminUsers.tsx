@@ -27,7 +27,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
-import { ShieldOff, UserPlus, KeyRound, Power, RotateCcw, Pencil, ChevronDown } from "lucide-react";
+import { ShieldOff, UserPlus, KeyRound, Power, RotateCcw, Pencil, ChevronDown, Eye, EyeOff } from "lucide-react";
 import { useReadOnly } from "@/components/admin/ReadOnlyContext";
 import { ReadOnlyBanner } from "@/components/admin/ReadOnlyBanner";
 
