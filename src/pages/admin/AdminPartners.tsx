@@ -33,9 +33,11 @@ export default function AdminPartners() {
   const [partners, setPartners] = useState<Partner[]>([]);
   const [leadCounts, setLeadCounts] = useState<Record<string, number>>({});
   const [leadsThisMonth, setLeadsThisMonth] = useState<number>(0);
+  const [assignedIds, setAssignedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [assignmentFilter, setAssignmentFilter] = useState<"all" | "unassigned">("all");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editing, setEditing] = useState<Partner | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -47,7 +49,7 @@ export default function AdminPartners() {
       const startOfMonth = new Date();
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
-      const [partnersRes, leadsRes, monthRes] = await Promise.all([
+      const [partnersRes, leadsRes, monthRes, assignsRes] = await Promise.all([
         supabase
           .from("partner_organizations")
           .select("*")
@@ -62,6 +64,9 @@ export default function AdminPartners() {
           .select("*", { count: "exact", head: true })
           .eq("is_archived", false)
           .gte("created_at", startOfMonth.toISOString()),
+        supabase
+          .from("admin_partner_assignments")
+          .select("partner_id"),
       ]);
       if (cancelled) return;
       if (partnersRes.error) {
@@ -73,6 +78,7 @@ export default function AdminPartners() {
       });
       setLeadCounts(counts);
       setLeadsThisMonth(monthRes.count ?? 0);
+      setAssignedIds(new Set((assignsRes.data ?? []).map((a) => a.partner_id)));
       setPartners(partnersRes.data ?? []);
       setLoading(false);
     };
