@@ -72,7 +72,7 @@ export function AdminSidebar() {
   const collapsed = state === "collapsed";
   const { appUser, signOut } = useAuth();
   const navigate = useNavigate();
-  const { canView } = useAdminPermissions();
+  const { canView, isSuperAdmin } = useAdminPermissions();
 
   const breAccess = canAccessBre(appUser?.role, normalizeBrePermission(appUser?.bre_permission));
 
@@ -81,7 +81,8 @@ export function AdminSidebar() {
     navigate("/admin/login", { replace: true });
   };
 
-  const filterItems = (items: NavItem[]) => items.filter((i) => canView(i.section));
+  const filterItems = (items: NavItem[]) =>
+    items.filter((i) => (i.section === "admin_users" ? isSuperAdmin : canView(i.section)));
 
   const visibleAdminItems = filterItems(adminItems);
   const visibleLeadOpsItems = filterItems(leadOpsItems);
