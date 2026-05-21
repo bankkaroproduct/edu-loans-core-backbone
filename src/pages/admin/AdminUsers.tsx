@@ -60,6 +60,8 @@ export default function AdminUsers() {
   const [partners, setPartners] = useState<PartnerOpt[]>([]);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<AdminRow | null>(null);
+  const [resetTarget, setResetTarget] = useState<AdminRow | null>(null);
+  const [resetPassword, setResetPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
   const load = async () => {
@@ -112,9 +114,25 @@ export default function AdminUsers() {
     }
   };
 
-  const handleResetPassword = async (u: AdminRow) => {
-    if (await callFn("admin-user-reset-password", { user_id: u.id })) {
-      toast({ title: "Password reset sent", description: `Email sent to ${u.email}` });
+  const openResetDialog = (u: AdminRow) => {
+    setResetTarget(u);
+    setResetPassword("");
+  };
+
+  const submitResetPassword = async () => {
+    if (!resetTarget) return;
+    if (resetPassword.trim().length < 8) {
+      toast({ title: "Password too short", description: "Must be at least 8 characters.", variant: "destructive" });
+      return;
+    }
+    const ok = await callFn("admin-user-reset-password", {
+      user_id: resetTarget.id,
+      new_password: resetPassword,
+    });
+    if (ok) {
+      toast({ title: "Password reset", description: `New password set for ${resetTarget.email}` });
+      setResetTarget(null);
+      setResetPassword("");
     }
   };
 
@@ -193,7 +211,7 @@ export default function AdminUsers() {
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
                     )}
-                    <Button size="sm" variant="ghost" onClick={() => handleResetPassword(u)} disabled={busy} title="Send password reset email">
+                    <Button size="sm" variant="ghost" onClick={() => openResetDialog(u)} disabled={busy} title="Reset password">
                       <KeyRound className="h-3.5 w-3.5" />
                     </Button>
                     {!u.is_super_admin && u.id !== appUser?.id && (
