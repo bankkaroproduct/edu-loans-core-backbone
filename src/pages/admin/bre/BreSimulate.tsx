@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useReadOnly } from "@/components/admin/ReadOnlyContext";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { FlaskConical } from "lucide-react";
@@ -24,7 +25,7 @@ import { SaveScenarioDialog } from "@/components/bre/simulate/SaveScenarioDialog
 export default function BreSimulate() {
   const { appUser } = useAuth();
   const perm = normalizeBrePermission(appUser?.bre_permission);
-  const canSave = canEditBre(appUser?.role, perm);
+  const sectionReadOnly = useReadOnly(); const canSave = !sectionReadOnly && canEditBre(appUser?.role, perm);
 
   const [cfg, setCfg] = useState<BreScoringConfig | null>(null);
   const [rules, setRules] = useState<BreLenderRule[]>([]);
