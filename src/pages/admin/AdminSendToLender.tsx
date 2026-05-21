@@ -33,6 +33,8 @@ import {
   type LeadRow,
   type LenderRow,
 } from "@/lib/sendToLender/buildDraft";
+import { useReadOnly } from "@/components/admin/ReadOnlyContext";
+import { ReadOnlyBanner } from "@/components/admin/ReadOnlyBanner";
 import type { Tables } from "@/integrations/supabase/types";
 
 type LeadDocFile = Tables<"lead_documents"> & {
@@ -40,6 +42,7 @@ type LeadDocFile = Tables<"lead_documents"> & {
 };
 
 export default function AdminSendToLender() {
+  const readOnly = useReadOnly();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
