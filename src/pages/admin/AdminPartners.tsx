@@ -229,6 +229,9 @@ export default function AdminPartners() {
                             {isSystem && (
                               <Badge variant="outline" className="bg-primary/5 text-primary border-primary/30 text-[9px] px-1.5 py-0">SYSTEM</Badge>
                             )}
+                            {!isSystem && !assignedIds.has(p.id) && (
+                              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[9px] px-1.5 py-0">UNASSIGNED</Badge>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground">
