@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
   const { data: existingByAuth } = await service
     .from("users")
     .select("id")
-    .eq("auth_user_id", invited.user.id)
+    .eq("auth_user_id", authUserId)
     .maybeSingle();
 
   let appUserId: string;
