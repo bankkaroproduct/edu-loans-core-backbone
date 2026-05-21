@@ -78,7 +78,7 @@ export default function AdminTeamPerformance() {
 
       const [usersRes, partnersRes, assignsRes, leadsRes, histRes] = await Promise.all([
         supabase.from("users").select("id, full_name, email, role, is_super_admin")
-          .in("role", ["admin", "super_admin"]).eq("is_active", true),
+          .eq("role", "admin").eq("is_super_admin", false).eq("is_active", true),
         supabase.from("partner_organizations").select("id, display_name, partner_code").eq("is_archived", false),
         supabase.from("admin_partner_assignments").select("user_id, partner_id"),
         leadsQ,
@@ -148,10 +148,18 @@ export default function AdminTeamPerformance() {
   };
 
   const adminRows = useMemo(() => {
-    return admins.map((a) => ({
+    const rows = admins.map((a) => ({
       admin: a,
       metrics: computeMetrics(adminPartnersMap[a.id] ?? []),
     }));
+    rows.sort((a, b) => {
+      const aHas = a.metrics.partners.length > 0 ? 1 : 0;
+      const bHas = b.metrics.partners.length > 0 ? 1 : 0;
+      if (aHas !== bHas) return bHas - aHas;
+      if (aHas === 1) return b.metrics.totalLeads - a.metrics.totalLeads;
+      return a.admin.full_name.localeCompare(b.admin.full_name);
+    });
+    return rows;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [admins, adminPartnersMap, leads, partnerById, firstSentMap]);
 
@@ -187,28 +195,28 @@ export default function AdminTeamPerformance() {
         <>
           {/* Overview cards */}
           <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {adminRows.map(({ admin, metrics }) => (
-              <Card key={admin.id} className="p-4 flex flex-col">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="rounded bg-primary/10 p-1.5">
-                    <Users className="h-3.5 w-3.5 text-primary" />
+            {adminRows.map(({ admin, metrics }) => {
+              const empty = metrics.partners.length === 0;
+              return (
+                <Card key={admin.id} className={`p-4 flex flex-col ${empty ? "opacity-60 border-dashed" : ""}`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className={`rounded p-1.5 ${empty ? "bg-muted" : "bg-primary/10"}`}>
+                      <Users className={`h-3.5 w-3.5 ${empty ? "text-muted-foreground" : "text-primary"}`} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-sm font-medium truncate ${empty ? "text-muted-foreground" : ""}`}>{admin.full_name}</p>
+                      <p className="text-[11px] text-muted-foreground truncate">{admin.email}</p>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{admin.full_name}</p>
-                    <p className="text-[11px] text-muted-foreground truncate">{admin.email}</p>
+                  <div className="grid grid-cols-2 gap-2 text-xs mt-auto">
+                    <Stat label="Partners" value={metrics.partners.length} muted={empty} />
+                    <Stat label="Total leads" value={metrics.totalLeads} muted={empty} />
+                    <Stat label="Active" value={metrics.activeLeads} muted={empty} />
+                    <Stat label="Stale 48h+" value={metrics.staleLeads.length} amber={!empty && metrics.staleLeads.length > 0} muted={empty} />
                   </div>
-                  {admin.is_super_admin && (
-                    <Badge variant="outline" className="bg-primary/5 text-primary border-primary/30 text-[9px] px-1.5 py-0">SUPER</Badge>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-xs mt-auto">
-                  <Stat label="Partners" value={metrics.partners.length} />
-                  <Stat label="Total leads" value={metrics.totalLeads} />
-                  <Stat label="Active" value={metrics.activeLeads} />
-                  <Stat label="Stale 48h+" value={metrics.staleLeads.length} amber={metrics.staleLeads.length > 0} />
-                </div>
-              </Card>
-            ))}
+                </Card>
+              );
+            })}
             <Card className="p-4 flex flex-col border-amber-200 bg-amber-50/30">
               <div className="flex items-center gap-2 mb-3">
                 <div className="rounded bg-amber-100 p-1.5">
@@ -253,26 +261,27 @@ export default function AdminTeamPerformance() {
                 <TableBody>
                   {adminRows.map(({ admin, metrics }) => {
                     const open = !!expanded[admin.id];
+                    const empty = metrics.partners.length === 0;
                     return (
                       <Fragment key={admin.id}>
-                        <TableRow className="cursor-pointer" onClick={() => setExpanded((s) => ({ ...s, [admin.id]: !s[admin.id] }))}>
+                        <TableRow className={`cursor-pointer ${empty ? "text-muted-foreground" : ""}`} onClick={() => setExpanded((s) => ({ ...s, [admin.id]: !s[admin.id] }))}>
                           <TableCell>
                             <Button variant="ghost" size="icon" className="h-6 w-6">
                               {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                             </Button>
                           </TableCell>
                           <TableCell>
-                            <p className="font-medium">{admin.full_name}</p>
+                            <p className={empty ? "font-normal" : "font-medium"}>{admin.full_name}</p>
                             <p className="text-[11px] text-muted-foreground">{admin.email}</p>
                           </TableCell>
-                          <Num value={metrics.partners.length} />
-                          <Num value={metrics.totalLeads} />
-                          <Num value={metrics.staleLeads.length} amber={metrics.staleLeads.length > 0} />
-                          <TableCell className="text-right tabular-nums">{fmtAvg(metrics.avgDaysToLender)}</TableCell>
-                          <Num value={metrics.sanctioned} />
-                          <Num value={metrics.disbursed} />
-                          <Num value={metrics.rejected} />
-                          <TableCell className="text-right tabular-nums">{metrics.totalLeads ? fmtPct(metrics.rejectionRate) : <span className="text-muted-foreground">—</span>}</TableCell>
+                          <Num value={metrics.partners.length} muted={empty} />
+                          <Num value={metrics.totalLeads} muted={empty} />
+                          <Num value={metrics.staleLeads.length} amber={!empty && metrics.staleLeads.length > 0} muted={empty} />
+                          <TableCell className="text-right tabular-nums">{empty ? <span className="text-muted-foreground">—</span> : fmtAvg(metrics.avgDaysToLender)}</TableCell>
+                          <Num value={metrics.sanctioned} muted={empty} />
+                          <Num value={metrics.disbursed} muted={empty} />
+                          <Num value={metrics.rejected} muted={empty} />
+                          <TableCell className="text-right tabular-nums">{!empty && metrics.totalLeads ? fmtPct(metrics.rejectionRate) : <span className="text-muted-foreground">—</span>}</TableCell>
                         </TableRow>
                         {open && (
                           <TableRow>
@@ -320,20 +329,20 @@ export default function AdminTeamPerformance() {
   );
 }
 
-function Stat({ label, value, amber }: { label: string; value: number; amber?: boolean }) {
+function Stat({ label, value, amber, muted }: { label: string; value: number; amber?: boolean; muted?: boolean }) {
   return (
     <div>
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className={`text-lg font-semibold tabular-nums ${amber ? "text-amber-700" : value === 0 ? "text-muted-foreground" : "text-foreground"}`}>
+      <p className={`text-lg tabular-nums ${muted ? "font-normal text-muted-foreground" : "font-semibold"} ${amber ? "text-amber-700" : !muted && value === 0 ? "text-muted-foreground" : !muted ? "text-foreground" : ""}`}>
         {value.toLocaleString("en-IN")}
       </p>
     </div>
   );
 }
 
-function Num({ value, amber }: { value: number; amber?: boolean }) {
+function Num({ value, amber, muted }: { value: number; amber?: boolean; muted?: boolean }) {
   return (
-    <TableCell className={`text-right tabular-nums ${amber ? "text-amber-700 font-medium" : value === 0 ? "text-muted-foreground" : ""}`}>
+    <TableCell className={`text-right tabular-nums ${muted ? "text-muted-foreground" : amber ? "text-amber-700 font-medium" : value === 0 ? "text-muted-foreground" : ""}`}>
       {value.toLocaleString("en-IN")}
     </TableCell>
   );
