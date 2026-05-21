@@ -126,15 +126,16 @@ Deno.serve(async (req) => {
 
   await writeAudit(service, {
     entityId: appUserId,
-    actionType: "admin_user_invited",
+    actionType: useTempPassword ? "admin_user_created_with_temp_password" : "admin_user_invited",
     actorUserId: actor.appUserId,
     actorRole: actor.appUserRole,
     newValue: { email, full_name: fullName, allow_admin_mode: body.allow_admin_mode ?? true },
     meta: {
       permissions_count: body.permissions?.length ?? 0,
       partner_count: body.partner_ids?.length ?? 0,
+      method: useTempPassword ? "temp_password" : "invite_email",
     },
   });
 
-  return jsonResponse({ ok: true, user_id: appUserId, auth_user_id: invited.user.id });
+  return jsonResponse({ ok: true, user_id: appUserId, auth_user_id: authUserId, method: useTempPassword ? "temp_password" : "invite_email" });
 });
