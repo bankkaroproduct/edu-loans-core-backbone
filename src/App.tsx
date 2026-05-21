@@ -32,7 +32,7 @@ import BreVersionHistory from "./pages/admin/bre/BreVersionHistory";
 import BreAuditLog from "./pages/admin/bre/BreAuditLog";
 import BreSimulate from "./pages/admin/bre/BreSimulate";
 import { BreAccessGate } from "./components/bre/BreAccessGate";
-import { SectionGate } from "./components/admin/SectionGate";
+import { SectionGate, SuperAdminGate } from "./components/admin/SectionGate";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminAddLead from "./pages/admin/AdminAddLead";
 import AdminBulkUpload from "./pages/admin/AdminBulkUpload";
@@ -118,7 +118,7 @@ const App = () => (
             <Route path="/admin/communications" element={<AdminRoute><SectionGate section="communications"><AdminCommunications /></SectionGate></AdminRoute>} />
             <Route path="/admin/communications/logs" element={<AdminRoute><SectionGate section="communications"><AdminCommunicationLogs /></SectionGate></AdminRoute>} />
             <Route path="/admin/communications/templates" element={<AdminRoute><SectionGate section="communications"><AdminCommunicationTemplates /></SectionGate></AdminRoute>} />
-            <Route path="/admin/users" element={<AdminRoute><SectionGate section="admin_users"><AdminUsers /></SectionGate></AdminRoute>} />
+            <Route path="/admin/users" element={<AdminRoute><SuperAdminGate><AdminUsers /></SuperAdminGate></AdminRoute>} />
             {/* BRE Engine — Admin only, additionally gated by bre_permission */}
             <Route path="/admin/bre" element={<AdminRoute><SectionGate section="bre"><BreAccessGate><BreDashboard /></BreAccessGate></SectionGate></AdminRoute>} />
             <Route path="/admin/bre/scoring" element={<AdminRoute><SectionGate section="bre"><BreAccessGate><BreScoringConfigEditor /></BreAccessGate></SectionGate></AdminRoute>} />

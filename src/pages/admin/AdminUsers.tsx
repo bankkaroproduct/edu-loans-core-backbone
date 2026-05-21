@@ -27,7 +27,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
-import { ShieldOff, UserPlus, KeyRound, Power, RotateCcw, Pencil, ChevronDown } from "lucide-react";
+import { ShieldOff, UserPlus, KeyRound, Power, RotateCcw, Pencil, ChevronDown, Eye, EyeOff } from "lucide-react";
 import { useReadOnly } from "@/components/admin/ReadOnlyContext";
 import { ReadOnlyBanner } from "@/components/admin/ReadOnlyBanner";
 
@@ -62,6 +62,7 @@ export default function AdminUsers() {
   const [editTarget, setEditTarget] = useState<AdminRow | null>(null);
   const [resetTarget, setResetTarget] = useState<AdminRow | null>(null);
   const [resetPassword, setResetPassword] = useState("");
+  const [showResetPassword, setShowResetPassword] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const load = async () => {
@@ -280,14 +281,25 @@ export default function AdminUsers() {
           </DialogHeader>
           <div className="space-y-2">
             <Label htmlFor="reset_password" className="text-xs">New Password</Label>
-            <Input
-              id="reset_password"
-              type="password"
-              autoComplete="new-password"
-              value={resetPassword}
-              onChange={(e) => setResetPassword(e.target.value)}
-              placeholder="Minimum 8 characters"
-            />
+            <div className="relative">
+              <Input
+                id="reset_password"
+                type={showResetPassword ? "text" : "password"}
+                autoComplete="new-password"
+                value={resetPassword}
+                onChange={(e) => setResetPassword(e.target.value)}
+                placeholder="Minimum 8 characters"
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowResetPassword((v) => !v)}
+                aria-label={showResetPassword ? "Hide password" : "Show password"}
+                className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+              >
+                {showResetPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setResetTarget(null); setResetPassword(""); }} disabled={busy}>Cancel</Button>
@@ -329,6 +341,7 @@ function InviteOrEditDialog({
   const [partnerIds, setPartnerIds] = useState<string[]>([]);
   const [credMode, setCredMode] = useState<"invite" | "temp">("invite");
   const [tempPassword, setTempPassword] = useState("");
+  const [showTempPassword, setShowTempPassword] = useState(true);
   const [partnerScopeOpen, setPartnerScopeOpen] = useState(false);
 
   useEffect(() => {
@@ -425,14 +438,25 @@ function InviteOrEditDialog({
               {credMode === "temp" && (
                 <div className="space-y-1.5 pt-1">
                   <Label htmlFor="temp_password" className="text-xs">Temporary Password</Label>
-                  <Input
-                    id="temp_password"
-                    type="text"
-                    autoComplete="new-password"
-                    value={tempPassword}
-                    onChange={(e) => setTempPassword(e.target.value)}
-                    placeholder="At least 8 characters"
-                  />
+                  <div className="relative">
+                    <Input
+                      id="temp_password"
+                      type={showTempPassword ? "text" : "password"}
+                      autoComplete="new-password"
+                      value={tempPassword}
+                      onChange={(e) => setTempPassword(e.target.value)}
+                      placeholder="At least 8 characters"
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowTempPassword((v) => !v)}
+                      aria-label={showTempPassword ? "Hide password" : "Show password"}
+                      className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+                    >
+                      {showTempPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     User will be prompted to change this on first login.
                   </p>
