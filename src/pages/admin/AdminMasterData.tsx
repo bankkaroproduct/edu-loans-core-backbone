@@ -20,6 +20,8 @@ import { MasterRecordDrawer } from "@/components/admin/MasterRecordDrawer";
 import { MasterBulkUploadDialog, MASTER_UPLOAD_SPECS } from "@/components/admin/MasterBulkUploadDialog";
 import { PincodeMasterImportDialog } from "@/components/admin/PincodeMasterImportDialog";
 import { MapPin } from "lucide-react";
+import { useReadOnly } from "@/components/admin/ReadOnlyContext";
+import { ReadOnlyBanner } from "@/components/admin/ReadOnlyBanner";
 
 type StatusFilter = "all" | "active" | "inactive";
 
@@ -27,6 +29,7 @@ type StatusFilter = "all" | "active" | "inactive";
 const BULK_UPLOAD_KEYS = new Set(Object.keys(MASTER_UPLOAD_SPECS));
 
 export default function AdminMasterData() {
+  const readOnly = useReadOnly();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get("tab");
   const [activeKey, setActiveKey] = useState<string>(
@@ -67,6 +70,7 @@ export default function AdminMasterData() {
         title="Master Data"
         description="Manage system reference data — countries, universities, courses, lifecycle, documents."
       />
+      <ReadOnlyBanner />
 
       <Card>
         <CardContent className="p-4 flex flex-wrap items-center justify-between gap-3">
@@ -87,7 +91,7 @@ export default function AdminMasterData() {
           </div>
           <div className="flex items-center gap-2">
             <Button size="sm" variant="outline" onClick={refreshPincodeStats}>Refresh</Button>
-            <Button size="sm" onClick={() => setPincodeOpen(true)}>
+            <Button size="sm" onClick={() => setPincodeOpen(true)} disabled={readOnly}>
               <Upload className="h-4 w-4 mr-1.5" />
               {pincodeStats.count === 0 ? "Import CSV" : "Re-import / Update CSV"}
             </Button>
@@ -117,6 +121,7 @@ export default function AdminMasterData() {
 }
 
 function MasterDataTable({ schema, bulkUploadEnabled }: { schema: MasterSchema; bulkUploadEnabled: boolean }) {
+  const readOnly = useReadOnly();
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -235,11 +240,11 @@ function MasterDataTable({ schema, bulkUploadEnabled }: { schema: MasterSchema; 
             </div>
             <div className="flex items-center gap-2">
               {bulkUploadEnabled && (
-                <Button onClick={() => setBulkOpen(true)} size="sm" variant="outline">
+                <Button onClick={() => setBulkOpen(true)} size="sm" variant="outline" disabled={readOnly}>
                   <Upload className="h-4 w-4 mr-1.5" /> Bulk Upload
                 </Button>
               )}
-              <Button onClick={openCreate} size="sm">
+              <Button onClick={openCreate} size="sm" disabled={readOnly}>
                 <Plus className="h-4 w-4 mr-1.5" /> {schema.addLabel}
               </Button>
             </div>
@@ -287,7 +292,7 @@ function MasterDataTable({ schema, bulkUploadEnabled }: { schema: MasterSchema; 
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => openEdit(row)} title="Edit">
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => openEdit(row)} title="Edit" disabled={readOnly}>
                               <Pencil className="h-4 w-4" />
                             </Button>
                             <Button
@@ -296,6 +301,7 @@ function MasterDataTable({ schema, bulkUploadEnabled }: { schema: MasterSchema; 
                               className="h-8 w-8 text-muted-foreground hover:text-foreground"
                               onClick={() => handleToggleActive(row)}
                               title={row.active_flag ? "Deactivate" : "Activate"}
+                              disabled={readOnly}
                             >
                               <Power className="h-4 w-4" />
                             </Button>
