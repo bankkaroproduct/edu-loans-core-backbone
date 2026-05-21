@@ -269,6 +269,34 @@ export default function AdminUsers() {
         }}
         busy={busy}
       />
+
+      <Dialog open={!!resetTarget} onOpenChange={(v) => { if (!v) { setResetTarget(null); setResetPassword(""); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset password</DialogTitle>
+            <DialogDescription>
+              {resetTarget ? `Set a new password for ${resetTarget.full_name} (${resetTarget.email}). They can sign in with it immediately. No email is sent.` : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="reset_password" className="text-xs">New Password</Label>
+            <Input
+              id="reset_password"
+              type="password"
+              autoComplete="new-password"
+              value={resetPassword}
+              onChange={(e) => setResetPassword(e.target.value)}
+              placeholder="Minimum 8 characters"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setResetTarget(null); setResetPassword(""); }} disabled={busy}>Cancel</Button>
+            <Button onClick={submitResetPassword} disabled={busy || resetPassword.trim().length < 8}>
+              Reset password
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
