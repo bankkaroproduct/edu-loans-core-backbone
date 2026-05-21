@@ -32,7 +32,7 @@ import BreVersionHistory from "./pages/admin/bre/BreVersionHistory";
 import BreAuditLog from "./pages/admin/bre/BreAuditLog";
 import BreSimulate from "./pages/admin/bre/BreSimulate";
 import { BreAccessGate } from "./components/bre/BreAccessGate";
-import { SectionGate } from "./components/admin/SectionGate";
+import { SectionGate, SuperAdminGate } from "./components/admin/SectionGate";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminAddLead from "./pages/admin/AdminAddLead";
 import AdminBulkUpload from "./pages/admin/AdminBulkUpload";
