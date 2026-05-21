@@ -9,6 +9,7 @@ type Body = {
   allow_admin_mode?: boolean;
   partner_ids?: string[];
   permissions?: SectionLevel[];
+  temp_password?: string;
 };
 
 Deno.serve(async (req) => {
@@ -35,13 +36,35 @@ Deno.serve(async (req) => {
   const origin = req.headers.get("origin") ?? "";
   const redirectTo = origin ? `${origin}/admin/login` : undefined;
 
-  // Invite via Supabase Auth (sends email; user sets own password).
-  const { data: invited, error: inviteErr } = await service.auth.admin.inviteUserByEmail(email, {
-    data: { full_name: fullName },
-    redirectTo,
-  });
-  if (inviteErr || !invited?.user) {
-    return jsonResponse({ error: inviteErr?.message ?? "invite failed" }, 400);
+  const tempPassword = typeof body.temp_password === "string" ? body.temp_password.trim() : "";
+  const useTempPassword = tempPassword.length > 0;
+  if (useTempPassword && tempPassword.length < 8) {
+    return jsonResponse({ error: "temp_password must be at least 8 characters" }, 400);
+  }
+
+  let authUserId: string;
+  if (useTempPassword) {
+    // Create the auth user directly with a temporary password. Mark metadata
+    // so the frontend can prompt a forced change on first login.
+    const { data: created, error: createErr } = await service.auth.admin.createUser({
+      email,
+      password: tempPassword,
+      email_confirm: true,
+      user_metadata: { full_name: fullName, must_change_password: true },
+    });
+    if (createErr || !created?.user) {
+      return jsonResponse({ error: createErr?.message ?? "user creation failed" }, 400);
+    }
+    authUserId = created.user.id;
+  } else {
+    const { data: invited, error: inviteErr } = await service.auth.admin.inviteUserByEmail(email, {
+      data: { full_name: fullName },
+      redirectTo,
+    });
+    if (inviteErr || !invited?.user) {
+      return jsonResponse({ error: inviteErr?.message ?? "invite failed" }, 400);
+    }
+    authUserId = invited.user.id;
   }
 
   // Insert / update app user row (handle_new_auth_user trigger may have inserted
@@ -49,7 +72,7 @@ Deno.serve(async (req) => {
   const { data: existingByAuth } = await service
     .from("users")
     .select("id")
-    .eq("auth_user_id", invited.user.id)
+    .eq("auth_user_id", authUserId)
     .maybeSingle();
 
   let appUserId: string;
@@ -71,7 +94,7 @@ Deno.serve(async (req) => {
     const { data: inserted, error: insErr } = await service
       .from("users")
       .insert({
-        auth_user_id: invited.user.id,
+        auth_user_id: authUserId,
         email,
         full_name: fullName,
         role: "admin",
@@ -103,15 +126,16 @@ Deno.serve(async (req) => {
 
   await writeAudit(service, {
     entityId: appUserId,
-    actionType: "admin_user_invited",
+    actionType: useTempPassword ? "admin_user_created_with_temp_password" : "admin_user_invited",
     actorUserId: actor.appUserId,
     actorRole: actor.appUserRole,
     newValue: { email, full_name: fullName, allow_admin_mode: body.allow_admin_mode ?? true },
     meta: {
       permissions_count: body.permissions?.length ?? 0,
       partner_count: body.partner_ids?.length ?? 0,
+      method: useTempPassword ? "temp_password" : "invite_email",
     },
   });
 
-  return jsonResponse({ ok: true, user_id: appUserId, auth_user_id: invited.user.id });
+  return jsonResponse({ ok: true, user_id: appUserId, auth_user_id: authUserId, method: useTempPassword ? "temp_password" : "invite_email" });
 });
