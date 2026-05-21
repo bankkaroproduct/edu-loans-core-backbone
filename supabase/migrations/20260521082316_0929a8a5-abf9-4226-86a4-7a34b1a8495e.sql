@@ -1,0 +1,1 @@
+UPDATE public.users SET is_super_admin = true WHERE role IN ('admin', 'super_admin') AND is_super_admin IS DISTINCT FROM true;
