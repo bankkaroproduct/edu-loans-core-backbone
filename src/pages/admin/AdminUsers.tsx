@@ -104,8 +104,24 @@ export default function AdminUsers() {
     setBusy(true);
     try {
       const { data, error } = await supabase.functions.invoke(name, { body });
+      let upstreamMsg: string | undefined;
+      if (error && (error as { context?: Response }).context) {
+        try {
+          const ctx = (error as { context: Response }).context;
+          const parsed = await ctx.clone().json();
+          upstreamMsg = parsed?.error ?? parsed?.message;
+        } catch {
+          try {
+            upstreamMsg = await (error as { context: Response }).context.clone().text();
+          } catch { /* noop */ }
+        }
+      }
       if (error || (data as { error?: string })?.error) {
-        const msg = (data as { error?: string })?.error ?? error?.message ?? "Request failed";
+        const msg =
+          (data as { error?: string })?.error ??
+          upstreamMsg ??
+          error?.message ??
+          "Request failed";
         toast({ title: "Error", description: msg, variant: "destructive" });
         return false;
       }
