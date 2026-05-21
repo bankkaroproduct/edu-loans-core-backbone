@@ -254,8 +254,8 @@ export default function AdminTeamPerformance() {
                   {adminRows.map(({ admin, metrics }) => {
                     const open = !!expanded[admin.id];
                     return (
-                      <>
-                        <TableRow key={admin.id} className="cursor-pointer" onClick={() => setExpanded((s) => ({ ...s, [admin.id]: !s[admin.id] }))}>
+                      <Fragment key={admin.id}>
+                        <TableRow className="cursor-pointer" onClick={() => setExpanded((s) => ({ ...s, [admin.id]: !s[admin.id] }))}>
                           <TableCell>
                             <Button variant="ghost" size="icon" className="h-6 w-6">
                               {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -275,13 +275,13 @@ export default function AdminTeamPerformance() {
                           <TableCell className="text-right tabular-nums">{metrics.totalLeads ? fmtPct(metrics.rejectionRate) : <span className="text-muted-foreground">—</span>}</TableCell>
                         </TableRow>
                         {open && (
-                          <TableRow key={admin.id + "-detail"}>
+                          <TableRow>
                             <TableCell colSpan={10} className="bg-muted/30 p-4">
                               <ExpandedDetail metrics={metrics} />
                             </TableCell>
                           </TableRow>
                         )}
-                      </>
+                      </Fragment>
                     );
                   })}
                   <TableRow className="cursor-pointer bg-amber-50/30" onClick={() => setExpanded((s) => ({ ...s, __un: !s.__un }))}>
