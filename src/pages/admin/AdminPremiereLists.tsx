@@ -26,6 +26,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "@/hooks/use-toast";
+import { useReadOnly } from "@/components/admin/ReadOnlyContext";
+import { ReadOnlyBanner } from "@/components/admin/ReadOnlyBanner";
 
 type LenderRow = {
   lender_id: string;
@@ -182,6 +184,7 @@ function isAdmin(role: string | null | undefined) {
 }
 
 export default function AdminPremiereLists() {
+  const readOnly = useReadOnly();
   const { appUser, loading: authLoading } = useAuth();
   const [rows, setRows] = useState<LenderRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -253,6 +256,8 @@ export default function AdminPremiereLists() {
           Refresh
         </Button>
       </PageHeader>
+      <ReadOnlyBanner />
+
 
       {error && (
         <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -345,6 +350,7 @@ export default function AdminPremiereLists() {
                         className="h-8 w-8 text-muted-foreground hover:text-foreground"
                         onClick={() => setUploadFor(r)}
                         title="Upload list"
+                        disabled={readOnly}
                       >
                         <ArrowUp className="h-4 w-4" />
                       </Button>
@@ -353,7 +359,7 @@ export default function AdminPremiereLists() {
                         size="icon"
                         className="h-8 w-8 text-muted-foreground hover:text-red-600"
                         onClick={() => setDeleteFor(r)}
-                        disabled={r.row_count === 0}
+                        disabled={r.row_count === 0 || readOnly}
                         title="Delete list"
                       >
                         <Trash2 className="h-4 w-4" />
