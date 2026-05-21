@@ -135,7 +135,7 @@ export default function AdminPartners() {
       </PageHeader>
       <ReadOnlyBanner />
 
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
         {kpis.map((k) => (
           <Card key={k.label} className="p-4">
             <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
