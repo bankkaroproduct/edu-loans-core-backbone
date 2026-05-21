@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
     const { data: inserted, error: insErr } = await service
       .from("users")
       .insert({
-        auth_user_id: invited.user.id,
+        auth_user_id: authUserId,
         email,
         full_name: fullName,
         role: "admin",
