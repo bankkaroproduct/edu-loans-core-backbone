@@ -34,6 +34,7 @@ import BreSimulate from "./pages/admin/bre/BreSimulate";
 import { BreAccessGate } from "./components/bre/BreAccessGate";
 import { SectionGate, SuperAdminGate } from "./components/admin/SectionGate";
 import AdminUsers from "./pages/admin/AdminUsers";
+import AdminTeamPerformance from "./pages/admin/AdminTeamPerformance";
 import AdminAddLead from "./pages/admin/AdminAddLead";
 import AdminBulkUpload from "./pages/admin/AdminBulkUpload";
 import AdminCommunications from "./pages/admin/AdminCommunications";
