@@ -268,6 +268,7 @@ function InviteOrEditDialog({
     allow_admin_mode: boolean;
     partner_ids: string[];
     permissions: { section: AdminSectionKey; access_level: AdminAccessLevel }[];
+    temp_password?: string;
   }) => Promise<void>;
 }) {
   const [email, setEmail] = useState("");
@@ -275,9 +276,15 @@ function InviteOrEditDialog({
   const [allowAdminMode, setAllowAdminMode] = useState(true);
   const [perms, setPerms] = useState<Record<AdminSectionKey, AdminAccessLevel>>(emptyPerms());
   const [partnerIds, setPartnerIds] = useState<string[]>([]);
+  const [credMode, setCredMode] = useState<"invite" | "temp">("invite");
+  const [tempPassword, setTempPassword] = useState("");
+  const [partnerScopeOpen, setPartnerScopeOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
+    setCredMode("invite");
+    setTempPassword("");
+    setPartnerScopeOpen(false);
     if (mode === "edit" && target) {
       setEmail(target.email);
       setFullName(target.full_name);
@@ -304,8 +311,24 @@ function InviteOrEditDialog({
 
   const submit = () => {
     const permissions = ADMIN_SECTION_KEYS.map((s) => ({ section: s, access_level: perms[s] }));
-    onSubmit({ email, full_name: fullName, allow_admin_mode: allowAdminMode, partner_ids: partnerIds, permissions });
+    const payload: Parameters<typeof onSubmit>[0] = {
+      email, full_name: fullName, allow_admin_mode: allowAdminMode, partner_ids: partnerIds, permissions,
+    };
+    if (mode === "invite" && credMode === "temp") {
+      payload.temp_password = tempPassword;
+    }
+    onSubmit(payload);
   };
+
+  const allPartnersSelected = partners.length > 0 && partnerIds.length === partners.length;
+  const someSelected = partnerIds.length > 0 && !allPartnersSelected;
+  const partnerSummary =
+    partnerIds.length === 0
+      ? "All partners (default)"
+      : `${partnerIds.length} partner${partnerIds.length === 1 ? "" : "s"} selected`;
+  const tempPasswordInvalid = mode === "invite" && credMode === "temp" && tempPassword.trim().length < 8;
+  const submitDisabled =
+    busy || !email || !fullName || tempPasswordInvalid;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
