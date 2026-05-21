@@ -9,6 +9,7 @@ type Body = {
   allow_admin_mode?: boolean;
   partner_ids?: string[];
   permissions?: SectionLevel[];
+  temp_password?: string;
 };
 
 Deno.serve(async (req) => {
