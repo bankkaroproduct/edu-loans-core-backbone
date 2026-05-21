@@ -299,6 +299,7 @@ export default function AdminSendToLender() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-5 pb-12">
+      <ReadOnlyBanner />
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3">
           <Button
@@ -424,11 +425,11 @@ export default function AdminSendToLender() {
                   variant="outline"
                   size="sm"
                   onClick={handleSaveDraft}
-                  disabled={savingDraft}
+                  disabled={savingDraft || readOnly}
                 >
                   Save Draft
                 </Button>
-                <Button size="sm" onClick={handleSend} disabled={!canSend || sending}>
+                <Button size="sm" onClick={handleSend} disabled={!canSend || sending || readOnly}>
                   {sending ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
                   ) : (
