@@ -2,7 +2,7 @@ import {
   Shield, Inbox, Banknote, Users, LogOut,
   Database, FilePlus, Upload, FileSpreadsheet,
   SlidersHorizontal, History, ScrollText, Calculator, FlaskConical,
-  MessageSquare, FileText, Star, UserCog,
+  MessageSquare, FileText, Star, UserCog, BarChart3,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
