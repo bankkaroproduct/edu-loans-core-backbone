@@ -86,9 +86,12 @@ export default function AdminPartners() {
     return () => { cancelled = true; };
   }, [refreshKey]);
 
+  const isUnassigned = (p: Partner) => p.partner_code !== "PTR-DIRECT" && !assignedIds.has(p.id);
+
   const filtered = useMemo(() => {
     return partners.filter((p) => {
       if (statusFilter !== "all" && p.status !== statusFilter) return false;
+      if (assignmentFilter === "unassigned" && !isUnassigned(p)) return false;
       if (search.trim()) {
         const q = search.trim().toLowerCase();
         return (
@@ -100,11 +103,13 @@ export default function AdminPartners() {
       }
       return true;
     });
-  }, [partners, search, statusFilter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [partners, search, statusFilter, assignmentFilter, assignedIds]);
 
   const totalCount = partners.length;
   const activeCount = partners.filter((p) => p.status === "active").length;
   const onboardingCount = partners.filter((p) => p.status === "onboarding").length;
+  const unassignedCount = partners.filter(isUnassigned).length;
 
   const openCreate = () => { setEditing(null); setDrawerOpen(true); };
   const openEdit = (row: Partner) => { setEditing(row); setDrawerOpen(true); };
@@ -113,6 +118,7 @@ export default function AdminPartners() {
     { label: "Total partners", value: totalCount, color: "text-primary" },
     { label: "Active", value: activeCount, color: "text-emerald-700" },
     { label: "Onboarding", value: onboardingCount, color: "text-blue-700" },
+    { label: "Unassigned", value: unassignedCount, color: "text-amber-700" },
     { label: "Leads this month", value: leadsThisMonth, color: "text-primary" },
   ];
 
