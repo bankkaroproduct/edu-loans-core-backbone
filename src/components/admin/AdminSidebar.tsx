@@ -2,7 +2,7 @@ import {
   Shield, Inbox, Banknote, Users, LogOut,
   Database, FilePlus, Upload, FileSpreadsheet,
   SlidersHorizontal, History, ScrollText, Calculator, FlaskConical,
-  MessageSquare, FileText, Star, UserCog,
+  MessageSquare, FileText, Star, UserCog, BarChart3,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
@@ -58,6 +58,7 @@ const commsItems: NavItem[] = [
 
 const userMgmtItems: NavItem[] = [
   { title: "User Management", url: "/admin/users", icon: UserCog, section: "admin_users" },
+  { title: "Team Performance", url: "/admin/team-performance", icon: BarChart3, section: "admin_users" },
 ];
 
 const navBaseClass =

@@ -33,9 +33,11 @@ export default function AdminPartners() {
   const [partners, setPartners] = useState<Partner[]>([]);
   const [leadCounts, setLeadCounts] = useState<Record<string, number>>({});
   const [leadsThisMonth, setLeadsThisMonth] = useState<number>(0);
+  const [assignedIds, setAssignedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [assignmentFilter, setAssignmentFilter] = useState<"all" | "unassigned">("all");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editing, setEditing] = useState<Partner | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -47,7 +49,7 @@ export default function AdminPartners() {
       const startOfMonth = new Date();
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
-      const [partnersRes, leadsRes, monthRes] = await Promise.all([
+      const [partnersRes, leadsRes, monthRes, assignsRes] = await Promise.all([
         supabase
           .from("partner_organizations")
           .select("*")
@@ -62,6 +64,9 @@ export default function AdminPartners() {
           .select("*", { count: "exact", head: true })
           .eq("is_archived", false)
           .gte("created_at", startOfMonth.toISOString()),
+        supabase
+          .from("admin_partner_assignments")
+          .select("partner_id"),
       ]);
       if (cancelled) return;
       if (partnersRes.error) {
@@ -73,6 +78,7 @@ export default function AdminPartners() {
       });
       setLeadCounts(counts);
       setLeadsThisMonth(monthRes.count ?? 0);
+      setAssignedIds(new Set((assignsRes.data ?? []).map((a) => a.partner_id)));
       setPartners(partnersRes.data ?? []);
       setLoading(false);
     };
@@ -80,9 +86,12 @@ export default function AdminPartners() {
     return () => { cancelled = true; };
   }, [refreshKey]);
 
+  const isUnassigned = (p: Partner) => p.partner_code !== "PTR-DIRECT" && !assignedIds.has(p.id);
+
   const filtered = useMemo(() => {
     return partners.filter((p) => {
       if (statusFilter !== "all" && p.status !== statusFilter) return false;
+      if (assignmentFilter === "unassigned" && !isUnassigned(p)) return false;
       if (search.trim()) {
         const q = search.trim().toLowerCase();
         return (
@@ -94,11 +103,13 @@ export default function AdminPartners() {
       }
       return true;
     });
-  }, [partners, search, statusFilter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [partners, search, statusFilter, assignmentFilter, assignedIds]);
 
   const totalCount = partners.length;
   const activeCount = partners.filter((p) => p.status === "active").length;
   const onboardingCount = partners.filter((p) => p.status === "onboarding").length;
+  const unassignedCount = partners.filter(isUnassigned).length;
 
   const openCreate = () => { setEditing(null); setDrawerOpen(true); };
   const openEdit = (row: Partner) => { setEditing(row); setDrawerOpen(true); };
@@ -107,6 +118,7 @@ export default function AdminPartners() {
     { label: "Total partners", value: totalCount, color: "text-primary" },
     { label: "Active", value: activeCount, color: "text-emerald-700" },
     { label: "Onboarding", value: onboardingCount, color: "text-blue-700" },
+    { label: "Unassigned", value: unassignedCount, color: "text-amber-700" },
     { label: "Leads this month", value: leadsThisMonth, color: "text-primary" },
   ];
 
@@ -123,7 +135,7 @@ export default function AdminPartners() {
       </PageHeader>
       <ReadOnlyBanner />
 
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
         {kpis.map((k) => (
           <Card key={k.label} className="p-4">
             <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
@@ -161,6 +173,13 @@ export default function AdminPartners() {
                 <SelectItem value="inactive">Inactive</SelectItem>
                 <SelectItem value="suspended">Suspended</SelectItem>
                 <SelectItem value="terminated">Terminated</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={assignmentFilter} onValueChange={(v: "all" | "unassigned") => setAssignmentFilter(v)}>
+              <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All partners</SelectItem>
+                <SelectItem value="unassigned">Unassigned only</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -209,6 +228,9 @@ export default function AdminPartners() {
                             </div>
                             {isSystem && (
                               <Badge variant="outline" className="bg-primary/5 text-primary border-primary/30 text-[9px] px-1.5 py-0">SYSTEM</Badge>
+                            )}
+                            {!isSystem && !assignedIds.has(p.id) && (
+                              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[9px] px-1.5 py-0">UNASSIGNED</Badge>
                             )}
                           </div>
                         </TableCell>
