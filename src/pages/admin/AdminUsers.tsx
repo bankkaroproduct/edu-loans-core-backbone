@@ -189,20 +189,20 @@ export default function AdminUsers() {
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
                     {!u.is_super_admin && (
-                      <Button size="sm" variant="ghost" onClick={() => setEditTarget(u)} disabled={busy}>
+                      <Button size="sm" variant="ghost" onClick={() => setEditTarget(u)} disabled={busy} title="Edit permissions">
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
                     )}
-                    <Button size="sm" variant="ghost" onClick={() => handleResetPassword(u)} disabled={busy}>
+                    <Button size="sm" variant="ghost" onClick={() => handleResetPassword(u)} disabled={busy} title="Send password reset email">
                       <KeyRound className="h-3.5 w-3.5" />
                     </Button>
                     {!u.is_super_admin && u.id !== appUser?.id && (
                       u.terminated_at || !u.is_active ? (
-                        <Button size="sm" variant="ghost" onClick={() => handleReactivate(u)} disabled={busy}>
+                        <Button size="sm" variant="ghost" onClick={() => handleReactivate(u)} disabled={busy} title="Reactivate user">
                           <RotateCcw className="h-3.5 w-3.5" />
                         </Button>
                       ) : (
-                        <Button size="sm" variant="ghost" onClick={() => handleTerminate(u)} disabled={busy}>
+                        <Button size="sm" variant="ghost" onClick={() => handleTerminate(u)} disabled={busy} title="Terminate user">
                           <Power className="h-3.5 w-3.5 text-destructive" />
                         </Button>
                       )
