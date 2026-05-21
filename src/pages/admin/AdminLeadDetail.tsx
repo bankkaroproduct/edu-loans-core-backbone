@@ -258,6 +258,10 @@ export default function AdminLeadDetail() {
 
   return (
     <div className="w-full space-y-6">
+      <ReadOnlyBanner />
+      <fieldset disabled={readOnly} className="contents">
+
+
 
 
       <div className="space-y-3">
@@ -321,6 +325,7 @@ export default function AdminLeadDetail() {
           onNoteAdded={loadAll}
         />
       </div>
+      </fieldset>
     </div>
   );
 }
