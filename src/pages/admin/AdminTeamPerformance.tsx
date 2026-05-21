@@ -78,7 +78,7 @@ export default function AdminTeamPerformance() {
 
       const [usersRes, partnersRes, assignsRes, leadsRes, histRes] = await Promise.all([
         supabase.from("users").select("id, full_name, email, role, is_super_admin")
-          .in("role", ["admin", "super_admin"]).eq("is_active", true),
+          .eq("role", "admin").eq("is_super_admin", false).eq("is_active", true),
         supabase.from("partner_organizations").select("id, display_name, partner_code").eq("is_archived", false),
         supabase.from("admin_partner_assignments").select("user_id, partner_id"),
         leadsQ,
