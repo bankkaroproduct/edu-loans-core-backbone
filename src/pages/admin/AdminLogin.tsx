@@ -48,7 +48,8 @@ export default function AdminLogin() {
     setErrorMsg(null);
     setSubmitting(true);
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const normalizedEmail = email.trim().toLowerCase();
+    const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
     if (error) {
       setErrorMsg(error.message);
       setSubmitting(false);
