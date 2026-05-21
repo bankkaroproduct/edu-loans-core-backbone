@@ -24,8 +24,10 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
-import { ShieldOff, UserPlus, KeyRound, Power, RotateCcw, Pencil } from "lucide-react";
+import { ShieldOff, UserPlus, KeyRound, Power, RotateCcw, Pencil, ChevronDown } from "lucide-react";
 import { useReadOnly } from "@/components/admin/ReadOnlyContext";
 import { ReadOnlyBanner } from "@/components/admin/ReadOnlyBanner";
 
