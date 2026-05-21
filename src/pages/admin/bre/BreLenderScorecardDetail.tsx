@@ -1,4 +1,5 @@
 // Lender-Specific Scorecard detail — editable v1.
+import { useReadOnly } from "@/components/admin/ReadOnlyContext";
 // Edits ONLY the bre_lender_rules.scorecard JSONB. All other fields cloned
 // verbatim by createNewLenderScorecardVersion. Engine bands/risk/knockouts
 // remain read-only "Engine defaults".
@@ -101,7 +102,7 @@ export default function BreLenderScorecardDetail() {
   const { appUser } = useAuth();
   const perm = normalizeBrePermission(appUser?.bre_permission);
   const canEdit = canEditBre(appUser?.role, perm);
-  const readOnly = isReadOnlyBre(appUser?.role, perm);
+  const sectionReadOnly = useReadOnly(); const readOnly = sectionReadOnly || isReadOnlyBre(appUser?.role, perm);
 
   const [loading, setLoading] = useState(true);
   const [lenders, setLenders] = useState<LenderOption[]>([]);
