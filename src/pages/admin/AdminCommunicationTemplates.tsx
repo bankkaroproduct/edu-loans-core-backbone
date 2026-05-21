@@ -17,8 +17,11 @@ import { Plus, MoreHorizontal, Edit, Copy, Power, Mail, MessageCircle, Search } 
 import { toast } from "sonner";
 import { TemplateEditor, type EditorMode } from "@/components/admin/communications/TemplateEditor";
 import type { CommunicationTemplate } from "@/lib/communications/types";
+import { useReadOnly } from "@/components/admin/ReadOnlyContext";
+import { ReadOnlyBanner } from "@/components/admin/ReadOnlyBanner";
 
 export default function AdminCommunicationTemplates() {
+  const readOnly = useReadOnly();
   const [rows, setRows] = useState<CommunicationTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -105,10 +108,11 @@ export default function AdminCommunicationTemplates() {
         title="Communication Templates"
         description="Manage email and WhatsApp templates. Edits take effect immediately in the test panel and lead-detail send block."
       >
-        <Button onClick={openCreate} size="sm">
+        <Button onClick={openCreate} size="sm" disabled={readOnly}>
           <Plus className="h-4 w-4 mr-1.5" /> New template
         </Button>
       </PageHeader>
+      <ReadOnlyBanner />
 
       <Card className="p-4">
         <div className="flex flex-wrap gap-3 items-center">
@@ -218,13 +222,13 @@ export default function AdminCommunicationTemplates() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => openEdit(t)}>
+                        <DropdownMenuItem onClick={() => openEdit(t)} disabled={readOnly}>
                           <Edit className="h-4 w-4 mr-2" /> Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => openDuplicate(t)}>
+                        <DropdownMenuItem onClick={() => openDuplicate(t)} disabled={readOnly}>
                           <Copy className="h-4 w-4 mr-2" /> Duplicate
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => toggleActive(t)}>
+                        <DropdownMenuItem onClick={() => toggleActive(t)} disabled={readOnly}>
                           <Power className="h-4 w-4 mr-2" />
                           {t.active_flag ? "Disable" : "Enable"}
                         </DropdownMenuItem>
