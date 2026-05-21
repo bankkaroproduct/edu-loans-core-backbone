@@ -17,6 +17,8 @@ import { usePartnerContext } from "@/hooks/usePartnerContext";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { cn } from "@/lib/utils";
 import AddLead from "@/pages/AddLead";
+import { useReadOnly } from "@/components/admin/ReadOnlyContext";
+import { ReadOnlyBanner } from "@/components/admin/ReadOnlyBanner";
 
 /**
  * Admin-native wrapper for the lead creation form.
@@ -25,6 +27,7 @@ import AddLead from "@/pages/AddLead";
  *   form fills the admin shell instead of being centered inside max-w-4xl.
  */
 export default function AdminAddLead() {
+  const readOnly = useReadOnly();
   const { effectivePartnerId, effectivePartnerName, partnerOptions, simulatePartner } = usePartnerContext();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -167,7 +170,10 @@ export default function AdminAddLead() {
         </div>
       </div>
 
-      <AddLead hideOwnHeader adminMode containerClassName="space-y-6" />
+      <ReadOnlyBanner />
+      <div className={readOnly ? "pointer-events-none opacity-60 select-none" : ""} aria-disabled={readOnly}>
+        <AddLead hideOwnHeader adminMode containerClassName="space-y-6" />
+      </div>
     </div>
   );
 }

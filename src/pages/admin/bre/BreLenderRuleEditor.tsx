@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useReadOnly } from "@/components/admin/ReadOnlyContext";
 import { Link, useParams } from "react-router-dom";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -75,7 +76,7 @@ export default function BreLenderRuleEditor() {
   const { appUser } = useAuth();
   const perm = normalizeBrePermission(appUser?.bre_permission);
   const canEdit = canEditBre(appUser?.role, perm);
-  const readOnly = isReadOnlyBre(appUser?.role, perm);
+  const sectionReadOnly = useReadOnly(); const readOnly = sectionReadOnly || isReadOnlyBre(appUser?.role, perm);
 
   const [loading, setLoading] = useState(true);
   const [activeRow, setActiveRow] = useState<{ id: string; version_number: number } | null>(null);

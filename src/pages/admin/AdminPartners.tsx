@@ -14,6 +14,8 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { PartnerDrawer } from "@/components/admin/PartnerDrawer";
 import { format } from "date-fns";
+import { useReadOnly } from "@/components/admin/ReadOnlyContext";
+import { ReadOnlyBanner } from "@/components/admin/ReadOnlyBanner";
 
 type Partner = Tables<"partner_organizations">;
 type StatusFilter = "all" | Partner["status"];
@@ -27,6 +29,7 @@ const statusStyles: Record<Partner["status"], string> = {
 };
 
 export default function AdminPartners() {
+  const readOnly = useReadOnly();
   const [partners, setPartners] = useState<Partner[]>([]);
   const [leadCounts, setLeadCounts] = useState<Record<string, number>>({});
   const [leadsThisMonth, setLeadsThisMonth] = useState<number>(0);
@@ -114,10 +117,11 @@ export default function AdminPartners() {
         description="Manage partner organizations across the EduLoans network."
         count={loading ? null : totalCount}
       >
-        <Button onClick={openCreate} size="sm">
+        <Button onClick={openCreate} size="sm" disabled={readOnly}>
           <Plus className="h-4 w-4 mr-1.5" /> Add Partner
         </Button>
       </PageHeader>
+      <ReadOnlyBanner />
 
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         {kpis.map((k) => (
@@ -233,7 +237,7 @@ export default function AdminPartners() {
                           {format(new Date(p.created_at), "dd MMM yyyy")}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => openEdit(p)}>
+                          <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => openEdit(p)} disabled={readOnly}>
                             <Pencil className="h-4 w-4 mr-1.5" />Edit
                           </Button>
                         </TableCell>

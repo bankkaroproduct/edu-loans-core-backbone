@@ -6,6 +6,8 @@ import { usePartnerContext } from "@/hooks/usePartnerContext";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import BulkUpload from "@/pages/BulkUpload";
+import { useReadOnly } from "@/components/admin/ReadOnlyContext";
+import { ReadOnlyBanner } from "@/components/admin/ReadOnlyBanner";
 
 /**
  * Admin-native wrapper for bulk lead upload.
@@ -13,6 +15,7 @@ import BulkUpload from "@/pages/BulkUpload";
  * - Reuses the existing BulkUpload page — zero logic duplication.
  */
 export default function AdminBulkUpload() {
+  const readOnly = useReadOnly();
   const { effectivePartnerId, effectivePartnerName } = usePartnerContext();
   const navigate = useNavigate();
   const noPartner = !effectivePartnerId;
@@ -75,7 +78,12 @@ export default function AdminBulkUpload() {
         </div>
       </div>
 
-      {!noPartner && <BulkUpload hideOwnHeader />}
+      <ReadOnlyBanner />
+      {!noPartner && (
+        <div className={readOnly ? "pointer-events-none opacity-60 select-none" : ""} aria-disabled={readOnly}>
+          <BulkUpload hideOwnHeader />
+        </div>
+      )}
     </div>
   );
 }

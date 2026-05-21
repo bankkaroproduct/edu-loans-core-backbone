@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useReadOnly } from "@/components/admin/ReadOnlyContext";
 import { Link } from "react-router-dom";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatCard } from "@/components/shared/StatCard";
@@ -25,7 +26,7 @@ export default function BreDashboard() {
   const { appUser } = useAuth();
   const perm = normalizeBrePermission(appUser?.bre_permission);
   const canEdit = canEditBre(appUser?.role, perm);
-  const readOnly = isReadOnlyBre(appUser?.role, perm);
+  const sectionReadOnly = useReadOnly(); const readOnly = sectionReadOnly || isReadOnlyBre(appUser?.role, perm);
 
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);

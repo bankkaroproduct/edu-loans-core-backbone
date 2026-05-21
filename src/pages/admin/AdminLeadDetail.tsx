@@ -24,6 +24,8 @@ import { AdminBreAndLenderSection } from "@/components/admin/AdminBreAndLenderSe
 import { LeadCommunicationPanel } from "@/components/admin/communications/LeadCommunicationPanel";
 import { useLeadDocumentsData } from "@/hooks/useLeadDocumentsData";
 import type { Tables } from "@/integrations/supabase/types";
+import { useReadOnly } from "@/components/admin/ReadOnlyContext";
+import { ReadOnlyBanner } from "@/components/admin/ReadOnlyBanner";
 
 type Lead = Tables<"student_leads">;
 type History = Tables<"lead_stage_history">;
@@ -75,6 +77,7 @@ const initialState: State = {
 };
 
 export default function AdminLeadDetail() {
+  const readOnly = useReadOnly();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
@@ -255,6 +258,10 @@ export default function AdminLeadDetail() {
 
   return (
     <div className="w-full space-y-6">
+      <ReadOnlyBanner />
+      <fieldset disabled={readOnly} className="contents">
+
+
 
 
       <div className="space-y-3">
@@ -318,6 +325,7 @@ export default function AdminLeadDetail() {
           onNoteAdded={loadAll}
         />
       </div>
+      </fieldset>
     </div>
   );
 }

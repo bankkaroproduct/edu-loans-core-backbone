@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { ShieldOff, UserPlus, KeyRound, Power, RotateCcw, Pencil } from "lucide-react";
+import { useReadOnly } from "@/components/admin/ReadOnlyContext";
+import { ReadOnlyBanner } from "@/components/admin/ReadOnlyBanner";
 
 type AdminRow = {
   id: string;
