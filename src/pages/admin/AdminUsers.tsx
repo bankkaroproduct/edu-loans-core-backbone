@@ -341,6 +341,7 @@ function InviteOrEditDialog({
   const [partnerIds, setPartnerIds] = useState<string[]>([]);
   const [credMode, setCredMode] = useState<"invite" | "temp">("invite");
   const [tempPassword, setTempPassword] = useState("");
+  const [showTempPassword, setShowTempPassword] = useState(true);
   const [partnerScopeOpen, setPartnerScopeOpen] = useState(false);
 
   useEffect(() => {
