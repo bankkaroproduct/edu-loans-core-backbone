@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { AdminPermissionsProvider } from "@/hooks/useAdminPermissions";
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -46,5 +47,9 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/" replace />;
   }
 
-  return <AdminLayout>{children}</AdminLayout>;
+  return (
+    <AdminPermissionsProvider>
+      <AdminLayout>{children}</AdminLayout>
+    </AdminPermissionsProvider>
+  );
 }

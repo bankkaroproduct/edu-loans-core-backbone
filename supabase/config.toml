@@ -2,3 +2,18 @@ project_id = "jswmojgsemfskbyrtpps"
 
 [functions.bootstrap-partner-accounts]
 verify_jwt = false
+
+[functions.admin-user-invite]
+verify_jwt = false
+
+[functions.admin-user-update]
+verify_jwt = false
+
+[functions.admin-user-reset-password]
+verify_jwt = false
+
+[functions.admin-user-terminate]
+verify_jwt = false
+
+[functions.admin-user-reactivate]
+verify_jwt = false

@@ -32,6 +32,8 @@ import BreVersionHistory from "./pages/admin/bre/BreVersionHistory";
 import BreAuditLog from "./pages/admin/bre/BreAuditLog";
 import BreSimulate from "./pages/admin/bre/BreSimulate";
 import { BreAccessGate } from "./components/bre/BreAccessGate";
+import { SectionGate } from "./components/admin/SectionGate";
+import AdminUsers from "./pages/admin/AdminUsers";
 import AdminAddLead from "./pages/admin/AdminAddLead";
 import AdminBulkUpload from "./pages/admin/AdminBulkUpload";
 import AdminCommunications from "./pages/admin/AdminCommunications";
@@ -99,32 +101,33 @@ const App = () => (
             <Route path="/master-data" element={<ProtectedRoute><MasterData /></ProtectedRoute>} />
             {/* Admin Console — separate portal */}
             <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-            <Route path="/admin/leads" element={<AdminRoute><AdminLeads /></AdminRoute>} />
-            <Route path="/admin/leads/new" element={<AdminRoute><AdminAddLead /></AdminRoute>} />
-            <Route path="/admin/leads/bulk" element={<AdminRoute><AdminBulkUpload /></AdminRoute>} />
-            <Route path="/admin/leads/:id" element={<AdminRoute><AdminLeadDetail /></AdminRoute>} />
-            <Route path="/admin/leads/:id/documents" element={<AdminRoute><LeadDocuments /></AdminRoute>} />
-            <Route path="/admin/leads/:id/send-to-lender" element={<AdminRoute><AdminSendToLender /></AdminRoute>} />
-            <Route path="/admin/edit-requests" element={<AdminRoute><AdminEditRequests /></AdminRoute>} />
-            <Route path="/admin/requests" element={<AdminRoute><AdminEditRequests /></AdminRoute>} />
-            <Route path="/admin/master-data" element={<AdminRoute><AdminMasterData /></AdminRoute>} />
-            <Route path="/admin/premiere-lists" element={<AdminRoute><AdminPremiereLists /></AdminRoute>} />
-            <Route path="/admin/partners" element={<AdminRoute><AdminPartners /></AdminRoute>} />
-            <Route path="/admin/lenders" element={<AdminRoute><AdminLenders /></AdminRoute>} />
-            <Route path="/admin/reports" element={<AdminRoute><AdminReports /></AdminRoute>} />
-            <Route path="/admin/communications" element={<AdminRoute><AdminCommunications /></AdminRoute>} />
-            <Route path="/admin/communications/logs" element={<AdminRoute><AdminCommunicationLogs /></AdminRoute>} />
-            <Route path="/admin/communications/templates" element={<AdminRoute><AdminCommunicationTemplates /></AdminRoute>} />
+            <Route path="/admin" element={<AdminRoute><SectionGate section="dashboard"><AdminDashboard /></SectionGate></AdminRoute>} />
+            <Route path="/admin/leads" element={<AdminRoute><SectionGate section="lead_queue"><AdminLeads /></SectionGate></AdminRoute>} />
+            <Route path="/admin/leads/new" element={<AdminRoute><SectionGate section="add_lead"><AdminAddLead /></SectionGate></AdminRoute>} />
+            <Route path="/admin/leads/bulk" element={<AdminRoute><SectionGate section="bulk_upload"><AdminBulkUpload /></SectionGate></AdminRoute>} />
+            <Route path="/admin/leads/:id" element={<AdminRoute><SectionGate section="lead_queue"><AdminLeadDetail /></SectionGate></AdminRoute>} />
+            <Route path="/admin/leads/:id/documents" element={<AdminRoute><SectionGate section="lead_queue"><LeadDocuments /></SectionGate></AdminRoute>} />
+            <Route path="/admin/leads/:id/send-to-lender" element={<AdminRoute><SectionGate section="lead_queue"><AdminSendToLender /></SectionGate></AdminRoute>} />
+            <Route path="/admin/edit-requests" element={<AdminRoute><SectionGate section="lead_queue"><AdminEditRequests /></SectionGate></AdminRoute>} />
+            <Route path="/admin/requests" element={<AdminRoute><SectionGate section="lead_queue"><AdminEditRequests /></SectionGate></AdminRoute>} />
+            <Route path="/admin/master-data" element={<AdminRoute><SectionGate section="master_data"><AdminMasterData /></SectionGate></AdminRoute>} />
+            <Route path="/admin/premiere-lists" element={<AdminRoute><SectionGate section="premiere_lists"><AdminPremiereLists /></SectionGate></AdminRoute>} />
+            <Route path="/admin/partners" element={<AdminRoute><SectionGate section="partners"><AdminPartners /></SectionGate></AdminRoute>} />
+            <Route path="/admin/lenders" element={<AdminRoute><SectionGate section="lenders"><AdminLenders /></SectionGate></AdminRoute>} />
+            <Route path="/admin/reports" element={<AdminRoute><SectionGate section="reports"><AdminReports /></SectionGate></AdminRoute>} />
+            <Route path="/admin/communications" element={<AdminRoute><SectionGate section="communications"><AdminCommunications /></SectionGate></AdminRoute>} />
+            <Route path="/admin/communications/logs" element={<AdminRoute><SectionGate section="communications"><AdminCommunicationLogs /></SectionGate></AdminRoute>} />
+            <Route path="/admin/communications/templates" element={<AdminRoute><SectionGate section="communications"><AdminCommunicationTemplates /></SectionGate></AdminRoute>} />
+            <Route path="/admin/users" element={<AdminRoute><SectionGate section="admin_users"><AdminUsers /></SectionGate></AdminRoute>} />
             {/* BRE Engine — Admin only, additionally gated by bre_permission */}
-            <Route path="/admin/bre" element={<AdminRoute><BreAccessGate><BreDashboard /></BreAccessGate></AdminRoute>} />
-            <Route path="/admin/bre/scoring" element={<AdminRoute><BreAccessGate><BreScoringConfigEditor /></BreAccessGate></AdminRoute>} />
-            <Route path="/admin/bre/scoring/lenders/:lenderId" element={<AdminRoute><BreAccessGate><BreLenderScorecardDetail /></BreAccessGate></AdminRoute>} />
-            <Route path="/admin/bre/lenders" element={<AdminRoute><BreAccessGate><BreLenderRulesList /></BreAccessGate></AdminRoute>} />
-            <Route path="/admin/bre/lenders/:lenderId" element={<AdminRoute><BreAccessGate><BreLenderRuleEditor /></BreAccessGate></AdminRoute>} />
-            <Route path="/admin/bre/versions" element={<AdminRoute><BreAccessGate><BreVersionHistory /></BreAccessGate></AdminRoute>} />
-            <Route path="/admin/bre/audit" element={<AdminRoute><BreAccessGate><BreAuditLog /></BreAccessGate></AdminRoute>} />
-            <Route path="/admin/bre/simulate" element={<AdminRoute><BreAccessGate><BreSimulate /></BreAccessGate></AdminRoute>} />
+            <Route path="/admin/bre" element={<AdminRoute><SectionGate section="bre"><BreAccessGate><BreDashboard /></BreAccessGate></SectionGate></AdminRoute>} />
+            <Route path="/admin/bre/scoring" element={<AdminRoute><SectionGate section="bre"><BreAccessGate><BreScoringConfigEditor /></BreAccessGate></SectionGate></AdminRoute>} />
+            <Route path="/admin/bre/scoring/lenders/:lenderId" element={<AdminRoute><SectionGate section="bre"><BreAccessGate><BreLenderScorecardDetail /></BreAccessGate></SectionGate></AdminRoute>} />
+            <Route path="/admin/bre/lenders" element={<AdminRoute><SectionGate section="bre"><BreAccessGate><BreLenderRulesList /></BreAccessGate></SectionGate></AdminRoute>} />
+            <Route path="/admin/bre/lenders/:lenderId" element={<AdminRoute><SectionGate section="bre"><BreAccessGate><BreLenderRuleEditor /></BreAccessGate></SectionGate></AdminRoute>} />
+            <Route path="/admin/bre/versions" element={<AdminRoute><SectionGate section="bre"><BreAccessGate><BreVersionHistory /></BreAccessGate></SectionGate></AdminRoute>} />
+            <Route path="/admin/bre/audit" element={<AdminRoute><SectionGate section="bre"><BreAccessGate><BreAuditLog /></BreAccessGate></SectionGate></AdminRoute>} />
+            <Route path="/admin/bre/simulate" element={<AdminRoute><SectionGate section="bre"><BreAccessGate><BreSimulate /></BreAccessGate></SectionGate></AdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </StudentAuthProvider>

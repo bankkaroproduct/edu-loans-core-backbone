@@ -14,6 +14,77 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_partner_assignments: {
+        Row: {
+          created_at: string
+          id: string
+          partner_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          partner_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          partner_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_partner_assignments_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partner_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_partner_assignments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admin_section_permissions: {
+        Row: {
+          access_level: Database["public"]["Enums"]["admin_access_level"]
+          created_at: string
+          id: string
+          section: Database["public"]["Enums"]["admin_section_key"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_level?: Database["public"]["Enums"]["admin_access_level"]
+          created_at?: string
+          id?: string
+          section: Database["public"]["Enums"]["admin_section_key"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_level?: Database["public"]["Enums"]["admin_access_level"]
+          created_at?: string
+          id?: string
+          section?: Database["public"]["Enums"]["admin_section_key"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_section_permissions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action_type: string
@@ -1878,6 +1949,7 @@ export type Database = {
       }
       users: {
         Row: {
+          allow_admin_mode: boolean
           auth_user_id: string | null
           bre_permission: string
           created_at: string
@@ -1885,14 +1957,17 @@ export type Database = {
           full_name: string
           id: string
           is_active: boolean
+          is_super_admin: boolean
           last_login_at: string | null
           partner_id: string | null
           phone: string | null
           role: Database["public"]["Enums"]["app_role"]
+          terminated_at: string | null
           updated_at: string
           username: string | null
         }
         Insert: {
+          allow_admin_mode?: boolean
           auth_user_id?: string | null
           bre_permission?: string
           created_at?: string
@@ -1900,14 +1975,17 @@ export type Database = {
           full_name: string
           id?: string
           is_active?: boolean
+          is_super_admin?: boolean
           last_login_at?: string | null
           partner_id?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          terminated_at?: string | null
           updated_at?: string
           username?: string | null
         }
         Update: {
+          allow_admin_mode?: boolean
           auth_user_id?: string | null
           bre_permission?: string
           created_at?: string
@@ -1915,10 +1993,12 @@ export type Database = {
           full_name?: string
           id?: string
           is_active?: boolean
+          is_super_admin?: boolean
           last_login_at?: string | null
           partner_id?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          terminated_at?: string | null
           updated_at?: string
           username?: string | null
         }
@@ -1981,6 +2061,17 @@ export type Database = {
         }
         Returns: Json
       }
+      get_admin_assigned_partner_ids: {
+        Args: { _auth_id: string }
+        Returns: string[]
+      }
+      get_admin_section_access: {
+        Args: {
+          _auth_id: string
+          _section: Database["public"]["Enums"]["admin_section_key"]
+        }
+        Returns: Database["public"]["Enums"]["admin_access_level"]
+      }
       get_user_partner_id: { Args: { _auth_id: string }; Returns: string }
       get_user_role: {
         Args: { _auth_id: string }
@@ -1995,6 +2086,7 @@ export type Database = {
       }
       is_admin_or_super: { Args: { _auth_id: string }; Returns: boolean }
       is_partner_org_active: { Args: { _partner_id: string }; Returns: boolean }
+      is_super_admin: { Args: { _auth_id: string }; Returns: boolean }
       match_college_names: {
         Args: { _a_norm: string; _b_norm: string }
         Returns: boolean
@@ -2015,6 +2107,20 @@ export type Database = {
       tokens_distinctive: { Args: { _norm_name: string }; Returns: string[] }
     }
     Enums: {
+      admin_access_level: "hidden" | "view" | "full"
+      admin_section_key:
+        | "dashboard"
+        | "lead_queue"
+        | "reports"
+        | "add_lead"
+        | "bulk_upload"
+        | "master_data"
+        | "partners"
+        | "lenders"
+        | "premiere_lists"
+        | "bre"
+        | "communications"
+        | "admin_users"
       app_role: "super_admin" | "admin" | "partner_admin" | "partner_agent"
       bulk_upload_status_enum:
         | "uploaded"
@@ -2236,6 +2342,21 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      admin_access_level: ["hidden", "view", "full"],
+      admin_section_key: [
+        "dashboard",
+        "lead_queue",
+        "reports",
+        "add_lead",
+        "bulk_upload",
+        "master_data",
+        "partners",
+        "lenders",
+        "premiere_lists",
+        "bre",
+        "communications",
+        "admin_users",
+      ],
       app_role: ["super_admin", "admin", "partner_admin", "partner_agent"],
       bulk_upload_status_enum: [
         "uploaded",

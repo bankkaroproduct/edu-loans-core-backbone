@@ -1,5 +1,6 @@
 import { usePartnerContext } from "@/hooks/usePartnerContext";
 import { useRoleAccess } from "@/hooks/useRoleAccess";
+import { useAdminPermissions } from "@/hooks/useAdminPermissions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,9 +8,15 @@ import { FlaskConical, X } from "lucide-react";
 
 export function AdminPartnerSwitcher({ collapsed }: { collapsed: boolean }) {
   const { isAdmin } = useRoleAccess();
+  const { allowAdminMode, assignedPartnerIds, isSuperAdmin } = useAdminPermissions();
   const { isSimulating, effectivePartnerName, partnerOptions, simulatePartner, effectivePartnerId } = usePartnerContext();
 
   if (!isAdmin) return null;
+
+  // Filter partner options by assignment scope (super admins see all).
+  const visibleOptions = isSuperAdmin || assignedPartnerIds.length === 0
+    ? partnerOptions
+    : partnerOptions.filter((p) => assignedPartnerIds.includes(p.id));
 
   if (collapsed) {
     return isSimulating ? (
@@ -28,8 +35,8 @@ export function AdminPartnerSwitcher({ collapsed }: { collapsed: boolean }) {
           <SelectValue placeholder="Select partner…" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="__none__">— Admin Mode —</SelectItem>
-          {partnerOptions.map((p) => (
+          {allowAdminMode && <SelectItem value="__none__">— Admin Mode —</SelectItem>}
+          {visibleOptions.map((p) => (
             <SelectItem key={p.id} value={p.id}>
               {p.display_name} ({p.partner_code})
             </SelectItem>
