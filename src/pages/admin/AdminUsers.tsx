@@ -281,14 +281,25 @@ export default function AdminUsers() {
           </DialogHeader>
           <div className="space-y-2">
             <Label htmlFor="reset_password" className="text-xs">New Password</Label>
-            <Input
-              id="reset_password"
-              type="password"
-              autoComplete="new-password"
-              value={resetPassword}
-              onChange={(e) => setResetPassword(e.target.value)}
-              placeholder="Minimum 8 characters"
-            />
+            <div className="relative">
+              <Input
+                id="reset_password"
+                type={showResetPassword ? "text" : "password"}
+                autoComplete="new-password"
+                value={resetPassword}
+                onChange={(e) => setResetPassword(e.target.value)}
+                placeholder="Minimum 8 characters"
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowResetPassword((v) => !v)}
+                aria-label={showResetPassword ? "Hide password" : "Show password"}
+                className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+              >
+                {showResetPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setResetTarget(null); setResetPassword(""); }} disabled={busy}>Cancel</Button>
