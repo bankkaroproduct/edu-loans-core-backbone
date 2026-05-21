@@ -148,10 +148,18 @@ export default function AdminTeamPerformance() {
   };
 
   const adminRows = useMemo(() => {
-    return admins.map((a) => ({
+    const rows = admins.map((a) => ({
       admin: a,
       metrics: computeMetrics(adminPartnersMap[a.id] ?? []),
     }));
+    rows.sort((a, b) => {
+      const aHas = a.metrics.partners.length > 0 ? 1 : 0;
+      const bHas = b.metrics.partners.length > 0 ? 1 : 0;
+      if (aHas !== bHas) return bHas - aHas;
+      if (aHas === 1) return b.metrics.totalLeads - a.metrics.totalLeads;
+      return a.admin.full_name.localeCompare(b.admin.full_name);
+    });
+    return rows;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [admins, adminPartnersMap, leads, partnerById, firstSentMap]);
 
