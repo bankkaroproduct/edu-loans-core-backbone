@@ -8,11 +8,9 @@ import { Button } from "@/components/ui/button";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import { ChevronDown, ChevronRight, Users, UserX } from "lucide-react";
+import { ChevronDown, ChevronRight, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { formatDistanceToNowStrict } from "date-fns";
+import { cn } from "@/lib/utils";
 
 type RangeKey = "this_month" | "last_3m" | "last_6m" | "all";
 
@@ -53,6 +51,68 @@ function getRangeStart(r: RangeKey): Date | null {
   return null;
 }
 
+const RANGE_OPTIONS: { key: RangeKey; label: string }[] = [
+  { key: "this_month", label: "This Month" },
+  { key: "last_3m", label: "Last 3 Months" },
+  { key: "last_6m", label: "Last 6 Months" },
+  { key: "all", label: "All Time" },
+];
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((s) => s[0]?.toUpperCase() ?? "")
+    .join("") || "?";
+}
+
+type HeatTone = "neutral" | "good" | "warn" | "bad" | "info" | "zero";
+
+function heatToneClass(tone: HeatTone): string {
+  switch (tone) {
+    case "good": return "bg-emerald-50 text-emerald-800 ring-1 ring-inset ring-emerald-200/60";
+    case "warn": return "bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-200/60";
+    case "bad":  return "bg-rose-50 text-rose-800 ring-1 ring-inset ring-rose-200/60";
+    case "info": return "bg-sky-50 text-sky-800 ring-1 ring-inset ring-sky-200/60";
+    case "zero": return "bg-muted/40 text-muted-foreground";
+    default:     return "text-foreground";
+  }
+}
+
+function HeatCell({
+  display,
+  tone,
+  align = "right",
+}: { display: React.ReactNode; tone: HeatTone; align?: "right" | "center" }) {
+  return (
+    <TableCell className={align === "right" ? "text-right" : "text-center"}>
+      <span
+        className={cn(
+          "inline-flex min-w-[3rem] items-center justify-center rounded-md px-2 py-1 text-xs font-medium tabular-nums",
+          heatToneClass(tone),
+        )}
+      >
+        {display}
+      </span>
+    </TableCell>
+  );
+}
+
+function Avatar({ name, size = "md", muted }: { name: string; size?: "md" | "lg"; muted?: boolean }) {
+  return (
+    <div
+      className={cn(
+        "shrink-0 rounded-full flex items-center justify-center font-semibold",
+        size === "lg" ? "h-12 w-12 text-base" : "h-9 w-9 text-xs",
+        muted ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary",
+      )}
+    >
+      {initials(name)}
+    </div>
+  );
+}
+
 export default function AdminTeamPerformance() {
   const [range, setRange] = useState<RangeKey>("this_month");
   const [loading, setLoading] = useState(true);
@@ -61,7 +121,7 @@ export default function AdminTeamPerformance() {
   const [assignments, setAssignments] = useState<{ user_id: string; partner_id: string }[]>([]);
   const [leads, setLeads] = useState<LeadRow[]>([]);
   const [firstSentMap, setFirstSentMap] = useState<Record<string, string>>({});
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -163,256 +223,329 @@ export default function AdminTeamPerformance() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [admins, adminPartnersMap, leads, partnerById, firstSentMap]);
 
+  const unassignedPartners = useMemo(
+    () => partners.filter((p) => p.partner_code !== "PTR-DIRECT" && !assignedPartnerSet.has(p.id)),
+    [partners, assignedPartnerSet],
+  );
+
   const unassignedMetrics = useMemo(() => {
-    const ids = partners.filter((p) => p.partner_code !== "PTR-DIRECT" && !assignedPartnerSet.has(p.id)).map((p) => p.id);
-    return computeMetrics(ids);
+    return computeMetrics(unassignedPartners.map((p) => p.id));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [partners, assignedPartnerSet, leads, partnerById, firstSentMap]);
+  }, [unassignedPartners, leads, partnerById, firstSentMap]);
+
+  // ---- Heat thresholds
+  const staleTone = (n: number, empty: boolean): HeatTone => empty ? "zero" : n === 0 ? "good" : n <= 10 ? "warn" : "bad";
+  const avgTone = (v: number | null, empty: boolean): HeatTone =>
+    empty || v == null ? "zero" : v < 3 ? "good" : v <= 7 ? "warn" : "bad";
+  const rejTone = (v: number, total: number, empty: boolean): HeatTone =>
+    empty || total === 0 ? "zero" : v < 5 ? "good" : v <= 15 ? "warn" : "bad";
+  const positive = (n: number, empty: boolean): HeatTone => empty || n === 0 ? "zero" : "good";
+  const countTone = (n: number, empty: boolean): HeatTone => empty || n === 0 ? "zero" : "info";
 
   const fmtAvg = (v: number | null) => v == null ? "—" : v.toFixed(1);
   const fmtPct = (v: number) => `${v.toFixed(1)}%`;
 
+  const toggleRow = (key: string) => setExpanded((cur) => (cur === key ? null : key));
+
   return (
-    <div className="space-y-6 max-w-screen-2xl mx-auto">
+    <div className="space-y-5 max-w-screen-2xl mx-auto">
       <PageHeader
-        title="Team Performance"
-        description="Per-admin lead pipeline, throughput, and stale-lead visibility."
+        title="Team performance"
+        description="Per-admin pipeline health, throughput, and stale-lead exposure."
       >
-        <Select value={range} onValueChange={(v: RangeKey) => setRange(v)}>
-          <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="this_month">This month</SelectItem>
-            <SelectItem value="last_3m">Last 3 months</SelectItem>
-            <SelectItem value="last_6m">Last 6 months</SelectItem>
-            <SelectItem value="all">All time</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="inline-flex rounded-lg border bg-card p-0.5">
+          {RANGE_OPTIONS.map((opt) => (
+            <button
+              key={opt.key}
+              onClick={() => setRange(opt.key)}
+              className={cn(
+                "px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
+                range === opt.key
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted",
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </PageHeader>
+
+      {/* Unassigned banner */}
+      {!loading && (
+        unassignedPartners.length > 0 ? (
+          <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50/70 p-3">
+            <AlertTriangle className="h-4 w-4 text-amber-700 mt-0.5 shrink-0" />
+            <div className="text-sm">
+              <span className="font-medium text-amber-900">
+                {unassignedPartners.length} partner{unassignedPartners.length === 1 ? "" : "s"} unassigned
+              </span>
+              <span className="text-amber-800/80">
+                {" "}— {unassignedMetrics.totalLeads} lead{unassignedMetrics.totalLeads === 1 ? "" : "s"} with no admin owner.
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 rounded-lg border border-emerald-200/60 bg-emerald-50/40 p-3">
+            <CheckCircle2 className="h-4 w-4 text-emerald-700 shrink-0" />
+            <span className="text-sm text-emerald-900">All partners are assigned to an admin.</span>
+          </div>
+        )
+      )}
 
       {loading ? (
         <PageSkeleton variant="table" />
       ) : (
-        <>
-          {/* Overview cards */}
-          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {adminRows.map(({ admin, metrics }) => {
-              const empty = metrics.partners.length === 0;
-              return (
-                <Card key={admin.id} className={`p-4 flex flex-col ${empty ? "opacity-60 border-dashed" : ""}`}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className={`rounded p-1.5 ${empty ? "bg-muted" : "bg-primary/10"}`}>
-                      <Users className={`h-3.5 w-3.5 ${empty ? "text-muted-foreground" : "text-primary"}`} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className={`text-sm font-medium truncate ${empty ? "text-muted-foreground" : ""}`}>{admin.full_name}</p>
-                      <p className="text-[11px] text-muted-foreground truncate">{admin.email}</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs mt-auto">
-                    <Stat label="Partners" value={metrics.partners.length} muted={empty} />
-                    <Stat label="Total leads" value={metrics.totalLeads} muted={empty} />
-                    <Stat label="Active" value={metrics.activeLeads} muted={empty} />
-                    <Stat label="Stale 48h+" value={metrics.staleLeads.length} amber={!empty && metrics.staleLeads.length > 0} muted={empty} />
-                  </div>
-                </Card>
-              );
-            })}
-            <Card className="p-4 flex flex-col border-amber-200 bg-amber-50/30">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="rounded bg-amber-100 p-1.5">
-                  <UserX className="h-3.5 w-3.5 text-amber-700" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate">Unassigned</p>
-                  <p className="text-[11px] text-muted-foreground truncate">No admin owner</p>
-                </div>
+        <Card>
+          <CardContent className="p-0">
+            <div className="border-b px-4 py-3 flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-semibold">Admin heatmap</h2>
+                <p className="text-xs text-muted-foreground">Click a row to expand profile detail. Cell color reflects performance.</p>
               </div>
-              <div className="grid grid-cols-2 gap-2 text-xs mt-auto">
-                <Stat label="Partners" value={unassignedMetrics.partners.length} amber={unassignedMetrics.partners.length > 0} />
-                <Stat label="Total leads" value={unassignedMetrics.totalLeads} />
-                <Stat label="Active" value={unassignedMetrics.activeLeads} />
-                <Stat label="Stale 48h+" value={unassignedMetrics.staleLeads.length} amber={unassignedMetrics.staleLeads.length > 0} />
+              <div className="hidden md:flex items-center gap-3 text-[10px] text-muted-foreground">
+                <LegendDot tone="good" label="Healthy" />
+                <LegendDot tone="warn" label="Watch" />
+                <LegendDot tone="bad" label="At risk" />
+                <LegendDot tone="zero" label="None" />
               </div>
-            </Card>
-          </div>
-
-          {/* Performance table */}
-          <Card>
-            <CardContent className="p-0">
-              <div className="border-b px-4 py-3">
-                <h2 className="text-sm font-semibold">Admin breakdown</h2>
-                <p className="text-xs text-muted-foreground">Click a row to expand partner-level detail.</p>
-              </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[40px]"></TableHead>
-                    <TableHead>Admin</TableHead>
-                    <TableHead className="text-right">Partners</TableHead>
-                    <TableHead className="text-right">Total Leads</TableHead>
-                    <TableHead className="text-right">Stale (48h+)</TableHead>
-                    <TableHead className="text-right">Avg Days to Lender</TableHead>
-                    <TableHead className="text-right">Sanctioned</TableHead>
-                    <TableHead className="text-right">Disbursed</TableHead>
-                    <TableHead className="text-right">Rejected</TableHead>
-                    <TableHead className="text-right">Rejection Rate</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {adminRows.map(({ admin, metrics }) => {
-                    const open = !!expanded[admin.id];
-                    const empty = metrics.partners.length === 0;
-                    return (
-                      <Fragment key={admin.id}>
-                        <TableRow className={`cursor-pointer ${empty ? "text-muted-foreground" : ""}`} onClick={() => setExpanded((s) => ({ ...s, [admin.id]: !s[admin.id] }))}>
-                          <TableCell>
-                            <Button variant="ghost" size="icon" className="h-6 w-6">
-                              {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                            </Button>
-                          </TableCell>
-                          <TableCell>
-                            <p className={empty ? "font-normal" : "font-medium"}>{admin.full_name}</p>
-                            <p className="text-[11px] text-muted-foreground">{admin.email}</p>
-                          </TableCell>
-                          <Num value={metrics.partners.length} muted={empty} />
-                          <Num value={metrics.totalLeads} muted={empty} />
-                          <Num value={metrics.staleLeads.length} amber={!empty && metrics.staleLeads.length > 0} muted={empty} />
-                          <TableCell className="text-right tabular-nums">{empty ? <span className="text-muted-foreground">—</span> : fmtAvg(metrics.avgDaysToLender)}</TableCell>
-                          <Num value={metrics.sanctioned} muted={empty} />
-                          <Num value={metrics.disbursed} muted={empty} />
-                          <Num value={metrics.rejected} muted={empty} />
-                          <TableCell className="text-right tabular-nums">{!empty && metrics.totalLeads ? fmtPct(metrics.rejectionRate) : <span className="text-muted-foreground">—</span>}</TableCell>
-                        </TableRow>
-                        {open && (
-                          <TableRow>
-                            <TableCell colSpan={10} className="bg-muted/30 p-4">
-                              <ExpandedDetail metrics={metrics} />
-                            </TableCell>
-                          </TableRow>
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[40px]"></TableHead>
+                  <TableHead>Admin</TableHead>
+                  <TableHead className="text-right">Partners</TableHead>
+                  <TableHead className="text-right">Leads</TableHead>
+                  <TableHead className="text-right">Stale (48h+)</TableHead>
+                  <TableHead className="text-right">Avg Days→Lender</TableHead>
+                  <TableHead className="text-right">Sanctioned</TableHead>
+                  <TableHead className="text-right">Rejected</TableHead>
+                  <TableHead className="text-right">Rej. Rate</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {adminRows.map(({ admin, metrics }) => {
+                  const open = expanded === admin.id;
+                  const empty = metrics.partners.length === 0;
+                  return (
+                    <Fragment key={admin.id}>
+                      <TableRow
+                        className={cn(
+                          "cursor-pointer transition-colors hover:bg-muted/40",
+                          open && "bg-muted/30",
+                          empty && "opacity-70",
                         )}
-                      </Fragment>
-                    );
-                  })}
-                  <TableRow className="cursor-pointer bg-amber-50/30" onClick={() => setExpanded((s) => ({ ...s, __un: !s.__un }))}>
-                    <TableCell>
-                      <Button variant="ghost" size="icon" className="h-6 w-6">
-                        {expanded.__un ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                      </Button>
-                    </TableCell>
-                    <TableCell>
-                      <p className="font-medium text-amber-800">Unassigned</p>
-                      <p className="text-[11px] text-muted-foreground">Partners without an admin owner</p>
-                    </TableCell>
-                    <Num value={unassignedMetrics.partners.length} amber={unassignedMetrics.partners.length > 0} />
-                    <Num value={unassignedMetrics.totalLeads} />
-                    <Num value={unassignedMetrics.staleLeads.length} amber={unassignedMetrics.staleLeads.length > 0} />
-                    <TableCell className="text-right tabular-nums">{fmtAvg(unassignedMetrics.avgDaysToLender)}</TableCell>
-                    <Num value={unassignedMetrics.sanctioned} />
-                    <Num value={unassignedMetrics.disbursed} />
-                    <Num value={unassignedMetrics.rejected} />
-                    <TableCell className="text-right tabular-nums">{unassignedMetrics.totalLeads ? fmtPct(unassignedMetrics.rejectionRate) : <span className="text-muted-foreground">—</span>}</TableCell>
-                  </TableRow>
-                  {expanded.__un && (
-                    <TableRow>
-                      <TableCell colSpan={10} className="bg-muted/30 p-4">
-                        <ExpandedDetail metrics={unassignedMetrics} />
+                        onClick={() => toggleRow(admin.id)}
+                      >
+                        <TableCell>
+                          {open ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar name={admin.full_name} muted={empty} />
+                            <div className="min-w-0">
+                              <p className={cn("text-sm truncate", empty ? "font-normal text-muted-foreground" : "font-medium")}>
+                                {admin.full_name}
+                              </p>
+                              <p className="text-[11px] text-muted-foreground truncate">{admin.email}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <HeatCell display={metrics.partners.length} tone={countTone(metrics.partners.length, false)} />
+                        <HeatCell display={metrics.totalLeads} tone={countTone(metrics.totalLeads, empty)} />
+                        <HeatCell display={metrics.staleLeads.length} tone={staleTone(metrics.staleLeads.length, empty)} />
+                        <HeatCell display={fmtAvg(metrics.avgDaysToLender)} tone={avgTone(metrics.avgDaysToLender, empty)} />
+                        <HeatCell display={metrics.sanctioned} tone={positive(metrics.sanctioned, empty)} />
+                        <HeatCell display={metrics.rejected} tone={empty ? "zero" : metrics.rejected === 0 ? "zero" : "bad"} />
+                        <HeatCell
+                          display={empty || metrics.totalLeads === 0 ? "—" : fmtPct(metrics.rejectionRate)}
+                          tone={rejTone(metrics.rejectionRate, metrics.totalLeads, empty)}
+                        />
+                      </TableRow>
+                      {open && (
+                        <TableRow className="hover:bg-transparent">
+                          <TableCell colSpan={9} className="bg-muted/20 p-5 border-t">
+                            <ExpandedDetail name={admin.full_name} email={admin.email} metrics={metrics} />
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </Fragment>
+                  );
+                })}
+
+                {/* Unassigned bucket */}
+                {unassignedPartners.length > 0 && (
+                  <Fragment>
+                    <TableRow
+                      className={cn(
+                        "cursor-pointer bg-amber-50/30 hover:bg-amber-50/60 transition-colors",
+                        expanded === "__un" && "bg-amber-50/70",
+                      )}
+                      onClick={() => toggleRow("__un")}
+                    >
+                      <TableCell>
+                        {expanded === "__un" ? <ChevronDown className="h-4 w-4 text-amber-700" /> : <ChevronRight className="h-4 w-4 text-amber-700" />}
                       </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="h-9 w-9 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center">
+                            <AlertTriangle className="h-4 w-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-amber-900">Unassigned</p>
+                            <p className="text-[11px] text-amber-800/70">Partners without an admin owner</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <HeatCell display={unassignedMetrics.partners.length} tone="warn" />
+                      <HeatCell display={unassignedMetrics.totalLeads} tone={countTone(unassignedMetrics.totalLeads, false)} />
+                      <HeatCell display={unassignedMetrics.staleLeads.length} tone={staleTone(unassignedMetrics.staleLeads.length, false)} />
+                      <HeatCell display={fmtAvg(unassignedMetrics.avgDaysToLender)} tone={avgTone(unassignedMetrics.avgDaysToLender, false)} />
+                      <HeatCell display={unassignedMetrics.sanctioned} tone={positive(unassignedMetrics.sanctioned, false)} />
+                      <HeatCell display={unassignedMetrics.rejected} tone={unassignedMetrics.rejected === 0 ? "zero" : "bad"} />
+                      <HeatCell
+                        display={unassignedMetrics.totalLeads ? fmtPct(unassignedMetrics.rejectionRate) : "—"}
+                        tone={rejTone(unassignedMetrics.rejectionRate, unassignedMetrics.totalLeads, false)}
+                      />
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </>
+                    {expanded === "__un" && (
+                      <TableRow className="hover:bg-transparent">
+                        <TableCell colSpan={9} className="bg-amber-50/20 p-5 border-t">
+                          <ExpandedDetail name="Unassigned" email="Partners with no admin owner" metrics={unassignedMetrics} accent="amber" />
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </Fragment>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
 }
 
-function Stat({ label, value, amber, muted }: { label: string; value: number; amber?: boolean; muted?: boolean }) {
+function LegendDot({ tone, label }: { tone: HeatTone; label: string }) {
   return (
-    <div>
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className={`text-lg tabular-nums ${muted ? "font-normal text-muted-foreground" : "font-semibold"} ${amber ? "text-amber-700" : !muted && value === 0 ? "text-muted-foreground" : !muted ? "text-foreground" : ""}`}>
-        {value.toLocaleString("en-IN")}
-      </p>
-    </div>
+    <span className="inline-flex items-center gap-1.5">
+      <span className={cn("h-2.5 w-2.5 rounded-sm", heatToneClass(tone))} />
+      {label}
+    </span>
   );
 }
 
-function Num({ value, amber, muted }: { value: number; amber?: boolean; muted?: boolean }) {
-  return (
-    <TableCell className={`text-right tabular-nums ${muted ? "text-muted-foreground" : amber ? "text-amber-700 font-medium" : value === 0 ? "text-muted-foreground" : ""}`}>
-      {value.toLocaleString("en-IN")}
-    </TableCell>
-  );
-}
+function ExpandedDetail({
+  name, email, metrics, accent,
+}: { name: string; email: string; metrics: AdminMetrics; accent?: "amber" }) {
+  const perPartner = metrics.partners
+    .map((p) => ({ partner: p, count: metrics.leads.filter((l) => l.partner_id === p.id).length }))
+    .sort((a, b) => b.count - a.count);
 
-function ExpandedDetail({ metrics }: { metrics: AdminMetrics }) {
-  // Per-partner counts
-  const perPartner = metrics.partners.map((p) => ({
-    partner: p,
-    count: metrics.leads.filter((l) => l.partner_id === p.id).length,
-  }));
+  const submitted = metrics.leads.filter((l) => l.current_stage !== "draft").length;
+  const sentToLender = metrics.leads.filter((l) =>
+    ["sent_to_lender","login_submitted","credit_query","sanction_received","disbursed"].includes(l.current_stage),
+  ).length;
 
-  // Mini funnel
   const funnel = [
-    { label: "Submitted", value: metrics.leads.filter((l) => l.current_stage !== "draft").length },
-    { label: "Documents", value: metrics.leads.filter((l) => ["documents_pending","documents_under_review","bre_evaluated"].includes(l.current_stage)).length },
-    { label: "Sent to Lender", value: metrics.leads.filter((l) => ["sent_to_lender","login_submitted","credit_query"].includes(l.current_stage)).length },
-    { label: "Sanctioned", value: metrics.sanctioned },
-    { label: "Disbursed", value: metrics.disbursed },
+    { label: "Submitted", value: submitted, color: "bg-sky-500" },
+    { label: "Sent to Lender", value: sentToLender, color: "bg-indigo-500" },
+    { label: "Sanctioned", value: metrics.sanctioned, color: "bg-amber-500" },
+    { label: "Disbursed", value: metrics.disbursed, color: "bg-emerald-500" },
   ];
+  const funnelMax = Math.max(...funnel.map((f) => f.value), 1);
 
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
-      <div>
-        <p className="text-xs font-semibold mb-2 uppercase tracking-wide text-muted-foreground">Partners ({perPartner.length})</p>
+    <div className="grid gap-6 lg:grid-cols-12">
+      {/* Left: profile */}
+      <div className="lg:col-span-5">
+        <div className="flex items-start gap-3 mb-4">
+          <Avatar name={name} size="lg" muted={accent === "amber" || metrics.partners.length === 0} />
+          <div className="min-w-0 flex-1">
+            <p className="text-base font-semibold truncate">{name}</p>
+            <p className="text-xs text-muted-foreground truncate">{email}</p>
+            <Badge variant="outline" className="mt-2 text-[10px]">
+              {metrics.partners.length} partner{metrics.partners.length === 1 ? "" : "s"}
+            </Badge>
+          </div>
+        </div>
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+          Assigned partners
+        </p>
         {perPartner.length === 0 ? (
-          <p className="text-xs text-muted-foreground">No partners assigned.</p>
+          <p className="text-xs text-muted-foreground italic">No partners assigned.</p>
         ) : (
-          <div className="space-y-1 max-h-64 overflow-auto pr-2">
+          <div className="space-y-0.5 max-h-72 overflow-auto pr-2 rounded border bg-background">
             {perPartner.map(({ partner, count }) => (
-              <div key={partner.id} className="flex items-center justify-between text-xs py-1 border-b border-border/40">
-                <span className="truncate mr-2">{partner.display_name}</span>
-                <span className="tabular-nums text-muted-foreground">{count}</span>
+              <div key={partner.id} className="flex items-center justify-between text-xs px-3 py-2 border-b last:border-b-0 hover:bg-muted/40">
+                <span className="truncate mr-3">{partner.display_name}</span>
+                <span className={cn("tabular-nums font-medium", count === 0 ? "text-muted-foreground" : "text-foreground")}>
+                  {count}
+                </span>
               </div>
             ))}
           </div>
         )}
       </div>
-      <div>
-        <p className="text-xs font-semibold mb-2 uppercase tracking-wide text-muted-foreground">Pipeline funnel</p>
-        <div className="space-y-1.5">
+
+      {/* Center: funnel + grid */}
+      <div className="lg:col-span-4">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+          Pipeline funnel
+        </p>
+        <div className="space-y-2 mb-5">
           {funnel.map((f) => {
-            const max = Math.max(...funnel.map((x) => x.value), 1);
-            const pct = (f.value / max) * 100;
+            const pct = (f.value / funnelMax) * 100;
             return (
               <div key={f.label}>
-                <div className="flex justify-between text-xs mb-0.5">
-                  <span>{f.label}</span>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-muted-foreground">{f.label}</span>
                   <span className="tabular-nums font-medium">{f.value}</span>
                 </div>
-                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div className={cn("h-full rounded-full transition-all", f.color)} style={{ width: `${pct}%` }} />
                 </div>
               </div>
             );
           })}
         </div>
+        <div className="grid grid-cols-2 gap-2">
+          <MiniStat label="Active" value={metrics.activeLeads} />
+          <MiniStat label="Total leads" value={metrics.totalLeads} />
+          <MiniStat label="Rejected" value={metrics.rejected} tone={metrics.rejected > 0 ? "bad" : "zero"} />
+          <MiniStat label="Rej. rate" value={metrics.totalLeads ? `${metrics.rejectionRate.toFixed(1)}%` : "—"} />
+        </div>
       </div>
-      <div>
-        <p className="text-xs font-semibold mb-2 uppercase tracking-wide text-muted-foreground">
-          Stale leads ({metrics.staleLeads.length})
+
+      {/* Right: stale */}
+      <div className="lg:col-span-3">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+          Stale leads
         </p>
+        <div className={cn(
+          "rounded-md border p-3 mb-2",
+          metrics.staleLeads.length === 0 ? "border-emerald-200 bg-emerald-50/40" : "border-amber-200 bg-amber-50/40",
+        )}>
+          <div className="flex items-baseline justify-between">
+            <span className="text-2xl font-semibold tabular-nums">
+              {metrics.staleLeads.length}
+            </span>
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">48h+ idle</span>
+          </div>
+        </div>
         {metrics.staleLeads.length === 0 ? (
-          <p className="text-xs text-muted-foreground">No stale leads. ✓</p>
+          <p className="text-xs text-emerald-700 flex items-center gap-1.5">
+            <CheckCircle2 className="h-3.5 w-3.5" /> All caught up.
+          </p>
         ) : (
-          <div className="space-y-1 max-h-64 overflow-auto pr-2">
+          <div className="space-y-0.5 max-h-60 overflow-auto pr-2 rounded border bg-background">
             {metrics.staleLeads.slice(0, 50).map((l) => (
-              <div key={l.id} className="text-xs py-1 border-b border-border/40">
-                <div className="flex justify-between gap-2">
-                  <span className="font-mono text-[10px] text-muted-foreground">{l.lead_id ?? l.id.slice(0, 8)}</span>
+              <div key={l.id} className="text-xs px-3 py-2 border-b last:border-b-0 hover:bg-muted/40">
+                <div className="flex justify-between gap-2 mb-0.5">
+                  <span className="font-mono text-[10px] text-muted-foreground">
+                    {l.lead_id ?? l.id.slice(0, 8)}
+                  </span>
                   <span className="text-amber-700 tabular-nums text-[10px]">
                     {formatDistanceToNowStrict(new Date(l.updated_at), { addSuffix: false })}
                   </span>
@@ -425,6 +558,21 @@ function ExpandedDetail({ metrics }: { metrics: AdminMetrics }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function MiniStat({ label, value, tone = "neutral" }: { label: string; value: number | string; tone?: "neutral" | "bad" | "zero" }) {
+  return (
+    <div className="rounded-md border bg-background px-3 py-2">
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className={cn(
+        "text-base font-semibold tabular-nums",
+        tone === "bad" && "text-rose-700",
+        tone === "zero" && "text-muted-foreground font-normal",
+      )}>
+        {typeof value === "number" ? value.toLocaleString("en-IN") : value}
+      </p>
     </div>
   );
 }
