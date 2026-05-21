@@ -329,20 +329,20 @@ export default function AdminTeamPerformance() {
   );
 }
 
-function Stat({ label, value, amber }: { label: string; value: number; amber?: boolean }) {
+function Stat({ label, value, amber, muted }: { label: string; value: number; amber?: boolean; muted?: boolean }) {
   return (
     <div>
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className={`text-lg font-semibold tabular-nums ${amber ? "text-amber-700" : value === 0 ? "text-muted-foreground" : "text-foreground"}`}>
+      <p className={`text-lg tabular-nums ${muted ? "font-normal text-muted-foreground" : "font-semibold"} ${amber ? "text-amber-700" : !muted && value === 0 ? "text-muted-foreground" : !muted ? "text-foreground" : ""}`}>
         {value.toLocaleString("en-IN")}
       </p>
     </div>
   );
 }
 
-function Num({ value, amber }: { value: number; amber?: boolean }) {
+function Num({ value, amber, muted }: { value: number; amber?: boolean; muted?: boolean }) {
   return (
-    <TableCell className={`text-right tabular-nums ${amber ? "text-amber-700 font-medium" : value === 0 ? "text-muted-foreground" : ""}`}>
+    <TableCell className={`text-right tabular-nums ${muted ? "text-muted-foreground" : amber ? "text-amber-700 font-medium" : value === 0 ? "text-muted-foreground" : ""}`}>
       {value.toLocaleString("en-IN")}
     </TableCell>
   );
