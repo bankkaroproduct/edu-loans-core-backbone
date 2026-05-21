@@ -261,26 +261,27 @@ export default function AdminTeamPerformance() {
                 <TableBody>
                   {adminRows.map(({ admin, metrics }) => {
                     const open = !!expanded[admin.id];
+                    const empty = metrics.partners.length === 0;
                     return (
                       <Fragment key={admin.id}>
-                        <TableRow className="cursor-pointer" onClick={() => setExpanded((s) => ({ ...s, [admin.id]: !s[admin.id] }))}>
+                        <TableRow className={`cursor-pointer ${empty ? "text-muted-foreground" : ""}`} onClick={() => setExpanded((s) => ({ ...s, [admin.id]: !s[admin.id] }))}>
                           <TableCell>
                             <Button variant="ghost" size="icon" className="h-6 w-6">
                               {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                             </Button>
                           </TableCell>
                           <TableCell>
-                            <p className="font-medium">{admin.full_name}</p>
+                            <p className={empty ? "font-normal" : "font-medium"}>{admin.full_name}</p>
                             <p className="text-[11px] text-muted-foreground">{admin.email}</p>
                           </TableCell>
-                          <Num value={metrics.partners.length} />
-                          <Num value={metrics.totalLeads} />
-                          <Num value={metrics.staleLeads.length} amber={metrics.staleLeads.length > 0} />
-                          <TableCell className="text-right tabular-nums">{fmtAvg(metrics.avgDaysToLender)}</TableCell>
-                          <Num value={metrics.sanctioned} />
-                          <Num value={metrics.disbursed} />
-                          <Num value={metrics.rejected} />
-                          <TableCell className="text-right tabular-nums">{metrics.totalLeads ? fmtPct(metrics.rejectionRate) : <span className="text-muted-foreground">—</span>}</TableCell>
+                          <Num value={metrics.partners.length} muted={empty} />
+                          <Num value={metrics.totalLeads} muted={empty} />
+                          <Num value={metrics.staleLeads.length} amber={!empty && metrics.staleLeads.length > 0} muted={empty} />
+                          <TableCell className="text-right tabular-nums">{empty ? <span className="text-muted-foreground">—</span> : fmtAvg(metrics.avgDaysToLender)}</TableCell>
+                          <Num value={metrics.sanctioned} muted={empty} />
+                          <Num value={metrics.disbursed} muted={empty} />
+                          <Num value={metrics.rejected} muted={empty} />
+                          <TableCell className="text-right tabular-nums">{!empty && metrics.totalLeads ? fmtPct(metrics.rejectionRate) : <span className="text-muted-foreground">—</span>}</TableCell>
                         </TableRow>
                         {open && (
                           <TableRow>
