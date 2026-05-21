@@ -175,6 +175,13 @@ export default function AdminPartners() {
                 <SelectItem value="terminated">Terminated</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={assignmentFilter} onValueChange={(v: "all" | "unassigned") => setAssignmentFilter(v)}>
+              <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All partners</SelectItem>
+                <SelectItem value="unassigned">Unassigned only</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="text-xs text-muted-foreground">
