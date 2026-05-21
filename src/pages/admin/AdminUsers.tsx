@@ -337,7 +337,9 @@ function InviteOrEditDialog({
           <DialogTitle>{mode === "invite" ? "Invite Admin" : "Edit Admin"}</DialogTitle>
           <DialogDescription>
             {mode === "invite"
-              ? "An invite email will be sent. The user sets their own password."
+              ? credMode === "invite"
+                ? "An invite email will be sent. The user sets their own password."
+                : "Set a temporary password. The user will be required to change it on first login."
               : "Update permissions, partner scope, and Admin Mode access."}
           </DialogDescription>
         </DialogHeader>
@@ -359,6 +361,34 @@ function InviteOrEditDialog({
               <Input id="full_name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
             </div>
           </div>
+
+          {mode === "invite" && (
+            <div className="space-y-2">
+              <Label className="text-sm">Credential Setup</Label>
+              <Tabs value={credMode} onValueChange={(v) => setCredMode(v as "invite" | "temp")}>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="invite">Send invite email</TabsTrigger>
+                  <TabsTrigger value="temp">Set temporary password</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              {credMode === "temp" && (
+                <div className="space-y-1.5 pt-1">
+                  <Label htmlFor="temp_password" className="text-xs">Temporary Password</Label>
+                  <Input
+                    id="temp_password"
+                    type="text"
+                    autoComplete="new-password"
+                    value={tempPassword}
+                    onChange={(e) => setTempPassword(e.target.value)}
+                    placeholder="At least 8 characters"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    User will be prompted to change this on first login.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="flex items-center justify-between rounded-md border p-3">
             <div>
@@ -391,35 +421,63 @@ function InviteOrEditDialog({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-sm">Partner Scope</Label>
-            <p className="text-xs text-muted-foreground">
-              Leave empty for access to all partners. Select specific partners to restrict scope.
-            </p>
-            <div className="rounded-md border max-h-48 overflow-y-auto divide-y">
-              {partners.map((p) => {
-                const checked = partnerIds.includes(p.id);
-                return (
-                  <label key={p.id} className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-muted/50">
+          <Collapsible open={partnerScopeOpen} onOpenChange={setPartnerScopeOpen} className="rounded-md border">
+            <CollapsibleTrigger className="w-full flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-muted/50 transition-colors">
+              <div className="flex flex-col items-start text-left">
+                <span className="text-sm font-medium">Partner Scope</span>
+                <span className="text-xs text-muted-foreground">{partnerSummary}</span>
+              </div>
+              <ChevronDown
+                className={`h-4 w-4 text-muted-foreground transition-transform ${partnerScopeOpen ? "rotate-180" : ""}`}
+              />
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="border-t px-3 py-2 space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Leave empty for access to all partners. Select specific partners to restrict scope.
+                </p>
+                <div className="flex items-center justify-between px-1">
+                  <label className="flex items-center gap-2 cursor-pointer">
                     <Checkbox
-                      checked={checked}
+                      checked={allPartnersSelected ? true : someSelected ? "indeterminate" : false}
                       onCheckedChange={(v) => {
-                        setPartnerIds(v ? [...partnerIds, p.id] : partnerIds.filter((x) => x !== p.id));
+                        setPartnerIds(v ? partners.map((p) => p.id) : []);
                       }}
                     />
-                    <span className="text-sm flex-1">{p.display_name}</span>
-                    <span className="text-xs text-muted-foreground">{p.partner_code}</span>
+                    <span className="text-sm font-medium">Select all</span>
                   </label>
-                );
-              })}
-            </div>
-          </div>
+                  <span className="text-xs text-muted-foreground">
+                    {partnerIds.length} of {partners.length} selected
+                  </span>
+                </div>
+                <div className="rounded-md border max-h-48 overflow-y-auto divide-y">
+                  {partners.map((p) => {
+                    const checked = partnerIds.includes(p.id);
+                    return (
+                      <label key={p.id} className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-muted/50">
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(v) => {
+                            setPartnerIds(v ? [...partnerIds, p.id] : partnerIds.filter((x) => x !== p.id));
+                          }}
+                        />
+                        <span className="text-sm flex-1">{p.display_name}</span>
+                        <span className="text-xs text-muted-foreground">{p.partner_code}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>Cancel</Button>
-          <Button onClick={submit} disabled={busy || !email || !fullName}>
-            {mode === "invite" ? "Send Invite" : "Save Changes"}
+          <Button onClick={submit} disabled={submitDisabled}>
+            {mode === "invite"
+              ? credMode === "temp" ? "Create User" : "Send Invite"
+              : "Save Changes"}
           </Button>
         </DialogFooter>
       </DialogContent>
