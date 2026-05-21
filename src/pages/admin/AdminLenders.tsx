@@ -16,11 +16,14 @@ import type { Tables } from "@/integrations/supabase/types";
 import { LenderDrawer } from "@/components/admin/LenderDrawer";
 import { useAuth } from "@/hooks/useAuth";
 import { canAccessBre, normalizeBrePermission } from "@/lib/bre/permissions";
+import { useReadOnly } from "@/components/admin/ReadOnlyContext";
+import { ReadOnlyBanner } from "@/components/admin/ReadOnlyBanner";
 
 type Lender = Tables<"lenders">;
 type StatusFilter = "all" | "active" | "inactive";
 
 export default function AdminLenders() {
+  const readOnly = useReadOnly();
   const { appUser } = useAuth();
   const breAccess = canAccessBre(appUser?.role, normalizeBrePermission(appUser?.bre_permission));
   const [lenders, setLenders] = useState<Lender[]>([]);
@@ -105,10 +108,11 @@ export default function AdminLenders() {
         description="Manage lender catalog and supported configurations."
         count={loading ? null : totalCount}
       >
-        <Button onClick={openCreate} size="sm">
+        <Button onClick={openCreate} size="sm" disabled={readOnly}>
           <Plus className="h-4 w-4 mr-1.5" /> Add Lender
         </Button>
       </PageHeader>
+      <ReadOnlyBanner />
 
       {breAccess && (
         <div className="rounded-md border border-primary/20 bg-primary/5 px-4 py-2.5 text-sm flex items-center justify-between gap-3 flex-wrap">
@@ -242,10 +246,10 @@ export default function AdminLenders() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => openEdit(l)} title="Edit lender">
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => openEdit(l)} title="Edit lender" disabled={readOnly}>
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => handleToggle(l)} title={l.active_flag ? "Deactivate" : "Activate"}>
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => handleToggle(l)} title={l.active_flag ? "Deactivate" : "Activate"} disabled={readOnly}>
                             <Power className="h-4 w-4" />
                           </Button>
                         </div>
