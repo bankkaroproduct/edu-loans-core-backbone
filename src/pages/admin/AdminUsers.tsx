@@ -222,7 +222,12 @@ export default function AdminUsers() {
         partners={partners}
         onSubmit={async (payload) => {
           if (await callFn("admin-user-invite", payload)) {
-            toast({ title: "Invite sent", description: `Email sent to ${payload.email}` });
+            toast({
+              title: payload.temp_password ? "User created" : "Invite sent",
+              description: payload.temp_password
+                ? `${payload.email} can sign in with the temporary password.`
+                : `Email sent to ${payload.email}`,
+            });
             setInviteOpen(false);
             load();
           }
