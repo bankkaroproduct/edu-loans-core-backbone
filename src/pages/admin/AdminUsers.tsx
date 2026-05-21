@@ -62,6 +62,7 @@ export default function AdminUsers() {
   const [editTarget, setEditTarget] = useState<AdminRow | null>(null);
   const [resetTarget, setResetTarget] = useState<AdminRow | null>(null);
   const [resetPassword, setResetPassword] = useState("");
+  const [showResetPassword, setShowResetPassword] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const load = async () => {
