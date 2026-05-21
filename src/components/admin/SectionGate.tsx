@@ -46,3 +46,22 @@ export function SectionGate({
 export function SectionGateRedirectHome() {
   return <Navigate to="/admin" replace />;
 }
+
+/**
+ * Restricts a route to super admins only. Non-super-admins are redirected
+ * to /admin. Used for User Management which must never be visible to regular
+ * admins regardless of their section permissions.
+ */
+export function SuperAdminGate({ children }: { children: React.ReactNode }) {
+  const { loading, isSuperAdmin } = useAdminPermissions();
+  if (loading) {
+    return (
+      <div className="p-6 space-y-3">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+  if (!isSuperAdmin) return <Navigate to="/admin" replace />;
+  return <>{children}</>;
+}
