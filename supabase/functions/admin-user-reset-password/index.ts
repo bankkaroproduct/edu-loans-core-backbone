@@ -29,11 +29,28 @@ Deno.serve(async (req) => {
     .maybeSingle();
   if (!target?.auth_user_id) return jsonResponse({ error: "user not found or not linked to an auth account" }, 404);
 
-  const { error } = await service.auth.admin.updateUserById(target.auth_user_id, {
+  // Only confirm the email if it isn't already confirmed — avoids unnecessary
+  // auth mutations on already-active users.
+  const { data: authLookup } = await service.auth.admin.getUserById(target.auth_user_id as string);
+  const alreadyConfirmed = !!authLookup?.user?.email_confirmed_at;
+
+  const { error } = await service.auth.admin.updateUserById(target.auth_user_id as string, {
     password: newPassword,
-    email_confirm: true,
+    ...(alreadyConfirmed ? {} : { email_confirm: true }),
   });
-  if (error) return jsonResponse({ error: error.message }, 400);
+  if (error) {
+    // Surface the real upstream message + status so the client toast is useful
+    // and future failures are visible in edge function logs.
+    console.error("admin-user-reset-password updateUserById failed", {
+      target_user_id: body.user_id,
+      auth_user_id: target.auth_user_id,
+      error_name: (error as { name?: string }).name,
+      error_status: (error as { status?: number }).status,
+      error_message: error.message,
+    });
+    const status = (error as { status?: number }).status ?? 400;
+    return jsonResponse({ error: error.message, code: (error as { name?: string }).name ?? "auth_update_failed" }, status);
+  }
 
   await writeAudit(service, {
     entityId: body.user_id,
