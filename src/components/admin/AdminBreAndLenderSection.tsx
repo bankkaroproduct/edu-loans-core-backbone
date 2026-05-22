@@ -415,7 +415,6 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
                 </AccordionTrigger>
                 <AccordionContent className="pb-3">
                   <div className="space-y-4">
-                    <ResolutionNotes resolution={resolution} />
                     {(["student", "university", "coapplicant"] as BucketKey[]).map((bk) => (
                       <BucketTraceTable
                         key={bk}
