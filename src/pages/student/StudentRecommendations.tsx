@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { StudentHeader } from "@/components/student/StudentHeader";
 import { StudentFooter } from "@/components/student/StudentFooter";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,12 @@ import {
   ArrowLeft, Mail, Phone, PartyPopper
 } from "lucide-react";
 import { INRAmountStacked } from "@/components/shared/INRAmountStacked";
+import { buildBreProfileFromLead } from "@/lib/bre/leadProfile";
+import { evaluate } from "@/lib/bre/engine";
+import type { BreResult } from "@/lib/bre/types";
+import { mapLenderCards, type LenderCard } from "@/components/student/recommendations/lenderCardModel";
+import { LenderMatchCard } from "@/components/student/recommendations/LenderMatchCard";
+import { MatchesPageChrome, type SortKey } from "@/components/student/recommendations/MatchesPageChrome";
 
 interface Recommendation {
   id: string;
