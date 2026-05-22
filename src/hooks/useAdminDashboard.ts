@@ -290,7 +290,7 @@ export function useAdminDashboard() {
       if (leadsRes.error) throw leadsRes.error;
       const leads = leadsRes.data ?? [];
 
-      const partnerIds = [...new Set(leads.map((l: any) => l.partner_id).filter(Boolean))];
+      const partnerIds = [...new Set(leads.map((l: any) => l.partner_id).filter(Boolean))] as string[];
       let partnerMap: Record<string, string> = {};
       if (partnerIds.length) {
         const partnersRes = await supabase.from("partner_organizations")
