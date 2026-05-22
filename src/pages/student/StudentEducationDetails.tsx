@@ -20,7 +20,7 @@ import { sanitizeWorkExpInput, formatWorkExperience } from "@/lib/workExperience
 import { Checkbox } from "@/components/ui/checkbox";
 import { normalizeAcademicScore, validateScoreTotalPair } from "@/lib/academicScore";
 import { validateTestScoresMap } from "@/lib/leadScoreRanges";
-import { TEST_SCORE_LIMITS, validateTestScore } from "@/lib/testScoreLimits";
+import { TEST_SCORE_LIMITS, clampTestScore } from "@/lib/testScoreLimits";
 import { ScoreTotalPair } from "@/components/shared/ScoreTotalPair";
 import { getEnabledLevels, getMirroredHighestQual } from "@/lib/academicLevelCascade";
 
@@ -474,7 +474,6 @@ export default function StudentEducationDetails() {
                 const limit = TEST_SCORE_LIMITS[t.key];
                 if (!limit) return null;
                 const value = (formData.test_scores as any)[t.key] || "";
-                const err = validateTestScore(t.key, value);
                 return (
                   <div key={t.key} className="space-y-1.5">
                     <Label className="text-xs">{t.label}</Label>
@@ -484,10 +483,9 @@ export default function StudentEducationDetails() {
                       max={limit.max}
                       step={limit.step}
                       value={value}
-                      onChange={e => updateTestScore(t.key, e.target.value)}
+                      onChange={e => updateTestScore(t.key, clampTestScore(t.key, e.target.value))}
                       placeholder={t.placeholder}
                     />
-                    {err && <p className="text-xs text-destructive">{err}</p>}
                   </div>
                 );
               })}

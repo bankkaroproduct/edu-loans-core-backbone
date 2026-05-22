@@ -39,7 +39,7 @@ import { ScoreTotalPair } from "@/components/shared/ScoreTotalPair";
 import { validateScoreTotalPair, parseCoappWorkExpShorthand, validateCoappWorkExpShorthand, previewCoappWorkExpShorthand, buildCoappWorkExpShorthand } from "@/lib/academicScore";
 import { getEnabledLevels, getMirroredHighestQual } from "@/lib/academicLevelCascade";
 import { validateTestScoresMap } from "@/lib/leadScoreRanges";
-import { TEST_SCORE_LIMITS, validateTestScore } from "@/lib/testScoreLimits";
+import { TEST_SCORE_LIMITS, validateTestScore, clampTestScore } from "@/lib/testScoreLimits";
 import { usePincodeLookup } from "@/hooks/usePincodeLookup";
 import { sortByPriority } from "@/lib/countryOrder";
 import { buildIntakeSessionOptions, intakeSessionValue, parseIntakeSessionValue } from "@/lib/intakeSession";
@@ -1654,7 +1654,6 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                     const limit = TEST_SCORE_LIMITS[t.key];
                     if (!limit) return null;
                     const value = (form as any)[t.key] || "";
-                    const err = validateTestScore(t.key, value);
                     return (
                       <div key={t.key} className="space-y-2" data-field={t.key}>
                         <Label>{t.label}</Label>
@@ -1664,10 +1663,9 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                           max={limit.max}
                           step={limit.step}
                           value={value}
-                          onChange={(e) => set(t.key as any, e.target.value)}
+                          onChange={(e) => set(t.key as any, clampTestScore(t.key, e.target.value))}
                           placeholder={t.placeholder}
                         />
-                        {err && <p className="text-xs text-destructive">{err}</p>}
                       </div>
                     );
                   })}
