@@ -27,6 +27,7 @@ import {
   fetchStageMovementReport,
   type ReportFilterState,
 } from "@/lib/reportExports";
+import { useAdminLeadScope } from "@/hooks/useAdminLeadScope";
 import type { Database } from "@/integrations/supabase/types";
 
 type StageEnum = Database["public"]["Enums"]["lead_stage_enum"];
@@ -46,7 +47,12 @@ export default function AdminReports() {
   const [countries, setCountries] = useState<{ country_name: string }[]>([]);
   const [partners, setPartners] = useState<{ id: string; display_name: string }[]>([]);
 
-  const [filters, setFilters] = useState<ReportFilterState>(defaultReportFilters);
+  const { isSuperAdmin, scopedPartnerIds, hasNoScope, ready: scopeReady } = useAdminLeadScope();
+  const [rawFilters, setFilters] = useState<ReportFilterState>(defaultReportFilters);
+  const filters = useMemo<ReportFilterState>(
+    () => ({ ...rawFilters, scopedPartnerIds: isSuperAdmin ? undefined : scopedPartnerIds }),
+    [rawFilters, isSuperAdmin, scopedPartnerIds]
+  );
   // Bump this whenever filters change to retrigger ReportCard count fetch.
   const filterVersion = useMemo(() => JSON.stringify(filters), [filters]);
 
@@ -71,15 +77,22 @@ export default function AdminReports() {
 
   // Summary strip — independent of report filters
   const loadSummary = useCallback(async () => {
+    if (!scopeReady) return;
     setSummaryLoading(true);
     try {
+      if (hasNoScope) {
+        setSummary({ activeLeads: 0, stageTransitions30d: 0, docsPending: 0, pendingRequests: 0 });
+        return;
+      }
       const since30 = new Date(Date.now() - 30 * 86400000).toISOString();
+      let activeQ: any = supabase
+        .from("student_leads")
+        .select("id", { count: "exact", head: true })
+        .eq("is_archived", false)
+        .not("current_stage", "in", "(disbursed,rejected,dropped)");
+      if (!isSuperAdmin) activeQ = activeQ.in("partner_id", scopedPartnerIds);
       const [a, b, c, d] = await Promise.all([
-        supabase
-          .from("student_leads")
-          .select("id", { count: "exact", head: true })
-          .eq("is_archived", false)
-          .not("current_stage", "in", "(disbursed,rejected,dropped)"),
+        activeQ,
         supabase
           .from("lead_stage_history")
           .select("id", { count: "exact", head: true })
@@ -103,7 +116,7 @@ export default function AdminReports() {
     } finally {
       setSummaryLoading(false);
     }
-  }, []);
+  }, [scopeReady, hasNoScope, isSuperAdmin, scopedPartnerIds]);
 
   useEffect(() => {
     loadSummary();
@@ -201,7 +214,7 @@ export default function AdminReports() {
               slug="partner-performance-report"
               icon={<Building2 className="h-4 w-4" />}
               filterVersion={cardKey}
-              fetchCount={() => countPartnerPerformance()}
+              fetchCount={() => countPartnerPerformance(filters)}
               fetchData={() => fetchPartnerPerformanceReport(filters)}
               dateFieldHint="Uses created date"
             />
