@@ -337,7 +337,7 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
           {/* ============ 1) BRE DIAGNOSTIC ============ */}
           <section className="space-y-4">
             <div className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">
-              BRE Diagnostic
+              Eligibility result
             </div>
 
             <StatusBanner
@@ -407,11 +407,7 @@ export function AdminBreAndLenderSection({ lead }: { lead: Lead }) {
             <Accordion type="single" collapsible>
               <AccordionItem value="breakdown" className="border rounded-md px-3">
                 <AccordionTrigger className="text-xs font-medium py-2.5 hover:no-underline">
-                  View detailed BRE breakdown (
-                  {result.buckets.student.trace.length +
-                    result.buckets.university.trace.length +
-                    result.buckets.coapplicant.trace.length}{" "}
-                  parameters)
+                  View full parameter breakdown
                 </AccordionTrigger>
                 <AccordionContent className="pb-3">
                   <div className="space-y-4">
@@ -904,21 +900,7 @@ function StatusBanner({
           <span className="text-sm font-semibold">{cfg.label}</span>
           <span className="text-[11px] opacity-80">
             Score <span className="font-mono">{overallScore}</span>
-            {band && (
-              <>
-                {" · "}Band <span className="font-mono">{band}</span>
-              </>
-            )}
-            {threshold != null && (
-              <>
-                {" · "}Bucket threshold <span className="font-mono">{threshold}</span>
-              </>
-            )}
-            {scoringVersion != null && (
-              <>
-                {" · "}Config v<span className="font-mono">{scoringVersion}</span>
-              </>
-            )}
+            <span className="font-mono">/100</span>
           </span>
         </div>
       </div>
@@ -962,9 +944,6 @@ function BucketScorecard({
         {value}
         <span className="text-muted-foreground text-xs">/100</span>
       </div>
-      {threshold != null && (
-        <div className="text-[10px] text-muted-foreground">Threshold {threshold}</div>
-      )}
     </div>
   );
 }
@@ -1064,15 +1043,6 @@ function BucketTraceTable({
         <div className="text-xs font-medium text-foreground">{title}</div>
         <div className="text-[11px] text-muted-foreground">
           Total <span className="font-mono text-foreground">{total}</span>
-          {threshold != null && (
-            <>
-              {" "}
-              / threshold {threshold} ·{" "}
-              <span className={passes ? "text-emerald-600" : "text-destructive"}>
-                {passes ? "PASS" : "FAIL"}
-              </span>
-            </>
-          )}
         </div>
       </div>
       <div className="rounded-md border overflow-hidden">
