@@ -214,7 +214,7 @@ export default function AdminReports() {
               slug="partner-performance-report"
               icon={<Building2 className="h-4 w-4" />}
               filterVersion={cardKey}
-              fetchCount={() => countPartnerPerformance()}
+              fetchCount={() => countPartnerPerformance(filters)}
               fetchData={() => fetchPartnerPerformanceReport(filters)}
               dateFieldHint="Uses created date"
             />
