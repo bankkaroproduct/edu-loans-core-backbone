@@ -168,8 +168,8 @@ function LoginForm() {
     }
 
     toast.success("Signed in");
-    setSubmitting(false);
-    navigate("/", { replace: true });
+    window.location.href = "/";
+
   };
 
   return (
