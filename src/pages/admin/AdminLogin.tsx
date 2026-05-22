@@ -151,29 +151,8 @@ export default function AdminLogin() {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-8 pt-4">
-            {isWrongRoleSession ? (
-              <Alert variant="destructive" className="mb-4">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription className="space-y-3">
-                  <p>
-                    You're signed in as <strong>{appUser?.full_name ?? appUser?.email ?? "a partner user"}</strong>{" "}
-                    in the Partner Portal. Sign out first to access the Admin Portal.
-                  </p>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    disabled={signingOut}
-                    onClick={async () => {
-                      setSigningOut(true);
-                      await signOut();
-                      setSigningOut(false);
-                    }}
-                  >
-                    {signingOut ? "Signing out..." : "Sign out & continue"}
-                  </Button>
-                </AlertDescription>
-              </Alert>
+            {switchingSessions ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">Switching sessions…</p>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
                 {errorMsg && (
