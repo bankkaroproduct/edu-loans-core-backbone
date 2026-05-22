@@ -73,6 +73,10 @@ export default function StudentRecommendations() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [leadSummary, setLeadSummary] = useState<LeadSummary | null>(null);
   const [hasPendingDocs, setHasPendingDocs] = useState(false);
+  const [breCards, setBreCards] = useState<LenderCard[] | null>(null);
+  const [collateralLabel, setCollateralLabel] = useState<string | null>(null);
+  const [eligibleOnly, setEligibleOnly] = useState(false);
+  const [sort, setSort] = useState<SortKey>("recommended");
 
   useEffect(() => {
     if (!isVerified) { navigate("/student/login"); return; }
@@ -95,6 +99,51 @@ export default function StudentRecommendations() {
       setLeadSummary(data.lead_summary);
       setRecommendations(data.recommendations || []);
       setHasPendingDocs(data.has_pending_docs);
+
+      // ── Additive: redesigned cards via live BRE evaluation ─────────────
+      // Silent fallback to legacy cards if bre_payload is absent or eval throws.
+      try {
+        const p = data?.bre_payload;
+        if (p?.lead && p?.cfg && Array.isArray(p?.rules) && p.rules.length > 0) {
+          const built = buildBreProfileFromLead(p.lead);
+          // Override university bucket fields using master row resolved server-side
+          // (universities_master isn't readable by anon student client).
+          const um = p.university_master;
+          if (um) {
+            const profile: any = built.profile;
+            if (profile.university) {
+              profile.university.ranking_bucket = um.ranking_bucket ?? profile.university.ranking_bucket;
+              profile.university.employability_outlook =
+                um.employability_outlook ?? profile.university.employability_outlook;
+              // tier preference: global_rank > rank_band > ranking_bucket
+              if (um.global_rank != null) {
+                profile.university.university_tier =
+                  um.global_rank <= 100 ? "tier_1"
+                  : um.global_rank <= 300 ? "tier_2"
+                  : um.global_rank <= 1000 ? "tier_3"
+                  : "unranked";
+              } else if (um.rank_band) {
+                profile.university.university_tier = um.rank_band;
+              } else if (um.ranking_bucket) {
+                profile.university.university_tier = um.ranking_bucket;
+              }
+            }
+          }
+          const result: BreResult = evaluate(built.profile, p.cfg, p.rules);
+          setBreCards(mapLenderCards(result));
+          setCollateralLabel(
+            result.collateral_route === "secured" ? "Secured"
+            : result.collateral_route === "unsecured" ? "Unsecured"
+            : result.collateral_route === "both" ? "Either" : null
+          );
+        } else {
+          setBreCards(null);
+        }
+      } catch (e) {
+        console.warn("[student.recommendations.bre_eval_failed]", e);
+        setBreCards(null);
+      }
+
       setPageState(data.recommendations?.length > 0 ? "has_matches" : (data.total_matches > 0 ? "no_matches" : "under_review"));
     } catch (err: any) {
       console.error("Load recommendations error:", err);
