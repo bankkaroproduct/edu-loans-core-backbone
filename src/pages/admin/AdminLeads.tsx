@@ -392,18 +392,20 @@ export default function AdminLeads() {
       sanction: sanc.count ?? 0,
       highPriority: hp.count ?? 0,
     });
-  }, [filters, applyBusinessFilters, highPriorityIds]);
+  }, [filters, applyBusinessFilters, highPriorityIds, scopeReady, hasNoScope, applyPartnerScope]);
 
   useEffect(() => { fetchHealthCounts(); }, [fetchHealthCounts]);
 
   // Fetch the set of "High Priority Leads" IDs — mirrors useAdminDashboard.fetchMetrics
   // so the card-filter intersection matches what the High Priority tile represents.
   const fetchHighPriorityIds = useCallback(async () => {
+    if (!scopeReady) return;
+    if (hasNoScope) { setHighPriorityIds([]); return; }
     try {
       const excl = `(${ACTION_NEEDED_EXCLUDED_STAGES.join(",")})`;
       const [followUp, reviewRows] = await Promise.all([
-        supabase.from("student_leads").select("id").eq("is_archived", false).not("current_stage", "in", excl),
-        supabase.from("student_leads").select(REVIEW_DUE_SELECT_COLUMNS).eq("is_archived", false).not("current_stage", "in", excl),
+        applyPartnerScope(supabase.from("student_leads").select("id").eq("is_archived", false).not("current_stage", "in", excl)),
+        applyPartnerScope(supabase.from("student_leads").select(REVIEW_DUE_SELECT_COLUMNS).eq("is_archived", false).not("current_stage", "in", excl)),
       ]);
       const ids = new Set<string>();
       (followUp.data ?? []).forEach((r: any) => { if (r?.id) ids.add(r.id); });
@@ -412,7 +414,7 @@ export default function AdminLeads() {
     } catch {
       setHighPriorityIds([]);
     }
-  }, []);
+  }, [scopeReady, hasNoScope, applyPartnerScope]);
 
   useEffect(() => { fetchHighPriorityIds(); }, [fetchHighPriorityIds]);
 
