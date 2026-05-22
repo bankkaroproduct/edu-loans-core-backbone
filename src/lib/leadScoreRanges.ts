@@ -1,6 +1,10 @@
-// Single source of truth for realistic ranges on academic + test-score fields.
-// Applied at: Admin/Partner inline edit, bulk upload, and edge function
-// payload sanitation. BRE/lender logic is intentionally NOT consulted.
+// Realistic ranges on academic + test-score fields. Test-score limits are
+// re-exported from `testScoreLimits.ts` so the UI inputs (admin AddLead,
+// student education form) and submit-time validation share one source.
+
+import { TEST_SCORE_LIMITS } from "@/lib/testScoreLimits";
+
+export { TEST_SCORE_LIMITS, validateTestScore } from "@/lib/testScoreLimits";
 
 export interface ScoreRange {
   min: number;
@@ -11,16 +15,13 @@ export interface ScoreRange {
   decimals?: boolean;
 }
 
-/** Test-score ranges (keys match `test_scores` JSONB keys). */
-export const TEST_SCORE_RANGES: Record<string, ScoreRange> = {
-  ielts: { min: 0, max: 9, label: "IELTS", decimals: true },
-  toefl: { min: 0, max: 120, label: "TOEFL" },
-  pte: { min: 10, max: 90, label: "PTE" },
-  duolingo: { min: 0, max: 160, label: "Duolingo" },
-  gre: { min: 260, max: 340, label: "GRE" },
-  gmat: { min: 200, max: 800, label: "GMAT" },
-  sat: { min: 400, max: 1600, label: "SAT" },
-};
+/** Test-score ranges (keys match `test_scores` JSONB keys). Derived from TEST_SCORE_LIMITS. */
+export const TEST_SCORE_RANGES: Record<string, ScoreRange> = Object.fromEntries(
+  Object.entries(TEST_SCORE_LIMITS).map(([k, l]) => [
+    k,
+    { min: l.min, max: l.max, label: l.label, decimals: l.step < 1 },
+  ]),
+);
 
 /**
  * Academic raw-score / total fields. Score has no absolute max because
