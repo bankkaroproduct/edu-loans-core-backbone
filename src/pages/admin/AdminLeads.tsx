@@ -159,22 +159,28 @@ export default function AdminLeads() {
     };
   }, [searchInput]);
 
-  // Load master data once
+  // Load master data once (partners list is scoped to admin's assigned partners for non-super admins)
   useEffect(() => {
+    if (!scopeReady) return;
     (async () => {
+      let partnerQ: any = supabase.from("partner_organizations").select("id, display_name").eq("is_archived", false).order("display_name");
+      if (!isSuperAdmin) {
+        const ids = scopedPartnerIds.length ? scopedPartnerIds : ["00000000-0000-0000-0000-000000000000"];
+        partnerQ = partnerQ.in("id", ids);
+      }
       const [sRes, stRes, cRes, pRes] = await Promise.all([
         supabase.from("lifecycle_stage_master").select("stage_key, stage_label, sort_order").eq("active_flag", true).order("sort_order"),
         supabase.from("lifecycle_status_master").select("stage_key, status_key, status_label, sort_order").eq("active_flag", true).order("sort_order"),
         supabase.from("countries_master").select("country_name").eq("active_flag", true).order("country_name"),
-        supabase.from("partner_organizations").select("id, display_name").eq("is_archived", false).order("display_name"),
+        partnerQ,
       ]);
       setStages(sRes.data ?? []);
       setStatuses((stRes.data ?? []).map((r) => ({ stage_key: r.stage_key, status_key: r.status_key, status_label: r.status_label })));
       setCountries(cRes.data ?? []);
-      setPartners((pRes.data ?? []).filter((p) => !!p.display_name?.trim()));
+      setPartners((pRes.data ?? []).filter((p: any) => !!p.display_name?.trim()));
       setMastersLoaded(true);
     })();
-  }, []);
+  }, [scopeReady, isSuperAdmin, scopedPartnerIds]);
 
   // Sync filters → URL
   useEffect(() => {
