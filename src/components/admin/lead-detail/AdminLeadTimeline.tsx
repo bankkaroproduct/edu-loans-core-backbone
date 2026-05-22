@@ -517,11 +517,19 @@ export function AdminLeadTimeline({ history, notes, audits = [], actorNames = {}
                           ? "Stage Change"
                           : evt.type === "system"
                           ? "System"
+                          : evt.type === "audit"
+                          ? evt.actionType === "lead_created"
+                            ? "Lead Created"
+                            : "Field Edit"
                           : evt.noteType === "internal"
                           ? "Internal Note"
                           : evt.noteType === "partner_visible"
                           ? "Partner Note"
                           : "Note";
+                      const auditDiffs =
+                        evt.type === "audit"
+                          ? extractFieldDiffs(evt.oldValue, evt.newValue)
+                          : [];
                       const fullText =
                         evt.noteText ||
                         evt.description ||
@@ -540,9 +548,18 @@ export function AdminLeadTimeline({ history, notes, audits = [], actorNames = {}
                                 <div className="space-y-1.5 min-w-0">
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     <Badge
-                                      variant={evt.noteType === "internal" ? "secondary" : "outline"}
+                                      variant={
+                                        evt.type === "audit"
+                                          ? "secondary"
+                                          : evt.noteType === "internal"
+                                          ? "secondary"
+                                          : "outline"
+                                      }
                                       className="text-[10px]"
                                     >
+                                      {evt.type === "audit" && evt.actionType === "admin_direct_edit" ? (
+                                        <Pencil className="h-2.5 w-2.5 mr-1 opacity-70" />
+                                      ) : null}
                                       {typeLabel}
                                     </Badge>
                                     <span
@@ -574,7 +591,41 @@ export function AdminLeadTimeline({ history, notes, audits = [], actorNames = {}
                                     </div>
                                   )}
 
-                                  {evt.description && (
+                                  {evt.type === "audit" && auditDiffs.length > 0 && (
+                                    <div className="space-y-1">
+                                      {auditDiffs.slice(0, 3).map((d) => (
+                                        <div
+                                          key={d.field}
+                                          className="text-[11px] break-words"
+                                        >
+                                          <span className="text-muted-foreground">
+                                            {d.label ?? formatFieldName(d.field)}:
+                                          </span>{" "}
+                                          <span className="line-through text-muted-foreground/80">
+                                            {d.oldDisplay ?? formatValue(d.oldVal)}
+                                          </span>
+                                          <ArrowRight className="h-3 w-3 inline mx-1 text-muted-foreground" />
+                                          <span className="text-foreground">
+                                            {d.newDisplay ?? formatValue(d.newVal)}
+                                          </span>
+                                        </div>
+                                      ))}
+                                      {auditDiffs.length > 3 && (
+                                        <p className="text-[10px] text-muted-foreground">
+                                          +{auditDiffs.length - 3} more field
+                                          {auditDiffs.length - 3 === 1 ? "" : "s"}
+                                        </p>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {evt.type === "audit" && auditDiffs.length === 0 && evt.description && (
+                                    <p className="text-xs text-muted-foreground break-words line-clamp-4 whitespace-pre-wrap">
+                                      {evt.description}
+                                    </p>
+                                  )}
+
+                                  {evt.type !== "audit" && evt.description && (
                                     <p className="text-xs text-muted-foreground break-words line-clamp-4 whitespace-pre-wrap">
                                       {evt.description}
                                     </p>
@@ -601,8 +652,25 @@ export function AdminLeadTimeline({ history, notes, audits = [], actorNames = {}
                                 <p className="text-muted-foreground">
                                   {new Date(evt.timestamp).toLocaleString()}
                                 </p>
-                                {fullText && (
-                                  <p className="whitespace-pre-wrap break-words">{fullText}</p>
+                                {evt.type === "audit" && auditDiffs.length > 0 ? (
+                                  <div className="space-y-0.5">
+                                    {auditDiffs.map((d) => (
+                                      <p key={d.field} className="break-words">
+                                        <span className="text-muted-foreground">
+                                          {d.label ?? formatFieldName(d.field)}:
+                                        </span>{" "}
+                                        <span className="line-through">
+                                          {d.oldDisplay ?? formatValue(d.oldVal)}
+                                        </span>
+                                        {" → "}
+                                        <span>{d.newDisplay ?? formatValue(d.newVal)}</span>
+                                      </p>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  fullText && (
+                                    <p className="whitespace-pre-wrap break-words">{fullText}</p>
+                                  )
                                 )}
                               </div>
                             </TooltipContent>
