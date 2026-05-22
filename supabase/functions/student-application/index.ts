@@ -245,6 +245,38 @@ Deno.serve(async (req) => {
         .eq("required_flag", true)
         .in("status", ["not_uploaded", "rejected", "reupload_needed"]);
 
+      // ── Additive: bre_payload for the redesigned lender cards. ──────────────
+      // Presentation-only. Reuses existing tables; NO calculation changes here.
+      // Client passes (profile, cfg, rules) into existing evaluate() from
+      // src/lib/bre/engine.ts. If any of these queries fail we simply omit
+      // bre_payload and the page falls back to the legacy card layout.
+      let bre_payload: Record<string, unknown> | null = null;
+      try {
+        const [cfgRes, rulesRes, uniRes] = await Promise.all([
+          supabaseAdmin.from("bre_scoring_configs").select("*").eq("is_active", true).maybeSingle(),
+          supabaseAdmin.from("bre_lender_rules").select("*").eq("is_active", true),
+          lead.university_id
+            ? supabaseAdmin
+                .from("universities_master")
+                .select("global_rank, rank_band, ranking_bucket, employability_outlook")
+                .eq("id", lead.university_id)
+                .maybeSingle()
+            : Promise.resolve({ data: null } as { data: null }),
+        ]);
+        const cfg = cfgRes?.data ?? null;
+        const rules = rulesRes?.data ?? null;
+        if (cfg && rules && rules.length > 0) {
+          bre_payload = {
+            lead, // full row — needed by client buildBreProfileFromLead
+            cfg,
+            rules,
+            university_master: uniRes?.data ?? null,
+          };
+        }
+      } catch (_e) {
+        bre_payload = null;
+      }
+
       return jsonResponse({
         recommendations,
         has_pending_docs: (pendingDocs || 0) > 0,
@@ -262,6 +294,7 @@ Deno.serve(async (req) => {
           coapplicant_name: lead.coapplicant_name,
           current_stage: lead.current_stage,
         },
+        bre_payload,
       });
     }
 
