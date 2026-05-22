@@ -472,6 +472,7 @@ export default function StudentEducationDetails() {
                 { key: "gmat", label: "GMAT", placeholder: "e.g. 720" },
               ].map(t => {
                 const limit = TEST_SCORE_LIMITS[t.key];
+                if (!limit) return null;
                 const value = (formData.test_scores as any)[t.key] || "";
                 const err = validateTestScore(t.key, value);
                 return (
