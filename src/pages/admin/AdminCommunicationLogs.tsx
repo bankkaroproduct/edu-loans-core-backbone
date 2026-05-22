@@ -10,7 +10,7 @@ import { useAdminLeadScope } from "@/hooks/useAdminLeadScope";
 import type { CommunicationLog } from "@/lib/communications/types";
 
 export default function AdminCommunicationLogs() {
-  const { ready, isSuperAdmin, scopedPartnerIds, hasNoScope } = useAdminLeadScope();
+  const { ready, isSuperAdmin, hasNoScope, applyPartnerScope } = useAdminLeadScope();
   const [logs, setLogs] = useState<CommunicationLog[]>([]);
   const [channel, setChannel] = useState<string>("all");
   const [status, setStatus] = useState<string>("all");
@@ -24,16 +24,15 @@ export default function AdminCommunicationLogs() {
     }
     let cancelled = false;
     (async () => {
-      // For non-super admins, first resolve the lead ids belonging to their
-      // assigned partners (incl. PTR-DIRECT), then filter logs by those leads.
+      // For non-super admins, resolve lead ids visible to this admin (assigned
+      // partners OR leads they personally created), then filter logs by those.
       // Logs with `lead_id IS NULL` (system sends) stay super-admin-only.
       let leadIds: string[] | null = null;
       if (!isSuperAdmin) {
-        const { data: leadRows } = await supabase
-          .from("student_leads")
-          .select("id")
-          .in("partner_id", scopedPartnerIds);
-        leadIds = (leadRows ?? []).map((r) => r.id);
+        const { data: leadRows } = await applyPartnerScope(
+          supabase.from("student_leads").select("id"),
+        );
+        leadIds = (leadRows ?? []).map((r: any) => r.id);
         if (leadIds.length === 0) {
           if (!cancelled) setLogs([]);
           return;
@@ -50,7 +49,7 @@ export default function AdminCommunicationLogs() {
       if (!cancelled) setLogs((data ?? []) as CommunicationLog[]);
     })();
     return () => { cancelled = true; };
-  }, [ready, isSuperAdmin, scopedPartnerIds, hasNoScope]);
+  }, [ready, isSuperAdmin, hasNoScope, applyPartnerScope]);
 
   const filtered = useMemo(() => {
     return logs.filter((l) => {

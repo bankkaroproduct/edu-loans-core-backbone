@@ -1,16 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useMemo } from "react";
 import { useAdminPermissions } from "@/hooks/useAdminPermissions";
+import { useAuth } from "@/hooks/useAuth";
 
 /**
  * Partner visibility scope for admin lead-data queries.
  *
  * - Super admins: no restriction (see all partners).
- * - Regular admins: scoped to admin_partner_assignments PLUS the implicit
- *   PTR-DIRECT partner (which owns leads that admins create directly from
- *   the portal). Without this auto-inclusion, admins would create leads
- *   they then can't see in the queue.
- * - Regular admin with zero assignments AND PTR-DIRECT lookup failed:
+ * - Regular admins: leads belonging to their assigned partners
+ *   (admin_partner_assignments) OR leads they personally created
+ *   (student_leads.partner_user_id = users.id). The OR keeps admin-created
+ *   Student Direct leads visible to their creator without leaking every
+ *   other admin's PTR-DIRECT leads.
+ * - Regular admin with zero assigned partners AND no user id resolved:
  *   `hasNoScope` short-circuits any fetch to return empty results.
  */
 export interface AdminLeadScope {
@@ -18,71 +19,50 @@ export interface AdminLeadScope {
   isSuperAdmin: boolean;
   /** Empty array when super admin (means "no restriction"). */
   scopedPartnerIds: string[];
-  /** True when regular admin has zero effective partners — callers should skip queries. */
+  /** Current admin's `users.id` (used for creator-based OR scoping). */
+  currentUserId: string | null;
+  /** True when regular admin has no effective scope — callers should skip queries. */
   hasNoScope: boolean;
-  /** Conditionally inject `.in('partner_id', ids)` for regular admins. */
+  /** Conditionally inject scope (partner_id IN ids OR created_by = me) for regular admins. */
   applyPartnerScope: <T>(query: T, column?: string) => T;
-}
-
-// Module-level cache — PTR-DIRECT's id is global and immutable.
-let ptrDirectIdCache: string | null = null;
-let ptrDirectPromise: Promise<string | null> | null = null;
-
-async function fetchPtrDirectId(): Promise<string | null> {
-  if (ptrDirectIdCache) return ptrDirectIdCache;
-  if (ptrDirectPromise) return ptrDirectPromise;
-  ptrDirectPromise = (async () => {
-    const { data } = await supabase
-      .from("partner_organizations")
-      .select("id")
-      .eq("partner_code", "PTR-DIRECT")
-      .maybeSingle();
-    ptrDirectIdCache = data?.id ?? null;
-    return ptrDirectIdCache;
-  })();
-  return ptrDirectPromise;
 }
 
 export function useAdminLeadScope(): AdminLeadScope {
   const { loading, isSuperAdmin, assignedPartnerIds } = useAdminPermissions();
-  const [ptrDirectId, setPtrDirectId] = useState<string | null>(ptrDirectIdCache);
-  const [ptrDirectLoaded, setPtrDirectLoaded] = useState<boolean>(ptrDirectIdCache !== null);
-
-  useEffect(() => {
-    if (isSuperAdmin || loading) return;
-    if (ptrDirectIdCache !== null) {
-      setPtrDirectId(ptrDirectIdCache);
-      setPtrDirectLoaded(true);
-      return;
-    }
-    let cancelled = false;
-    fetchPtrDirectId().then((id) => {
-      if (cancelled) return;
-      setPtrDirectId(id);
-      setPtrDirectLoaded(true);
-    });
-    return () => { cancelled = true; };
-  }, [isSuperAdmin, loading]);
+  const { appUser } = useAuth();
+  const currentUserId = appUser?.id ?? null;
 
   return useMemo<AdminLeadScope>(() => {
-    // Super admins: ready as soon as permissions load. PTR-DIRECT lookup not needed.
-    const ready = !loading && (isSuperAdmin || ptrDirectLoaded);
+    const ready = !loading && (isSuperAdmin || !!currentUserId);
 
-    const effectiveIds = isSuperAdmin
-      ? []
-      : [...assignedPartnerIds, ...(ptrDirectId ? [ptrDirectId] : [])];
-
-    const hasNoScope = ready && !isSuperAdmin && effectiveIds.length === 0;
-    const scopedPartnerIds = effectiveIds;
+    const hasNoScope =
+      ready && !isSuperAdmin && assignedPartnerIds.length === 0 && !currentUserId;
 
     const applyPartnerScope = <T,>(query: T, column = "partner_id"): T => {
       if (isSuperAdmin) return query;
-      const ids = effectiveIds.length
-        ? effectiveIds
-        : ["00000000-0000-0000-0000-000000000000"];
-      return (query as any).in(column, ids) as T;
+      const ids = assignedPartnerIds;
+      // Build PostgREST `.or()` filter combining partner-in + creator-eq.
+      // When both halves are empty, force a no-match sentinel.
+      const parts: string[] = [];
+      if (ids.length) parts.push(`${column}.in.(${ids.join(",")})`);
+      if (currentUserId) parts.push(`partner_user_id.eq.${currentUserId}`);
+      if (parts.length === 0) {
+        return (query as any).eq(column, "00000000-0000-0000-0000-000000000000") as T;
+      }
+      if (parts.length === 1) {
+        if (ids.length) return (query as any).in(column, ids) as T;
+        return (query as any).eq("partner_user_id", currentUserId) as T;
+      }
+      return (query as any).or(parts.join(",")) as T;
     };
 
-    return { ready, isSuperAdmin, scopedPartnerIds, hasNoScope, applyPartnerScope };
-  }, [loading, isSuperAdmin, assignedPartnerIds, ptrDirectId, ptrDirectLoaded]);
+    return {
+      ready,
+      isSuperAdmin,
+      scopedPartnerIds: isSuperAdmin ? [] : assignedPartnerIds,
+      currentUserId,
+      hasNoScope,
+      applyPartnerScope,
+    };
+  }, [loading, isSuperAdmin, assignedPartnerIds, currentUserId]);
 }
