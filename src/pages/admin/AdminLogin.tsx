@@ -75,8 +75,8 @@ export default function AdminLogin() {
     }
 
     toast.success("Welcome back, admin");
-    setSubmitting(false);
-    navigate("/admin", { replace: true });
+    window.location.href = "/admin";
+
   };
 
   return (
