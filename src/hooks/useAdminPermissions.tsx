@@ -97,8 +97,19 @@ export function AdminPermissionsProvider({ children }: { children: ReactNode }) 
   );
 }
 
+const safeDefaults: Ctx = {
+  loading: false,
+  isSuperAdmin: false,
+  allowAdminMode: false,
+  assignedPartnerIds: [],
+  sectionAccess: defaultSectionAccess(),
+  getAccess: () => "hidden",
+  canView: () => false,
+  canEdit: () => false,
+  isReadOnly: () => false,
+};
+
 export function useAdminPermissions() {
   const ctx = useContext(AdminPermissionsContext);
-  if (!ctx) throw new Error("useAdminPermissions must be used within AdminPermissionsProvider");
-  return ctx;
+  return ctx ?? safeDefaults;
 }
