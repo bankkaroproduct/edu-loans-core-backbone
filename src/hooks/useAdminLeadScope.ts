@@ -45,14 +45,13 @@ export function useAdminLeadScope(): AdminLeadScope {
       // When both halves are empty, force a no-match sentinel.
       const parts: string[] = [];
       if (ids.length) parts.push(`${column}.in.(${ids.join(",")})`);
-      if (currentUserId) parts.push(`created_by.eq.${currentUserId}`);
+      if (currentUserId) parts.push(`partner_user_id.eq.${currentUserId}`);
       if (parts.length === 0) {
         return (query as any).eq(column, "00000000-0000-0000-0000-000000000000") as T;
       }
       if (parts.length === 1) {
-        // Single-condition path — use native filters for cleaner queries.
         if (ids.length) return (query as any).in(column, ids) as T;
-        return (query as any).eq("created_by", currentUserId) as T;
+        return (query as any).eq("partner_user_id", currentUserId) as T;
       }
       return (query as any).or(parts.join(",")) as T;
     };
