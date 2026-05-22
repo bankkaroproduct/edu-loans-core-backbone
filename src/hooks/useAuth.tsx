@@ -87,6 +87,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const profile = await fetchProfile(nextUser.id);
     if (!mounted()) return;
 
+    // Stale-hydration guard: if the active session changed while we were
+    // fetching (e.g. a newer Partner login landed after an older Admin
+    // hydrate kicked off), discard this result so we don't overwrite the
+    // newer authenticated state with stale profile data.
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
+    if (!mounted()) return;
+    if ((currentSession?.user?.id ?? null) !== nextUser.id) return;
+
     setUser(nextUser);
     setAppUser(profile);
     setStatus(profileIsActive(profile) ? "authenticated" : "unauthorized");
