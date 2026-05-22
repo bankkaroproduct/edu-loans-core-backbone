@@ -494,13 +494,16 @@ export async function fetchEditRequestsReport(f: ReportFilterState): Promise<Rep
 }
 
 export async function fetchPartnerPerformanceReport(f: ReportFilterState): Promise<ReportResult<any>> {
+  if (f.scopedPartnerIds && f.scopedPartnerIds.length === 0) return { rows: [], count: 0, capped: false };
   // Partners (real, non-archived, non-system).
-  const { data: partners, error: pErr } = await supabase
+  let pq: any = supabase
     .from("partner_organizations")
     .select("id, partner_code, display_name, status")
     .eq("is_archived", false)
     .neq("partner_code", "PTR-DIRECT")
     .order("display_name");
+  if (f.scopedPartnerIds) pq = pq.in("id", f.scopedPartnerIds);
+  const { data: partners, error: pErr } = await pq;
   if (pErr) return { rows: [], count: 0, capped: false, error: pErr.message };
   if (!partners?.length) return { rows: [], count: 0, capped: false };
 
