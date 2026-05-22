@@ -22,8 +22,8 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!loading && user && appUser && !isAdmin) {
       toast({
-        title: "Admin access required",
-        description: "You don't have permission to view the Admin Console.",
+        title: "Partner account detected",
+        description: "Use the Partner Portal for this account.",
         variant: "destructive",
       });
     }
