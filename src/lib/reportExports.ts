@@ -143,19 +143,17 @@ export async function countLeadsReport(f: ReportFilterState): Promise<number> {
 }
 
 export async function countStageMovement(f: ReportFilterState): Promise<number> {
+  if (f.scopedPartnerIds && f.scopedPartnerIds.length === 0) return 0;
   let q: any = supabase
     .from("lead_stage_history")
     .select("id", { count: "exact", head: true });
   q = applyDateRange(q, f, "created_at");
   if (f.newStage && f.newStage !== "all") q = q.eq("new_stage", f.newStage);
-  // Partner filter requires join — inline via lead_id IN subquery
-  if (f.partnerId !== "all") {
-    const { data: leadIds } = await supabase
-      .from("student_leads")
-      .select("id")
-      .eq("partner_id", f.partnerId)
-      .eq("is_archived", false)
-      .limit(REPORT_ROW_CAP);
+  if (f.partnerId !== "all" || f.scopedPartnerIds) {
+    let leadQ: any = supabase.from("student_leads").select("id").eq("is_archived", false).limit(REPORT_ROW_CAP);
+    if (f.partnerId !== "all") leadQ = leadQ.eq("partner_id", f.partnerId);
+    else leadQ = applyScope(leadQ, f);
+    const { data: leadIds } = await leadQ;
     q = q.in("lead_id", ((leadIds ?? []) as Array<{id: string}>).map((l) => l.id));
   }
   const { count } = await q;
@@ -163,19 +161,18 @@ export async function countStageMovement(f: ReportFilterState): Promise<number> 
 }
 
 export async function countDocumentsPending(f: ReportFilterState): Promise<number> {
+  if (f.scopedPartnerIds && f.scopedPartnerIds.length === 0) return 0;
   let q: any = supabase
     .from("lead_documents")
     .select("id", { count: "exact", head: true })
     .eq("is_latest", true)
     .in("verification_status", ["uploaded", "reupload_needed"]);
   q = applyDateRange(q, f, "uploaded_at");
-  if (f.partnerId !== "all") {
-    const { data: leadIds } = await supabase
-      .from("student_leads")
-      .select("id")
-      .eq("partner_id", f.partnerId)
-      .eq("is_archived", false)
-      .limit(REPORT_ROW_CAP);
+  if (f.partnerId !== "all" || f.scopedPartnerIds) {
+    let leadQ: any = supabase.from("student_leads").select("id").eq("is_archived", false).limit(REPORT_ROW_CAP);
+    if (f.partnerId !== "all") leadQ = leadQ.eq("partner_id", f.partnerId);
+    else leadQ = applyScope(leadQ, f);
+    const { data: leadIds } = await leadQ;
     q = q.in("lead_id", ((leadIds ?? []) as Array<{id: string}>).map((l) => l.id));
   }
   const { count } = await q;
@@ -183,25 +180,32 @@ export async function countDocumentsPending(f: ReportFilterState): Promise<numbe
 }
 
 export async function countEditRequests(f: ReportFilterState): Promise<number> {
+  if (f.scopedPartnerIds && f.scopedPartnerIds.length === 0) return 0;
   let q: any = supabase
     .from("lead_edit_requests")
     .select("id", { count: "exact", head: true });
   q = applyDateRange(q, f, "created_at");
+  q = applyScope(q, f);
   if (f.editRequestStatus && f.editRequestStatus !== "all") q = q.eq("status", f.editRequestStatus);
   if (f.partnerId !== "all") q = q.eq("partner_id", f.partnerId);
   const { count } = await q;
   return count ?? 0;
 }
 
-export async function countPartnerPerformance(): Promise<number> {
-  // One row per non-archived non-system real partner.
-  const { count } = await supabase
+export async function countPartnerPerformance(f?: ReportFilterState): Promise<number> {
+  let q: any = supabase
     .from("partner_organizations")
     .select("id", { count: "exact", head: true })
     .eq("is_archived", false)
     .neq("partner_code", "PTR-DIRECT");
+  if (f?.scopedPartnerIds) {
+    if (!f.scopedPartnerIds.length) return 0;
+    q = q.in("id", f.scopedPartnerIds);
+  }
+  const { count } = await q;
   return count ?? 0;
 }
+
 
 /* -------------------------------------------------------------- */
 /*                      Full data fetchers                         */
