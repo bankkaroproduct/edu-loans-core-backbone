@@ -48,12 +48,11 @@ export default function AdminReports() {
   const [partners, setPartners] = useState<{ id: string; display_name: string }[]>([]);
 
   const { isSuperAdmin, scopedPartnerIds, hasNoScope, ready: scopeReady } = useAdminLeadScope();
-  const [rawFilters, setRawFilters] = useState<ReportFilterState>(defaultReportFilters);
+  const [rawFilters, setFilters] = useState<ReportFilterState>(defaultReportFilters);
   const filters = useMemo<ReportFilterState>(
     () => ({ ...rawFilters, scopedPartnerIds: isSuperAdmin ? undefined : scopedPartnerIds }),
     [rawFilters, isSuperAdmin, scopedPartnerIds]
   );
-  const setFilters: typeof setRawFilters = (next) => setRawFilters(next as any);
   // Bump this whenever filters change to retrigger ReportCard count fetch.
   const filterVersion = useMemo(() => JSON.stringify(filters), [filters]);
 
