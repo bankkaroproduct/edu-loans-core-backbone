@@ -224,12 +224,26 @@ export default function AdminLeads() {
   }, [filters]);
 
   const fetchPage = useCallback(async () => {
+    if (!scopeReady) return;
+    if (hasNoScope) {
+      setRows([]);
+      setTotalCount(0);
+      setLoading(false);
+      setError(null);
+      setLastRefreshedAt(new Date());
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
       const buildBase = () => {
         let q: any = supabase.from("student_leads")
           .select(
+            "id, lead_id, student_full_name, student_first_name, student_last_name, student_phone, source_type, partner_id, intended_study_country, course_name, loan_amount_required, current_stage, current_status, updated_at, created_at",
+            { count: "exact" }
+          )
+          .eq("is_archived", false);
+        q = applyPartnerScope(q);
             "id, lead_id, student_full_name, student_first_name, student_last_name, student_phone, source_type, partner_id, intended_study_country, course_name, loan_amount_required, current_stage, current_status, updated_at, created_at",
             { count: "exact" }
           )
