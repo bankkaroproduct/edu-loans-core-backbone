@@ -303,71 +303,89 @@ export default function StudentRecommendations() {
                 </div>
               )}
 
-              {/* Recommendation cards */}
-              <div className="mb-6 space-y-4">
-                {recommendations.map((rec) => {
-                  const colors = FIT_COLORS[rec.fit_label] || FIT_COLORS["Under Review"];
-                  const cardCTA = getCardCTA();
-                  return (
-                    <Card key={rec.id} className={`overflow-hidden transition-shadow hover:shadow-md ${colors.border}`}>
-                      <CardContent className="p-0">
-                        <div className="flex flex-col sm:flex-row">
-                          <div className="flex-1 p-4 sm:p-6">
-                            <div className="mb-3 flex items-center gap-3">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                                <Building2 className="h-5 w-5 text-primary" />
+              {/* Recommendation cards — redesigned via BRE result when available */}
+              {breCards && leadSummary ? (
+                <RedesignedMatches
+                  cards={breCards}
+                  leadSummary={leadSummary}
+                  collateralLabel={collateralLabel}
+                  eligibleOnly={eligibleOnly}
+                  setEligibleOnly={setEligibleOnly}
+                  sort={sort}
+                  setSort={setSort}
+                  formatAmount={formatAmount}
+                  onCta={(lenderName) => {
+                    const cardCTA = getCardCTA();
+                    console.log("[student.recommendation.card_clicked]", { lender: lenderName });
+                    navigate(cardCTA.path);
+                  }}
+                  ctaLabel={getCardCTA().label}
+                />
+              ) : (
+                <div className="mb-6 space-y-4">
+                  {recommendations.map((rec) => {
+                    const colors = FIT_COLORS[rec.fit_label] || FIT_COLORS["Under Review"];
+                    const cardCTA = getCardCTA();
+                    return (
+                      <Card key={rec.id} className={`overflow-hidden transition-shadow hover:shadow-md ${colors.border}`}>
+                        <CardContent className="p-0">
+                          <div className="flex flex-col sm:flex-row">
+                            <div className="flex-1 p-4 sm:p-6">
+                              <div className="mb-3 flex items-center gap-3">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                                  <Building2 className="h-5 w-5 text-primary" />
+                                </div>
+                                <div>
+                                  <h3 className="text-base font-semibold text-foreground">{rec.lender_name}</h3>
+                                  <Badge variant="outline" className={`mt-0.5 text-[10px] ${colors.badge}`}>
+                                    {rec.fit_label}
+                                  </Badge>
+                                </div>
                               </div>
-                              <div>
-                                <h3 className="text-base font-semibold text-foreground">{rec.lender_name}</h3>
-                                <Badge variant="outline" className={`mt-0.5 text-[10px] ${colors.badge}`}>
-                                  {rec.fit_label}
-                                </Badge>
+
+                              {rec.reason_summary && (
+                                <p className="mb-3 text-sm text-muted-foreground">{rec.reason_summary}</p>
+                              )}
+
+                              <div className="mb-3 rounded-lg bg-muted/50 p-3">
+                                <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Why this suits you</p>
+                                <ul className="space-y-1">
+                                  {rec.why_bullets.map((bullet, bi) => (
+                                    <li key={bi} className="flex items-start gap-2 text-sm text-foreground">
+                                      <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                                      {bullet}
+                                    </li>
+                                  ))}
+                                </ul>
                               </div>
+
+                              {rec.processing_time_days && (
+                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                  <Clock className="h-3.5 w-3.5" />
+                                  Typical processing: {rec.processing_time_days} days
+                                </div>
+                              )}
                             </div>
 
-                            {rec.reason_summary && (
-                              <p className="mb-3 text-sm text-muted-foreground">{rec.reason_summary}</p>
-                            )}
-
-                            {/* Why this suits you */}
-                            <div className="mb-3 rounded-lg bg-muted/50 p-3">
-                              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Why this suits you</p>
-                              <ul className="space-y-1">
-                                {rec.why_bullets.map((bullet, bi) => (
-                                  <li key={bi} className="flex items-start gap-2 text-sm text-foreground">
-                                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                                    {bullet}
-                                  </li>
-                                ))}
-                              </ul>
+                            <div className="flex items-center border-t p-4 sm:border-l sm:border-t-0 sm:p-6">
+                              <Button
+                                size="sm"
+                                className="w-full gap-1.5 sm:w-auto"
+                                onClick={() => {
+                                  console.log("[student.recommendation.card_clicked]", { lender: rec.lender_name });
+                                  navigate(cardCTA.path);
+                                }}
+                              >
+                                {cardCTA.label} <ArrowRight className="h-3.5 w-3.5" />
+                              </Button>
                             </div>
-
-                            {rec.processing_time_days && (
-                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                <Clock className="h-3.5 w-3.5" />
-                                Typical processing: {rec.processing_time_days} days
-                              </div>
-                            )}
                           </div>
-
-                          <div className="flex items-center border-t p-4 sm:border-l sm:border-t-0 sm:p-6">
-                            <Button
-                              size="sm"
-                              className="w-full gap-1.5 sm:w-auto"
-                              onClick={() => {
-                                console.log("[student.recommendation.card_clicked]", { lender: rec.lender_name });
-                                navigate(cardCTA.path);
-                              }}
-                            >
-                              {cardCTA.label} <ArrowRight className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Why these options */}
               <Card className="mb-6">
