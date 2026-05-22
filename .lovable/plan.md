@@ -1,43 +1,38 @@
-# Replace View Sample document images
+# Fix: Admin ↔ Partner login session conflict
 
-## Scope
-Replace 11 sample images with the new uploads. Sample images are referenced ONLY through `src/data/documentSampleManifest.json` (mirrored in `public/document_samples/document_sample_manifest.json` + `.csv`). All three portals consume `findSampleForDocument()` from `src/lib/documentSamples.ts`, so one set of updates cascades everywhere.
+## Root cause (confirmed)
+1. `useAuth` exposes only `loading` + `user` + `appUser`. Guards (`AdminRoute`, `AppLayout`) read `user` and `appUser` independently, so there's a window where `user` is set but `appUser` is still `null` — guards flip the wrong way and redirect mid-flight.
+2. Both login pages do `signInWithPassword` → `supabase.auth.getUser()` → query `users`. The `getUser()` round-trip occasionally returns the previous session id because in-memory session hasn't persisted yet — wrong profile is read, wrong rejection toast fires.
+3. `onAuthStateChange` re-hydrates on every event including same-user `SIGNED_IN`/`TOKEN_REFRESHED`, causing skeleton flashes and intermediate `loading` states that the guards interpret as "not authenticated yet → bounce".
+4. RLS on `public.users` is fine — `Users can view own profile (auth_user_id = auth.uid())` exists. No migration needed.
 
-## File replacements (overwrite in place — no code refs change)
+## Why the previous fix failed
+It only swapped `navigate()` for `window.location.href`. The race between `user` being set and `appUser` arriving still exists, so on the post-redirect boot the guard still sees inconsistent state for a tick and bounces.
 
-| New upload | Target path |
-|---|---|
-| 01_salary_slip.png | public/document_samples/06_Coapplicant_Financial_Documents/salary_slips_sample.png |
-| 02_bank_statement.png | public/document_samples/06_Coapplicant_Financial_Documents/bank_statements_sample.png |
-| 03_itr_acknowledgement.png | public/document_samples/06_Coapplicant_Financial_Documents/income_tax_returns_sample.png |
-| 04_offer_letter.png | public/document_samples/03_Admission_Study_Intent/admission_offer_letter_sample.png |
-| 08_degree_certificate.png | public/document_samples/02_Education_Academic_History/graduation_degree_certificate_sample.png |
-| 09_marksheet_10th.png | public/document_samples/02_Education_Academic_History/10th_marksheet_sample.png |
-| 10_marksheet_12th.png | public/document_samples/02_Education_Academic_History/12th_marksheet_sample.png |
-| 11_property_sale_deed.png | public/document_samples/07_Collateral_Secured_Loan_Documents/property_documents_sample.png |
+## Solution: status-driven atomic auth
 
-## I-20 / CAS / CoE — split into 3 entries (per user choice)
+Single `status: "initializing" | "anonymous" | "authenticated" | "unauthorized"` is the only thing guards read. `signIn(email, password, { expect: "admin" | "partner" })` is atomic: password → fetch profile by `data.user.id` (no `getUser()` round-trip) → validate role/active → set state synchronously. On role mismatch, `signOut` and return typed error.
 
-1. Add 3 new image files under `public/document_samples/03_Admission_Study_Intent/`:
-   - `i20_usa_sample.png` (from 05_i20_usa.png)
-   - `cas_uk_sample.png` (from 06_cas_uk.png)
-   - `coe_australia_sample.png` (from 07_coe_australia.png)
-2. Delete the old combined `i20_cas_coe_sample.png`.
-3. Update `src/data/documentSampleManifest.json` AND `public/document_samples/document_sample_manifest.json` + `.csv`: remove the single "I-20/CAS/CoE" entry, replace with three separate entries:
-   - `I-20 (USA)` → i20_usa_sample.png
-   - `CAS (UK)` → cas_uk_sample.png
-   - `CoE (Australia)` → coe_australia_sample.png
-   Each keeps the same `section_name`, `helper_text` style, `sample_instruction`, and `important_visible_fields` scoped to the country.
-4. Update `src/lib/documentSamples.ts`:
-   - `ALIASES`: map `"i20"` → `"I-20 (USA)"`, `"cas"` → `"CAS (UK)"`, `"coe"` → `"CoE (Australia)"`, plus variants (`"i 20"`, `"cas letter"`, `"confirmation of enrolment"`, etc.). Drop the combined `"i20 cas coe"` alias.
-   - `FALLBACK_HELPER`: remove `"I-20/CAS/CoE"` key, add the three new canonical keys with country-specific helper copy.
+`onAuthStateChange` ignores same-user re-emits (no skeleton flash on tab focus). `SIGNED_OUT` → `anonymous`. Other events → hydrate.
 
-## Not changed
-- No modal/component logic or styling
-- No "How to get this document?" feature
-- No upload, validation, checklist, backend, or routing changes
-- Untouched samples: Candidate Photograph, PAN, Aadhaar, Passport, Co-applicant Photograph/PAN/Aadhaar, Graduation Marksheet, Post-Graduation Marksheet, Post-Graduation Degree Certificate, IELTS/TOEFL, GRE
+## Files to change (5)
+1. **`src/hooks/useAuth.tsx`** — add `status`, atomic `signIn(..., { expect })`, harden listener, remove `getUser()` usage.
+2. **`src/components/AdminRoute.tsx`** — gate purely on `status`; `initializing` → skeleton, `anonymous`/`unauthorized` → `/admin/login`, `authenticated` + not admin → `/`.
+3. **`src/components/AppLayout.tsx`** — same pattern for partner side; `authenticated` + admin → `/admin`.
+4. **`src/pages/Login.tsx`** — `LoginForm` calls `signIn(..., { expect: "partner" })`; keep username→email resolve; `window.location.assign("/")` on success.
+5. **`src/pages/admin/AdminLogin.tsx`** — call `signIn(..., { expect: "admin" })`; `window.location.assign("/admin")` on success.
 
-## Verification
-- Confirm `findSampleForDocument("I-20")`, `"CAS"`, `"CoE"`, `"Salary Slip"`, `"10th Marksheet"`, `"Property Sale Deed"` resolve to the correct new images.
-- Spot-check the View Sample modal on student/partner/admin document pages (all use `SampleDocumentModal`).
+## Explicitly NOT touched
+- `src/integrations/supabase/client.ts`
+- RLS / migrations (already correct)
+- AdminUsers page or any edge function
+- Sidebar, layout chrome, AdminPermissions, partner context
+- BRE / leads / payouts / documents
+- Student auth (`useStudentAuth`)
+
+## Why this fully fixes it
+- One `status` value → no more "user set, profile not yet" window → no mis-redirect.
+- `signIn` uses the id from the sign-in response → no stale `getUser()` race.
+- Same-user auth events are ignored → no skeleton flash on focus, no bounce.
+- Atomic role check inside `signIn` → admin creds on partner page are rejected and signed out before any state flips.
+- Each portal is a pure function of `status` + `role` → no cross-portal interference.
