@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,28 +11,9 @@ import { toast } from "sonner";
 import { Check, Shield, TrendingUp, Users, Banknote, AlertTriangle, Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
-  const { user, appUser, loading, signOut } = useAuth();
-  const [signingOut, setSigningOut] = useState(false);
-
-  // Auto sign-out if an admin session is detected so the partner login
-  // form is immediately usable. No manual click required.
-  const isAdminSession =
-    !loading && !!user && !!appUser && (appUser.role === "super_admin" || appUser.role === "admin");
-  useEffect(() => {
-    if (isAdminSession && !signingOut) {
-      setSigningOut(true);
-      void signOut().finally(() => setSigningOut(false));
-    }
-  }, [isAdminSession, signingOut, signOut]);
-
-  if (loading) return <div className="flex min-h-screen items-center justify-center"><p className="text-muted-foreground">Loading...</p></div>;
-  if (isAdminSession || signingOut) {
-    return <div className="flex min-h-screen items-center justify-center"><p className="text-muted-foreground">Switching sessions…</p></div>;
-  }
-  if (user && appUser) {
-    return <Navigate to="/" replace />;
-  }
-  if (user && !appUser) return <div className="flex min-h-screen items-center justify-center"><p className="text-muted-foreground">Loading profile...</p></div>;
+  // Login page always renders the form. signInWithPassword overwrites any
+  // existing session on submit. Post-login redirects are handled by
+  // AppLayout / AdminRoute based on role.
 
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
