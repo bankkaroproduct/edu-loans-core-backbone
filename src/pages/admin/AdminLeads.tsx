@@ -13,6 +13,7 @@ import { formatINRCompact } from "@/lib/formatCurrency";
 
 import { AdminLeadFilters, type AdminLeadFilterState } from "@/components/admin/AdminLeadFilters";
 import { applyBusinessFilters as applySharedBusinessFilters } from "@/lib/leadBusinessFilters";
+import { useAdminLeadScope } from "@/hooks/useAdminLeadScope";
 
 import {
   ACTION_NEEDED_EXCLUDED_STAGES,
