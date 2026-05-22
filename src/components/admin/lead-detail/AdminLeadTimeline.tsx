@@ -176,8 +176,10 @@ function isBlank(v: unknown): boolean {
 
 function formatValue(v: unknown): string {
   if (isBlank(v)) return "Not provided";
+  if (typeof v === "boolean") return v ? "Yes" : "No";
+  if (v === "true" || v === "false") return v === "true" ? "Yes" : "No";
   if (typeof v === "string") return v;
-  if (typeof v === "number" || typeof v === "boolean") return String(v);
+  if (typeof v === "number") return String(v);
   try {
     const s = JSON.stringify(v);
     return s.length > 160 ? s.slice(0, 160) + "…" : s;
