@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
  * - Super admins: no restriction (see all partners).
  * - Regular admins: leads belonging to their assigned partners
  *   (admin_partner_assignments) OR leads they personally created
- *   (student_leads.created_by = users.id). The OR keeps admin-created
+ *   (student_leads.partner_user_id = users.id). The OR keeps admin-created
  *   Student Direct leads visible to their creator without leaking every
  *   other admin's PTR-DIRECT leads.
  * - Regular admin with zero assigned partners AND no user id resolved:
