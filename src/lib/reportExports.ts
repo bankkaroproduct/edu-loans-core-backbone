@@ -212,6 +212,7 @@ export async function countPartnerPerformance(f?: ReportFilterState): Promise<nu
 /* -------------------------------------------------------------- */
 
 export async function fetchLeadsReport(f: ReportFilterState): Promise<ReportResult<any>> {
+  if (f.scopedPartnerIds && f.scopedPartnerIds.length === 0) return { rows: [], count: 0, capped: false };
   const total = await countLeadsReport(f);
   if (total > REPORT_ROW_CAP) return { rows: [], count: total, capped: true };
 
@@ -224,6 +225,7 @@ export async function fetchLeadsReport(f: ReportFilterState): Promise<ReportResu
         "intake_term, intake_year, loan_amount_required, collateral_available"
     )
     .eq("is_archived", false);
+  q = applyScope(q, f);
   if (f.stage && f.stage !== "all") q = q.eq("current_stage", f.stage);
   if (f.status && f.status !== "all") q = q.eq("current_status", f.status);
   if (f.country && f.country !== "all") q = q.eq("intended_study_country", f.country);
