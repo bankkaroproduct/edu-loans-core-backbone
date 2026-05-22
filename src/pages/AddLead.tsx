@@ -39,6 +39,7 @@ import { ScoreTotalPair } from "@/components/shared/ScoreTotalPair";
 import { validateScoreTotalPair, parseCoappWorkExpShorthand, validateCoappWorkExpShorthand, previewCoappWorkExpShorthand, buildCoappWorkExpShorthand } from "@/lib/academicScore";
 import { getEnabledLevels, getMirroredHighestQual } from "@/lib/academicLevelCascade";
 import { validateTestScoresMap } from "@/lib/leadScoreRanges";
+import { TEST_SCORE_LIMITS, validateTestScore } from "@/lib/testScoreLimits";
 import { usePincodeLookup } from "@/hooks/usePincodeLookup";
 import { sortByPriority } from "@/lib/countryOrder";
 import { buildIntakeSessionOptions, intakeSessionValue, parseIntakeSessionValue } from "@/lib/intakeSession";
