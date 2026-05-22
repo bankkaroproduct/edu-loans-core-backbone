@@ -504,6 +504,26 @@ export default function AdminLeads() {
     return n;
   }, [filters]);
 
+  if (scopeReady && hasNoScope) {
+    return (
+      <div className="space-y-6 max-w-screen-2xl mx-auto">
+        <PageHeader
+          title="Lead Queue"
+          description="Review, prioritize, assign, and manage education-loan leads across all sources."
+        />
+        <Card className="border-border/60">
+          <CardContent className="p-10">
+            <EmptyState
+              icon={Inbox}
+              title="No partners assigned to your account"
+              description="Contact a super admin to get partners assigned."
+            />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-screen-2xl mx-auto">
       <PageHeader
@@ -513,6 +533,7 @@ export default function AdminLeads() {
         lastUpdated={lastRefreshedAt}
       >
         <Button size="sm" variant="outline" onClick={() => fetchPage()} disabled={loading}>
+
           <RefreshCw className={`mr-1 h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Refresh
         </Button>
       </PageHeader>
