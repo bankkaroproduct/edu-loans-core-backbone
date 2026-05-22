@@ -31,6 +31,12 @@ export interface ReportFilterState extends BusinessFilterState {
   editRequestStatus?: "all" | "pending" | "applied" | "rejected" | "cancelled";
   /** For Stage Movement report only */
   newStage?: "all" | StageEnum;
+  /**
+   * Admin partner-scope filter — restricts every query to these partner ids when set.
+   * `undefined` = super admin (no restriction). Empty array = regular admin with zero
+   * assignments (callers should short-circuit before invoking).
+   */
+  scopedPartnerIds?: string[];
 }
 
 export const defaultReportFilters: ReportFilterState = {
