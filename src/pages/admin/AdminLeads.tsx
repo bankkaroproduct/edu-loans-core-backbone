@@ -94,6 +94,8 @@ function studentInitials(name: string): string {
 export default function AdminLeads() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { ready: scopeReady, isSuperAdmin, scopedPartnerIds, hasNoScope, applyPartnerScope } = useAdminLeadScope();
+  
   
 
   // Master data
