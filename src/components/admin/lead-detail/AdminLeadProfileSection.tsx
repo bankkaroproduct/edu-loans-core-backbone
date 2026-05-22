@@ -499,6 +499,7 @@ export function AdminLeadProfileSection({ lead, submittedByName, partner, isStud
           <NormalizedField label="Highest Qual. Normalized" score={hqScore} total={tsStr("highest_qualification_total")} />
           {(["ielts","toefl","pte","duolingo","gre","gmat","sat"] as const).map((k) => {
             const r = TEST_SCORE_RANGES[k];
+            if (!r) return null;
             return (
               <Field
                 key={k}

@@ -339,6 +339,7 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
             <NormalizedField label="Highest Qual. Normalized" score={hqScore} total={tsStr("highest_qualification_total")} />
             {(["ielts","toefl","pte","duolingo","gre","gmat","sat"] as const).map((k) => {
               const r = TEST_SCORE_RANGES[k];
+              if (!r) return null;
               return (
                 <Field key={k} label={r.label} value={tsStr(k)} editable={edTS(k, { numericRange: { min: r.min, max: r.max, label: r.label } })} onSaved={onSaved} />
               );
