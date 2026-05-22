@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,44 +11,17 @@ import { Shield, Lock, AlertTriangle, Eye, EyeOff } from "lucide-react";
 
 /**
  * Dedicated Admin sign-in page.
- * - Only allows users whose `users.role` is super_admin or admin.
+ * - Always renders the form. signInWithPassword overwrites any existing session.
  * - Non-admin credentials are signed out immediately with a clear error.
  */
 export default function AdminLogin() {
-  const { user, appUser, loading, signOut } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [signingOut, setSigningOut] = useState(false);
-
-  // Already signed in as admin? Bounce straight into admin portal.
-  useEffect(() => {
-    if (loading) return;
-    if (user && appUser) {
-      const role = appUser.role;
-      if (role === "super_admin" || role === "admin") {
-        const dest = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
-        navigate(dest && dest.startsWith("/admin") ? dest : "/admin", { replace: true });
-      }
-    }
-  }, [loading, user, appUser, navigate, location.state]);
-
-  // If a partner/student session is present, auto sign them out so the
-  // admin login form is immediately usable. No manual click required.
-  const isWrongRoleSession =
-    !loading && !!user && !!appUser && appUser.role !== "super_admin" && appUser.role !== "admin";
-  useEffect(() => {
-    if (isWrongRoleSession && !signingOut) {
-      setSigningOut(true);
-      void signOut().finally(() => setSigningOut(false));
-    }
-  }, [isWrongRoleSession, signingOut, signOut]);
-  const switchingSessions = isWrongRoleSession || signingOut;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,7 +53,6 @@ export default function AdminLogin() {
 
     const role = profile?.role;
     if (role !== "super_admin" && role !== "admin") {
-      // Reject — sign out so we don't leave a partner session lingering on /admin/login.
       await supabase.auth.signOut();
       setErrorMsg("This account is not authorised for the Admin Portal. Please use the Partner Portal sign-in.");
       setSubmitting(false);
@@ -96,7 +67,7 @@ export default function AdminLogin() {
 
     toast.success("Welcome back, admin");
     setSubmitting(false);
-    // The useEffect above will perform the redirect once appUser hydrates.
+    navigate("/admin", { replace: true });
   };
 
   return (
@@ -151,54 +122,50 @@ export default function AdminLogin() {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-8 pt-4">
-            {switchingSessions ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">Switching sessions…</p>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {errorMsg && (
-                  <Alert variant="destructive">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>{errorMsg}</AlertDescription>
-                  </Alert>
-                )}
-                <div className="space-y-2">
-                  <Label htmlFor="admin-email">Email</Label>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {errorMsg && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>{errorMsg}</AlertDescription>
+                </Alert>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="admin-email">Email</Label>
+                <Input
+                  id="admin-email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="admin-password">Password</Label>
+                <div className="relative">
                   <Input
-                    id="admin-email"
-                    type="email"
-                    autoComplete="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="admin-password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     required
+                    className="pr-10"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="admin-password">Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="admin-password"
-                      type={showPassword ? "text" : "password"}
-                      autoComplete="current-password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      className="pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((v) => !v)}
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                      className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </div>
-                <Button type="submit" className="h-11 w-full" disabled={submitting}>
-                  {submitting ? "Verifying admin access..." : "Sign In to Admin Console"}
-                </Button>
-              </form>
-            )}
+              </div>
+              <Button type="submit" className="h-11 w-full" disabled={submitting}>
+                {submitting ? "Verifying admin access..." : "Sign In to Admin Console"}
+              </Button>
+            </form>
 
             <div className="mt-6 space-y-1 text-center text-xs text-muted-foreground">
               <p>Not an admin?</p>
