@@ -126,10 +126,12 @@ function studentName(r: { student_full_name?: string | null; student_first_name?
 
 /** Count for the Leads Report — applies all business + standard filters. */
 export async function countLeadsReport(f: ReportFilterState): Promise<number> {
+  if (f.scopedPartnerIds && f.scopedPartnerIds.length === 0) return 0;
   let q: any = supabase
     .from("student_leads")
     .select("id", { count: "exact", head: true })
     .eq("is_archived", false);
+  q = applyScope(q, f);
   if (f.stage && f.stage !== "all") q = q.eq("current_stage", f.stage);
   if (f.status && f.status !== "all") q = q.eq("current_status", f.status);
   if (f.country && f.country !== "all") q = q.eq("intended_study_country", f.country);
