@@ -484,7 +484,7 @@ export default function AdminAuditLogs() {
                           </TableCell>
                         </TableRow>
                       )}
-                    </>
+                    </Fragment>
                   );
                 })}
               </TableBody>
