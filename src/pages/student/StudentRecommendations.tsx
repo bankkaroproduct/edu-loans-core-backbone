@@ -531,3 +531,80 @@ function SupportCTA() {
     </div>
   );
 }
+
+function RedesignedMatches({
+  cards,
+  leadSummary,
+  collateralLabel,
+  eligibleOnly,
+  setEligibleOnly,
+  sort,
+  setSort,
+  formatAmount,
+  onCta,
+  ctaLabel,
+}: {
+  cards: LenderCard[];
+  leadSummary: LeadSummary;
+  collateralLabel: string | null;
+  eligibleOnly: boolean;
+  setEligibleOnly: (v: boolean) => void;
+  sort: SortKey;
+  setSort: (s: SortKey) => void;
+  formatAmount: (n: number | null) => ReactNode;
+  onCta: (lenderName: string) => void;
+  ctaLabel: string;
+}) {
+  const eligibleCount = cards.filter((c) => c.eligible).length;
+  const ineligibleCount = cards.length - eligibleCount;
+
+  const filtered = useMemo(() => {
+    let list = eligibleOnly ? cards.filter((c) => c.eligible) : cards;
+    list = [...list].sort((a, b) => {
+      if (sort === "lowest_rate") {
+        const ra = a.indicativeRoi ?? a.roiLow ?? Number.POSITIVE_INFINITY;
+        const rb = b.indicativeRoi ?? b.roiLow ?? Number.POSITIVE_INFINITY;
+        return ra - rb;
+      }
+      if (sort === "top_score") {
+        return (b.score ?? -1) - (a.score ?? -1);
+      }
+      if (sort === "best_fit") {
+        if (a.bestFit !== b.bestFit) return a.bestFit ? -1 : 1;
+        return (a.rank ?? 9999) - (b.rank ?? 9999);
+      }
+      // recommended: keep original order (eligible-first by rank, from mapper)
+      if (a.eligible !== b.eligible) return a.eligible ? -1 : 1;
+      return (a.rank ?? 9999) - (b.rank ?? 9999);
+    });
+    return list;
+  }, [cards, eligibleOnly, sort]);
+
+  return (
+    <div className="mb-6">
+      <MatchesPageChrome
+        eligibleCount={eligibleCount}
+        ineligibleCount={ineligibleCount}
+        showingCount={filtered.length}
+        totalCount={cards.length}
+        summary={leadSummary}
+        collateralLabel={collateralLabel}
+        eligibleOnly={eligibleOnly}
+        onEligibleOnlyChange={setEligibleOnly}
+        sort={sort}
+        onSortChange={setSort}
+        formatAmount={formatAmount}
+      />
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+        {filtered.map((c) => (
+          <LenderMatchCard
+            key={c.lenderId}
+            card={c}
+            ctaLabel={ctaLabel}
+            onCta={() => onCta(c.name)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
