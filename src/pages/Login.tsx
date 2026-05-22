@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,41 +15,22 @@ export default function Login() {
   const { user, appUser, loading, signOut } = useAuth();
   const [signingOut, setSigningOut] = useState(false);
 
-  if (loading) return <div className="flex min-h-screen items-center justify-center"><p className="text-muted-foreground">Loading...</p></div>;
-  if (user && appUser) {
-    const role = appUser.role;
-    // Admins land here while signed in — show a sign-out prompt instead of silent redirect.
-    if (role === "super_admin" || role === "admin") {
-      return (
-        <div className="flex min-h-screen items-center justify-center bg-muted/30 p-6">
-          <Card className="w-full max-w-md shadow-lg">
-            <CardHeader className="space-y-2 p-8 pb-2 text-center">
-              <CardTitle className="text-2xl font-bold">Admin session detected</CardTitle>
-              <CardDescription>
-                You're signed in as <strong>{appUser.full_name ?? appUser.email ?? "an admin"}</strong>. Sign out first
-                to access the Partner Portal, or continue to the Admin Console.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-8 pt-4 space-y-3">
-              <Button
-                className="h-11 w-full"
-                disabled={signingOut}
-                onClick={async () => {
-                  setSigningOut(true);
-                  await signOut();
-                  setSigningOut(false);
-                }}
-              >
-                {signingOut ? "Signing out..." : "Sign out & continue to Partner Portal"}
-              </Button>
-              <Button asChild variant="outline" className="h-11 w-full">
-                <a href="/admin">Go to Admin Console</a>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      );
+  // Auto sign-out if an admin session is detected so the partner login
+  // form is immediately usable. No manual click required.
+  const isAdminSession =
+    !loading && !!user && !!appUser && (appUser.role === "super_admin" || appUser.role === "admin");
+  useEffect(() => {
+    if (isAdminSession && !signingOut) {
+      setSigningOut(true);
+      void signOut().finally(() => setSigningOut(false));
     }
+  }, [isAdminSession, signingOut, signOut]);
+
+  if (loading) return <div className="flex min-h-screen items-center justify-center"><p className="text-muted-foreground">Loading...</p></div>;
+  if (isAdminSession || signingOut) {
+    return <div className="flex min-h-screen items-center justify-center"><p className="text-muted-foreground">Switching sessions…</p></div>;
+  }
+  if (user && appUser) {
     return <Navigate to="/" replace />;
   }
   if (user && !appUser) return <div className="flex min-h-screen items-center justify-center"><p className="text-muted-foreground">Loading profile...</p></div>;

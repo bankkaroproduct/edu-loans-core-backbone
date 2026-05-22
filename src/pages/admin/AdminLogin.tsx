@@ -39,10 +39,17 @@ export default function AdminLogin() {
     }
   }, [loading, user, appUser, navigate, location.state]);
 
-  // If a partner/student is already authenticated, show a sign-out prompt
-  // instead of silently redirecting — supports clean cross-portal switching.
+  // If a partner/student session is present, auto sign them out so the
+  // admin login form is immediately usable. No manual click required.
   const isWrongRoleSession =
     !loading && !!user && !!appUser && appUser.role !== "super_admin" && appUser.role !== "admin";
+  useEffect(() => {
+    if (isWrongRoleSession && !signingOut) {
+      setSigningOut(true);
+      void signOut().finally(() => setSigningOut(false));
+    }
+  }, [isWrongRoleSession, signingOut, signOut]);
+  const switchingSessions = isWrongRoleSession || signingOut;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,29 +151,8 @@ export default function AdminLogin() {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-8 pt-4">
-            {isWrongRoleSession ? (
-              <Alert variant="destructive" className="mb-4">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription className="space-y-3">
-                  <p>
-                    You're signed in as <strong>{appUser?.full_name ?? appUser?.email ?? "a partner user"}</strong>{" "}
-                    in the Partner Portal. Sign out first to access the Admin Portal.
-                  </p>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    disabled={signingOut}
-                    onClick={async () => {
-                      setSigningOut(true);
-                      await signOut();
-                      setSigningOut(false);
-                    }}
-                  >
-                    {signingOut ? "Signing out..." : "Sign out & continue"}
-                  </Button>
-                </AlertDescription>
-              </Alert>
+            {switchingSessions ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">Switching sessions…</p>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
                 {errorMsg && (
