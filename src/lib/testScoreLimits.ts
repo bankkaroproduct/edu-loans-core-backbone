@@ -18,6 +18,7 @@ export const TEST_SCORE_LIMITS: Record<string, TestScoreLimit> = {
   duolingo: { label: "Duolingo", min: 0, max: 160, step: 1 },
   gre: { label: "GRE", min: 0, max: 340, step: 1 },
   gmat: { label: "GMAT", min: 0, max: 800, step: 1 },
+  sat: { label: "SAT", min: 400, max: 1600, step: 1 },
 };
 
 /**
