@@ -1,38 +1,35 @@
-# Fix: Admin ↔ Partner login session conflict
+# Plan: Simplify BRE Diagnostic Display (Admin Portal Only)
 
-## Root cause (confirmed)
-1. `useAuth` exposes only `loading` + `user` + `appUser`. Guards (`AdminRoute`, `AppLayout`) read `user` and `appUser` independently, so there's a window where `user` is set but `appUser` is still `null` — guards flip the wrong way and redirect mid-flight.
-2. Both login pages do `signInWithPassword` → `supabase.auth.getUser()` → query `users`. The `getUser()` round-trip occasionally returns the previous session id because in-memory session hasn't persisted yet — wrong profile is read, wrong rejection toast fires.
-3. `onAuthStateChange` re-hydrates on every event including same-user `SIGNED_IN`/`TOKEN_REFRESHED`, causing skeleton flashes and intermediate `loading` states that the guards interpret as "not authenticated yet → bounce".
-4. RLS on `public.users` is fine — `Users can view own profile (auth_user_id = auth.uid())` exists. No migration needed.
+## Goal
+Make the BRE results on the Admin Lead Detail page more user-friendly by removing jargon while keeping all data accessible.
 
-## Why the previous fix failed
-It only swapped `navigate()` for `window.location.href`. The race between `user` being set and `appUser` arriving still exists, so on the post-redirect boot the guard still sees inconsistent state for a tick and bounces.
+## Scope
+- **Portal**: Admin portal only (`AdminBreAndLenderSection.tsx`)
+- **Detail level**: Verdict + collapsible details (bucket cards + top factors/highlights visible by default; full parameter table stays behind accordion toggle)
+- **Jargon**: Remove all technical labels
 
-## Solution: status-driven atomic auth
+## Changes (5 presentational edits only — zero BRE logic touched)
 
-Single `status: "initializing" | "anonymous" | "authenticated" | "unauthorized"` is the only thing guards read. `signIn(email, password, { expect: "admin" | "partner" })` is atomic: password → fetch profile by `data.user.id` (no `getUser()` round-trip) → validate role/active → set state synchronously. On role mismatch, `signOut` and return typed error.
+1. **Section eyebrow** (line ~339): Rename `BRE Diagnostic` → `Eligibility result`
+2. **StatusBanner** (lines ~905-922): Remove `Band`, `Bucket threshold`, `Config v` suffixes from the score line. Keep only `Score X/100`.
+3. **BucketScorecard** (lines ~965-968): Remove `Threshold 60` sub-label below each bucket score.
+4. **Accordion trigger** (lines ~409-415): Rename `View detailed BRE breakdown (N parameters)` → `View full parameter breakdown`.
+5. **BucketTraceTable header** (lines ~1065-1076): Remove `/ threshold N · PASS/FAIL` suffix from the per-bucket total line.
 
-`onAuthStateChange` ignores same-user re-emits (no skeleton flash on tab focus). `SIGNED_OUT` → `anonymous`. Other events → hydrate.
+## What stays untouched
+- `evaluate()`, `loadActive()`, `BreResult`, `buildBreProfileFromLeadAsync`, rank modifiers, lender recommendation logic, scoring, ranking, eligibility, rates, loan amounts
+- Parameter table rows and their data
+- Top factors reducing score + Positive highlights sections
+- Primary rejection reasons callout
+- Approximate-data amber warning
+- Lender cards, coverage chips, all lender display logic
+- Any other admin page, partner portal, or unrelated component
+- Database, RLS, edge functions, types
 
-## Files to change (5)
-1. **`src/hooks/useAuth.tsx`** — add `status`, atomic `signIn(..., { expect })`, harden listener, remove `getUser()` usage.
-2. **`src/components/AdminRoute.tsx`** — gate purely on `status`; `initializing` → skeleton, `anonymous`/`unauthorized` → `/admin/login`, `authenticated` + not admin → `/`.
-3. **`src/components/AppLayout.tsx`** — same pattern for partner side; `authenticated` + admin → `/admin`.
-4. **`src/pages/Login.tsx`** — `LoginForm` calls `signIn(..., { expect: "partner" })`; keep username→email resolve; `window.location.assign("/")` on success.
-5. **`src/pages/admin/AdminLogin.tsx`** — call `signIn(..., { expect: "admin" })`; `window.location.assign("/admin")` on success.
-
-## Explicitly NOT touched
-- `src/integrations/supabase/client.ts`
-- RLS / migrations (already correct)
-- AdminUsers page or any edge function
-- Sidebar, layout chrome, AdminPermissions, partner context
-- BRE / leads / payouts / documents
-- Student auth (`useStudentAuth`)
-
-## Why this fully fixes it
-- One `status` value → no more "user set, profile not yet" window → no mis-redirect.
-- `signIn` uses the id from the sign-in response → no stale `getUser()` race.
-- Same-user auth events are ignored → no skeleton flash on focus, no bounce.
-- Atomic role check inside `signIn` → admin creds on partner page are rejected and signed out before any state flips.
-- Each portal is a pure function of `status` + `role` → no cross-portal interference.
+## Verification
+- Run BRE on any lead — status banner shows only `Rejected · Score X/100`
+- Bucket cards show label + score + PASS/FAIL only (no threshold sub-label)
+- Accordion still expands to full parameter table
+- Top factors / positive highlights still render
+- Rejection reasons callout still appears for failed leads
+- No layout shift where elements were removed
