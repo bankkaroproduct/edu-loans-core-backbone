@@ -27,6 +27,7 @@ import {
   fetchStageMovementReport,
   type ReportFilterState,
 } from "@/lib/reportExports";
+import { useAdminLeadScope } from "@/hooks/useAdminLeadScope";
 import type { Database } from "@/integrations/supabase/types";
 
 type StageEnum = Database["public"]["Enums"]["lead_stage_enum"];
