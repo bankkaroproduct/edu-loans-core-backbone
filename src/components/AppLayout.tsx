@@ -96,10 +96,10 @@ function AppShell({ children, isDashboard, fullName }: { children: ReactNode; is
 }
 
 export function AppLayout({ children }: { children: ReactNode }) {
-  const { user, appUser, loading } = useAuth();
+  const { status, appUser } = useAuth();
   const location = useLocation();
 
-  if (loading) {
+  if (status === "initializing") {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-muted-foreground">Loading...</p>
@@ -107,8 +107,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!user) return <Navigate to="/login" replace />;
+  if (status === "anonymous" || status === "unauthorized") {
+    return <Navigate to="/login" replace />;
+  }
 
+  // status === "authenticated"
   if (appUser && (appUser.role === "super_admin" || appUser.role === "admin")) {
     return <Navigate to="/admin" replace state={{ roleRedirectToast: "Use the Admin Portal for this account." }} />;
   }

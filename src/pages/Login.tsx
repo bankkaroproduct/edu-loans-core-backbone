@@ -107,7 +107,7 @@ export default function Login() {
 }
 
 function LoginForm() {
-  const navigate = useNavigate();
+  const { signIn } = useAuth();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -118,8 +118,6 @@ function LoginForm() {
     e.preventDefault();
     setErrorMsg(null);
     setSubmitting(true);
-
-
 
     // Resolve username -> email if needed. Emails fall through unchanged.
     let email = identifier.trim();
@@ -137,39 +135,15 @@ function LoginForm() {
     }
     email = email.toLowerCase();
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await signIn(email, password, { expect: "partner" });
     if (error) {
-      setErrorMsg(error.message);
-      setSubmitting(false);
-      return;
-    }
-
-    // Server-side role check: reject admins from the partner portal entirely.
-    const { data: authData } = await supabase.auth.getUser();
-    const authId = authData.user?.id;
-    if (!authId) {
-      setErrorMsg("Could not establish session. Please try again.");
-      setSubmitting(false);
-      return;
-    }
-
-    const { data: profile } = await supabase
-      .from("users")
-      .select("role")
-      .eq("auth_user_id", authId)
-      .maybeSingle();
-
-    const role = profile?.role;
-    if (role !== "partner_admin" && role !== "partner_agent") {
-      await supabase.auth.signOut();
-      setErrorMsg("This account is not authorised for the Partner Portal. Please use the Admin Portal sign-in.");
+      setErrorMsg(error);
       setSubmitting(false);
       return;
     }
 
     toast.success("Signed in");
-    window.location.href = "/";
-
+    window.location.assign("/");
   };
 
   return (
