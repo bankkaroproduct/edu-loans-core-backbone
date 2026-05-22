@@ -160,10 +160,9 @@ function LoginForm() {
       .maybeSingle();
 
     const role = profile?.role;
-    if (role === "super_admin" || role === "admin") {
-      // Tear down the session — admins must use /admin/login.
+    if (role !== "partner_admin" && role !== "partner_agent") {
       await supabase.auth.signOut();
-      setErrorMsg("This is an admin account. Please sign in via the Admin Portal at /admin/login.");
+      setErrorMsg("This account is not authorised for the Partner Portal. Please use the Admin Portal sign-in.");
       setSubmitting(false);
       return;
     }
