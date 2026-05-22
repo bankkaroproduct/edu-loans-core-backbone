@@ -16,7 +16,7 @@ import { Shield, Lock, AlertTriangle, Eye, EyeOff } from "lucide-react";
  * - Non-admin credentials are signed out immediately with a clear error.
  */
 export default function AdminLogin() {
-  const { user, appUser, loading } = useAuth();
+  const { user, appUser, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -25,6 +25,7 @@ export default function AdminLogin() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   // Already signed in as admin? Bounce straight into admin portal.
   useEffect(() => {
@@ -38,11 +39,10 @@ export default function AdminLogin() {
     }
   }, [loading, user, appUser, navigate, location.state]);
 
-  // If a partner/student is already authenticated, send them to the partner login entry point.
-  // (Login.tsx will then route them onward to / based on role.)
-  if (!loading && user && appUser && appUser.role !== "super_admin" && appUser.role !== "admin") {
-    return <Navigate to="/" replace />;
-  }
+  // If a partner/student is already authenticated, show a sign-out prompt
+  // instead of silently redirecting — supports clean cross-portal switching.
+  const isWrongRoleSession =
+    !loading && !!user && !!appUser && appUser.role !== "super_admin" && appUser.role !== "admin";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
