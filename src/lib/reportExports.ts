@@ -78,6 +78,26 @@ function applyDateRange(q: any, f: ReportFilterState, col = "created_at") {
   return q;
 }
 
+/** Inject `.in('partner_id', scopedPartnerIds)` when caller is a scoped admin. */
+function applyScope(q: any, f: ReportFilterState, col = "partner_id") {
+  if (!f.scopedPartnerIds) return q;
+  const ids = f.scopedPartnerIds.length ? f.scopedPartnerIds : ["00000000-0000-0000-0000-000000000000"];
+  return q.in(col, ids);
+}
+
+/** For lead-derived tables (no partner_id column): restrict by lead_id sub-set. */
+async function scopedLeadIds(f: ReportFilterState): Promise<string[] | null> {
+  if (!f.scopedPartnerIds) return null;
+  if (!f.scopedPartnerIds.length) return [];
+  const { data } = await supabase
+    .from("student_leads")
+    .select("id")
+    .eq("is_archived", false)
+    .in("partner_id", f.scopedPartnerIds)
+    .limit(REPORT_ROW_CAP);
+  return (data ?? []).map((l: any) => l.id);
+}
+
 function fmtAmount(n: number | null | undefined): string {
   if (n === null || n === undefined) return "";
   return Number(n).toString();
