@@ -28,6 +28,8 @@ export default function AdminLogin() {
     setErrorMsg(null);
     setSubmitting(true);
 
+    await supabase.auth.signOut();
+
     const normalizedEmail = email.trim().toLowerCase();
     const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
     if (error) {
@@ -50,6 +52,13 @@ export default function AdminLogin() {
       .select("role, is_active")
       .eq("auth_user_id", authId)
       .maybeSingle();
+
+    if (!profile) {
+      await supabase.auth.signOut();
+      setErrorMsg("Admin profile not found. Please contact a super admin.");
+      setSubmitting(false);
+      return;
+    }
 
     const role = profile?.role;
     if (role !== "super_admin" && role !== "admin") {

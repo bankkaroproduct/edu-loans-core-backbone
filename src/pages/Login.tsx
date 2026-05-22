@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -106,6 +107,7 @@ export default function Login() {
 }
 
 function LoginForm() {
+  const navigate = useNavigate();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -116,6 +118,8 @@ function LoginForm() {
     e.preventDefault();
     setErrorMsg(null);
     setSubmitting(true);
+
+    await supabase.auth.signOut();
 
     // Resolve username -> email if needed. Emails fall through unchanged.
     let email = identifier.trim();
@@ -166,7 +170,7 @@ function LoginForm() {
 
     toast.success("Signed in");
     setSubmitting(false);
-    // AuthProvider state change → top-level redirect to "/".
+    navigate("/", { replace: true });
   };
 
   return (
