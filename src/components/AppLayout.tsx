@@ -96,14 +96,10 @@ function AppShell({ children, isDashboard, fullName }: { children: ReactNode; is
 }
 
 export function AppLayout({ children }: { children: ReactNode }) {
-  const { status, user, appUser } = useAuth();
+  const { status, appUser } = useAuth();
   const location = useLocation();
 
-  // Profile must belong to the currently authenticated session — guards
-  // against stale appUser from a previous account leaking through.
-  const profileMatchesSession = !!user && !!appUser && appUser.auth_user_id === user.id;
-
-  if (status === "initializing" || (status === "authenticated" && !profileMatchesSession)) {
+  if (status === "initializing") {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-muted-foreground">Loading...</p>
@@ -115,7 +111,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
-  // status === "authenticated" && profileMatchesSession
+  // status === "authenticated"
   if (appUser && (appUser.role === "super_admin" || appUser.role === "admin")) {
     return <Navigate to="/admin" replace state={{ roleRedirectToast: "Use the Admin Portal for this account." }} />;
   }
