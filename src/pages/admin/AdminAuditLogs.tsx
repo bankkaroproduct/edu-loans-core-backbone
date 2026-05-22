@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -390,9 +390,8 @@ export default function AdminAuditLogs() {
                   const link = entityLink(log.entity_type, log.entity_id, log.meta);
                   const isOpen = expanded === log.id;
                   return (
-                    <>
+                    <Fragment key={log.id}>
                       <TableRow
-                        key={log.id}
                         data-clickable="true"
                         onClick={() => setExpanded(isOpen ? null : log.id)}
                       >
