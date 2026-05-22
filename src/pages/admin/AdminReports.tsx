@@ -77,15 +77,22 @@ export default function AdminReports() {
 
   // Summary strip — independent of report filters
   const loadSummary = useCallback(async () => {
+    if (!scopeReady) return;
     setSummaryLoading(true);
     try {
+      if (hasNoScope) {
+        setSummary({ activeLeads: 0, stageTransitions30d: 0, docsPending: 0, pendingRequests: 0 });
+        return;
+      }
       const since30 = new Date(Date.now() - 30 * 86400000).toISOString();
+      let activeQ: any = supabase
+        .from("student_leads")
+        .select("id", { count: "exact", head: true })
+        .eq("is_archived", false)
+        .not("current_stage", "in", "(disbursed,rejected,dropped)");
+      if (!isSuperAdmin) activeQ = activeQ.in("partner_id", scopedPartnerIds);
       const [a, b, c, d] = await Promise.all([
-        supabase
-          .from("student_leads")
-          .select("id", { count: "exact", head: true })
-          .eq("is_archived", false)
-          .not("current_stage", "in", "(disbursed,rejected,dropped)"),
+        activeQ,
         supabase
           .from("lead_stage_history")
           .select("id", { count: "exact", head: true })
@@ -109,7 +116,7 @@ export default function AdminReports() {
     } finally {
       setSummaryLoading(false);
     }
-  }, []);
+  }, [scopeReady, hasNoScope, isSuperAdmin, scopedPartnerIds]);
 
   useEffect(() => {
     loadSummary();
