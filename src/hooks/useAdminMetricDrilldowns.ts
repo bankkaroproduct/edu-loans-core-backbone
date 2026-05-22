@@ -113,23 +113,31 @@ interface DrillState<T> {
 const initial = <T,>(empty: T): DrillState<T> => ({ rows: empty, loading: false, error: null });
 
 export function useActionNeededDrilldown(open: boolean) {
+  const { ready, hasNoScope, applyPartnerScope } = useAdminLeadScope();
   const [reviewDue, setReviewDue] = useState<DrillState<ReviewDueLeadRow[]>>(initial([]));
   const [followUp, setFollowUp] = useState<DrillState<FollowUpLeadRow[]>>(initial([]));
 
   const fetchAll = useCallback(async () => {
+    if (!ready) return;
+    if (hasNoScope) {
+      setReviewDue({ rows: [], loading: false, error: null });
+      setFollowUp({ rows: [], loading: false, error: null });
+      return;
+    }
     setReviewDue((s) => ({ ...s, loading: true, error: null }));
     setFollowUp((s) => ({ ...s, loading: true, error: null }));
 
     const excludedClause = `(${ACTION_NEEDED_EXCLUDED_STAGES.join(",")})`;
 
-    // Review Due — leads with > 5 missing mandatory fields, excluding draft/closed stages
     try {
-      const { data, error } = await supabase
-        .from("student_leads")
-        .select(REVIEW_DUE_SELECT_COLUMNS)
-        .eq("is_archived", false)
-        .not("current_stage", "in", excludedClause)
-        .order("updated_at", { ascending: false });
+      const { data, error } = await applyPartnerScope(
+        supabase
+          .from("student_leads")
+          .select(REVIEW_DUE_SELECT_COLUMNS)
+          .eq("is_archived", false)
+          .not("current_stage", "in", excludedClause)
+          .order("updated_at", { ascending: false })
+      );
       if (error) throw error;
 
       const filtered = (data ?? [])
@@ -139,48 +147,42 @@ export function useActionNeededDrilldown(open: boolean) {
 
       const partnerMap = await resolvePartners(filtered.map((l: any) => l.partner_id));
       const rows: ReviewDueLeadRow[] = filtered.map((l: any) => ({
-        id: l.id,
-        lead_uuid: l.id,
-        lead_id: l.lead_id ?? null,
+        id: l.id, lead_uuid: l.id, lead_id: l.lead_id ?? null,
         student_name: studentName(l),
         partner_name: l.partner_id ? partnerMap[l.partner_id] ?? null : null,
-        current_stage: l.current_stage,
-        current_status: l.current_status,
-        missing_count: l.missing_count,
-        updated_at: l.updated_at,
+        current_stage: l.current_stage, current_status: l.current_status,
+        missing_count: l.missing_count, updated_at: l.updated_at,
       }));
       setReviewDue({ rows, loading: false, error: null });
     } catch (e: any) {
       setReviewDue({ rows: [], loading: false, error: e?.message ?? "Failed" });
     }
 
-    // Follow-up Required — open leads, excluding draft/closed stages
     try {
-      const { data, error } = await supabase
-        .from("student_leads")
-        .select("id, lead_id, student_full_name, student_first_name, student_last_name, partner_id, current_stage, current_status, updated_at")
-        .eq("is_archived", false)
-        .not("current_stage", "in", excludedClause)
-        .order("updated_at", { ascending: true })
-        .limit(ROW_LIMIT);
+      const { data, error } = await applyPartnerScope(
+        supabase
+          .from("student_leads")
+          .select("id, lead_id, student_full_name, student_first_name, student_last_name, partner_id, current_stage, current_status, updated_at")
+          .eq("is_archived", false)
+          .not("current_stage", "in", excludedClause)
+          .order("updated_at", { ascending: true })
+          .limit(ROW_LIMIT)
+      );
       if (error) throw error;
 
       const partnerMap = await resolvePartners((data ?? []).map((l: any) => l.partner_id));
       const rows: FollowUpLeadRow[] = (data ?? []).map((l: any) => ({
-        id: l.id,
-        lead_uuid: l.id,
-        lead_id: l.lead_id ?? null,
+        id: l.id, lead_uuid: l.id, lead_id: l.lead_id ?? null,
         student_name: studentName(l),
         partner_name: l.partner_id ? partnerMap[l.partner_id] ?? null : null,
-        current_stage: l.current_stage,
-        current_status: l.current_status,
+        current_stage: l.current_stage, current_status: l.current_status,
         updated_at: l.updated_at,
       }));
       setFollowUp({ rows, loading: false, error: null });
     } catch (e: any) {
       setFollowUp({ rows: [], loading: false, error: e?.message ?? "Failed" });
     }
-  }, []);
+  }, [ready, hasNoScope, applyPartnerScope]);
 
   useEffect(() => { if (open) fetchAll(); }, [open, fetchAll]);
 
