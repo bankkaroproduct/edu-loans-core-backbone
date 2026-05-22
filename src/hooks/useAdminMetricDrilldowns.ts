@@ -7,6 +7,7 @@ import {
   countMissingMandatory,
   REVIEW_DUE_THRESHOLD,
 } from "@/lib/adminActionNeeded";
+import { useAdminLeadScope } from "@/hooks/useAdminLeadScope";
 
 type StageEnum = Database["public"]["Enums"]["lead_stage_enum"];
 type StatusEnum = Database["public"]["Enums"]["lead_status_enum"];
