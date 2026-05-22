@@ -339,6 +339,7 @@ export async function fetchStageMovementReport(f: ReportFilterState): Promise<Re
 }
 
 export async function fetchDocumentsPendingReport(f: ReportFilterState): Promise<ReportResult<any>> {
+  if (f.scopedPartnerIds && f.scopedPartnerIds.length === 0) return { rows: [], count: 0, capped: false };
   const total = await countDocumentsPending(f);
   if (total > REPORT_ROW_CAP) return { rows: [], count: total, capped: true };
 
@@ -350,13 +351,11 @@ export async function fetchDocumentsPendingReport(f: ReportFilterState): Promise
     .eq("is_latest", true)
     .in("verification_status", ["uploaded", "reupload_needed"]);
   q = applyDateRange(q, f, "uploaded_at");
-  if (f.partnerId !== "all") {
-    const { data: leadIds } = await supabase
-      .from("student_leads")
-      .select("id")
-      .eq("partner_id", f.partnerId)
-      .eq("is_archived", false)
-      .limit(REPORT_ROW_CAP);
+  if (f.partnerId !== "all" || f.scopedPartnerIds) {
+    let leadQ: any = supabase.from("student_leads").select("id").eq("is_archived", false).limit(REPORT_ROW_CAP);
+    if (f.partnerId !== "all") leadQ = leadQ.eq("partner_id", f.partnerId);
+    else leadQ = applyScope(leadQ, f);
+    const { data: leadIds } = await leadQ;
     q = q.in("lead_id", ((leadIds ?? []) as Array<{id: string}>).map((l) => l.id));
   }
   q = q.order("uploaded_at", { ascending: true }).limit(REPORT_ROW_CAP);
