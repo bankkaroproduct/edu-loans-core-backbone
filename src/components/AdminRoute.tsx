@@ -12,23 +12,24 @@ import { Skeleton } from "@/components/ui/skeleton";
  * never redirects while `initializing`.
  */
 export function AdminRoute({ children }: { children: React.ReactNode }) {
-  const { status, appUser } = useAuth();
+  const { status, user, appUser } = useAuth();
   const location = useLocation();
 
-  const role = appUser?.role;
+  const profileMatchesSession = !!user && !!appUser && appUser.auth_user_id === user.id;
+  const role = profileMatchesSession ? appUser?.role : undefined;
   const isAdmin = role === "super_admin" || role === "admin";
 
   useEffect(() => {
-    if (status === "authenticated" && !isAdmin) {
+    if (status === "authenticated" && profileMatchesSession && !isAdmin) {
       toast({
         title: "Partner account detected",
         description: "Use the Partner Portal for this account.",
         variant: "destructive",
       });
     }
-  }, [status, isAdmin]);
+  }, [status, profileMatchesSession, isAdmin]);
 
-  if (status === "initializing") {
+  if (status === "initializing" || (status === "authenticated" && !profileMatchesSession)) {
     return (
       <div className="p-6 space-y-4">
         <Skeleton className="h-8 w-48" />
@@ -42,7 +43,7 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/admin/login" replace state={{ from: location }} />;
   }
 
-  // status === "authenticated"
+  // status === "authenticated" && profileMatchesSession
   if (!isAdmin) {
     return <Navigate to="/" replace />;
   }
