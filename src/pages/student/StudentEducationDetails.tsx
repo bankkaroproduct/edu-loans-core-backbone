@@ -470,17 +470,26 @@ export default function StudentEducationDetails() {
                 { key: "pte", label: "PTE", placeholder: "e.g. 65" },
                 { key: "gre", label: "GRE", placeholder: "e.g. 325" },
                 { key: "gmat", label: "GMAT", placeholder: "e.g. 720" },
-              ].map(t => (
-                <div key={t.key} className="space-y-1.5">
-                  <Label className="text-xs">{t.label}</Label>
-                  <Input
-                    type="number"
-                    value={(formData.test_scores as any)[t.key] || ""}
-                    onChange={e => updateTestScore(t.key, e.target.value)}
-                    placeholder={t.placeholder}
-                  />
-                </div>
-              ))}
+              ].map(t => {
+                const limit = TEST_SCORE_LIMITS[t.key];
+                const value = (formData.test_scores as any)[t.key] || "";
+                const err = validateTestScore(t.key, value);
+                return (
+                  <div key={t.key} className="space-y-1.5">
+                    <Label className="text-xs">{t.label}</Label>
+                    <Input
+                      type="number"
+                      min={limit.min}
+                      max={limit.max}
+                      step={limit.step}
+                      value={value}
+                      onChange={e => updateTestScore(t.key, e.target.value)}
+                      placeholder={t.placeholder}
+                    />
+                    {err && <p className="text-xs text-destructive">{err}</p>}
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <p className="text-xs text-muted-foreground">Tick the box above if you've taken any standardized tests.</p>
