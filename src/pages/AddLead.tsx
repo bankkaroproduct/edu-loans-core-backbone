@@ -1652,6 +1652,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                     { key: "gmat", label: "GMAT", placeholder: "e.g. 700" },
                   ] as const).map((t) => {
                     const limit = TEST_SCORE_LIMITS[t.key];
+                    if (!limit) return null;
                     const value = (form as any)[t.key] || "";
                     const err = validateTestScore(t.key, value);
                     return (
