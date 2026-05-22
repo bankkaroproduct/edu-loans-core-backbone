@@ -429,6 +429,7 @@ export async function fetchDocumentsPendingReport(f: ReportFilterState): Promise
 }
 
 export async function fetchEditRequestsReport(f: ReportFilterState): Promise<ReportResult<any>> {
+  if (f.scopedPartnerIds && f.scopedPartnerIds.length === 0) return { rows: [], count: 0, capped: false };
   const total = await countEditRequests(f);
   if (total > REPORT_ROW_CAP) return { rows: [], count: total, capped: true };
 
@@ -439,6 +440,7 @@ export async function fetchEditRequestsReport(f: ReportFilterState): Promise<Rep
         "status, admin_decision_note, decided_at, applied_at, created_at"
     );
   q = applyDateRange(q, f, "created_at");
+  q = applyScope(q, f);
   if (f.editRequestStatus && f.editRequestStatus !== "all") q = q.eq("status", f.editRequestStatus);
   if (f.partnerId !== "all") q = q.eq("partner_id", f.partnerId);
   q = q.order("created_at", { ascending: false }).limit(REPORT_ROW_CAP);
