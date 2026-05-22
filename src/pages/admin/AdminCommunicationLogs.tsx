@@ -5,24 +5,52 @@ import { CommunicationLogTable } from "@/components/admin/communications/Communi
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { useAdminLeadScope } from "@/hooks/useAdminLeadScope";
 import type { CommunicationLog } from "@/lib/communications/types";
 
 export default function AdminCommunicationLogs() {
+  const { ready, isSuperAdmin, scopedPartnerIds, hasNoScope } = useAdminLeadScope();
   const [logs, setLogs] = useState<CommunicationLog[]>([]);
   const [channel, setChannel] = useState<string>("all");
   const [status, setStatus] = useState<string>("all");
   const [mode, setMode] = useState<string>("all");
 
   useEffect(() => {
+    if (!ready) return;
+    if (hasNoScope) {
+      setLogs([]);
+      return;
+    }
+    let cancelled = false;
     (async () => {
-      const { data } = await supabase
+      // For non-super admins, first resolve the lead ids belonging to their
+      // assigned partners (incl. PTR-DIRECT), then filter logs by those leads.
+      // Logs with `lead_id IS NULL` (system sends) stay super-admin-only.
+      let leadIds: string[] | null = null;
+      if (!isSuperAdmin) {
+        const { data: leadRows } = await supabase
+          .from("student_leads")
+          .select("id")
+          .in("partner_id", scopedPartnerIds);
+        leadIds = (leadRows ?? []).map((r) => r.id);
+        if (leadIds.length === 0) {
+          if (!cancelled) setLogs([]);
+          return;
+        }
+      }
+
+      let q = supabase
         .from("communication_logs")
         .select("*")
         .order("created_at", { ascending: false })
         .limit(500);
-      setLogs((data ?? []) as CommunicationLog[]);
+      if (leadIds) q = q.in("lead_id", leadIds);
+      const { data } = await q;
+      if (!cancelled) setLogs((data ?? []) as CommunicationLog[]);
     })();
-  }, []);
+    return () => { cancelled = true; };
+  }, [ready, isSuperAdmin, scopedPartnerIds, hasNoScope]);
 
   const filtered = useMemo(() => {
     return logs.filter((l) => {
@@ -78,8 +106,17 @@ export default function AdminCommunicationLogs() {
             </Select>
           </div>
         </div>
-        <p className="text-xs text-muted-foreground mb-3">{filtered.length} entries</p>
-        <CommunicationLogTable logs={filtered} />
+        {hasNoScope ? (
+          <EmptyState
+            title="No partners assigned"
+            description="No partners assigned to your account. Contact a super admin to get partners assigned."
+          />
+        ) : (
+          <>
+            <p className="text-xs text-muted-foreground mb-3">{filtered.length} entries</p>
+            <CommunicationLogTable logs={filtered} />
+          </>
+        )}
       </Card>
     </div>
   );
