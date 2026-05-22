@@ -7,6 +7,7 @@ import {
   countMissingMandatory,
   REVIEW_DUE_THRESHOLD,
 } from "@/lib/adminActionNeeded";
+import { useAdminLeadScope } from "@/hooks/useAdminLeadScope";
 
 type StageEnum = Database["public"]["Enums"]["lead_stage_enum"];
 type StatusEnum = Database["public"]["Enums"]["lead_status_enum"];
@@ -112,23 +113,31 @@ interface DrillState<T> {
 const initial = <T,>(empty: T): DrillState<T> => ({ rows: empty, loading: false, error: null });
 
 export function useActionNeededDrilldown(open: boolean) {
+  const { ready, hasNoScope, applyPartnerScope } = useAdminLeadScope();
   const [reviewDue, setReviewDue] = useState<DrillState<ReviewDueLeadRow[]>>(initial([]));
   const [followUp, setFollowUp] = useState<DrillState<FollowUpLeadRow[]>>(initial([]));
 
   const fetchAll = useCallback(async () => {
+    if (!ready) return;
+    if (hasNoScope) {
+      setReviewDue({ rows: [], loading: false, error: null });
+      setFollowUp({ rows: [], loading: false, error: null });
+      return;
+    }
     setReviewDue((s) => ({ ...s, loading: true, error: null }));
     setFollowUp((s) => ({ ...s, loading: true, error: null }));
 
     const excludedClause = `(${ACTION_NEEDED_EXCLUDED_STAGES.join(",")})`;
 
-    // Review Due — leads with > 5 missing mandatory fields, excluding draft/closed stages
     try {
-      const { data, error } = await supabase
-        .from("student_leads")
-        .select(REVIEW_DUE_SELECT_COLUMNS)
-        .eq("is_archived", false)
-        .not("current_stage", "in", excludedClause)
-        .order("updated_at", { ascending: false });
+      const { data, error } = await applyPartnerScope(
+        supabase
+          .from("student_leads")
+          .select(REVIEW_DUE_SELECT_COLUMNS)
+          .eq("is_archived", false)
+          .not("current_stage", "in", excludedClause)
+          .order("updated_at", { ascending: false })
+      );
       if (error) throw error;
 
       const filtered = (data ?? [])
@@ -138,48 +147,42 @@ export function useActionNeededDrilldown(open: boolean) {
 
       const partnerMap = await resolvePartners(filtered.map((l: any) => l.partner_id));
       const rows: ReviewDueLeadRow[] = filtered.map((l: any) => ({
-        id: l.id,
-        lead_uuid: l.id,
-        lead_id: l.lead_id ?? null,
+        id: l.id, lead_uuid: l.id, lead_id: l.lead_id ?? null,
         student_name: studentName(l),
         partner_name: l.partner_id ? partnerMap[l.partner_id] ?? null : null,
-        current_stage: l.current_stage,
-        current_status: l.current_status,
-        missing_count: l.missing_count,
-        updated_at: l.updated_at,
+        current_stage: l.current_stage, current_status: l.current_status,
+        missing_count: l.missing_count, updated_at: l.updated_at,
       }));
       setReviewDue({ rows, loading: false, error: null });
     } catch (e: any) {
       setReviewDue({ rows: [], loading: false, error: e?.message ?? "Failed" });
     }
 
-    // Follow-up Required — open leads, excluding draft/closed stages
     try {
-      const { data, error } = await supabase
-        .from("student_leads")
-        .select("id, lead_id, student_full_name, student_first_name, student_last_name, partner_id, current_stage, current_status, updated_at")
-        .eq("is_archived", false)
-        .not("current_stage", "in", excludedClause)
-        .order("updated_at", { ascending: true })
-        .limit(ROW_LIMIT);
+      const { data, error } = await applyPartnerScope(
+        supabase
+          .from("student_leads")
+          .select("id, lead_id, student_full_name, student_first_name, student_last_name, partner_id, current_stage, current_status, updated_at")
+          .eq("is_archived", false)
+          .not("current_stage", "in", excludedClause)
+          .order("updated_at", { ascending: true })
+          .limit(ROW_LIMIT)
+      );
       if (error) throw error;
 
       const partnerMap = await resolvePartners((data ?? []).map((l: any) => l.partner_id));
       const rows: FollowUpLeadRow[] = (data ?? []).map((l: any) => ({
-        id: l.id,
-        lead_uuid: l.id,
-        lead_id: l.lead_id ?? null,
+        id: l.id, lead_uuid: l.id, lead_id: l.lead_id ?? null,
         student_name: studentName(l),
         partner_name: l.partner_id ? partnerMap[l.partner_id] ?? null : null,
-        current_stage: l.current_stage,
-        current_status: l.current_status,
+        current_stage: l.current_stage, current_status: l.current_status,
         updated_at: l.updated_at,
       }));
       setFollowUp({ rows, loading: false, error: null });
     } catch (e: any) {
       setFollowUp({ rows: [], loading: false, error: e?.message ?? "Failed" });
     }
-  }, []);
+  }, [ready, hasNoScope, applyPartnerScope]);
 
   useEffect(() => { if (open) fetchAll(); }, [open, fetchAll]);
 
@@ -187,88 +190,100 @@ export function useActionNeededDrilldown(open: boolean) {
 }
 
 export function useActivePipelineDrilldown(open: boolean) {
+  const { ready, hasNoScope, applyPartnerScope } = useAdminLeadScope();
   const [recent, setRecent] = useState<DrillState<PipelineLeadRow[]>>(initial([]));
 
   const fetchRecent = useCallback(async () => {
+    if (!ready) return;
+    if (hasNoScope) { setRecent({ rows: [], loading: false, error: null }); return; }
     setRecent((s) => ({ ...s, loading: true, error: null }));
     try {
-      const { data, error } = await supabase
-        .from("student_leads")
-        .select("id, lead_id, student_full_name, student_first_name, student_last_name, partner_id, current_stage, current_status, updated_at")
-        .eq("is_archived", false)
-        .order("updated_at", { ascending: false })
-        .limit(ROW_LIMIT);
+      const { data, error } = await applyPartnerScope(
+        supabase
+          .from("student_leads")
+          .select("id, lead_id, student_full_name, student_first_name, student_last_name, partner_id, current_stage, current_status, updated_at")
+          .eq("is_archived", false)
+          .order("updated_at", { ascending: false })
+          .limit(ROW_LIMIT)
+      );
       if (error) throw error;
       const partnerMap = await resolvePartners((data ?? []).map((l: any) => l.partner_id));
       const rows: PipelineLeadRow[] = (data ?? []).map((l: any) => ({
-        id: l.id,
-        lead_id: l.lead_id,
+        id: l.id, lead_id: l.lead_id,
         student_name: studentName(l),
         partner_name: l.partner_id ? partnerMap[l.partner_id] ?? null : null,
-        current_stage: l.current_stage,
-        current_status: l.current_status,
+        current_stage: l.current_stage, current_status: l.current_status,
         updated_at: l.updated_at,
       }));
       setRecent({ rows, loading: false, error: null });
     } catch (e: any) {
       setRecent({ rows: [], loading: false, error: e?.message ?? "Failed" });
     }
-  }, []);
+  }, [ready, hasNoScope, applyPartnerScope]);
 
   useEffect(() => { if (open) fetchRecent(); }, [open, fetchRecent]);
   return { recent, refetch: fetchRecent };
 }
 
 export function useDisbursedDrilldown(open: boolean) {
+  const { ready, hasNoScope, applyPartnerScope } = useAdminLeadScope();
   const [leads, setLeads] = useState<DrillState<DisbursedLeadRow[]>>(initial([]));
 
   const fetchLeads = useCallback(async () => {
+    if (!ready) return;
+    if (hasNoScope) { setLeads({ rows: [], loading: false, error: null }); return; }
     setLeads((s) => ({ ...s, loading: true, error: null }));
     try {
-      const { data, error } = await supabase
-        .from("student_leads")
-        .select("id, lead_id, student_full_name, student_first_name, student_last_name, partner_id, current_status, updated_at")
-        .eq("is_archived", false)
-        .eq("current_stage", "disbursed")
-        .order("updated_at", { ascending: false })
-        .limit(ROW_LIMIT);
+      const { data, error } = await applyPartnerScope(
+        supabase
+          .from("student_leads")
+          .select("id, lead_id, student_full_name, student_first_name, student_last_name, partner_id, current_status, updated_at")
+          .eq("is_archived", false)
+          .eq("current_stage", "disbursed")
+          .order("updated_at", { ascending: false })
+          .limit(ROW_LIMIT)
+      );
       if (error) throw error;
       const partnerMap = await resolvePartners((data ?? []).map((l: any) => l.partner_id));
       const rows: DisbursedLeadRow[] = (data ?? []).map((l: any) => ({
-        id: l.id,
-        lead_id: l.lead_id,
+        id: l.id, lead_id: l.lead_id,
         student_name: studentName(l),
         partner_name: l.partner_id ? partnerMap[l.partner_id] ?? null : null,
-        current_status: l.current_status,
-        updated_at: l.updated_at,
+        current_status: l.current_status, updated_at: l.updated_at,
       }));
       setLeads({ rows, loading: false, error: null });
     } catch (e: any) {
       setLeads({ rows: [], loading: false, error: e?.message ?? "Failed" });
     }
-  }, []);
+  }, [ready, hasNoScope, applyPartnerScope]);
 
   useEffect(() => { if (open) fetchLeads(); }, [open, fetchLeads]);
   return { leads, refetch: fetchLeads };
 }
 
 export function useActivePartnersDrilldown(open: boolean) {
+  const { ready, isSuperAdmin, scopedPartnerIds, hasNoScope } = useAdminLeadScope();
   const [partners, setPartners] = useState<DrillState<ActivePartnerRow[]>>(initial([]));
 
   const fetchPartners = useCallback(async () => {
+    if (!ready) return;
+    if (hasNoScope) { setPartners({ rows: [], loading: false, error: null }); return; }
     setPartners((s) => ({ ...s, loading: true, error: null }));
     try {
-      const { data, error } = await supabase
+      let q: any = supabase
         .from("partner_organizations")
         .select("id, display_name, partner_code, partner_type, status, onboarding_date, created_at")
         .eq("status", "active")
         .eq("is_archived", false)
         .order("display_name", { ascending: true })
         .limit(50);
+      if (!isSuperAdmin) {
+        q = q.in("id", scopedPartnerIds.length ? scopedPartnerIds : ["00000000-0000-0000-0000-000000000000"]);
+      }
+      const { data, error } = await q;
       if (error) throw error;
 
-      // Optional: lead count per partner (best-effort, single query)
-      const ids = (data ?? []).map((p) => p.id);
+      const ids = (data ?? []).map((p: any) => p.id);
       let leadCounts: Record<string, number> = {};
       if (ids.length) {
         const { data: leads } = await supabase
@@ -289,7 +304,7 @@ export function useActivePartnersDrilldown(open: boolean) {
     } catch (e: any) {
       setPartners({ rows: [], loading: false, error: e?.message ?? "Failed" });
     }
-  }, []);
+  }, [ready, hasNoScope, isSuperAdmin, scopedPartnerIds]);
 
   useEffect(() => { if (open) fetchPartners(); }, [open, fetchPartners]);
   return { partners, refetch: fetchPartners };

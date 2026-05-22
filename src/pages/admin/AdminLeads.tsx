@@ -13,6 +13,7 @@ import { formatINRCompact } from "@/lib/formatCurrency";
 
 import { AdminLeadFilters, type AdminLeadFilterState } from "@/components/admin/AdminLeadFilters";
 import { applyBusinessFilters as applySharedBusinessFilters } from "@/lib/leadBusinessFilters";
+import { useAdminLeadScope } from "@/hooks/useAdminLeadScope";
 
 import {
   ACTION_NEEDED_EXCLUDED_STAGES,
@@ -93,6 +94,8 @@ function studentInitials(name: string): string {
 export default function AdminLeads() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { ready: scopeReady, isSuperAdmin, scopedPartnerIds, hasNoScope, applyPartnerScope } = useAdminLeadScope();
+  
   
 
   // Master data
@@ -156,22 +159,28 @@ export default function AdminLeads() {
     };
   }, [searchInput]);
 
-  // Load master data once
+  // Load master data once (partners list is scoped to admin's assigned partners for non-super admins)
   useEffect(() => {
+    if (!scopeReady) return;
     (async () => {
+      let partnerQ: any = supabase.from("partner_organizations").select("id, display_name").eq("is_archived", false).order("display_name");
+      if (!isSuperAdmin) {
+        const ids = scopedPartnerIds.length ? scopedPartnerIds : ["00000000-0000-0000-0000-000000000000"];
+        partnerQ = partnerQ.in("id", ids);
+      }
       const [sRes, stRes, cRes, pRes] = await Promise.all([
         supabase.from("lifecycle_stage_master").select("stage_key, stage_label, sort_order").eq("active_flag", true).order("sort_order"),
         supabase.from("lifecycle_status_master").select("stage_key, status_key, status_label, sort_order").eq("active_flag", true).order("sort_order"),
         supabase.from("countries_master").select("country_name").eq("active_flag", true).order("country_name"),
-        supabase.from("partner_organizations").select("id, display_name").eq("is_archived", false).order("display_name"),
+        partnerQ,
       ]);
       setStages(sRes.data ?? []);
       setStatuses((stRes.data ?? []).map((r) => ({ stage_key: r.stage_key, status_key: r.status_key, status_label: r.status_label })));
       setCountries(cRes.data ?? []);
-      setPartners((pRes.data ?? []).filter((p) => !!p.display_name?.trim()));
+      setPartners((pRes.data ?? []).filter((p: any) => !!p.display_name?.trim()));
       setMastersLoaded(true);
     })();
-  }, []);
+  }, [scopeReady, isSuperAdmin, scopedPartnerIds]);
 
   // Sync filters → URL
   useEffect(() => {
@@ -215,6 +224,15 @@ export default function AdminLeads() {
   }, [filters]);
 
   const fetchPage = useCallback(async () => {
+    if (!scopeReady) return;
+    if (hasNoScope) {
+      setRows([]);
+      setTotalCount(0);
+      setLoading(false);
+      setError(null);
+      setLastRefreshedAt(new Date());
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -225,6 +243,7 @@ export default function AdminLeads() {
             { count: "exact" }
           )
           .eq("is_archived", false);
+        q = applyPartnerScope(q);
 
         // Filters first (AND) — note: source mapping handled by applyBusinessFilters
         if (filters.stage !== "all") q = q.eq("current_stage", filters.stage);
@@ -306,17 +325,23 @@ export default function AdminLeads() {
     } finally {
       setLoading(false);
     }
-  }, [filters, sortKey, sortDir, page, applyBusinessFilters, cardFilter, highPriorityIds]);
+  }, [filters, sortKey, sortDir, page, applyBusinessFilters, cardFilter, highPriorityIds, scopeReady, hasNoScope, applyPartnerScope]);
 
   useEffect(() => { fetchPage(); }, [fetchPage]);
 
   // Fetch filter-aware health counts (lightweight head:true).
   // Total = current filters; the others = current filters with their own stage/status override.
   const fetchHealthCounts = useCallback(async () => {
+    if (!scopeReady) return;
+    if (hasNoScope) {
+      setHealthCounts({ total: 0, pendingReview: 0, withLender: 0, sanction: 0, highPriority: 0 });
+      return;
+    }
     const buildCount = (overrideStage?: StageEnum, overrideStatuses?: StatusEnum[], restrictIds?: string[]) => {
       let q: any = supabase.from("student_leads")
         .select("*", { count: "exact", head: true })
         .eq("is_archived", false);
+      q = applyPartnerScope(q);
       if (overrideStage) q = q.eq("current_stage", overrideStage);
       else if (filters.stage !== "all") q = q.eq("current_stage", filters.stage);
       if (overrideStatuses) q = q.in("current_status", overrideStatuses);
@@ -367,18 +392,20 @@ export default function AdminLeads() {
       sanction: sanc.count ?? 0,
       highPriority: hp.count ?? 0,
     });
-  }, [filters, applyBusinessFilters, highPriorityIds]);
+  }, [filters, applyBusinessFilters, highPriorityIds, scopeReady, hasNoScope, applyPartnerScope]);
 
   useEffect(() => { fetchHealthCounts(); }, [fetchHealthCounts]);
 
   // Fetch the set of "High Priority Leads" IDs — mirrors useAdminDashboard.fetchMetrics
   // so the card-filter intersection matches what the High Priority tile represents.
   const fetchHighPriorityIds = useCallback(async () => {
+    if (!scopeReady) return;
+    if (hasNoScope) { setHighPriorityIds([]); return; }
     try {
       const excl = `(${ACTION_NEEDED_EXCLUDED_STAGES.join(",")})`;
       const [followUp, reviewRows] = await Promise.all([
-        supabase.from("student_leads").select("id").eq("is_archived", false).not("current_stage", "in", excl),
-        supabase.from("student_leads").select(REVIEW_DUE_SELECT_COLUMNS).eq("is_archived", false).not("current_stage", "in", excl),
+        applyPartnerScope(supabase.from("student_leads").select("id").eq("is_archived", false).not("current_stage", "in", excl)),
+        applyPartnerScope(supabase.from("student_leads").select(REVIEW_DUE_SELECT_COLUMNS).eq("is_archived", false).not("current_stage", "in", excl)),
       ]);
       const ids = new Set<string>();
       (followUp.data ?? []).forEach((r: any) => { if (r?.id) ids.add(r.id); });
@@ -387,7 +414,7 @@ export default function AdminLeads() {
     } catch {
       setHighPriorityIds([]);
     }
-  }, []);
+  }, [scopeReady, hasNoScope, applyPartnerScope]);
 
   useEffect(() => { fetchHighPriorityIds(); }, [fetchHighPriorityIds]);
 
@@ -477,6 +504,26 @@ export default function AdminLeads() {
     return n;
   }, [filters]);
 
+  if (scopeReady && hasNoScope) {
+    return (
+      <div className="space-y-6 max-w-screen-2xl mx-auto">
+        <PageHeader
+          title="Lead Queue"
+          description="Review, prioritize, assign, and manage education-loan leads across all sources."
+        />
+        <Card className="border-border/60">
+          <CardContent className="p-10">
+            <EmptyState
+              icon={Inbox}
+              title="No partners assigned to your account"
+              description="Contact a super admin to get partners assigned."
+            />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-screen-2xl mx-auto">
       <PageHeader
@@ -486,6 +533,7 @@ export default function AdminLeads() {
         lastUpdated={lastRefreshedAt}
       >
         <Button size="sm" variant="outline" onClick={() => fetchPage()} disabled={loading}>
+
           <RefreshCw className={`mr-1 h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Refresh
         </Button>
       </PageHeader>

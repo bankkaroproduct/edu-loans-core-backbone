@@ -31,6 +31,12 @@ export interface ReportFilterState extends BusinessFilterState {
   editRequestStatus?: "all" | "pending" | "applied" | "rejected" | "cancelled";
   /** For Stage Movement report only */
   newStage?: "all" | StageEnum;
+  /**
+   * Admin partner-scope filter — restricts every query to these partner ids when set.
+   * `undefined` = super admin (no restriction). Empty array = regular admin with zero
+   * assignments (callers should short-circuit before invoking).
+   */
+  scopedPartnerIds?: string[];
 }
 
 export const defaultReportFilters: ReportFilterState = {
@@ -72,6 +78,26 @@ function applyDateRange(q: any, f: ReportFilterState, col = "created_at") {
   return q;
 }
 
+/** Inject `.in('partner_id', scopedPartnerIds)` when caller is a scoped admin. */
+function applyScope(q: any, f: ReportFilterState, col = "partner_id") {
+  if (!f.scopedPartnerIds) return q;
+  const ids = f.scopedPartnerIds.length ? f.scopedPartnerIds : ["00000000-0000-0000-0000-000000000000"];
+  return q.in(col, ids);
+}
+
+/** For lead-derived tables (no partner_id column): restrict by lead_id sub-set. */
+async function scopedLeadIds(f: ReportFilterState): Promise<string[] | null> {
+  if (!f.scopedPartnerIds) return null;
+  if (!f.scopedPartnerIds.length) return [];
+  const { data } = await supabase
+    .from("student_leads")
+    .select("id")
+    .eq("is_archived", false)
+    .in("partner_id", f.scopedPartnerIds)
+    .limit(REPORT_ROW_CAP);
+  return (data ?? []).map((l: any) => l.id);
+}
+
 function fmtAmount(n: number | null | undefined): string {
   if (n === null || n === undefined) return "";
   return Number(n).toString();
@@ -100,10 +126,12 @@ function studentName(r: { student_full_name?: string | null; student_first_name?
 
 /** Count for the Leads Report — applies all business + standard filters. */
 export async function countLeadsReport(f: ReportFilterState): Promise<number> {
+  if (f.scopedPartnerIds && f.scopedPartnerIds.length === 0) return 0;
   let q: any = supabase
     .from("student_leads")
     .select("id", { count: "exact", head: true })
     .eq("is_archived", false);
+  q = applyScope(q, f);
   if (f.stage && f.stage !== "all") q = q.eq("current_stage", f.stage);
   if (f.status && f.status !== "all") q = q.eq("current_status", f.status);
   if (f.country && f.country !== "all") q = q.eq("intended_study_country", f.country);
@@ -115,19 +143,17 @@ export async function countLeadsReport(f: ReportFilterState): Promise<number> {
 }
 
 export async function countStageMovement(f: ReportFilterState): Promise<number> {
+  if (f.scopedPartnerIds && f.scopedPartnerIds.length === 0) return 0;
   let q: any = supabase
     .from("lead_stage_history")
     .select("id", { count: "exact", head: true });
   q = applyDateRange(q, f, "created_at");
   if (f.newStage && f.newStage !== "all") q = q.eq("new_stage", f.newStage);
-  // Partner filter requires join — inline via lead_id IN subquery
-  if (f.partnerId !== "all") {
-    const { data: leadIds } = await supabase
-      .from("student_leads")
-      .select("id")
-      .eq("partner_id", f.partnerId)
-      .eq("is_archived", false)
-      .limit(REPORT_ROW_CAP);
+  if (f.partnerId !== "all" || f.scopedPartnerIds) {
+    let leadQ: any = supabase.from("student_leads").select("id").eq("is_archived", false).limit(REPORT_ROW_CAP);
+    if (f.partnerId !== "all") leadQ = leadQ.eq("partner_id", f.partnerId);
+    else leadQ = applyScope(leadQ, f);
+    const { data: leadIds } = await leadQ;
     q = q.in("lead_id", ((leadIds ?? []) as Array<{id: string}>).map((l) => l.id));
   }
   const { count } = await q;
@@ -135,19 +161,18 @@ export async function countStageMovement(f: ReportFilterState): Promise<number> 
 }
 
 export async function countDocumentsPending(f: ReportFilterState): Promise<number> {
+  if (f.scopedPartnerIds && f.scopedPartnerIds.length === 0) return 0;
   let q: any = supabase
     .from("lead_documents")
     .select("id", { count: "exact", head: true })
     .eq("is_latest", true)
     .in("verification_status", ["uploaded", "reupload_needed"]);
   q = applyDateRange(q, f, "uploaded_at");
-  if (f.partnerId !== "all") {
-    const { data: leadIds } = await supabase
-      .from("student_leads")
-      .select("id")
-      .eq("partner_id", f.partnerId)
-      .eq("is_archived", false)
-      .limit(REPORT_ROW_CAP);
+  if (f.partnerId !== "all" || f.scopedPartnerIds) {
+    let leadQ: any = supabase.from("student_leads").select("id").eq("is_archived", false).limit(REPORT_ROW_CAP);
+    if (f.partnerId !== "all") leadQ = leadQ.eq("partner_id", f.partnerId);
+    else leadQ = applyScope(leadQ, f);
+    const { data: leadIds } = await leadQ;
     q = q.in("lead_id", ((leadIds ?? []) as Array<{id: string}>).map((l) => l.id));
   }
   const { count } = await q;
@@ -155,25 +180,32 @@ export async function countDocumentsPending(f: ReportFilterState): Promise<numbe
 }
 
 export async function countEditRequests(f: ReportFilterState): Promise<number> {
+  if (f.scopedPartnerIds && f.scopedPartnerIds.length === 0) return 0;
   let q: any = supabase
     .from("lead_edit_requests")
     .select("id", { count: "exact", head: true });
   q = applyDateRange(q, f, "created_at");
+  q = applyScope(q, f);
   if (f.editRequestStatus && f.editRequestStatus !== "all") q = q.eq("status", f.editRequestStatus);
   if (f.partnerId !== "all") q = q.eq("partner_id", f.partnerId);
   const { count } = await q;
   return count ?? 0;
 }
 
-export async function countPartnerPerformance(): Promise<number> {
-  // One row per non-archived non-system real partner.
-  const { count } = await supabase
+export async function countPartnerPerformance(f?: ReportFilterState): Promise<number> {
+  let q: any = supabase
     .from("partner_organizations")
     .select("id", { count: "exact", head: true })
     .eq("is_archived", false)
     .neq("partner_code", "PTR-DIRECT");
+  if (f?.scopedPartnerIds) {
+    if (!f.scopedPartnerIds.length) return 0;
+    q = q.in("id", f.scopedPartnerIds);
+  }
+  const { count } = await q;
   return count ?? 0;
 }
+
 
 /* -------------------------------------------------------------- */
 /*                      Full data fetchers                         */

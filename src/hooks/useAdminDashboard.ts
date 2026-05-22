@@ -6,6 +6,7 @@ import {
   REVIEW_DUE_SELECT_COLUMNS,
   isReviewDue,
 } from "@/lib/adminActionNeeded";
+import { useAdminLeadScope } from "@/hooks/useAdminLeadScope";
 
 type StageEnum = Database["public"]["Enums"]["lead_stage_enum"];
 type StatusEnum = Database["public"]["Enums"]["lead_status_enum"];
@@ -81,16 +82,21 @@ interface SectionState<T> {
 }
 
 const STALE_HOURS = 48;
-// Stages where the lead is the partner/student's responsibility to fix (not admin's)
-// We exclude these from "stale" alerts.
 const STALE_EXCLUDED_STAGES: StageEnum[] = ["draft", "disbursed", "rejected", "dropped", "on_hold"];
 const STALE_EXCLUDED_STATUSES: StatusEnum[] = ["pending_info", "query_raised", "reupload_needed"];
 
-// Stages where these fields are required. Drafts excluded.
 const REQUIRED_INFO_STAGES: StageEnum[] = ["submitted", "under_initial_review", "documents_under_review"];
 const PENDING_REVIEW_STATUSES: StatusEnum[] = ["new", "awaiting_verification", "query_raised", "pending_info", "in_progress"];
 
+const EMPTY_METRICS: AdminMetrics = {
+  totalLeads: 0, pendingAdminActions: 0, reviewDue: 0, followUpRequired: 0,
+  requestsPendingApproval: 0, documentsPendingReview: 0,
+  sentToLender: 0, sanctionReceived: 0, disbursed: 0, activePartners: 0,
+};
+
 export function useAdminDashboard() {
+  const { ready: scopeReady, isSuperAdmin, scopedPartnerIds, hasNoScope, applyPartnerScope } = useAdminLeadScope();
+
   const [filters, setFilters] = useState<LeadQueueFilters>(defaultQueueFilters);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<Date>(new Date());
 
@@ -109,42 +115,92 @@ export function useAdminDashboard() {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ---- Metrics: 8 ops-meaningful counts (head:true, no rows fetched) ----
+  // Stable identity for partner-scope to avoid retriggering callbacks every render.
+  const scopeKey = useMemo(
+    () => `${isSuperAdmin ? "*" : scopedPartnerIds.join(",")}|${hasNoScope ? "x" : "ok"}|${scopeReady ? "1" : "0"}`,
+    [isSuperAdmin, scopedPartnerIds, hasNoScope, scopeReady],
+  );
+
+  // ---- Metrics ----
   const fetchMetrics = useCallback(async () => {
+    if (!scopeReady) return;
+    if (hasNoScope) {
+      setMetrics({ data: EMPTY_METRICS, loading: false, error: null });
+      return;
+    }
     setMetrics((s) => ({ ...s, loading: true, error: null }));
     try {
-      const leadsBase = () => supabase.from("student_leads").select("*", { count: "exact", head: true }).eq("is_archived", false);
+      const leadsBase = () =>
+        applyPartnerScope(
+          supabase.from("student_leads").select("*", { count: "exact", head: true }).eq("is_archived", false),
+        );
 
-      // Follow-up Required: open leads (not draft, not closed/final)
       const followUpQuery = leadsBase().not(
         "current_stage",
         "in",
         `(${ACTION_NEEDED_EXCLUDED_STAGES.join(",")})`,
       );
 
-      // Review Due: fetch the same open universe with the 16 mandatory columns,
-      // count missing per row in JS, keep rows with > 5 missing.
-      const reviewDueQuery = supabase
-        .from("student_leads")
-        .select(REVIEW_DUE_SELECT_COLUMNS)
-        .eq("is_archived", false)
-        .not("current_stage", "in", `(${ACTION_NEEDED_EXCLUDED_STAGES.join(",")})`);
+      const reviewDueQuery = applyPartnerScope(
+        supabase
+          .from("student_leads")
+          .select(REVIEW_DUE_SELECT_COLUMNS)
+          .eq("is_archived", false)
+          .not("current_stage", "in", `(${ACTION_NEEDED_EXCLUDED_STAGES.join(",")})`),
+      );
+
+      // Lead-derived counts (edit requests + docs) get scoped via lead_id subset
+      // for regular admins; super admins skip the join.
+      let scopedLeadIdsForJoins: string[] | null = null;
+      if (!isSuperAdmin) {
+        const { data: scopedLeads } = await applyPartnerScope(
+          supabase.from("student_leads").select("id").eq("is_archived", false),
+        );
+        scopedLeadIdsForJoins = (scopedLeads ?? []).map((r: any) => r.id);
+      }
+
+      let pendingReqQuery: any = supabase.from("lead_edit_requests").select("*", { count: "exact", head: true }).eq("status", "pending");
+      let docsToVerifyQuery: any = supabase.from("lead_documents").select("*", { count: "exact", head: true }).eq("is_latest", true).eq("verification_status", "uploaded");
+      if (scopedLeadIdsForJoins !== null) {
+        const ids = scopedLeadIdsForJoins.length ? scopedLeadIdsForJoins : ["00000000-0000-0000-0000-000000000000"];
+        pendingReqQuery = pendingReqQuery.in("lead_id", ids);
+        docsToVerifyQuery = docsToVerifyQuery.in("lead_id", ids);
+      }
+
+      // Partners count: scoped admins see only their assigned partners that are active+not archived.
+      let activePartnersCount: number;
+      if (isSuperAdmin) {
+        const { count } = await supabase
+          .from("partner_organizations")
+          .select("*", { count: "exact", head: true })
+          .eq("status", "active")
+          .eq("is_archived", false);
+        activePartnersCount = count ?? 0;
+      } else {
+        const ids = scopedPartnerIds.length ? scopedPartnerIds : ["00000000-0000-0000-0000-000000000000"];
+        const { count } = await supabase
+          .from("partner_organizations")
+          .select("*", { count: "exact", head: true })
+          .in("id", ids)
+          .eq("status", "active")
+          .eq("is_archived", false);
+        activePartnersCount = count ?? 0;
+      }
 
       const [
-        total, pendingReq, docsToVerify, sentLender, sanction, disb, activePart,
+        total, pendingReq, docsToVerify, sentLender, sanction, disb,
         followUp, reviewDueRows,
       ] = await Promise.all([
         leadsBase(),
-        supabase.from("lead_edit_requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
-        supabase.from("lead_documents").select("*", { count: "exact", head: true }).eq("is_latest", true).eq("verification_status", "uploaded"),
+        pendingReqQuery,
+        docsToVerifyQuery,
         leadsBase().eq("current_stage", "sent_to_lender"),
         leadsBase().eq("current_stage", "sanction_received"),
         leadsBase().eq("current_stage", "disbursed"),
-        supabase.from("partner_organizations").select("*", { count: "exact", head: true }).eq("status", "active").eq("is_archived", false),
         followUpQuery,
         reviewDueQuery,
       ]);
-      const errs = [total.error, pendingReq.error, docsToVerify.error, sentLender.error, sanction.error, disb.error, activePart.error, followUp.error, reviewDueRows.error].filter(Boolean);
+      const errs = [total.error, pendingReq.error, docsToVerify.error, sentLender.error, sanction.error, disb.error, followUp.error, reviewDueRows.error].filter(Boolean);
       if (errs.length) throw errs[0];
 
       const requestsPendingApproval = pendingReq.count ?? 0;
@@ -165,31 +221,35 @@ export function useAdminDashboard() {
           sentToLender: sentLender.count ?? 0,
           sanctionReceived: sanction.count ?? 0,
           disbursed: disb.count ?? 0,
-          activePartners: activePart.count ?? 0,
+          activePartners: activePartnersCount,
         },
       });
     } catch (e: any) {
       setMetrics({ data: null, loading: false, error: e?.message ?? "Failed to load metrics" });
     }
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scopeKey]);
 
-  // ---- Pipeline (master table + grouped count) ----
+  // ---- Pipeline ----
   const fetchPipeline = useCallback(async () => {
+    if (!scopeReady) return;
     setPipeline((s) => ({ ...s, loading: true, error: null }));
     try {
-      const [stagesRes, leadsRes] = await Promise.all([
-        supabase.from("lifecycle_stage_master")
-          .select("stage_key, stage_label, sort_order, is_terminal")
-          .eq("active_flag", true)
-          .order("sort_order"),
-        // Lightweight: only fetch the stage column, no other fields
-        supabase.from("student_leads").select("current_stage").eq("is_archived", false),
-      ]);
+      const stagesPromise = supabase.from("lifecycle_stage_master")
+        .select("stage_key, stage_label, sort_order, is_terminal")
+        .eq("active_flag", true)
+        .order("sort_order");
+
+      const leadsPromise = hasNoScope
+        ? Promise.resolve({ data: [], error: null } as any)
+        : applyPartnerScope(supabase.from("student_leads").select("current_stage").eq("is_archived", false));
+
+      const [stagesRes, leadsRes] = await Promise.all([stagesPromise, leadsPromise]);
       if (stagesRes.error) throw stagesRes.error;
       if (leadsRes.error) throw leadsRes.error;
 
       const counts: Record<string, number> = {};
-      (leadsRes.data ?? []).forEach((l) => {
+      (leadsRes.data ?? []).forEach((l: any) => {
         counts[l.current_stage] = (counts[l.current_stage] ?? 0) + 1;
       });
 
@@ -205,17 +265,24 @@ export function useAdminDashboard() {
     } catch (e: any) {
       setPipeline({ data: [], loading: false, error: e?.message ?? "Failed to load pipeline" });
     }
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scopeKey]);
 
   // ---- Lead queue (paged, filtered, sorted) ----
   const fetchQueue = useCallback(async (f: LeadQueueFilters) => {
+    if (!scopeReady) return;
+    if (hasNoScope) {
+      setQueue({ data: [], loading: false, error: null });
+      return;
+    }
     setQueue((s) => ({ ...s, loading: true, error: null }));
     try {
-      let q = supabase.from("student_leads")
+      let q: any = supabase.from("student_leads")
         .select("id, lead_id, student_full_name, student_first_name, student_last_name, source_type, current_stage, current_status, updated_at, created_at, partner_id")
         .eq("is_archived", false)
         .order(f.sortBy, { ascending: f.sortDir === "asc" })
         .range(0, 9);
+      q = applyPartnerScope(q);
       if (f.source !== "all") q = q.eq("source_type", f.source);
       if (f.stage !== "all") q = q.eq("current_stage", f.stage);
 
@@ -223,8 +290,7 @@ export function useAdminDashboard() {
       if (leadsRes.error) throw leadsRes.error;
       const leads = leadsRes.data ?? [];
 
-      // Resolve partner names in a single follow-up query
-      const partnerIds = [...new Set(leads.map((l) => l.partner_id).filter(Boolean))];
+      const partnerIds = [...new Set(leads.map((l: any) => l.partner_id).filter(Boolean))] as string[];
       let partnerMap: Record<string, string> = {};
       if (partnerIds.length) {
         const partnersRes = await supabase.from("partner_organizations")
@@ -235,7 +301,7 @@ export function useAdminDashboard() {
         }
       }
 
-      const rows: AdminLeadRow[] = leads.map((l) => ({
+      const rows: AdminLeadRow[] = leads.map((l: any) => ({
         ...l,
         partner_display_name: partnerMap[l.partner_id] ?? null,
       }));
@@ -244,39 +310,48 @@ export function useAdminDashboard() {
     } catch (e: any) {
       setQueue({ data: [], loading: false, error: e?.message ?? "Failed to load lead queue" });
     }
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scopeKey]);
 
-  // ---- Alerts (3 stage-aware queries, capped) ----
+  // ---- Alerts ----
   const fetchAlerts = useCallback(async () => {
+    if (!scopeReady) return;
+    if (hasNoScope) {
+      setAlerts({ data: [], loading: false, error: null });
+      return;
+    }
     setAlerts((s) => ({ ...s, loading: true, error: null }));
     try {
       const staleCutoff = new Date(Date.now() - STALE_HOURS * 60 * 60 * 1000).toISOString();
 
       const [missingRes, docsPendingRes, staleRes] = await Promise.all([
-        // Missing info: only when lead is past draft and in early stages
-        supabase.from("student_leads")
-          .select("id, lead_id, student_full_name, student_first_name, student_last_name, current_stage, current_status, updated_at, student_email, loan_amount_required, university_name_raw, university_id")
-          .eq("is_archived", false)
-          .in("current_stage", REQUIRED_INFO_STAGES)
-          .or("student_email.is.null,loan_amount_required.is.null")
-          .order("updated_at", { ascending: false })
-          .limit(15),
-        // Docs pending stage but no lead_document_requirements rows
-        supabase.from("student_leads")
-          .select("id, lead_id, student_full_name, student_first_name, student_last_name, current_stage, current_status, updated_at")
-          .eq("is_archived", false)
-          .eq("current_stage", "documents_pending")
-          .order("updated_at", { ascending: false })
-          .limit(15),
-        // Stale: not in terminal/draft, not blocked-on-partner status, not updated in 48h
-        supabase.from("student_leads")
-          .select("id, lead_id, student_full_name, student_first_name, student_last_name, current_stage, current_status, updated_at")
-          .eq("is_archived", false)
-          .not("current_stage", "in", `(${STALE_EXCLUDED_STAGES.join(",")})`)
-          .not("current_status", "in", `(${STALE_EXCLUDED_STATUSES.join(",")})`)
-          .lt("updated_at", staleCutoff)
-          .order("updated_at", { ascending: true })
-          .limit(10),
+        applyPartnerScope(
+          supabase.from("student_leads")
+            .select("id, lead_id, student_full_name, student_first_name, student_last_name, current_stage, current_status, updated_at, student_email, loan_amount_required, university_name_raw, university_id")
+            .eq("is_archived", false)
+            .in("current_stage", REQUIRED_INFO_STAGES)
+            .or("student_email.is.null,loan_amount_required.is.null")
+            .order("updated_at", { ascending: false })
+            .limit(15)
+        ),
+        applyPartnerScope(
+          supabase.from("student_leads")
+            .select("id, lead_id, student_full_name, student_first_name, student_last_name, current_stage, current_status, updated_at")
+            .eq("is_archived", false)
+            .eq("current_stage", "documents_pending")
+            .order("updated_at", { ascending: false })
+            .limit(15)
+        ),
+        applyPartnerScope(
+          supabase.from("student_leads")
+            .select("id, lead_id, student_full_name, student_first_name, student_last_name, current_stage, current_status, updated_at")
+            .eq("is_archived", false)
+            .not("current_stage", "in", `(${STALE_EXCLUDED_STAGES.join(",")})`)
+            .not("current_status", "in", `(${STALE_EXCLUDED_STATUSES.join(",")})`)
+            .lt("updated_at", staleCutoff)
+            .order("updated_at", { ascending: true })
+            .limit(10)
+        ),
       ]);
 
       if (missingRes.error) throw missingRes.error;
@@ -286,7 +361,7 @@ export function useAdminDashboard() {
       const items: AdminAlert[] = [];
       const nameOf = (l: any) => l.student_full_name ?? `${l.student_first_name}${l.student_last_name ? " " + l.student_last_name : ""}`;
 
-      (missingRes.data ?? []).forEach((l) => {
+      (missingRes.data ?? []).forEach((l: any) => {
         const missing: string[] = [];
         if (!l.student_email) missing.push("email");
         if (!l.loan_amount_required) missing.push("loan amount");
@@ -301,14 +376,13 @@ export function useAdminDashboard() {
         });
       });
 
-      // For docs_not_started, check which leads in documents_pending have zero requirements
       const docsPendingLeads = docsPendingRes.data ?? [];
       if (docsPendingLeads.length) {
         const reqRes = await supabase.from("lead_document_requirements")
           .select("lead_id")
-          .in("lead_id", docsPendingLeads.map((l) => l.id));
+          .in("lead_id", docsPendingLeads.map((l: any) => l.id));
         const withReqs = new Set((reqRes.data ?? []).map((r) => r.lead_id));
-        docsPendingLeads.filter((l) => !withReqs.has(l.id)).slice(0, 10).forEach((l) => {
+        docsPendingLeads.filter((l: any) => !withReqs.has(l.id)).slice(0, 10).forEach((l: any) => {
           items.push({
             id: `docs-${l.id}`, category: "docs_not_started",
             lead_uuid: l.id, lead_id: l.lead_id, student_name: nameOf(l),
@@ -319,7 +393,7 @@ export function useAdminDashboard() {
         });
       }
 
-      (staleRes.data ?? []).forEach((l) => {
+      (staleRes.data ?? []).forEach((l: any) => {
         const ageHrs = Math.floor((Date.now() - new Date(l.updated_at).getTime()) / (60 * 60 * 1000));
         items.push({
           id: `stale-${l.id}`, category: "stale",
@@ -334,7 +408,8 @@ export function useAdminDashboard() {
     } catch (e: any) {
       setAlerts({ data: [], loading: false, error: e?.message ?? "Failed to load alerts" });
     }
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scopeKey]);
 
   const refreshAll = useCallback(() => {
     setLastRefreshedAt(new Date());
@@ -344,7 +419,6 @@ export function useAdminDashboard() {
     fetchAlerts();
   }, [fetchMetrics, fetchPipeline, fetchQueue, fetchAlerts, filters]);
 
-  // Initial load + filter changes for the queue only
   useEffect(() => { fetchQueue(filters); }, [filters, fetchQueue]);
 
   useEffect(() => {
@@ -353,14 +427,12 @@ export function useAdminDashboard() {
     fetchAlerts();
   }, [fetchMetrics, fetchPipeline, fetchAlerts]);
 
-  // Refresh on tab focus
   useEffect(() => {
     const onFocus = () => refreshAll();
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
   }, [refreshAll]);
 
-  // Realtime subscription with debounce
   useEffect(() => {
     const channel = supabase
       .channel("admin-dashboard-leads")
