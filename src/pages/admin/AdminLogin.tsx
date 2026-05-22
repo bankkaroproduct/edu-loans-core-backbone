@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,12 +10,12 @@ import { toast } from "sonner";
 import { Shield, Lock, AlertTriangle, Eye, EyeOff } from "lucide-react";
 
 /**
- * Dedicated Admin sign-in page.
- * - Always renders the form. signInWithPassword overwrites any existing session.
- * - Non-admin credentials are signed out immediately with a clear error.
+ * Dedicated Admin sign-in page. Atomic signIn validates role server-side
+ * before flipping auth state; mismatched accounts are signed out cleanly.
  */
 export default function AdminLogin() {
   const navigate = useNavigate();
+  const { signIn } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,55 +28,16 @@ export default function AdminLogin() {
     setErrorMsg(null);
     setSubmitting(true);
 
-
-
     const normalizedEmail = email.trim().toLowerCase();
-    const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
+    const { error } = await signIn(normalizedEmail, password, { expect: "admin" });
     if (error) {
-      setErrorMsg(error.message);
-      setSubmitting(false);
-      return;
-    }
-
-    // Verify role server-side via the users table before allowing entry.
-    const { data: authData } = await supabase.auth.getUser();
-    const authId = authData.user?.id;
-    if (!authId) {
-      setErrorMsg("Could not establish session. Please try again.");
-      setSubmitting(false);
-      return;
-    }
-
-    const { data: profile } = await supabase
-      .from("users")
-      .select("role, is_active")
-      .eq("auth_user_id", authId)
-      .maybeSingle();
-
-    if (!profile) {
-      await supabase.auth.signOut();
-      setErrorMsg("Admin profile not found. Please contact a super admin.");
-      setSubmitting(false);
-      return;
-    }
-
-    const role = profile?.role;
-    if (role !== "super_admin" && role !== "admin") {
-      await supabase.auth.signOut();
-      setErrorMsg("This account is not authorised for the Admin Portal. Please use the Partner Portal sign-in.");
-      setSubmitting(false);
-      return;
-    }
-    if (profile && profile.is_active === false) {
-      await supabase.auth.signOut();
-      setErrorMsg("This admin account is deactivated. Please contact a super admin.");
+      setErrorMsg(error);
       setSubmitting(false);
       return;
     }
 
     toast.success("Welcome back, admin");
-    window.location.href = "/admin";
-
+    window.location.assign("/admin");
   };
 
   return (

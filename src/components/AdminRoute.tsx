@@ -8,28 +8,27 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 /**
  * Gate for /admin/* routes (excluding /admin/login).
- * - Unauthenticated → /admin/login
- * - Authenticated but not admin → / (with toast)
- * - Admin → renders inside the dedicated AdminLayout
+ * Pure function of `status` + `appUser.role` — never reads `user` alone,
+ * never redirects while `initializing`.
  */
 export function AdminRoute({ children }: { children: React.ReactNode }) {
-  const { user, appUser, loading } = useAuth();
+  const { status, appUser } = useAuth();
   const location = useLocation();
 
   const role = appUser?.role;
   const isAdmin = role === "super_admin" || role === "admin";
 
   useEffect(() => {
-    if (!loading && user && appUser && !isAdmin) {
+    if (status === "authenticated" && !isAdmin) {
       toast({
         title: "Partner account detected",
         description: "Use the Partner Portal for this account.",
         variant: "destructive",
       });
     }
-  }, [loading, user, appUser, isAdmin]);
+  }, [status, isAdmin]);
 
-  if (loading) {
+  if (status === "initializing") {
     return (
       <div className="p-6 space-y-4">
         <Skeleton className="h-8 w-48" />
@@ -39,10 +38,11 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user) {
+  if (status === "anonymous" || status === "unauthorized") {
     return <Navigate to="/admin/login" replace state={{ from: location }} />;
   }
 
+  // status === "authenticated"
   if (!isAdmin) {
     return <Navigate to="/" replace />;
   }
