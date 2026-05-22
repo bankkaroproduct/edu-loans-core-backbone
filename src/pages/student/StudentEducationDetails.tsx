@@ -20,6 +20,7 @@ import { sanitizeWorkExpInput, formatWorkExperience } from "@/lib/workExperience
 import { Checkbox } from "@/components/ui/checkbox";
 import { normalizeAcademicScore, validateScoreTotalPair } from "@/lib/academicScore";
 import { validateTestScoresMap } from "@/lib/leadScoreRanges";
+import { TEST_SCORE_LIMITS, validateTestScore } from "@/lib/testScoreLimits";
 import { ScoreTotalPair } from "@/components/shared/ScoreTotalPair";
 import { getEnabledLevels, getMirroredHighestQual } from "@/lib/academicLevelCascade";
 
