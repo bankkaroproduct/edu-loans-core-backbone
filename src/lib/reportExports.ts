@@ -273,6 +273,7 @@ export async function fetchLeadsReport(f: ReportFilterState): Promise<ReportResu
 }
 
 export async function fetchStageMovementReport(f: ReportFilterState): Promise<ReportResult<any>> {
+  if (f.scopedPartnerIds && f.scopedPartnerIds.length === 0) return { rows: [], count: 0, capped: false };
   const total = await countStageMovement(f);
   if (total > REPORT_ROW_CAP) return { rows: [], count: total, capped: true };
 
@@ -283,13 +284,11 @@ export async function fetchStageMovementReport(f: ReportFilterState): Promise<Re
     );
   q = applyDateRange(q, f, "created_at");
   if (f.newStage && f.newStage !== "all") q = q.eq("new_stage", f.newStage);
-  if (f.partnerId !== "all") {
-    const { data: leadIds } = await supabase
-      .from("student_leads")
-      .select("id")
-      .eq("partner_id", f.partnerId)
-      .eq("is_archived", false)
-      .limit(REPORT_ROW_CAP);
+  if (f.partnerId !== "all" || f.scopedPartnerIds) {
+    let leadQ: any = supabase.from("student_leads").select("id").eq("is_archived", false).limit(REPORT_ROW_CAP);
+    if (f.partnerId !== "all") leadQ = leadQ.eq("partner_id", f.partnerId);
+    else leadQ = applyScope(leadQ, f);
+    const { data: leadIds } = await leadQ;
     q = q.in("lead_id", ((leadIds ?? []) as Array<{id: string}>).map((l) => l.id));
   }
   q = q.order("created_at", { ascending: false }).limit(REPORT_ROW_CAP);
