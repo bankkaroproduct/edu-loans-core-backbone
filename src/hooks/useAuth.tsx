@@ -72,12 +72,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const userRef = useRef<User | null>(null);
   userRef.current = user;
 
+  // Monotonically increasing token. Every hydrate/sign-in captures the
+  // current value; if it changes during an in-flight async op, the
+  // result is discarded. Prevents stale profile from overwriting a
+  // fresh login (e.g. Admin hydration landing after Partner sign-in).
+  const authOpRef = useRef(0);
+  const nextOp = () => ++authOpRef.current;
+  const isCurrentOp = (op: number) => authOpRef.current === op;
+
   // Hydrate from a Supabase session (boot or auth event). Atomic: nothing
-  // flips `status` until profile fetch + validity check completes.
+  // flips `status` until profile fetch + validity check completes — and
+  // only if no newer auth op has started in the meantime.
   const hydrateFromSession = async (session: Session | null, mounted: () => boolean) => {
+    const op = nextOp();
     const nextUser = session?.user ?? null;
     if (!nextUser) {
-      if (!mounted()) return;
+      if (!mounted() || !isCurrentOp(op)) return;
       setUser(null);
       setAppUser(null);
       setStatus("anonymous");
@@ -85,7 +95,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const profile = await fetchProfile(nextUser.id);
-    if (!mounted()) return;
+    if (!mounted() || !isCurrentOp(op)) return;
+    // Defensive: profile must belong to the user we hydrated for.
+    if (profile && profile.auth_user_id !== nextUser.id) return;
 
     setUser(nextUser);
     setAppUser(profile);
@@ -114,6 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (event === "SIGNED_OUT") {
         if (!isMounted) return;
+        nextOp(); // invalidate any in-flight hydrate
         setUser(null);
         setAppUser(null);
         setStatus("anonymous");
@@ -135,13 +148,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string, opts: SignInOptions) => {
-    // Atomic sign-in: password → profile fetch (using returned id, no
-    // getUser round-trip) → role/portal validation. State is set
-    // synchronously before returning, so the caller can hard-redirect
-    // and the next boot sees a settled session.
+    // Atomic sign-in: invalidate any in-flight hydrate → clear stale
+    // profile → password → profile fetch (using returned id) → role
+    // validation. Stale Admin hydration that finishes later cannot
+    // overwrite the fresh Partner profile (or vice-versa).
+    const op = nextOp();
+    setUser(null);
+    setAppUser(null);
     setStatus("initializing");
 
+    // Ensure the prior auth session is fully torn down so the new
+    // sign-in is the only owner of the auth state.
+    await supabase.auth.signOut().catch(() => undefined);
+    if (!isCurrentOp(op)) return { error: null };
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!isCurrentOp(op)) return { error: null };
     if (error || !data.user) {
       await supabase.auth.signOut().catch(() => undefined);
       setUser(null);
@@ -151,44 +173,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const profile = await fetchProfile(data.user.id);
+    if (!isCurrentOp(op)) return { error: null };
 
-    if (!profile) {
-      await supabase.auth.signOut().catch(() => undefined);
-      setUser(null);
-      setAppUser(null);
-      setStatus("anonymous");
-      return {
-        error:
-          opts.expect === "admin"
-            ? "Admin profile not found. Please contact a super admin."
-            : "Account profile not found. Please contact your administrator.",
-      };
+    const fail = (msg: string) => {
+      void supabase.auth.signOut().catch(() => undefined);
+      if (isCurrentOp(op)) {
+        setUser(null);
+        setAppUser(null);
+        setStatus("anonymous");
+      }
+      return { error: msg };
+    };
+
+    if (!profile || profile.auth_user_id !== data.user.id) {
+      return fail(
+        opts.expect === "admin"
+          ? "Admin profile not found. Please contact a super admin."
+          : "Account profile not found. Please contact your administrator."
+      );
     }
 
     if (!profileIsActive(profile)) {
-      await supabase.auth.signOut().catch(() => undefined);
-      setUser(null);
-      setAppUser(null);
-      setStatus("anonymous");
-      return {
-        error:
-          opts.expect === "admin"
-            ? "This admin account is deactivated. Please contact a super admin."
-            : "This account is deactivated. Please contact your administrator.",
-      };
+      return fail(
+        opts.expect === "admin"
+          ? "This admin account is deactivated. Please contact a super admin."
+          : "This account is deactivated. Please contact your administrator."
+      );
     }
 
     if (!roleMatchesPortal(profile.role, opts.expect)) {
-      await supabase.auth.signOut().catch(() => undefined);
-      setUser(null);
-      setAppUser(null);
-      setStatus("anonymous");
-      return {
-        error:
-          opts.expect === "admin"
-            ? "This account is not authorised for the Admin Portal. Please use the Partner Portal sign-in."
-            : "This account is not authorised for the Partner Portal. Please use the Admin Portal sign-in.",
-      };
+      return fail(
+        opts.expect === "admin"
+          ? "This account is not authorised for the Admin Portal. Please use the Partner Portal sign-in."
+          : "This account is not authorised for the Partner Portal. Please use the Admin Portal sign-in."
+      );
     }
 
     setUser(data.user);
