@@ -39,10 +39,17 @@ export default function AdminLogin() {
     }
   }, [loading, user, appUser, navigate, location.state]);
 
-  // If a partner/student is already authenticated, show a sign-out prompt
-  // instead of silently redirecting — supports clean cross-portal switching.
+  // If a partner/student session is present, auto sign them out so the
+  // admin login form is immediately usable. No manual click required.
   const isWrongRoleSession =
     !loading && !!user && !!appUser && appUser.role !== "super_admin" && appUser.role !== "admin";
+  useEffect(() => {
+    if (isWrongRoleSession && !signingOut) {
+      setSigningOut(true);
+      void signOut().finally(() => setSigningOut(false));
+    }
+  }, [isWrongRoleSession, signingOut, signOut]);
+  const switchingSessions = isWrongRoleSession || signingOut;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
