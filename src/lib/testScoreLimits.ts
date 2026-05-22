@@ -42,3 +42,20 @@ export function validateTestScore(
   }
   return null;
 }
+
+/**
+ * Hard-cap a test score input value on change.
+ * - Empty / lone "-" pass through (allow clearing & typing).
+ * - Non-numeric is rejected (returns previous-safe empty string).
+ * - Above max → clamped to max; below min → clamped to min.
+ */
+export function clampTestScore(key: string, value: string): string {
+  const limit = TEST_SCORE_LIMITS[key];
+  if (!limit) return value;
+  if (value === "" || value === "-") return value;
+  const num = parseFloat(value);
+  if (Number.isNaN(num)) return "";
+  if (num > limit.max) return String(limit.max);
+  if (num < limit.min) return String(limit.min);
+  return value;
+}

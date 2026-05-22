@@ -110,7 +110,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   if (!user) return <Navigate to="/login" replace />;
 
   if (appUser && (appUser.role === "super_admin" || appUser.role === "admin")) {
-    return <Navigate to="/admin" replace />;
+    return <Navigate to="/admin" replace state={{ roleRedirectToast: "Use the Admin Portal for this account." }} />;
   }
 
   const isDashboard = location.pathname === "/";
