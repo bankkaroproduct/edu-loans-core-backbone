@@ -325,17 +325,23 @@ export default function AdminLeads() {
     } finally {
       setLoading(false);
     }
-  }, [filters, sortKey, sortDir, page, applyBusinessFilters, cardFilter, highPriorityIds]);
+  }, [filters, sortKey, sortDir, page, applyBusinessFilters, cardFilter, highPriorityIds, scopeReady, hasNoScope, applyPartnerScope]);
 
   useEffect(() => { fetchPage(); }, [fetchPage]);
 
   // Fetch filter-aware health counts (lightweight head:true).
   // Total = current filters; the others = current filters with their own stage/status override.
   const fetchHealthCounts = useCallback(async () => {
+    if (!scopeReady) return;
+    if (hasNoScope) {
+      setHealthCounts({ total: 0, pendingReview: 0, withLender: 0, sanction: 0, highPriority: 0 });
+      return;
+    }
     const buildCount = (overrideStage?: StageEnum, overrideStatuses?: StatusEnum[], restrictIds?: string[]) => {
       let q: any = supabase.from("student_leads")
         .select("*", { count: "exact", head: true })
         .eq("is_archived", false);
+      q = applyPartnerScope(q);
       if (overrideStage) q = q.eq("current_stage", overrideStage);
       else if (filters.stage !== "all") q = q.eq("current_stage", filters.stage);
       if (overrideStatuses) q = q.in("current_status", overrideStatuses);
