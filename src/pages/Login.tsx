@@ -119,7 +119,7 @@ function LoginForm() {
     setErrorMsg(null);
     setSubmitting(true);
 
-    await supabase.auth.signOut();
+
 
     // Resolve username -> email if needed. Emails fall through unchanged.
     let email = identifier.trim();
