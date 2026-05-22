@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { StudentHeader } from "@/components/student/StudentHeader";
 import { StudentFooter } from "@/components/student/StudentFooter";
 import { Button } from "@/components/ui/button";
@@ -14,12 +14,6 @@ import {
   ArrowLeft, Mail, Phone, PartyPopper
 } from "lucide-react";
 import { INRAmountStacked } from "@/components/shared/INRAmountStacked";
-import { buildBreProfileFromLead } from "@/lib/bre/leadProfile";
-import { evaluate } from "@/lib/bre/engine";
-import type { BreResult } from "@/lib/bre/types";
-import { mapLenderCards, type LenderCard } from "@/components/student/recommendations/lenderCardModel";
-import { LenderMatchCard } from "@/components/student/recommendations/LenderMatchCard";
-import { MatchesPageChrome, type SortKey } from "@/components/student/recommendations/MatchesPageChrome";
 
 interface Recommendation {
   id: string;
@@ -73,10 +67,6 @@ export default function StudentRecommendations() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [leadSummary, setLeadSummary] = useState<LeadSummary | null>(null);
   const [hasPendingDocs, setHasPendingDocs] = useState(false);
-  const [breCards, setBreCards] = useState<LenderCard[] | null>(null);
-  const [collateralLabel, setCollateralLabel] = useState<string | null>(null);
-  const [eligibleOnly, setEligibleOnly] = useState(false);
-  const [sort, setSort] = useState<SortKey>("recommended");
 
   useEffect(() => {
     if (!isVerified) { navigate("/student/login"); return; }
@@ -99,51 +89,6 @@ export default function StudentRecommendations() {
       setLeadSummary(data.lead_summary);
       setRecommendations(data.recommendations || []);
       setHasPendingDocs(data.has_pending_docs);
-
-      // ── Additive: redesigned cards via live BRE evaluation ─────────────
-      // Silent fallback to legacy cards if bre_payload is absent or eval throws.
-      try {
-        const p = data?.bre_payload;
-        if (p?.lead && p?.cfg && Array.isArray(p?.rules) && p.rules.length > 0) {
-          const built = buildBreProfileFromLead(p.lead);
-          // Override university bucket fields using master row resolved server-side
-          // (universities_master isn't readable by anon student client).
-          const um = p.university_master;
-          if (um) {
-            const profile: any = built.profile;
-            if (profile.university) {
-              profile.university.ranking_bucket = um.ranking_bucket ?? profile.university.ranking_bucket;
-              profile.university.employability_outlook =
-                um.employability_outlook ?? profile.university.employability_outlook;
-              // tier preference: global_rank > rank_band > ranking_bucket
-              if (um.global_rank != null) {
-                profile.university.university_tier =
-                  um.global_rank <= 100 ? "tier_1"
-                  : um.global_rank <= 300 ? "tier_2"
-                  : um.global_rank <= 1000 ? "tier_3"
-                  : "unranked";
-              } else if (um.rank_band) {
-                profile.university.university_tier = um.rank_band;
-              } else if (um.ranking_bucket) {
-                profile.university.university_tier = um.ranking_bucket;
-              }
-            }
-          }
-          const result: BreResult = evaluate(built.profile, p.cfg, p.rules);
-          setBreCards(mapLenderCards(result));
-          setCollateralLabel(
-            result.collateral_route === "secured" ? "Secured"
-            : result.collateral_route === "unsecured" ? "Unsecured"
-            : result.collateral_route === "both" ? "Either" : null
-          );
-        } else {
-          setBreCards(null);
-        }
-      } catch (e) {
-        console.warn("[student.recommendations.bre_eval_failed]", e);
-        setBreCards(null);
-      }
-
       setPageState(data.recommendations?.length > 0 ? "has_matches" : (data.total_matches > 0 ? "no_matches" : "under_review"));
     } catch (err: any) {
       console.error("Load recommendations error:", err);
@@ -303,89 +248,71 @@ export default function StudentRecommendations() {
                 </div>
               )}
 
-              {/* Recommendation cards — redesigned via BRE result when available */}
-              {breCards && leadSummary ? (
-                <RedesignedMatches
-                  cards={breCards}
-                  leadSummary={leadSummary}
-                  collateralLabel={collateralLabel}
-                  eligibleOnly={eligibleOnly}
-                  setEligibleOnly={setEligibleOnly}
-                  sort={sort}
-                  setSort={setSort}
-                  formatAmount={formatAmount}
-                  onCta={(lenderName) => {
-                    const cardCTA = getCardCTA();
-                    console.log("[student.recommendation.card_clicked]", { lender: lenderName });
-                    navigate(cardCTA.path);
-                  }}
-                  ctaLabel={getCardCTA().label}
-                />
-              ) : (
-                <div className="mb-6 space-y-4">
-                  {recommendations.map((rec) => {
-                    const colors = FIT_COLORS[rec.fit_label] || FIT_COLORS["Under Review"];
-                    const cardCTA = getCardCTA();
-                    return (
-                      <Card key={rec.id} className={`overflow-hidden transition-shadow hover:shadow-md ${colors.border}`}>
-                        <CardContent className="p-0">
-                          <div className="flex flex-col sm:flex-row">
-                            <div className="flex-1 p-4 sm:p-6">
-                              <div className="mb-3 flex items-center gap-3">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                                  <Building2 className="h-5 w-5 text-primary" />
-                                </div>
-                                <div>
-                                  <h3 className="text-base font-semibold text-foreground">{rec.lender_name}</h3>
-                                  <Badge variant="outline" className={`mt-0.5 text-[10px] ${colors.badge}`}>
-                                    {rec.fit_label}
-                                  </Badge>
-                                </div>
+              {/* Recommendation cards */}
+              <div className="mb-6 space-y-4">
+                {recommendations.map((rec) => {
+                  const colors = FIT_COLORS[rec.fit_label] || FIT_COLORS["Under Review"];
+                  const cardCTA = getCardCTA();
+                  return (
+                    <Card key={rec.id} className={`overflow-hidden transition-shadow hover:shadow-md ${colors.border}`}>
+                      <CardContent className="p-0">
+                        <div className="flex flex-col sm:flex-row">
+                          <div className="flex-1 p-4 sm:p-6">
+                            <div className="mb-3 flex items-center gap-3">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                                <Building2 className="h-5 w-5 text-primary" />
                               </div>
-
-                              {rec.reason_summary && (
-                                <p className="mb-3 text-sm text-muted-foreground">{rec.reason_summary}</p>
-                              )}
-
-                              <div className="mb-3 rounded-lg bg-muted/50 p-3">
-                                <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Why this suits you</p>
-                                <ul className="space-y-1">
-                                  {rec.why_bullets.map((bullet, bi) => (
-                                    <li key={bi} className="flex items-start gap-2 text-sm text-foreground">
-                                      <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                                      {bullet}
-                                    </li>
-                                  ))}
-                                </ul>
+                              <div>
+                                <h3 className="text-base font-semibold text-foreground">{rec.lender_name}</h3>
+                                <Badge variant="outline" className={`mt-0.5 text-[10px] ${colors.badge}`}>
+                                  {rec.fit_label}
+                                </Badge>
                               </div>
-
-                              {rec.processing_time_days && (
-                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                  <Clock className="h-3.5 w-3.5" />
-                                  Typical processing: {rec.processing_time_days} days
-                                </div>
-                              )}
                             </div>
 
-                            <div className="flex items-center border-t p-4 sm:border-l sm:border-t-0 sm:p-6">
-                              <Button
-                                size="sm"
-                                className="w-full gap-1.5 sm:w-auto"
-                                onClick={() => {
-                                  console.log("[student.recommendation.card_clicked]", { lender: rec.lender_name });
-                                  navigate(cardCTA.path);
-                                }}
-                              >
-                                {cardCTA.label} <ArrowRight className="h-3.5 w-3.5" />
-                              </Button>
+                            {rec.reason_summary && (
+                              <p className="mb-3 text-sm text-muted-foreground">{rec.reason_summary}</p>
+                            )}
+
+                            {/* Why this suits you */}
+                            <div className="mb-3 rounded-lg bg-muted/50 p-3">
+                              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Why this suits you</p>
+                              <ul className="space-y-1">
+                                {rec.why_bullets.map((bullet, bi) => (
+                                  <li key={bi} className="flex items-start gap-2 text-sm text-foreground">
+                                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                                    {bullet}
+                                  </li>
+                                ))}
+                              </ul>
                             </div>
+
+                            {rec.processing_time_days && (
+                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <Clock className="h-3.5 w-3.5" />
+                                Typical processing: {rec.processing_time_days} days
+                              </div>
+                            )}
                           </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              )}
+
+                          <div className="flex items-center border-t p-4 sm:border-l sm:border-t-0 sm:p-6">
+                            <Button
+                              size="sm"
+                              className="w-full gap-1.5 sm:w-auto"
+                              onClick={() => {
+                                console.log("[student.recommendation.card_clicked]", { lender: rec.lender_name });
+                                navigate(cardCTA.path);
+                              }}
+                            >
+                              {cardCTA.label} <ArrowRight className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
 
               {/* Why these options */}
               <Card className="mb-6">
@@ -528,83 +455,6 @@ function SupportCTA() {
       >
         <HelpCircle className="h-4 w-4" /> Need help understanding your options?
       </a>
-    </div>
-  );
-}
-
-function RedesignedMatches({
-  cards,
-  leadSummary,
-  collateralLabel,
-  eligibleOnly,
-  setEligibleOnly,
-  sort,
-  setSort,
-  formatAmount,
-  onCta,
-  ctaLabel,
-}: {
-  cards: LenderCard[];
-  leadSummary: LeadSummary;
-  collateralLabel: string | null;
-  eligibleOnly: boolean;
-  setEligibleOnly: (v: boolean) => void;
-  sort: SortKey;
-  setSort: (s: SortKey) => void;
-  formatAmount: (n: number | null) => ReactNode;
-  onCta: (lenderName: string) => void;
-  ctaLabel: string;
-}) {
-  const eligibleCount = cards.filter((c) => c.eligible).length;
-  const ineligibleCount = cards.length - eligibleCount;
-
-  const filtered = useMemo(() => {
-    let list = eligibleOnly ? cards.filter((c) => c.eligible) : cards;
-    list = [...list].sort((a, b) => {
-      if (sort === "lowest_rate") {
-        const ra = a.indicativeRoi ?? a.roiLow ?? Number.POSITIVE_INFINITY;
-        const rb = b.indicativeRoi ?? b.roiLow ?? Number.POSITIVE_INFINITY;
-        return ra - rb;
-      }
-      if (sort === "top_score") {
-        return (b.score ?? -1) - (a.score ?? -1);
-      }
-      if (sort === "best_fit") {
-        if (a.bestFit !== b.bestFit) return a.bestFit ? -1 : 1;
-        return (a.rank ?? 9999) - (b.rank ?? 9999);
-      }
-      // recommended: keep original order (eligible-first by rank, from mapper)
-      if (a.eligible !== b.eligible) return a.eligible ? -1 : 1;
-      return (a.rank ?? 9999) - (b.rank ?? 9999);
-    });
-    return list;
-  }, [cards, eligibleOnly, sort]);
-
-  return (
-    <div className="mb-6">
-      <MatchesPageChrome
-        eligibleCount={eligibleCount}
-        ineligibleCount={ineligibleCount}
-        showingCount={filtered.length}
-        totalCount={cards.length}
-        summary={leadSummary}
-        collateralLabel={collateralLabel}
-        eligibleOnly={eligibleOnly}
-        onEligibleOnlyChange={setEligibleOnly}
-        sort={sort}
-        onSortChange={setSort}
-        formatAmount={formatAmount}
-      />
-      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
-        {filtered.map((c) => (
-          <LenderMatchCard
-            key={c.lenderId}
-            card={c}
-            ctaLabel={ctaLabel}
-            onCta={() => onCta(c.name)}
-          />
-        ))}
-      </div>
     </div>
   );
 }
