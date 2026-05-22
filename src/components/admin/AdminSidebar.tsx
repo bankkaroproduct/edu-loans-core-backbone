@@ -59,6 +59,7 @@ const commsItems: NavItem[] = [
 const userMgmtItems: NavItem[] = [
   { title: "User Management", url: "/admin/users", icon: UserCog, section: "admin_users" },
   { title: "Team Performance", url: "/admin/team-performance", icon: BarChart3, section: "admin_users" },
+  { title: "Audit Logs", url: "/admin/audit-logs", icon: ScrollText, section: "admin_users" },
 ];
 
 const navBaseClass =
