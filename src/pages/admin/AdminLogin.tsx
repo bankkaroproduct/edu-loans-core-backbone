@@ -28,7 +28,7 @@ export default function AdminLogin() {
     setErrorMsg(null);
     setSubmitting(true);
 
-    await supabase.auth.signOut();
+
 
     const normalizedEmail = email.trim().toLowerCase();
     const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
@@ -75,8 +75,8 @@ export default function AdminLogin() {
     }
 
     toast.success("Welcome back, admin");
-    setSubmitting(false);
-    navigate("/admin", { replace: true });
+    window.location.href = "/admin";
+
   };
 
   return (
