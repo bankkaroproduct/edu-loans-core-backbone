@@ -89,8 +89,7 @@ function buildEvents(
     const newVal = (a.new_value as Record<string, unknown> | null) ?? null;
     const metaVal = (a.meta as Record<string, unknown> | null) ?? null;
 
-
-    auditChips.push({
+    const evt: TimelineEvent = {
       id: `a-${a.id}`,
       type: "audit",
       timestamp: a.created_at,
@@ -100,7 +99,15 @@ function buildEvents(
       oldValue: oldVal,
       newValue: newVal,
       meta: metaVal,
-    });
+    };
+
+    // Promote field edits and lead creation into the main event stream so
+    // they render with the same visual weight as stage changes and notes.
+    if (a.action_type === "admin_direct_edit" || a.action_type === "lead_created") {
+      major.push(evt);
+    } else {
+      auditChips.push(evt);
+    }
   }
 
   major.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
