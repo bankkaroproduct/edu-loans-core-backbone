@@ -43,7 +43,7 @@ function AdminShell({ children }: { children: ReactNode }) {
             {headerContent}
           </header>
         )}
-        <main className="flex-1 px-6 py-7">
+        <main className="flex-1 px-9 pt-7 pb-8">
           {children}
         </main>
       </div>

@@ -35,7 +35,7 @@ export default function AdminDashboard() {
   const closeDrill = (open: boolean) => { if (!open) setDrilldown(null); };
 
   return (
-    <div className="mx-auto max-w-screen-2xl bg-[#FAFBFC] px-9 pt-7 pb-8">
+    <div className="w-full">
       {/* Topbar */}
       <header className="mb-7 flex flex-col items-start justify-between gap-3 sm:flex-row">
         <div className="min-w-0">
