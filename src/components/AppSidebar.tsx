@@ -101,18 +101,15 @@ export function AppSidebar() {
               key={item.title}
               to={item.url}
               end={item.url === "/"}
-              className="group flex items-center gap-2.5 px-[9px] py-[10px] rounded-[7px] text-[13.5px] font-medium transition-colors hover:bg-[#F5F7FA]"
+              className="flex items-center gap-2.5 px-[9px] py-[10px] rounded-[7px] text-[13.5px] font-medium text-[var(--pp-fg-2)] transition-colors hover:bg-[#F5F7FA]"
               activeClassName="!bg-[#EEF2FF] !text-[#0036DA] !font-semibold shadow-[inset_2px_0_0_#0036DA]"
-              style={{ color: "var(--pp-fg-2)" }}
             >
-              <item.icon
-                className="h-[18px] w-[18px] shrink-0 group-[.active]:text-[#0036DA]"
-                style={{ color: "var(--pp-fg-3)" }}
-              />
+              <item.icon className="h-[18px] w-[18px] shrink-0" />
               {!collapsed && <span className="truncate">{item.title}</span>}
             </NavLink>
           ))}
         </nav>
+
 
         {isUnlinkedPartner && !collapsed && (
           <div className="mx-3 mt-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5 text-[11px] text-amber-700 flex gap-2">
