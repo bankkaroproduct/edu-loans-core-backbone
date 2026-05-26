@@ -89,9 +89,6 @@ export default function LeadDetail() {
   const { setHeaderContent, setHideSidebarTrigger, setBackTo } = useHeaderSlot();
 
   const pendingRequest = editRequests.find((r) => r.status === "pending") ?? null;
-  const appliedEditCount = editRequests.filter(
-    (r) => r.status === "applied" && r.applied_changes && Object.keys(r.applied_changes as Record<string, unknown>).length > 0
-  ).length;
   const isDraftLead = lead?.current_stage === "draft";
 
   const headerNode = useMemo(() => {
@@ -102,11 +99,10 @@ export default function LeadDetail() {
         submittedByName={submittedByName}
         isDraft={isDraftLead}
         hasPendingEditRequest={!!pendingRequest}
-        appliedEditCount={appliedEditCount}
         onRequestEdit={() => setEditDialogOpen(true)}
       />
     );
-  }, [lead, submittedByName, isDraftLead, pendingRequest, appliedEditCount]);
+  }, [lead, submittedByName, isDraftLead, pendingRequest]);
 
   useEffect(() => {
     setHideSidebarTrigger(true);
