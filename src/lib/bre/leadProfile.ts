@@ -371,19 +371,21 @@ function deriveCourseLevelFromName(name: string | null | undefined): string | nu
   const n = name.toLowerCase();
   // PhD / doctorate
   if (/\b(phd|ph\.d\.?|doctor(ate|al)?)\b/.test(n)) return "phd";
-  // Diploma / certificate
-  if (/\b(diploma|pg ?diploma|pgdm|certificate)\b/.test(n)) return "diploma";
-  // Masters: MBA/MS/MSc/MA/MTech/ME/MCom/LLM/MPhil/Master(s)
+  // Masters: MBA/MS/MSc/MA/MTech/ME/MCom/MCA/LLM/MPhil/Master(s) +
+  // Indian PG variants (Post Graduate, Postgraduate, PG Diploma, PGDM,
+  // PGPM, PGP, bare "PG"). Checked BEFORE diploma so PG terms win.
   if (
-    /\b(mba|executive mba|emba|m\.?s\.?c?|m\.?a\.?|m\.?tech|m\.?e\.?|m\.?com|llm|m\.?phil|masters?|master of)\b/.test(
+    /\b(mba|executive mba|emba|m\.?s\.?c?|m\.?a\.?|m\.?tech|m\.?e\.?|m\.?com|mca|llm|m\.?phil|masters?|master of|post[- ]?graduate|post[- ]?graduation|postgraduate|pg ?diploma|pgdm|pgpm|pgp|pg)\b/.test(
       n,
     )
   ) {
     return "masters";
   }
-  // Bachelors: B.Tech/BE/BBA/BSc/BA/BCom/LLB/Bachelor(s)
+  // Diploma / certificate (PG variants already consumed above)
+  if (/\b(diploma|certificate)\b/.test(n)) return "diploma";
+  // Bachelors: B.Tech/BE/BBA/BSc/BA/BCom/LLB/Bachelor(s)/Undergraduate/UG
   if (
-    /\b(b\.?tech|b\.?e\.?|bba|b\.?sc|b\.?a\.?|b\.?com|llb|bachelors?|bachelor of|undergrad(uate)?)\b/.test(
+    /\b(b\.?tech|b\.?e\.?|bba|b\.?sc|b\.?a\.?|b\.?com|llb|bachelors?|bachelor of|undergrad(uate)?|ug)\b/.test(
       n,
     )
   ) {
