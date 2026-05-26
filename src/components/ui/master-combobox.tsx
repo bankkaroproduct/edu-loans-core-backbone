@@ -67,15 +67,18 @@ export function MasterCombobox({
   const isManual = !selectedId && manualOpened;
   const selected = options.find((o) => o.id === selectedId) ?? null;
 
-  // Reset local manual flag and clear stray manual text whenever a master
-  // option is chosen via selectedId (covers callers that track an id).
+  // Reset local manual flag and clear stray manual text only when selectedId
+  // actually corresponds to a real master option. Some callers (e.g. AddLead
+  // for in-JSON countries) pass the typed free-text name as selectedId — in
+  // that case we must NOT close the manual input, otherwise manual entry
+  // becomes impossible.
   React.useEffect(() => {
-    if (selectedId) {
+    if (selectedId && options.some((o) => o.id === selectedId)) {
       if (manualOpened) onChangeManual("");
       setManualOpened(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId]);
+  }, [selectedId, options]);
 
   let triggerLabel = placeholder;
   if (selected) triggerLabel = selected.hint ? `${selected.label} (${selected.hint})` : selected.label;
