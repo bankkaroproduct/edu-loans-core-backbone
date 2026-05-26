@@ -32,6 +32,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { formatStateName } from "@/lib/formatStateName";
 import { supabase } from "@/integrations/supabase/client";
 
 interface CityOption {
@@ -168,7 +169,7 @@ export function IndianCityCombobox({
                         <Check className={cn("mr-2 h-4 w-4", selected ? "opacity-100" : "opacity-0")} />
                         <span className="truncate">{opt.district}</span>
                         {opt.state && (
-                          <span className="ml-2 text-xs text-muted-foreground">{opt.state}</span>
+                          <span className="ml-2 text-xs text-muted-foreground">{formatStateName(opt.state)}</span>
                         )}
                       </CommandItem>
                     );

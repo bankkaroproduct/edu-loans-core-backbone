@@ -43,6 +43,7 @@ import { TEST_SCORE_LIMITS, clampTestScore } from "@/lib/testScoreLimits";
 import { usePincodeLookup } from "@/hooks/usePincodeLookup";
 import { sortByPriority } from "@/lib/countryOrder";
 import { buildIntakeSessionOptions, intakeSessionValue, parseIntakeSessionValue } from "@/lib/intakeSession";
+import { formatStateName } from "@/lib/formatStateName";
 import type { Tables } from "@/integrations/supabase/types";
 import { fetchAllUniversitiesMaster } from "@/lib/fetchAllUniversities";
 import { getUniversities as jsonGetUniversities, getCourses as jsonGetCourses, hasCountry as jsonHasCountry } from "@/lib/universitiesData";
@@ -1915,7 +1916,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 <ReviewRow label="Email" value={form.student_email} />
                 <ReviewRow label="WhatsApp" value={form.student_whatsapp} />
                 <ReviewRow label="City" value={form.city} />
-                <ReviewRow label="State" value={form.state} />
+                <ReviewRow label="State" value={formatStateName(form.state)} />
                 <ReviewRow label="Country of Residence" value={form.country_of_residence} />
               </div>
               <div>
