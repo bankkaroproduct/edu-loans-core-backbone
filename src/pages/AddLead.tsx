@@ -1354,14 +1354,15 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   // When the cascade is JSON-driven, option ids are the university
                   // NAME (not a master uuid). Reflect "selected" via name match so
                   // the chosen row stays highlighted in the popover.
+                  const rawName = form.university_name_raw || "";
                   const selectedId = countryInJson
-                    ? (form.university_name_raw || "")
+                    ? (universityOptions.some((o) => o.id === rawName) ? rawName : "")
                     : form.university_id;
                   return (
                     <MasterCombobox
                       options={universityOptions}
                       selectedId={selectedId}
-                      manualValue={selectedId ? "" : form.university_name_raw}
+                      manualValue={rawName}
                       onSelectMaster={(opt) => {
                         const country = form.intended_study_country || "";
                         const masterId = countryInJson
@@ -1397,14 +1398,15 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               <div className="space-y-2 md:col-span-2" data-field="course">
                 <Label>Course</Label>
                 {(() => {
+                  const rawName = form.course_name || "";
                   const selectedId = countryInJson
-                    ? (form.course_name || "")
+                    ? (courseOptions.some((o) => o.id === rawName) ? rawName : "")
                     : form.course_id;
                   return (
                     <MasterCombobox
                       options={courseOptions}
                       selectedId={selectedId}
-                      manualValue={selectedId ? "" : form.course_name}
+                      manualValue={rawName}
                       onSelectMaster={(opt) => {
                         const masterId = countryInJson
                           ? resolveCourseId(opt.label)
