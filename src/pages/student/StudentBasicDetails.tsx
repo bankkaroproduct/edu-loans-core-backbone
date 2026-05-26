@@ -223,7 +223,7 @@ export default function StudentBasicDetails() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Email Address <span className="text-destructive">*</span></Label>
+              <Label>Email Address</Label>
               <Input type="email" value={formData.student_email} onChange={e => updateField("student_email", e.target.value)} placeholder="you@example.com" />
             </div>
             <div className="space-y-1.5">
