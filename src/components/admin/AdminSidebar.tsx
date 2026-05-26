@@ -113,6 +113,56 @@ export function AdminSidebar() {
     </SidebarMenuItem>
   );
 
+  const groupContainsActive = (items: NavItem[]) =>
+    items.some((i) =>
+      i.end ? location.pathname === i.url : location.pathname === i.url || location.pathname.startsWith(i.url + "/"),
+    );
+
+  const renderCollapsibleGroup = (
+    label: string,
+    items: NavItem[],
+    extra?: React.ReactNode,
+  ) => {
+    if (items.length === 0) return null;
+
+    // In icon-only collapsed mode: render flat (no accordion), preserve today's behavior.
+    if (collapsed) {
+      return (
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>{items.map(renderItem)}</SidebarMenu>
+            {extra}
+          </SidebarGroupContent>
+        </SidebarGroup>
+      );
+    }
+
+    const defaultOpen = groupContainsActive(items);
+    return (
+      <SidebarGroup>
+        <Collapsible defaultOpen={defaultOpen} key={`${label}-${defaultOpen ? "o" : "c"}`}>
+          <SidebarGroupLabel asChild className="p-0">
+            <CollapsibleTrigger className="group/collapsible flex w-full items-center justify-between pr-2 rounded-[7px] hover:bg-[#F5F7FA] transition-colors">
+              <span className={sectionLabelClass}>{label}</span>
+              <ChevronDown
+                className="h-3.5 w-3.5 text-[#9AA3AE] mr-1 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180"
+                strokeWidth={2}
+              />
+            </CollapsibleTrigger>
+          </SidebarGroupLabel>
+          <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+            <SidebarGroupContent>
+              <SidebarMenu>{items.map(renderItem)}</SidebarMenu>
+              {extra}
+            </SidebarGroupContent>
+          </CollapsibleContent>
+        </Collapsible>
+      </SidebarGroup>
+    );
+  };
+
+
+
   const userName = appUser?.full_name ?? "";
   const userInitials = initials(userName) || "?";
 
