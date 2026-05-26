@@ -396,7 +396,7 @@ export default function QuickLead() {
               <Input value={form.course_name} onChange={(e) => set("course_name", e.target.value)} placeholder="e.g. MS Computer Science" />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label>Intake Session *</Label>
+              <Label>Intake Session</Label>
               <Select
                 value={intakeSessionValue(form.intake_term, form.intake_year)}
                 onValueChange={(v) => {
