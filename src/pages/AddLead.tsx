@@ -1210,7 +1210,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 <p className="text-xs text-muted-foreground">Name as per Aadhaar Card / Passport</p>
               </div>
               <div className="space-y-2" data-field="student_last_name">
-                <Label>Last Name *</Label>
+                <Label>Last Name</Label>
                 <Input value={form.student_last_name} onChange={(e) => set("student_last_name", e.target.value)} placeholder="Student last name" />
               </div>
               <div className="space-y-2">
