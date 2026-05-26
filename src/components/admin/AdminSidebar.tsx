@@ -3,9 +3,11 @@ import {
   Database, FilePlus, Upload, FileSpreadsheet,
   SlidersHorizontal, History, ScrollText,
   MessageSquare, FileText, Star, UserCog, BarChart3,
+  ChevronDown,
 } from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
 import { NavLink } from "@/components/NavLink";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminPermissions } from "@/hooks/useAdminPermissions";
 import { canAccessBre, normalizeBrePermission } from "@/lib/bre/permissions";
@@ -14,6 +16,7 @@ import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { initials, avatarColor } from "@/components/admin/dashboard/visualHelpers";
@@ -69,11 +72,58 @@ const navActiveClass =
 const sectionLabelClass =
   "text-[10px] uppercase tracking-[0.10em] text-[#9AA3AE] font-bold pl-2.5 pt-3.5 pb-1.5";
 
+type CollapsibleNavGroupProps = {
+  label: string;
+  items: NavItem[];
+  pathname: string;
+  renderItem: (item: NavItem) => JSX.Element;
+  children?: React.ReactNode;
+};
+
+function CollapsibleNavGroup({ label, items, pathname, renderItem, children }: CollapsibleNavGroupProps) {
+  const containsActive = useMemo(
+    () => items.some((i) => (i.end ? pathname === i.url : pathname === i.url || pathname.startsWith(i.url + "/"))),
+    [items, pathname],
+  );
+  const [open, setOpen] = useState(containsActive);
+
+  // Auto-open the group whenever the active route moves into it.
+  useEffect(() => {
+    if (containsActive) setOpen(true);
+  }, [containsActive]);
+
+  return (
+    <SidebarGroup>
+      <Collapsible open={open} onOpenChange={setOpen}>
+        <SidebarGroupLabel asChild className="p-0">
+          <CollapsibleTrigger
+            className="group/trigger flex w-full items-center justify-between pr-2.5 rounded-[7px] hover:bg-[#F5F7FA] transition-colors"
+            aria-label={`${open ? "Collapse" : "Expand"} ${label}`}
+          >
+            <span className={sectionLabelClass}>{label}</span>
+            <ChevronDown
+              className="h-3.5 w-3.5 text-[#9AA3AE] mt-2 transition-transform duration-200 group-data-[state=open]/trigger:rotate-180"
+              strokeWidth={2}
+            />
+          </CollapsibleTrigger>
+        </SidebarGroupLabel>
+        <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+          <SidebarGroupContent>
+            <SidebarMenu>{items.map(renderItem)}</SidebarMenu>
+            {children}
+          </SidebarGroupContent>
+        </CollapsibleContent>
+      </Collapsible>
+    </SidebarGroup>
+  );
+}
+
 export function AdminSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { appUser, signOut } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { canView, isSuperAdmin } = useAdminPermissions();
 
   const breAccess = canAccessBre(appUser?.role, normalizeBrePermission(appUser?.bre_permission));
@@ -107,6 +157,20 @@ export function AdminSidebar() {
         </NavLink>
       </SidebarMenuButton>
     </SidebarMenuItem>
+  );
+
+  const renderFlatGroup = (items: NavItem[], label?: string, extra?: React.ReactNode) => (
+    <SidebarGroup>
+      {label && (
+        <SidebarGroupLabel className="p-0">
+          <span className={sectionLabelClass}>{label}</span>
+        </SidebarGroupLabel>
+      )}
+      <SidebarGroupContent>
+        <SidebarMenu>{items.map(renderItem)}</SidebarMenu>
+        {extra}
+      </SidebarGroupContent>
+    </SidebarGroup>
   );
 
   const userName = appUser?.full_name ?? "";
@@ -143,59 +207,37 @@ export function AdminSidebar() {
         )}
 
         {visibleLeadOpsItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="p-0">
-              {!collapsed && <span className={sectionLabelClass}>Lead Operations</span>}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{visibleLeadOpsItems.map(renderItem)}</SidebarMenu>
-              <AdminPartnerSwitcher collapsed={collapsed} />
-            </SidebarGroupContent>
-          </SidebarGroup>
+          collapsed
+            ? renderFlatGroup(visibleLeadOpsItems, undefined, <AdminPartnerSwitcher collapsed={collapsed} />)
+            : (
+              <CollapsibleNavGroup label="Lead Operations" items={visibleLeadOpsItems} pathname={pathname} renderItem={renderItem}>
+                <AdminPartnerSwitcher collapsed={collapsed} />
+              </CollapsibleNavGroup>
+            )
         )}
 
         {visibleMasterItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="p-0">
-              {!collapsed && <span className={sectionLabelClass}>Master Data</span>}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{visibleMasterItems.map(renderItem)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          collapsed
+            ? renderFlatGroup(visibleMasterItems)
+            : <CollapsibleNavGroup label="Master Data" items={visibleMasterItems} pathname={pathname} renderItem={renderItem} />
         )}
 
         {visibleBreItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="p-0">
-              {!collapsed && <span className={sectionLabelClass}>BRE Engine</span>}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{visibleBreItems.map(renderItem)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          collapsed
+            ? renderFlatGroup(visibleBreItems)
+            : <CollapsibleNavGroup label="BRE Engine" items={visibleBreItems} pathname={pathname} renderItem={renderItem} />
         )}
 
         {visibleCommsItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="p-0">
-              {!collapsed && <span className={sectionLabelClass}>Communications</span>}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{visibleCommsItems.map(renderItem)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          collapsed
+            ? renderFlatGroup(visibleCommsItems)
+            : <CollapsibleNavGroup label="Communications" items={visibleCommsItems} pathname={pathname} renderItem={renderItem} />
         )}
 
         {visibleUserMgmt.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="p-0">
-              {!collapsed && <span className={sectionLabelClass}>Administration</span>}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{visibleUserMgmt.map(renderItem)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          collapsed
+            ? renderFlatGroup(visibleUserMgmt)
+            : <CollapsibleNavGroup label="Administration" items={visibleUserMgmt} pathname={pathname} renderItem={renderItem} />
         )}
       </SidebarContent>
 
