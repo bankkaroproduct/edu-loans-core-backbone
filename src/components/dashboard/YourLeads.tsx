@@ -1,8 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { StageBadge, StatusBadge } from "./StageBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -10,7 +7,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { SlidersHorizontal, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import {
+  SlidersHorizontal,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+  ArrowRight,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { Tables } from "@/integrations/supabase/types";
 import { formatINR } from "@/lib/formatCurrency";
@@ -19,6 +22,54 @@ import { buildIntakeSessionOptions } from "@/lib/intakeSession";
 import { formatDisplayLabel } from "@/lib/formatDisplayLabel";
 import { useLeadMasterData } from "@/hooks/useLeadMasterData";
 import { useDashboardDateFilter } from "./DashboardDateFilterContext";
+import {
+  initials,
+  avatarColor,
+  partnerColor,
+} from "@/components/admin/dashboard/visualHelpers";
+
+// ---- Local presentational pills (snake_case → color map) ----
+type PillTone = { bg: string; fg: string; dot: string };
+const STAGE_TONES: Record<string, PillTone> = {
+  submitted: { bg: "#FFF8E6", fg: "#8C6D00", dot: "#E5A800" },
+  documents_pending: { bg: "#FFF0E6", fg: "#B5470F", dot: "#FF6D1D" },
+  documents_under_review: { bg: "#FFF8E6", fg: "#8C6D00", dot: "#E5A800" },
+  sent_to_lender: { bg: "#F3EEFF", fg: "#6B2BD9", dot: "#9747FF" },
+  sanctioned: { bg: "#ECFBF3", fg: "#167C3D", dot: "#26A651" },
+  sanction_received: { bg: "#ECFBF3", fg: "#167C3D", dot: "#26A651" },
+  disbursed: { bg: "#ECFBF3", fg: "#167C3D", dot: "#26A651" },
+};
+const STATUS_TONES: Record<string, PillTone> = {
+  awaiting_verification: { bg: "#FFF0E6", fg: "#B5470F", dot: "#FF6D1D" },
+  in_progress: { bg: "#EEF2FF", fg: "#0036DA", dot: "#0036DA" },
+  verified: { bg: "#ECFBF3", fg: "#167C3D", dot: "#26A651" },
+  under_review: { bg: "#FFF8E6", fg: "#8C6D00", dot: "#E5A800" },
+};
+const NEUTRAL_TONE: PillTone = { bg: "#F1F3F6", fg: "#45505C", dot: "#9AA3AE" };
+
+function Pill({ tone, label }: { tone: PillTone; label: string }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11.5px] font-semibold whitespace-nowrap"
+      style={{ background: tone.bg, color: tone.fg }}
+    >
+      <span className="h-1.5 w-1.5 rounded-full" style={{ background: tone.dot }} />
+      {label}
+    </span>
+  );
+}
+
+function StagePill({ stage }: { stage: string }) {
+  const tone = STAGE_TONES[stage] ?? NEUTRAL_TONE;
+  return <Pill tone={tone} label={formatStageLabel(stage)} />;
+}
+
+function StatusPill({ status }: { status: string }) {
+  const tone = STATUS_TONES[status] ?? NEUTRAL_TONE;
+  return <Pill tone={tone} label={formatStageLabel(status)} />;
+}
+
+
 
 
 type Lead = Tables<"student_leads">;
