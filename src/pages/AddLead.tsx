@@ -1462,7 +1462,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 return (
               <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2 md:col-span-2" data-field="highest_qualification">
-                <Label>Highest Qualification *</Label>
+                <Label>Highest Qualification</Label>
                 <Select
                   value={form.highest_qualification}
                   onValueChange={(v) => set("highest_qualification", v)}
