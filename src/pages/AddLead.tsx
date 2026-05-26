@@ -1303,7 +1303,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
             <CardHeader><CardTitle className="text-lg">Education & Study Intent</CardTitle></CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2 md:col-span-2" data-field="intended_study_country">
-                <Label>Intended Study Country *</Label>
+                <Label>Intended Study Country</Label>
                 {(() => {
                   const opts: MasterOption[] = sortedCountries.map((c) => ({ id: c.country_name, label: c.country_name }));
                   const current = form.intended_study_country || "";
