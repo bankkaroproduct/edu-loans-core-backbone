@@ -332,7 +332,7 @@ export default function QuickLead() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Pincode *</Label>
+              <Label>Pincode</Label>
               <Input
                 value={form.pincode}
                 onChange={(e) => set("pincode", e.target.value.replace(/\D/g, "").slice(0, 6))}
