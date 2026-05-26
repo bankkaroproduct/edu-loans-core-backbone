@@ -1349,7 +1349,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 })()}
               </div>
               <div className="space-y-2 md:col-span-2" data-field="university">
-                <Label>University *</Label>
+                <Label>University</Label>
                 {(() => {
                   // When the cascade is JSON-driven, option ids are the university
                   // NAME (not a master uuid). Reflect "selected" via name match so
