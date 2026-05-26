@@ -279,7 +279,7 @@ export default function StudentBasicDetails() {
               <Input value={formData.state} onChange={e => updateField("state", e.target.value)} placeholder="e.g. Maharashtra" />
             </div>
             <div className="space-y-1.5">
-              <Label>Destination Country <span className="text-destructive">*</span></Label>
+              <Label>Destination Country</Label>
               {(() => {
                 const sorted = sortByPriority(countries, c => c.country_name);
                 const opts: MasterOption[] = sorted.map(c => ({ id: c.country_name, label: c.country_name }));
