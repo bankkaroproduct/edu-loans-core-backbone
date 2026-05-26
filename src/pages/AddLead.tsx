@@ -1676,7 +1676,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               </div>
               {/* 1. Name */}
               <div className="space-y-2" data-field="coapplicant_name">
-                <Label>Co-Applicant Name *</Label>
+                <Label>Co-Applicant Name</Label>
                 <Input value={form.coapplicant_name} onChange={(e) => set("coapplicant_name", e.target.value)} placeholder="Full name" />
                 <p className="text-xs text-muted-foreground">Name as per Aadhaar and Passport</p>
               </div>
