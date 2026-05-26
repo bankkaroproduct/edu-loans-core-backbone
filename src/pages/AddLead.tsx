@@ -1421,7 +1421,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 })()}
               </div>
               <div className="space-y-2 md:col-span-2" data-field="intake_term">
-                <Label>Intake Session *</Label>
+                <Label>Intake Session</Label>
                 <Select
                   value={intakeSessionValue(form.intake_term, form.intake_year)}
                   onValueChange={(v) => {
