@@ -324,164 +324,239 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
     }
   };
 
+  // Per-tab counts derived from the already-fetched leads array.
+  // No new query, no new state — pure useMemo over existing data.
+  const chipCounts = useMemo(() => {
+    const c: Record<ChipKey, number> = {
+      all: 0, attention: 0, documents_pending: 0, sent_to_lender: 0, disbursed: 0,
+    };
+    for (const l of leads) {
+      if (matchesChip(l, "all")) c.all++;
+      if (matchesChip(l, "attention")) c.attention++;
+      if (matchesChip(l, "documents_pending")) c.documents_pending++;
+      if (matchesChip(l, "sent_to_lender")) c.sent_to_lender++;
+      if (matchesChip(l, "disbursed")) c.disbursed++;
+    }
+    return c;
+  }, [leads]);
+
+  const sortLabel =
+    sort === "updated_desc" ? "Latest Updated"
+    : sort === "created_desc" ? "Newest Submitted"
+    : sort === "created_asc" ? "Oldest Submitted"
+    : sort === "amount_desc" ? "Highest Loan Amount"
+    : sort === "amount_asc" ? "Lowest Loan Amount"
+    : sort === "stage_progression" ? "Stage Progression"
+    : "Action Required First";
+
   return (
-    <Card>
-      <CardHeader className="pb-3 space-y-3">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <CardTitle className="text-base">Your Leads</CardTitle>
-          <div className="flex items-center gap-2 ml-auto">
-            <Popover open={open} onOpenChange={(o) => {
-              setOpen(o);
-              if (o) {
-                setDraftFilters(filters);
-                setDraftDate({
-                  dateField: dateCtx.dateField,
-                  dateRange: dateCtx.dateRange,
-                  dateFrom: dateCtx.dateFrom,
-                  dateTo: dateCtx.dateTo,
-                });
-              }
-            }}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8 relative">
-                  <SlidersHorizontal className="h-3.5 w-3.5 mr-1" />
-                  Filters
-                  {fcount > 0 && (
-                    <Badge variant="secondary" className="ml-1.5 h-4 px-1.5 text-[10px]">{fcount}</Badge>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[420px] p-0" align="end">
-                <div className="max-h-[480px] overflow-y-auto p-4 space-y-4">
-                  <div>
-                    <Label className="text-xs font-semibold mb-2 block">Stage</Label>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {STAGE_OPTIONS.map((o) => (
-                        <label key={o.value} className="flex items-center gap-2 text-xs cursor-pointer">
-                          <Checkbox
-                            checked={draftFilters.stages.includes(o.value)}
-                            onCheckedChange={() => setDraftFilters({ ...draftFilters, stages: toggleArr(draftFilters.stages, o.value) })}
-                          />
-                          {o.label}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="text-xs font-semibold mb-2 block">Source</Label>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {SOURCE_OPTIONS.map((o) => (
-                        <label key={o.value} className="flex items-center gap-2 text-xs cursor-pointer min-w-0" title={o.label}>
-                          <Checkbox
-                            checked={draftFilters.sources.includes(o.value)}
-                            onCheckedChange={() => setDraftFilters({ ...draftFilters, sources: toggleArr(draftFilters.sources, o.value) })}
-                          />
-                          <span className="truncate">{o.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {destinationOptions.length > 0 && (
-                    <div>
-                      <Label className="text-xs font-semibold mb-2 block">Destination</Label>
-                      <div className="grid grid-cols-2 gap-1.5 max-h-32 overflow-y-auto pr-1">
-                        {destinationOptions.map((d) => (
-                          <label key={d.value} className="flex items-center gap-2 text-xs cursor-pointer min-w-0" title={d.label}>
-                            <Checkbox
-                              checked={draftFilters.destinations.includes(d.value)}
-                              onCheckedChange={() => setDraftFilters({ ...draftFilters, destinations: toggleArr(draftFilters.destinations, d.value) })}
-                            />
-                            <span className="truncate">{d.label}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {intakeOptions.length > 0 && (
-                    <div>
-                      <Label className="text-xs font-semibold mb-2 block">Intake</Label>
-                      <div className="grid grid-cols-3 gap-1.5 max-h-32 overflow-y-auto pr-1">
-                        {intakeOptions.map((i) => (
-                          <label key={i.value} className="flex items-center gap-2 text-xs cursor-pointer min-w-0" title={i.label}>
-                            <Checkbox
-                              checked={draftFilters.intakes.includes(i.value)}
-                              onCheckedChange={() => setDraftFilters({ ...draftFilters, intakes: toggleArr(draftFilters.intakes, i.value) })}
-                            />
-                            <span className="truncate">{i.label}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Date filter moved to page-level DashboardFilterBar */}
-
-                  <div>
-                    <Label className="text-xs font-semibold mb-2 block">Loan Amount (₹)</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input
-                        type="number"
-                        placeholder="Min"
-                        className="h-8 text-xs"
-                        value={draftFilters.loanMin}
-                        onChange={(e) => setDraftFilters({ ...draftFilters, loanMin: e.target.value })}
-                      />
-                      <Input
-                        type="number"
-                        placeholder="Max"
-                        className="h-8 text-xs"
-                        value={draftFilters.loanMax}
-                        onChange={(e) => setDraftFilters({ ...draftFilters, loanMax: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between gap-2 border-t p-3">
-                  <Button variant="ghost" size="sm" className="h-8" onClick={resetAll}>Reset</Button>
-                  <Button size="sm" className="h-8" onClick={applyDraft}>Apply</Button>
-                </div>
-              </PopoverContent>
-            </Popover>
-
-            <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
-              <SelectTrigger className="h-8 w-[180px] text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="updated_desc">Latest Updated</SelectItem>
-                <SelectItem value="created_desc">Newest Submitted</SelectItem>
-                <SelectItem value="created_asc">Oldest Submitted</SelectItem>
-                <SelectItem value="amount_desc">Highest Loan Amount</SelectItem>
-                <SelectItem value="amount_asc">Lowest Loan Amount</SelectItem>
-                <SelectItem value="stage_progression">Stage Progression</SelectItem>
-                <SelectItem value="attention_first">Action Required First</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Button variant="link" size="sm" className="h-8" onClick={() => navigate("/leads")}>
-              View All →
-            </Button>
-          </div>
+    <section
+      className="rounded-[12px] border bg-white"
+      style={{ borderColor: "var(--pp-border-1)" }}
+    >
+      <header
+        className="flex items-start justify-between gap-3 flex-wrap px-5 py-4 border-b"
+        style={{ borderColor: "var(--pp-border-2)" }}
+      >
+        <div>
+          <h3
+            className="text-[16px] font-extrabold"
+            style={{ letterSpacing: "-0.015em", color: "var(--pp-fg-1)" }}
+          >
+            Your Leads
+          </h3>
+          <p className="text-[11.5px] font-medium" style={{ color: "var(--pp-fg-3)" }}>
+            Sorted by {sortLabel}
+          </p>
         </div>
+        <div className="flex items-center gap-2">
+          <Popover open={open} onOpenChange={(o) => {
+            setOpen(o);
+            if (o) {
+              setDraftFilters(filters);
+              setDraftDate({
+                dateField: dateCtx.dateField,
+                dateRange: dateCtx.dateRange,
+                dateFrom: dateCtx.dateFrom,
+                dateTo: dateCtx.dateTo,
+              });
+            }
+          }}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 rounded-[7px] border bg-white px-3 py-1.5 text-[12.5px] font-semibold"
+                style={{ borderColor: "var(--pp-border-3)", color: "var(--pp-fg-2)" }}
+              >
+                <SlidersHorizontal className="h-[15px] w-[15px]" />
+                Filters
+                {fcount > 0 && (
+                  <Badge variant="secondary" className="ml-0.5 h-4 px-1.5 text-[10px]">{fcount}</Badge>
+                )}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[420px] p-0" align="end">
+              <div className="max-h-[480px] overflow-y-auto p-4 space-y-4">
+                <div>
+                  <Label className="text-xs font-semibold mb-2 block">Stage</Label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {STAGE_OPTIONS.map((o) => (
+                      <label key={o.value} className="flex items-center gap-2 text-xs cursor-pointer">
+                        <Checkbox
+                          checked={draftFilters.stages.includes(o.value)}
+                          onCheckedChange={() => setDraftFilters({ ...draftFilters, stages: toggleArr(draftFilters.stages, o.value) })}
+                        />
+                        {o.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
 
-        {/* Quick chips row */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {CHIPS.map((c) => (
-            <Button
-              key={c.key}
-              variant={chip === c.key ? "default" : "outline"}
-              size="sm"
-              className="h-7 text-xs px-3"
-              onClick={() => handleChipClick(c.key)}
+                <div>
+                  <Label className="text-xs font-semibold mb-2 block">Source</Label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {SOURCE_OPTIONS.map((o) => (
+                      <label key={o.value} className="flex items-center gap-2 text-xs cursor-pointer min-w-0" title={o.label}>
+                        <Checkbox
+                          checked={draftFilters.sources.includes(o.value)}
+                          onCheckedChange={() => setDraftFilters({ ...draftFilters, sources: toggleArr(draftFilters.sources, o.value) })}
+                        />
+                        <span className="truncate">{o.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {destinationOptions.length > 0 && (
+                  <div>
+                    <Label className="text-xs font-semibold mb-2 block">Destination</Label>
+                    <div className="grid grid-cols-2 gap-1.5 max-h-32 overflow-y-auto pr-1">
+                      {destinationOptions.map((d) => (
+                        <label key={d.value} className="flex items-center gap-2 text-xs cursor-pointer min-w-0" title={d.label}>
+                          <Checkbox
+                            checked={draftFilters.destinations.includes(d.value)}
+                            onCheckedChange={() => setDraftFilters({ ...draftFilters, destinations: toggleArr(draftFilters.destinations, d.value) })}
+                          />
+                          <span className="truncate">{d.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {intakeOptions.length > 0 && (
+                  <div>
+                    <Label className="text-xs font-semibold mb-2 block">Intake</Label>
+                    <div className="grid grid-cols-3 gap-1.5 max-h-32 overflow-y-auto pr-1">
+                      {intakeOptions.map((i) => (
+                        <label key={i.value} className="flex items-center gap-2 text-xs cursor-pointer min-w-0" title={i.label}>
+                          <Checkbox
+                            checked={draftFilters.intakes.includes(i.value)}
+                            onCheckedChange={() => setDraftFilters({ ...draftFilters, intakes: toggleArr(draftFilters.intakes, i.value) })}
+                          />
+                          <span className="truncate">{i.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <Label className="text-xs font-semibold mb-2 block">Loan Amount (₹)</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      type="number"
+                      placeholder="Min"
+                      className="h-8 text-xs"
+                      value={draftFilters.loanMin}
+                      onChange={(e) => setDraftFilters({ ...draftFilters, loanMin: e.target.value })}
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Max"
+                      className="h-8 text-xs"
+                      value={draftFilters.loanMax}
+                      onChange={(e) => setDraftFilters({ ...draftFilters, loanMax: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-2 border-t p-3">
+                <Button variant="ghost" size="sm" className="h-8" onClick={resetAll}>Reset</Button>
+                <Button size="sm" className="h-8" onClick={applyDraft}>Apply</Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
+            <SelectTrigger
+              className="h-8 min-w-[170px] text-[12.5px] font-semibold rounded-[7px]"
+              style={{ borderColor: "var(--pp-border-3)" }}
             >
-              {c.label}
-            </Button>
-          ))}
-        </div>
-      </CardHeader>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="updated_desc">Latest Updated</SelectItem>
+              <SelectItem value="created_desc">Newest Submitted</SelectItem>
+              <SelectItem value="created_asc">Oldest Submitted</SelectItem>
+              <SelectItem value="amount_desc">Highest Loan Amount</SelectItem>
+              <SelectItem value="amount_asc">Lowest Loan Amount</SelectItem>
+              <SelectItem value="stage_progression">Stage Progression</SelectItem>
+              <SelectItem value="attention_first">Action Required First</SelectItem>
+            </SelectContent>
+          </Select>
 
-      <CardContent>
+          <button
+            type="button"
+            onClick={() => navigate("/leads")}
+            className="inline-flex items-center gap-1 text-[12.5px] font-semibold px-1"
+            style={{ color: "var(--pp-blue)" }}
+          >
+            View All
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+      </header>
+
+      {/* Tabs */}
+      <div className="px-5 pt-3 pb-1">
+        <div
+          className="inline-flex items-center gap-1.5 rounded-[8px] p-[2px]"
+          style={{ background: "#F5F7FA" }}
+        >
+          {CHIPS.map((c) => {
+            const isActive = chip === c.key;
+            const count = chipCounts[c.key];
+            return (
+              <button
+                key={c.key}
+                type="button"
+                onClick={() => handleChipClick(c.key)}
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-[6px] text-[12.5px] font-semibold transition-colors"
+                style={
+                  isActive
+                    ? { background: "#1C1B1F", color: "#fff" }
+                    : { color: "var(--pp-fg-2)", background: "transparent" }
+                }
+              >
+                {c.label}
+                <span
+                  className="inline-flex items-center justify-center text-[10.5px] font-bold tabular-nums rounded-full"
+                  style={
+                    isActive
+                      ? { background: "rgba(255,255,255,0.18)", color: "#fff", padding: "1px 6px" }
+                      : { background: "#E5E7EB", color: "var(--pp-fg-2)", padding: "1px 6px" }
+                  }
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="px-5 pb-5 pt-2">
         {loading ? (
           <div className="space-y-3">
             {[1, 2, 3, 4, 5, 6].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
@@ -501,19 +576,22 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="h-11">
-                  <TableHead className="w-28">Lead ID</TableHead>
-                  <TableHead>Student</TableHead>
-                  <TableHead className="hidden md:table-cell">Destination</TableHead>
-                  <TableHead className="hidden lg:table-cell">Course</TableHead>
-                  <TableHead>Stage</TableHead>
-                  <TableHead className="hidden sm:table-cell">Status</TableHead>
-                  <TableHead className="whitespace-nowrap text-right">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr
+                  className="border-b"
+                  style={{ borderColor: "var(--pp-border-1)", background: "var(--pp-bg-header)" }}
+                >
+                  <Th>Lead ID</Th>
+                  <Th>Student</Th>
+                  <Th className="hidden md:table-cell">Destination</Th>
+                  <Th className="hidden lg:table-cell">Course</Th>
+                  <Th>Stage</Th>
+                  <Th className="hidden sm:table-cell">Status</Th>
+                  <Th right>
                     <button
                       type="button"
-                      className="inline-flex items-center gap-1 hover:text-foreground"
+                      className="inline-flex items-center gap-1"
                       onClick={() => setSort(sort === "amount_desc" ? "amount_asc" : "amount_desc")}
                     >
                       Loan Amount
@@ -521,63 +599,166 @@ export function YourLeads({ leads, loading, payouts = [] }: { leads: Lead[]; loa
                         : sort === "amount_asc" ? <ArrowUp className="h-3 w-3" />
                         : <ArrowUpDown className="h-3 w-3 opacity-50" />}
                     </button>
-                  </TableHead>
-                  <TableHead className="whitespace-nowrap text-right hidden md:table-cell">Expected Payout</TableHead>
-                  <TableHead className="whitespace-nowrap hidden lg:table-cell">Payout Status</TableHead>
-                  <TableHead className="whitespace-nowrap">Submitted On</TableHead>
-                  <TableHead className="text-right whitespace-nowrap">Updated</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+                  </Th>
+                  <Th right className="hidden md:table-cell">Expected Payout</Th>
+                  <Th className="hidden lg:table-cell">Payout Status</Th>
+                  <Th>Submitted On</Th>
+                  <Th right>Updated</Th>
+                </tr>
+              </thead>
+              <tbody>
                 {visible.map((lead) => {
                   const p = payoutByLead.get(lead.id);
+                  const name =
+                    lead.student_full_name ??
+                    `${lead.student_first_name ?? ""} ${lead.student_last_name ?? ""}`.trim() ??
+                    "Student";
+                  const country = lead.intended_study_country
+                    ? formatDisplayLabel(lead.intended_study_country)
+                    : "—";
                   return (
-                  <TableRow
-                    key={lead.id}
-                    className="cursor-pointer h-12"
-                    onClick={() => navigate(`/leads/${lead.id}`)}
-                  >
-                    <TableCell className="font-mono text-xs">{lead.lead_id ?? "—"}</TableCell>
-                    <TableCell className="font-medium text-sm">
-                      {lead.student_full_name ?? `${lead.student_first_name} ${lead.student_last_name ?? ""}`.trim()}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell text-sm">
-                      {formatDisplayLabel(lead.intended_study_country)}
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell text-sm max-w-[140px] truncate">
-                      {lead.course_name}
-                    </TableCell>
-                    <TableCell><StageBadge stage={lead.current_stage} /></TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      <StatusBadge status={lead.current_status} />
-                    </TableCell>
-                    <TableCell className="text-right text-sm whitespace-nowrap tabular-nums">
-                      {lead.loan_amount_required != null ? formatINR(lead.loan_amount_required) : "—"}
-                    </TableCell>
-                    <TableCell className="text-right text-sm whitespace-nowrap hidden md:table-cell tabular-nums">
-                      {p && p.payout_amount != null
-                        ? formatINR(p.payout_amount)
-                        : <span className="text-muted-foreground italic">Not calculated</span>}
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      {p?.payout_status
-                        ? <Badge variant="secondary" className="font-normal">{formatStageLabel(p.payout_status)}</Badge>
-                        : <span className="text-xs text-muted-foreground italic">Not calculated</span>}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                      {fmtDate(lead.created_at)}
-                    </TableCell>
-                    <TableCell className="text-right text-xs text-muted-foreground whitespace-nowrap">
-                      {fmtDate(lead.updated_at)}
-                    </TableCell>
-                  </TableRow>
+                    <tr
+                      key={lead.id}
+                      onClick={() => navigate(`/leads/${lead.id}`)}
+                      className="cursor-pointer border-b transition-colors hover:bg-[var(--pp-bg-row-hover)]"
+                      style={{ borderColor: "var(--pp-border-2)" }}
+                    >
+                      <Td>
+                        <span
+                          className="font-mono text-[12px]"
+                          style={{ color: "var(--pp-fg-2)" }}
+                        >
+                          {lead.lead_id ?? "—"}
+                        </span>
+                      </Td>
+                      <Td>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="flex h-7 w-7 items-center justify-center rounded-full text-[10.5px] font-bold text-white shrink-0"
+                            style={{ background: avatarColor(name) }}
+                          >
+                            {initials(name)}
+                          </span>
+                          <span className="text-[13.5px] font-semibold" style={{ color: "var(--pp-fg-1)" }}>
+                            {name}
+                          </span>
+                        </div>
+                      </Td>
+                      <Td className="hidden md:table-cell">
+                        <div className="flex items-center gap-2 whitespace-nowrap">
+                          <span
+                            className="h-2 w-2 rounded-full shrink-0"
+                            style={{ background: partnerColor(country) }}
+                          />
+                          <span className="text-[12.5px]" style={{ color: "var(--pp-fg-1)" }}>
+                            {country}
+                          </span>
+                        </div>
+                      </Td>
+                      <Td className="hidden lg:table-cell">
+                        <span className="text-[13px] block max-w-[160px] truncate" style={{ color: "var(--pp-fg-1)" }}>
+                          {lead.course_name ?? "—"}
+                        </span>
+                      </Td>
+                      <Td><StagePill stage={lead.current_stage} /></Td>
+                      <Td className="hidden sm:table-cell">
+                        <StatusPill status={lead.current_status} />
+                      </Td>
+                      <Td right>
+                        {lead.loan_amount_required != null ? (
+                          <span
+                            className="text-[13px] font-bold tabular-nums whitespace-nowrap"
+                            style={{ letterSpacing: "-0.01em", color: "var(--pp-fg-1)" }}
+                          >
+                            {formatINR(lead.loan_amount_required)}
+                          </span>
+                        ) : (
+                          <span style={{ color: "var(--pp-fg-zero)" }}>—</span>
+                        )}
+                      </Td>
+                      <Td right className="hidden md:table-cell">
+                        {p && p.payout_amount != null ? (
+                          <span
+                            className="text-[13px] font-bold tabular-nums whitespace-nowrap"
+                            style={{ letterSpacing: "-0.01em", color: "var(--pp-fg-1)" }}
+                          >
+                            {formatINR(p.payout_amount)}
+                          </span>
+                        ) : (
+                          <span
+                            className="italic text-[12.5px]"
+                            style={{ color: "var(--pp-fg-zero)" }}
+                          >
+                            Not calculated
+                          </span>
+                        )}
+                      </Td>
+                      <Td className="hidden lg:table-cell">
+                        {p?.payout_status ? (
+                          <span
+                            className="inline-flex rounded-full px-2 py-0.5 text-[11.5px] font-semibold"
+                            style={{ background: "#F1F3F6", color: "var(--pp-fg-2)" }}
+                          >
+                            {formatStageLabel(p.payout_status)}
+                          </span>
+                        ) : (
+                          <span
+                            className="italic text-[12.5px]"
+                            style={{ color: "var(--pp-fg-zero)" }}
+                          >
+                            Not calculated
+                          </span>
+                        )}
+                      </Td>
+                      <Td>
+                        <span className="text-[12.5px] tabular-nums whitespace-nowrap" style={{ color: "var(--pp-fg-2)" }}>
+                          {fmtDate(lead.created_at)}
+                        </span>
+                      </Td>
+                      <Td right>
+                        <span className="text-[12.5px] tabular-nums whitespace-nowrap" style={{ color: "var(--pp-fg-2)" }}>
+                          {fmtDate(lead.updated_at)}
+                        </span>
+                      </Td>
+                    </tr>
                   );
                 })}
-              </TableBody>
-            </Table>
+              </tbody>
+            </table>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }
+
+function Th({
+  children,
+  right,
+  className,
+}: { children: React.ReactNode; right?: boolean; className?: string }) {
+  return (
+    <th
+      className={`py-3 px-4 text-[10.5px] font-bold uppercase whitespace-nowrap ${right ? "text-right" : "text-left"} ${className ?? ""}`}
+      style={{ letterSpacing: "0.08em", color: "var(--pp-fg-3)" }}
+    >
+      {children}
+    </th>
+  );
+}
+
+function Td({
+  children,
+  right,
+  className,
+}: { children: React.ReactNode; right?: boolean; className?: string }) {
+  return (
+    <td
+      className={`py-3.5 px-4 text-[13px] ${right ? "text-right" : "text-left"} ${className ?? ""}`}
+      style={{ color: "var(--pp-fg-1)" }}
+    >
+      {children}
+    </td>
+  );
+}
+
