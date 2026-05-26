@@ -1745,7 +1745,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               <div className="space-y-2 md:col-span-2" data-field="coapplicant_work_experience">
                 <Label>Co-applicant Work Experience</Label>
                 <p className="text-xs text-muted-foreground">The co-applicant's total work experience (not the student's).</p>
-                <p className="text-xs text-muted-foreground">Example: enter <strong>3.6</strong> for 3 years 6 months. Used in BRE → Co-applicant Income Stability.</p>
+                <p className="text-xs text-muted-foreground">Example: enter <strong>3.6</strong> for 3 years 6 months.</p>
                 <Input
                   inputMode="decimal"
                   value={form.coapplicant_work_experience}
