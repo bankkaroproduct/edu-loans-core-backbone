@@ -1725,7 +1725,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               </div>
               {/* 6. Employment Type */}
               <div className="space-y-2" data-field="coapplicant_employment_type">
-                <Label>Employment Type *</Label>
+                <Label>Employment Type</Label>
                 <Select value={form.coapplicant_employment_type} onValueChange={(v) => set("coapplicant_employment_type", v)}>
                   <SelectTrigger><SelectValue placeholder="Select employment type" /></SelectTrigger>
                   <SelectContent>
