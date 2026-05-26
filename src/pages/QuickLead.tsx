@@ -135,18 +135,14 @@ export default function QuickLead() {
   }, [pincodeResult, form.pincode]);
 
   const validate = (): string | null => {
+    // Essentials only: first name + valid Indian phone. Email/pincode format
+    // checks remain, but only when a value is entered.
     if (!form.student_first_name.trim()) return "Student first name is required";
     if (!form.student_phone.trim()) return "Phone number is required";
     if (!isValidIndianPhone(form.student_phone)) return "Phone must be a valid 10-digit Indian number (with or without +91)";
     if (form.student_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.student_email.trim())) return "Email format is invalid";
-    if (!form.pincode.trim()) return "Pincode is required";
-    if (!/^\d{6}$/.test(form.pincode.trim())) return "Pincode must be exactly 6 digits";
-    if (!form.intended_study_country) return "Study country is required";
-    if (!form.intake_term) return "Intake term is required";
-    if (!form.intake_year) return "Intake year is required";
-    if (!form.course_name.trim()) return "Course name is required";
-    if (!form.loan_amount_required.trim()) return "Loan amount is required";
-    if (isNaN(Number(form.loan_amount_required)) || Number(form.loan_amount_required) <= 0) return "Loan amount must be a positive number";
+    if (form.pincode.trim() && !/^\d{6}$/.test(form.pincode.trim())) return "Pincode must be exactly 6 digits";
+    if (form.loan_amount_required.trim() && (isNaN(Number(form.loan_amount_required)) || Number(form.loan_amount_required) <= 0)) return "Loan amount must be a positive number";
     if (!effectivePartnerId) return "No partner organization found. Admins can use 'Test as Partner' in the sidebar.";
     return null;
   };
@@ -202,11 +198,11 @@ export default function QuickLead() {
       state: form.state.trim() || null,
       tier: form.tier.trim() || null,
       country_of_residence: "India",
-      intended_study_country: form.intended_study_country,
-      intake_term: form.intake_term,
-      intake_year: form.intake_year,
-      course_name: form.course_name.trim(),
-      loan_amount_required: Number(form.loan_amount_required),
+      intended_study_country: form.intended_study_country || null,
+      intake_term: form.intake_term || null,
+      intake_year: form.intake_year || null,
+      course_name: form.course_name.trim() || null,
+      loan_amount_required: form.loan_amount_required ? Number(form.loan_amount_required) : null,
       partner_id: effectivePartnerId!,
       partner_user_id: effectiveUserId!,
       current_stage: STAGE,
@@ -336,7 +332,7 @@ export default function QuickLead() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Pincode *</Label>
+              <Label>Pincode</Label>
               <Input
                 value={form.pincode}
                 onChange={(e) => set("pincode", e.target.value.replace(/\D/g, "").slice(0, 6))}
@@ -376,7 +372,7 @@ export default function QuickLead() {
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label>Study Country *</Label>
+              <Label>Study Country</Label>
               {(() => {
                 const opts: MasterOption[] = countries.map(c => ({ id: c.country_name, label: c.country_name }));
                 const current = form.intended_study_country || "";
@@ -396,11 +392,11 @@ export default function QuickLead() {
               })()}
             </div>
             <div className="space-y-2">
-              <Label>Course Name *</Label>
+              <Label>Course Name</Label>
               <Input value={form.course_name} onChange={(e) => set("course_name", e.target.value)} placeholder="e.g. MS Computer Science" />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label>Intake Session *</Label>
+              <Label>Intake Session</Label>
               <Select
                 value={intakeSessionValue(form.intake_term, form.intake_year)}
                 onValueChange={(v) => {
@@ -417,7 +413,7 @@ export default function QuickLead() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Loan Amount Required (₹) *</Label>
+              <Label>Loan Amount Required (₹)</Label>
               <Input type="number" min="1" value={form.loan_amount_required} onChange={(e) => set("loan_amount_required", e.target.value)} placeholder="e.g. 2500000" />
             </div>
           </CardContent>

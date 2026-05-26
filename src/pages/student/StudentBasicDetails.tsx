@@ -133,11 +133,9 @@ export default function StudentBasicDetails() {
     if (!formData.student_first_name.trim()) {
       toast({ title: "First name is required", variant: "destructive" }); return;
     }
-    if (!formData.student_email.trim()) {
-      toast({ title: "Email is required", variant: "destructive" }); return;
-    }
-    if (!formData.intended_study_country) {
-      toast({ title: "Please select a destination country", variant: "destructive" }); return;
+    // Email is optional, but if entered it must be valid.
+    if (formData.student_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.student_email.trim())) {
+      toast({ title: "Email format is invalid", variant: "destructive" }); return;
     }
     if (!formData.whatsapp_same_as_phone && formData.student_whatsapp && formData.student_whatsapp.replace(/\D/g, "").length !== 10) {
       toast({ title: "WhatsApp number must be 10 digits", variant: "destructive" }); return;
@@ -225,7 +223,7 @@ export default function StudentBasicDetails() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Email Address <span className="text-destructive">*</span></Label>
+              <Label>Email Address</Label>
               <Input type="email" value={formData.student_email} onChange={e => updateField("student_email", e.target.value)} placeholder="you@example.com" />
             </div>
             <div className="space-y-1.5">
@@ -281,7 +279,7 @@ export default function StudentBasicDetails() {
               <Input value={formData.state} onChange={e => updateField("state", e.target.value)} placeholder="e.g. Maharashtra" />
             </div>
             <div className="space-y-1.5">
-              <Label>Destination Country <span className="text-destructive">*</span></Label>
+              <Label>Destination Country</Label>
               {(() => {
                 const sorted = sortByPriority(countries, c => c.country_name);
                 const opts: MasterOption[] = sorted.map(c => ({ id: c.country_name, label: c.country_name }));
