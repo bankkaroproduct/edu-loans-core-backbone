@@ -121,7 +121,7 @@ export function AdminSidebar() {
   const renderCollapsibleGroup = (
     label: string,
     items: NavItem[],
-    extra?: React.ReactNode,
+    extra?: ReactNode,
   ) => {
     if (items.length === 0) return null;
 
