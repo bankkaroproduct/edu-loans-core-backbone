@@ -1715,7 +1715,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               </div>
               {/* 5. Email */}
               <div className="space-y-2 md:col-span-2" data-field="coapplicant_email">
-                <Label>Co-Applicant Email *</Label>
+                <Label>Co-Applicant Email</Label>
                 <Input
                   type="email"
                   value={form.coapplicant_email}
