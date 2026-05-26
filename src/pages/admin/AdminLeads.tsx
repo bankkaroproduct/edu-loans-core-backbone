@@ -1,17 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { StageBadge, StatusBadge } from "@/components/dashboard/StageBadge";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { PageHeader } from "@/components/shared/PageHeader";
+import { formatStageLabel } from "@/components/dashboard/StageBadge";
 import { formatINRCompact } from "@/lib/formatCurrency";
+import { Sparkline } from "@/components/admin/dashboard/Sparkline";
+import { initials as initialsOf, avatarColor, partnerColor } from "@/components/admin/dashboard/visualHelpers";
+import { cn } from "@/lib/utils";
 
-import { AdminLeadFilters, type AdminLeadFilterState } from "@/components/admin/AdminLeadFilters";
+import { AdminLeadFilters, defaultAdminLeadFilters, type AdminLeadFilterState } from "@/components/admin/AdminLeadFilters";
 import { applyBusinessFilters as applySharedBusinessFilters } from "@/lib/leadBusinessFilters";
 import { useAdminLeadScope } from "@/hooks/useAdminLeadScope";
 
@@ -21,8 +20,9 @@ import {
   isReviewDue,
 } from "@/lib/adminActionNeeded";
 import {
-  AlertCircle, ArrowDown, ArrowUp, ArrowUpDown, BadgeCheck, ChevronLeft, ChevronRight,
-  Clock, Inbox, Layers, Pencil, RefreshCw, Send, SlidersHorizontal,
+  AlertCircle, AlertTriangle, ArrowDown, ArrowRight, ArrowUp, ArrowUpDown, BadgeCheck,
+  ChevronLeft, ChevronRight, Clock, ExternalLink, Hourglass, Inbox, Layers,
+  MoreHorizontal, RefreshCw, Send, SlidersHorizontal, X,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Database } from "@/integrations/supabase/types";
@@ -56,25 +56,13 @@ const PAGE_SIZE = 25;
 type SortKey = "updated_at" | "created_at" | "loan_amount_required";
 type SortDir = "asc" | "desc";
 
-/**
- * "Stale > 48h" definition (single source of truth):
- *   - last activity (`updated_at`) is older than 48h, AND
- *   - lead is NOT in a terminal stage, AND
- *   - lead is NOT in a blocked/awaiting-input status (admin can't act yet).
- *
- * This intentionally uses `updated_at` (not `created_at`) so editing or moving
- * a lead immediately removes it from the Stale list — matching the operational
- * meaning admins expect.
- */
 const STALE_TERMINAL_STAGES: StageEnum[] = ["disbursed", "rejected", "dropped", "on_hold"];
 const STALE_BLOCKED_STATUSES: StatusEnum[] = ["pending_info", "query_raised", "reupload_needed"];
 const STALE_HOURS = 48;
 
-/** Sanitize search input for PostgREST .or() string — strip chars that break the parser. */
 function sanitizeSearch(s: string): string {
   return s.trim().replace(/[(),"]/g, "").slice(0, 100);
 }
-
 
 function studentName(r: AdminLeadRow): string {
   return r.student_full_name?.trim() ||
@@ -82,21 +70,176 @@ function studentName(r: AdminLeadRow): string {
     "—";
 }
 
-function studentInitials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0 || parts[0] === "—") return "—";
-  const first = parts[0]?.[0] ?? "";
-  const last = parts.length > 1 ? parts[parts.length - 1]?.[0] ?? "" : "";
-  return (first + last).toUpperCase() || "—";
+/* ============================================================
+ * LOCAL presentational pills — intentionally NOT exported.
+ * Colors map by raw snake_case enum key. Unknown → neutral slate.
+ * Display text comes from formatStageLabel (pure casing formatter).
+ * ============================================================ */
+
+type PillTone = { bg: string; fg: string; dot: string };
+const NEUTRAL: PillTone = { bg: "#F1F3F6", fg: "#45505C", dot: "#9AA3AE" };
+
+const STAGE_TONE: Record<string, PillTone> = {
+  submitted:              { bg: "#FFF8E6", fg: "#8C6D00", dot: "#E5A800" },
+  documents_pending:      { bg: "#FFF0E6", fg: "#B5470F", dot: "#FF6D1D" },
+  documents_under_review: { bg: "#FFF8E6", fg: "#8C6D00", dot: "#E5A800" },
+  sent_to_lender:         { bg: "#F3EEFF", fg: "#6B2BD9", dot: "#9747FF" },
+  sanctioned:             { bg: "#ECFBF3", fg: "#167C3D", dot: "#26A651" },
+  sanction_received:      { bg: "#ECFBF3", fg: "#167C3D", dot: "#26A651" },
+};
+
+const STATUS_TONE: Record<string, PillTone> = {
+  awaiting_verification: { bg: "#FFF0E6", fg: "#B5470F", dot: "#FF6D1D" },
+  in_progress:           { bg: "#EEF2FF", fg: "#0036DA", dot: "#0036DA" },
+  verified:              { bg: "#ECFBF3", fg: "#167C3D", dot: "#26A651" },
+  under_review:          { bg: "#FFF8E6", fg: "#8C6D00", dot: "#E5A800" },
+};
+
+function Pill({ tone, children }: { tone: PillTone; children: React.ReactNode }) {
+  return (
+    <span
+      className="inline-flex items-center gap-[5px] whitespace-nowrap rounded-full px-2 py-[3px] text-[11px] font-semibold"
+      style={{ backgroundColor: tone.bg, color: tone.fg }}
+    >
+      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: tone.dot }} />
+      {children}
+    </span>
+  );
+}
+function StagePill({ stage }: { stage: string }) {
+  return <Pill tone={STAGE_TONE[stage] ?? NEUTRAL}>{formatStageLabel(stage)}</Pill>;
+}
+function StatusPill({ status }: { status: string }) {
+  return <Pill tone={STATUS_TONE[status] ?? NEUTRAL}>{formatStageLabel(status)}</Pill>;
 }
 
+/* ---------- Cells ---------- */
+
+function StudentCell({ row }: { row: AdminLeadRow }) {
+  const name = studentName(row);
+  return (
+    <div className="flex items-center gap-2.5 min-w-0">
+      <span
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white text-[10.5px] font-bold"
+        style={{ backgroundColor: avatarColor(name) }}
+        aria-hidden
+      >
+        {initialsOf(name) || "—"}
+      </span>
+      <span className="text-[13.5px] font-semibold text-[#1C1B1F] truncate">{name}</span>
+    </div>
+  );
+}
+
+function SourceCell({ row }: { row: AdminLeadRow }) {
+  if (row.source_type === "student_direct") {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F5F7FA] px-2 py-1 text-[11.5px] font-medium text-[#45505C]">
+        Student Portal
+      </span>
+    );
+  }
+  const name = row.partner_display_name ?? "Partner Lead";
+  const letter = (name[0] ?? "?").toUpperCase();
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#F5F7FA] py-[3px] pl-1 pr-2 text-[11.5px] font-medium text-[#45505C]">
+      <span
+        className="flex h-[18px] w-[18px] items-center justify-center rounded-full text-white text-[9px] font-bold"
+        style={{ backgroundColor: partnerColor(name) }}
+        aria-hidden
+      >
+        {letter}
+      </span>
+      <span className="truncate max-w-[160px]" title={name}>{name}</span>
+    </span>
+  );
+}
+
+function CountryCell({ country }: { country: string }) {
+  if (!country) return <span className="text-[#9AA3AE]">—</span>;
+  return (
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[12.5px] text-[#1C1B1F]">
+      <span className="h-2 w-2 rounded-sm" style={{ backgroundColor: partnerColor(country) }} aria-hidden />
+      {country}
+    </span>
+  );
+}
+
+/* ---------- KPI tile ---------- */
+
+interface KpiTileProps {
+  label: string;
+  value: number;
+  sub: string;
+  icon: React.ComponentType<{ className?: string }>;
+  tone: "info" | "warn" | "purple" | "ok";
+  active: boolean;
+  disabled?: boolean;
+  loading: boolean;
+  onClick: () => void;
+}
+const TONE_STYLE: Record<KpiTileProps["tone"], { bg: string; fg: string }> = {
+  info:   { bg: "#EEF2FF", fg: "#0036DA" },
+  warn:   { bg: "#FFF5ED", fg: "#FF6D1D" },
+  purple: { bg: "#F3EEFF", fg: "#9747FF" },
+  ok:     { bg: "#ECFBF3", fg: "#26A651" },
+};
+function KpiTile({ label, value, sub, icon: Icon, tone, active, disabled, loading, onClick }: KpiTileProps) {
+  const t = TONE_STYLE[tone];
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      disabled={disabled}
+      className={cn(
+        "group relative text-left rounded-[12px] border bg-white p-[18px] transition-all",
+        "disabled:opacity-60 disabled:cursor-not-allowed",
+        active ? "border-[#0036DA] ring-2 ring-[#0036DA]/15" : "border-[#ECEEF1] hover:border-[#D4DAE3] hover:shadow-[0_4px_14px_-8px_rgba(15,23,42,0.18)]",
+      )}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6B7684]">{label}</p>
+        <span
+          className="flex h-[30px] w-[30px] items-center justify-center rounded-[8px]"
+          style={{ backgroundColor: t.bg, color: t.fg }}
+          aria-hidden
+        >
+          <Icon className="h-[16px] w-[16px]" />
+        </span>
+      </div>
+      <div className="mt-[10px]">
+        {loading ? (
+          <Skeleton className="h-9 w-24" />
+        ) : (
+          <p
+            className="text-[36px] font-extrabold leading-none tabular-nums text-[#1C1B1F]"
+            style={{ letterSpacing: "-0.03em" }}
+          >
+            {value.toLocaleString("en-IN")}
+          </p>
+        )}
+      </div>
+      <div className="mt-[10px] flex items-center gap-2">
+        <span className="inline-flex items-center rounded-full bg-[#F1F3F6] px-2 py-[2px] text-[10.5px] font-bold text-[#45505C]">
+          —
+        </span>
+        {/* TODO: wire trend data */}
+        <Sparkline data={[0, 0, 0, 0, 0, 0, 0]} color={t.fg} width={92} height={24} />
+      </div>
+      <div className="mt-[12px] border-t border-dashed border-[#ECEEF1] pt-[10px]">
+        <p className="text-[11.5px] text-[#6B7684] leading-snug">{sub}</p>
+      </div>
+    </button>
+  );
+}
+
+/* =================== Component =================== */
 
 export default function AdminLeads() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { ready: scopeReady, isSuperAdmin, scopedPartnerIds, hasNoScope, applyPartnerScope } = useAdminLeadScope();
-  
-  
 
   // Master data
   const [stages, setStages] = useState<{ stage_key: StageEnum; stage_label: string }[]>([]);
@@ -137,12 +280,11 @@ export default function AdminLeads() {
   const [error, setError] = useState<string | null>(null);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<Date>(() => new Date());
 
-  // Health strip counts (filter-aware: same WHERE except status/stage overrides)
+  // Health strip counts
   const [healthCounts, setHealthCounts] = useState<{
     total: number; pendingReview: number; withLender: number; sanction: number; highPriority: number;
   }>({ total: 0, pendingReview: 0, withLender: 0, sanction: 0, highPriority: 0 });
 
-  // Clickable stat-card filter (frontend-only intersection with current filters)
   const [cardFilter, setCardFilter] = useState<CardFilterKey>("none");
   const [highPriorityIds, setHighPriorityIds] = useState<string[] | null>(null);
 
@@ -159,7 +301,7 @@ export default function AdminLeads() {
     };
   }, [searchInput]);
 
-  // Load master data once (partners list is scoped to admin's assigned partners for non-super admins)
+  // Master data
   useEffect(() => {
     if (!scopeReady) return;
     (async () => {
@@ -206,11 +348,6 @@ export default function AdminLeads() {
     setSearchParams(p, { replace: true });
   }, [filters, sortKey, sortDir, page, setSearchParams]);
 
-  /**
-   * Apply business-bifurcation filters via shared helper (`@/lib/leadBusinessFilters`).
-   * Single source of truth — keeps Lead Queue and Reports consistent and ensures
-   * Source buckets (Partner / Student Direct / Referral) are mutually exclusive.
-   */
   const applyBusinessFilters = useCallback((q: any) => {
     return applySharedBusinessFilters(q, {
       source: filters.source,
@@ -245,7 +382,6 @@ export default function AdminLeads() {
           .eq("is_archived", false);
         q = applyPartnerScope(q);
 
-        // Filters first (AND) — note: source mapping handled by applyBusinessFilters
         if (filters.stage !== "all") q = q.eq("current_stage", filters.stage);
         if (filters.status !== "all") q = q.eq("current_status", filters.status);
         if (filters.country !== "all") q = q.eq("intended_study_country", filters.country);
@@ -256,7 +392,6 @@ export default function AdminLeads() {
           end.setHours(23, 59, 59, 999);
           q = q.lte("created_at", end.toISOString());
         }
-        // Stale > 48h: real latest activity logic (updated_at), excluding terminal/blocked states.
         if (filters.staleOnly) {
           const cutoff = new Date(Date.now() - STALE_HOURS * 3600 * 1000).toISOString();
           q = q
@@ -264,17 +399,14 @@ export default function AdminLeads() {
             .not("current_stage", "in", `(${STALE_TERMINAL_STAGES.join(",")})`)
             .not("current_status", "in", `(${STALE_BLOCKED_STATUSES.join(",")})`);
         }
-        // Apply business bifurcation filters (Source / Type / Entry Mode / Region / Loan / Intake / Loan Type)
         q = applyBusinessFilters(q);
 
-        // Search applied AFTER filters as a single OR group (AND with the filters)
         const t = sanitizeSearch(filters.search);
         if (t) {
           q = q.or(
             `student_full_name.ilike.%${t}%,student_first_name.ilike.%${t}%,student_last_name.ilike.%${t}%,student_phone.ilike.%${t}%,lead_id.ilike.%${t}%`
           );
         }
-        // Card-filter intersection (Total = none)
         if (cardFilter === "high_priority") {
           const ids = (highPriorityIds && highPriorityIds.length > 0) ? highPriorityIds : [HIGH_PRIORITY_EMPTY_SENTINEL];
           q = q.in("id", ids);
@@ -297,7 +429,6 @@ export default function AdminLeads() {
 
       const baseRows = (data ?? []) as Omit<AdminLeadRow, "partner_display_name">[];
 
-      // Partner enrichment, null-safe
       const partnerIds = Array.from(new Set(baseRows.map((r) => r.partner_id).filter((x): x is string => !!x)));
       const partnerMap = new Map<string, string>();
       if (partnerIds.length) {
@@ -329,8 +460,6 @@ export default function AdminLeads() {
 
   useEffect(() => { fetchPage(); }, [fetchPage]);
 
-  // Fetch filter-aware health counts (lightweight head:true).
-  // Total = current filters; the others = current filters with their own stage/status override.
   const fetchHealthCounts = useCallback(async () => {
     if (!scopeReady) return;
     if (hasNoScope) {
@@ -354,9 +483,6 @@ export default function AdminLeads() {
         end.setHours(23, 59, 59, 999);
         q = q.lte("created_at", end.toISOString());
       }
-      // Stale > 48h: keep counts in sync with the table (only when overriding for the
-      // four health cards, the stale gate is intentionally ignored — those tiles always
-      // reflect total/pending/lender/sanction in the current filter, not the stale subset).
       if (filters.staleOnly && !overrideStage && !overrideStatuses) {
         const cutoff = new Date(Date.now() - STALE_HOURS * 3600 * 1000).toISOString();
         q = q
@@ -364,7 +490,6 @@ export default function AdminLeads() {
           .not("current_stage", "in", `(${STALE_TERMINAL_STAGES.join(",")})`)
           .not("current_status", "in", `(${STALE_BLOCKED_STATUSES.join(",")})`);
       }
-      // Apply business bifurcation filters (Source/Type/Entry/Region/Loan/Intake/LoanType)
       q = applyBusinessFilters(q);
       const t = sanitizeSearch(filters.search);
       if (t) {
@@ -396,8 +521,6 @@ export default function AdminLeads() {
 
   useEffect(() => { fetchHealthCounts(); }, [fetchHealthCounts]);
 
-  // Fetch the set of "High Priority Leads" IDs — mirrors useAdminDashboard.fetchMetrics
-  // so the card-filter intersection matches what the High Priority tile represents.
   const fetchHighPriorityIds = useCallback(async () => {
     if (!scopeReady) return;
     if (hasNoScope) { setHighPriorityIds([]); return; }
@@ -418,7 +541,7 @@ export default function AdminLeads() {
 
   useEffect(() => { fetchHighPriorityIds(); }, [fetchHighPriorityIds]);
 
-  // Realtime: debounced refresh on student_leads changes
+  // Realtime
   useEffect(() => {
     let t: ReturnType<typeof setTimeout> | null = null;
     const channel = supabase
@@ -440,37 +563,43 @@ export default function AdminLeads() {
   };
 
   const sortIcon = (key: SortKey) => {
-    if (sortKey !== key) return <ArrowUpDown className="h-3 w-3 opacity-40" />;
+    if (sortKey !== key) return <ArrowUpDown className="h-3 w-3 opacity-50" />;
     return sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
   };
 
-  // Quick-filter chip presets (admin workspace shortcuts)
+  // Quick-filter chips
   const quickChips = [
     {
+      key: "pending",
       label: "Pending review",
-      icon: AlertCircle,
+      icon: Clock,
+      count: healthCounts.pendingReview,
       active: filters.status !== "all" && ["new", "awaiting_verification", "pending_info"].includes(filters.status),
       apply: () => { setFilters({ ...filters, status: "awaiting_verification" as StatusEnum, stage: "all" }); setPage(1); },
     },
     {
+      key: "sent",
       label: "Sent to Lender",
       icon: Send,
+      count: healthCounts.withLender,
       active: filters.stage === "sent_to_lender",
       apply: () => { setFilters({ ...filters, stage: "sent_to_lender" as StageEnum, status: "all" }); setPage(1); },
     },
     {
+      key: "sanction",
       label: "Sanction Received",
       icon: BadgeCheck,
+      count: healthCounts.sanction,
       active: filters.stage === "sanction_received",
       apply: () => { setFilters({ ...filters, stage: "sanction_received" as StageEnum, status: "all" }); setPage(1); },
     },
     {
+      key: "stale",
       label: "Stale > 48h",
-      icon: Clock,
+      icon: Hourglass,
+      count: null as number | null,
       active: filters.staleOnly,
       apply: () => {
-        // Toggle the dedicated stale flag (real updated_at logic, terminal/blocked excluded).
-        // Clears any leftover dateTo from the legacy stale chip so it doesn't double-filter.
         setFilters({
           ...filters,
           staleOnly: !filters.staleOnly,
@@ -483,7 +612,6 @@ export default function AdminLeads() {
     },
   ];
 
-  // Active filter count (visual-only derivation from existing filters state)
   const activeFilterCount = useMemo(() => {
     let n = 0;
     if (filters.search) n++;
@@ -504,151 +632,150 @@ export default function AdminLeads() {
     return n;
   }, [filters]);
 
+  const clearAllFilters = () => {
+    setSearchInput("");
+    setFilters(defaultAdminLeadFilters);
+    setPage(1);
+  };
+
+  const highPrioritySet = useMemo(
+    () => new Set(highPriorityIds ?? []),
+    [highPriorityIds],
+  );
+
+  const sortLabel = (() => {
+    const k = sortKey === "created_at" ? "Created" : sortKey === "updated_at" ? "Updated" : "Loan";
+    return `Sorted by ${k} · ${sortDir === "desc" ? "descending" : "ascending"}`;
+  })();
+
   if (scopeReady && hasNoScope) {
     return (
-      <div className="space-y-6 max-w-screen-2xl mx-auto">
-        <PageHeader
-          title="Lead Queue"
-          description="Review, prioritize, assign, and manage education-loan leads across all sources."
-        />
-        <Card className="border-border/60">
-          <CardContent className="p-10">
-            <EmptyState
-              icon={Inbox}
-              title="No partners assigned to your account"
-              description="Contact a super admin to get partners assigned."
-            />
-          </CardContent>
-        </Card>
+      <div className="w-full">
+        <h1 className="text-[26px] font-extrabold tracking-[-0.025em] text-[#1C1B1F]">Lead Queue</h1>
+        <p className="mt-1 text-[13.5px] font-medium text-[#6B7684]">
+          Review, prioritize, assign, and manage education-loan leads across all sources.
+        </p>
+        <div className="mt-6 rounded-[12px] border border-[#ECEEF1] bg-white p-10">
+          <EmptyState
+            icon={Inbox}
+            title="No partners assigned to your account"
+            description="Contact a super admin to get partners assigned."
+          />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 max-w-screen-2xl mx-auto">
-      <PageHeader
-        title="Lead Queue"
-        description="Review, prioritize, assign, and manage education-loan leads across all sources."
-        count={healthCounts.total}
-        lastUpdated={lastRefreshedAt}
-      >
-        <Button size="sm" variant="outline" onClick={() => fetchPage()} disabled={loading}>
-
-          <RefreshCw className={`mr-1 h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Refresh
-        </Button>
-      </PageHeader>
-
-      {/* Pipeline Summary Cards — clickable stat tiles */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        {([
-          {
-            cardKey: "none" as CardFilterKey,
-            label: "Total in queue",
-            value: healthCounts.total,
-            sub: "Matching current filters",
-            icon: Layers,
-            iconBg: "bg-slate-100 dark:bg-slate-500/15",
-            iconFg: "text-slate-700 dark:text-slate-300",
-            disabled: false,
-          },
-          {
-            cardKey: "high_priority" as CardFilterKey,
-            label: "High Priority Leads",
-            value: healthCounts.highPriority,
-            sub: "Stale follow-ups · critical-stage pending actions",
-            icon: AlertCircle,
-            iconBg: "bg-amber-100 dark:bg-amber-500/15",
-            iconFg: "text-amber-700 dark:text-amber-400",
-            disabled: highPriorityIds === null,
-          },
-          {
-            cardKey: "sent_to_lender" as CardFilterKey,
-            label: "Sent to Lender",
-            value: healthCounts.withLender,
-            sub: "Awaiting lender decision",
-            icon: Send,
-            iconBg: "bg-primary/10",
-            iconFg: "text-primary",
-            disabled: false,
-          },
-          {
-            cardKey: "sanction_received" as CardFilterKey,
-            label: "Sanction Received",
-            value: healthCounts.sanction,
-            sub: "Sanction in hand",
-            icon: BadgeCheck,
-            iconBg: "bg-emerald-100 dark:bg-emerald-500/15",
-            iconFg: "text-emerald-700 dark:text-emerald-400",
-            disabled: false,
-          },
-        ]).map((tile) => {
-          const Icon = tile.icon;
-          // "Total in queue" never shows an active ring — it's a reset, not a filter.
-          const isActive = tile.cardKey !== "none" && cardFilter === tile.cardKey;
-          const handleClick = () => {
-            if (tile.disabled) return;
-            if (tile.cardKey === "none") {
-              setCardFilter("none");
-            } else {
-              setCardFilter((cur) => (cur === tile.cardKey ? "none" : tile.cardKey));
-            }
-            setPage(1);
-          };
-          return (
-            <button
-              key={tile.label}
-              type="button"
-              onClick={handleClick}
-              aria-pressed={isActive}
-              disabled={tile.disabled}
-              className="text-left rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 disabled:cursor-not-allowed"
+    <div className="w-full">
+      {/* Topbar */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-[26px] font-extrabold tracking-[-0.025em] text-[#1C1B1F] leading-none">
+              Lead Queue
+            </h1>
+            <span
+              className="inline-flex items-center rounded-full bg-[#EEF2FF] px-[11px] py-1 text-[13px] font-bold tabular-nums text-[#0036DA]"
             >
-              <Card
-                className={`p-5 transition-all hover:shadow-md ${
-                  isActive ? "ring-2 ring-primary border-primary bg-primary/5" : ""
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-2 min-w-0 flex-1">
-                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider leading-tight">
-                      {tile.label}
-                    </p>
-                    {loading ? (
-                      <Skeleton className="h-9 w-20" />
-                    ) : (
-                      <p className="text-3xl font-bold tabular-nums leading-none text-foreground">
-                        {tile.value.toLocaleString("en-IN")}
-                      </p>
-                    )}
-                    <p className="text-[11px] text-muted-foreground leading-snug line-clamp-2">
-                      {tile.sub}
-                    </p>
-                  </div>
-                  <div className={`rounded-xl p-2.5 shrink-0 ${tile.iconBg}`}>
-                    <Icon className={`h-5 w-5 ${tile.iconFg}`} />
-                  </div>
-                </div>
-              </Card>
-            </button>
-          );
-        })}
+              {healthCounts.total.toLocaleString("en-IN")}
+            </span>
+          </div>
+          <p className="mt-1.5 text-[13.5px] font-medium text-[#6B7684]">
+            Review, prioritize, assign, and manage education-loan leads across all sources.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#6B7684]">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#26A651] opacity-60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#26A651]" />
+            </span>
+            Live
+          </span>
+          <span className="text-[12px] text-[#6B7684] tabular-nums">
+            Updated {formatDistanceToNow(lastRefreshedAt, { addSuffix: true })}
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => fetchPage()}
+            disabled={loading}
+            className="h-8 rounded-[7px] border-[#E5E7EB] px-3 text-[12.5px] font-semibold text-[#1C1B1F]"
+          >
+            <RefreshCw className={cn("mr-1.5 h-3.5 w-3.5", loading && "animate-spin")} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
+      {/* KPI strip */}
+      <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiTile
+          label="Total in Queue"
+          value={healthCounts.total}
+          sub="Matching current filters"
+          icon={Layers}
+          tone="info"
+          active={false}
+          loading={loading}
+          onClick={() => { setCardFilter("none"); setPage(1); }}
+        />
+        <KpiTile
+          label="High Priority Leads"
+          value={healthCounts.highPriority}
+          sub="Stale follow-ups · critical-stage pending actions"
+          icon={AlertTriangle}
+          tone="warn"
+          active={cardFilter === "high_priority"}
+          disabled={highPriorityIds === null}
+          loading={loading}
+          onClick={() => { setCardFilter((c) => c === "high_priority" ? "none" : "high_priority"); setPage(1); }}
+        />
+        <KpiTile
+          label="Sent to Lender"
+          value={healthCounts.withLender}
+          sub="Awaiting lender decision"
+          icon={Send}
+          tone="purple"
+          active={cardFilter === "sent_to_lender"}
+          loading={loading}
+          onClick={() => { setCardFilter((c) => c === "sent_to_lender" ? "none" : "sent_to_lender"); setPage(1); }}
+        />
+        <KpiTile
+          label="Sanction Received"
+          value={healthCounts.sanction}
+          sub="Sanction in hand"
+          icon={BadgeCheck}
+          tone="ok"
+          active={cardFilter === "sanction_received"}
+          loading={loading}
+          onClick={() => { setCardFilter((c) => c === "sanction_received" ? "none" : "sanction_received"); setPage(1); }}
+        />
+      </div>
 
-      {/* Control Bar — Filters & Search */}
-      <Card className="overflow-hidden">
-        <div className="flex items-center justify-between gap-3 px-5 py-3 border-b bg-muted/30">
+      {/* Filters panel */}
+      <div className="mt-5 overflow-hidden rounded-[12px] border border-[#ECEEF1] bg-white">
+        <div className="flex items-center justify-between gap-3 border-b border-[#F1F3F6] bg-[#FAFBFC] px-[18px] py-[14px]">
           <div className="flex items-center gap-2">
-            <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-            <h3 className="text-sm font-semibold text-foreground">Filters & Search</h3>
-            {activeFilterCount > 0 && (
-              <Badge variant="secondary" className="text-[10px] h-5 px-1.5 tabular-nums ml-1">
-                {activeFilterCount} active
-              </Badge>
-            )}
+            <SlidersHorizontal className="h-[18px] w-[18px] text-[#0036DA]" />
+            <h3 className="text-[15px] font-extrabold tracking-[-0.015em] text-[#1C1B1F]">
+              Filters &amp; Search
+            </h3>
           </div>
+          {activeFilterCount > 0 && (
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[12px] font-semibold text-[#6B7684] transition-colors hover:bg-[#F1F3F6] hover:text-[#1C1B1F]"
+            >
+              <X className="h-3.5 w-3.5" />
+              Clear filters
+            </button>
+          )}
         </div>
-        <CardContent className="p-5 space-y-4">
+
+        <div className="px-[18px] py-4 space-y-4">
           {!mastersLoaded ? (
             <div className="space-y-2">
               <Skeleton className="h-9 w-full" />
@@ -668,8 +795,8 @@ export default function AdminLeads() {
           )}
 
           {/* Quick views */}
-          <div className="pt-4 border-t border-border/60 space-y-2">
-            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+          <div className="border-t border-dashed border-[#ECEEF1] pt-4">
+            <p className="mb-2.5 text-[10.5px] font-bold uppercase tracking-[0.10em] text-[#6B7684]">
               Quick views
             </p>
             <div className="flex flex-wrap gap-2">
@@ -677,210 +804,254 @@ export default function AdminLeads() {
                 const Icon = c.icon;
                 return (
                   <button
-                    key={c.label}
+                    key={c.key}
                     type="button"
                     onClick={c.apply}
-                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
+                    className={cn(
+                      "inline-flex items-center gap-1.5 rounded-full border px-3 py-[7px] text-[12.5px] font-semibold transition-colors",
                       c.active
-                        ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                        : "border-border bg-background hover:bg-muted hover:border-muted-foreground/30 text-foreground"
-                    }`}
+                        ? "border-[#C7D3FF] bg-[#EEF2FF] text-[#0036DA]"
+                        : "border-[#E5E7EB] bg-white text-[#1C1B1F] hover:bg-[#FAFBFC]",
+                    )}
                   >
-                    <Icon className="h-3.5 w-3.5" />
-                    {c.label}
+                    <Icon className={cn("h-[15px] w-[15px]", c.active ? "text-[#0036DA]" : "text-[#6B7684]")} />
+                    <span>{c.label}</span>
+                    {c.count !== null && (
+                      <span
+                        className={cn(
+                          "ml-0.5 inline-flex items-center rounded-full px-[7px] py-[1px] text-[11px] font-bold tabular-nums",
+                          c.active ? "bg-[#0036DA] text-white" : "bg-[#F1F3F6] text-[#45505C]",
+                        )}
+                      >
+                        {c.count.toLocaleString("en-IN")}
+                      </span>
+                    )}
                   </button>
                 );
               })}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Table card */}
-      <Card className="overflow-hidden">
-        {/* Table header strip */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-5 py-3 border-b bg-muted/30">
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-foreground">Leads</h3>
-            <Badge variant="secondary" className="text-[10px] h-5 px-1.5 tabular-nums">
-              {loading ? "—" : totalCount.toLocaleString("en-IN")}
-            </Badge>
+      {/* Table panel */}
+      <div className="mt-5 overflow-hidden rounded-[12px] border border-[#ECEEF1] bg-white">
+        {/* Header strip */}
+        <div className="flex flex-col gap-2 border-b border-[#F1F3F6] bg-[#FAFBFC] px-[18px] py-[14px] sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="text-[17px] font-extrabold tracking-[-0.015em] text-[#1C1B1F]">Leads</h3>
+              <span className="inline-flex items-center rounded-full bg-[#EEF2FF] px-2.5 py-[2px] text-[12px] font-bold tabular-nums text-[#0036DA]">
+                {loading ? "—" : totalCount.toLocaleString("en-IN")}
+              </span>
+            </div>
+            <p className="mt-0.5 text-[12px] font-medium text-[#6B7684]">{sortLabel}</p>
           </div>
-          <span className="text-xs text-muted-foreground tabular-nums">
+          <span className="text-[12px] font-medium text-[#6B7684] tabular-nums">
             {loading ? "Loading…" : error ? "—" : `Page ${page} of ${totalPages}`}
           </span>
         </div>
 
-        <CardContent className="p-0">
-          {/* Loading skeleton — table-shaped */}
-          {loading && (
-            <div className="divide-y divide-border">
-              <div className="flex items-center gap-4 px-4 py-3 bg-muted/40">
-                {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-3 w-20" />)}
-              </div>
-              {[...Array(8)].map((_, i) => (
-                <div key={i} className="flex items-center gap-4 px-4 py-4">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-9 w-9 rounded-full" />
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-4 w-28" />
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-4 w-24 ml-auto" />
-                  <Skeleton className="h-5 w-16" />
-                </div>
-              ))}
-            </div>
-          )}
+        {/* Body */}
+        {loading && (
+          <div className="space-y-2 p-4">
+            {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+          </div>
+        )}
 
-          {/* Error state */}
-          {!loading && error && (
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 border-l-4 border-l-destructive bg-destructive/5">
-              <div className="flex items-start gap-3 text-destructive">
-                <AlertCircle className="h-5 w-5 mt-0.5 shrink-0" />
-                <div>
-                  <p className="font-semibold text-sm">Failed to load lead queue</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{error}</p>
-                </div>
+        {!loading && error && (
+          <div className="flex items-center justify-between gap-4 border-l-4 border-l-destructive bg-destructive/5 p-5">
+            <div className="flex items-start gap-3 text-destructive">
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold">Failed to load lead queue</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{error}</p>
               </div>
-              <Button variant="outline" size="sm" onClick={() => fetchPage()}>
-                <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Retry
-              </Button>
             </div>
-          )}
+            <Button variant="outline" size="sm" onClick={() => fetchPage()}>
+              <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Retry
+            </Button>
+          </div>
+        )}
 
-          {/* Empty state */}
-          {!loading && !error && rows.length === 0 && (
+        {!loading && !error && rows.length === 0 && (
+          <div className="p-6">
             <EmptyState
               icon={Inbox}
               title="No leads match your filters"
               description="Try adjusting filters or search terms above to see leads."
             />
-          )}
+          </div>
+        )}
 
-          {/* Table */}
-          {!loading && !error && rows.length > 0 && (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/40 hover:bg-muted/40">
-                    <TableHead>Lead ID</TableHead>
-                    <TableHead>Student</TableHead>
-                    <TableHead>Source</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Country</TableHead>
-                    <TableHead>Course</TableHead>
-                    <TableHead className="text-right">
-                      <button type="button" onClick={() => toggleSort("loan_amount_required")} className="inline-flex items-center gap-1 hover:text-foreground">
-                        Loan {sortIcon("loan_amount_required")}
-                      </button>
-                    </TableHead>
-                    <TableHead>Stage</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>
-                      <button type="button" onClick={() => toggleSort("created_at")} className="inline-flex items-center gap-1 hover:text-foreground">
-                        Created {sortIcon("created_at")}
-                      </button>
-                    </TableHead>
-                    <TableHead>
-                      <button type="button" onClick={() => toggleSort("updated_at")} className="inline-flex items-center gap-1 hover:text-foreground">
-                        Updated {sortIcon("updated_at")}
-                      </button>
-                    </TableHead>
-                    <TableHead className="text-right w-[60px]">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rows.map((r) => {
-                    const name = studentName(r);
-                    const initials = studentInitials(name);
-                    return (
-                      <TableRow
-                        key={r.id}
-                        data-clickable="true"
-                        onClick={() => navigate(`/admin/leads/${r.id}`)}
-                        className="group"
-                      >
-                        <TableCell className="py-3.5 font-mono text-xs text-muted-foreground">{r.lead_id ?? "—"}</TableCell>
-                        <TableCell className="py-3.5">
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-semibold tracking-wide">
-                              {initials}
-                            </div>
-                            <span className="font-medium text-foreground truncate">{name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-3.5">
-                          {r.source_type === "student_direct" ? (
-                            <Badge variant="outline" className="text-[10px] font-medium">Student Portal</Badge>
-                          ) : (
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] font-medium max-w-[200px] truncate inline-block"
-                              title={r.partner_display_name ? `Partner: ${r.partner_display_name}` : "Partner Lead"}
+        {!loading && !error && rows.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-[13px]">
+              <thead>
+                <tr className="bg-[#FAFBFC] text-left text-[10px] font-bold uppercase tracking-[0.08em] text-[#6B7684]">
+                  <th className="border-b border-[#ECEEF1] px-3 py-2.5">Lead ID</th>
+                  <th className="border-b border-[#ECEEF1] px-3 py-2.5">Student</th>
+                  <th className="border-b border-[#ECEEF1] px-3 py-2.5">Source</th>
+                  <th className="border-b border-[#ECEEF1] px-3 py-2.5">Phone</th>
+                  <th className="border-b border-[#ECEEF1] px-3 py-2.5">Country</th>
+                  <th className="border-b border-[#ECEEF1] px-3 py-2.5">Course</th>
+                  <th className="border-b border-[#ECEEF1] px-3 py-2.5 text-right">
+                    <button type="button" onClick={() => toggleSort("loan_amount_required")} className="inline-flex items-center gap-1 uppercase tracking-[0.08em] hover:text-[#1C1B1F]">
+                      Loan {sortIcon("loan_amount_required")}
+                    </button>
+                  </th>
+                  <th className="border-b border-[#ECEEF1] px-3 py-2.5">Stage</th>
+                  <th className="border-b border-[#ECEEF1] px-3 py-2.5">Status</th>
+                  <th className="border-b border-[#ECEEF1] px-3 py-2.5">
+                    <button type="button" onClick={() => toggleSort("created_at")} className="inline-flex items-center gap-1 uppercase tracking-[0.08em] hover:text-[#1C1B1F]">
+                      Created {sortIcon("created_at")}
+                    </button>
+                  </th>
+                  <th className="border-b border-[#ECEEF1] px-3 py-2.5">
+                    <button type="button" onClick={() => toggleSort("updated_at")} className="inline-flex items-center gap-1 uppercase tracking-[0.08em] hover:text-[#1C1B1F]">
+                      Updated {sortIcon("updated_at")}
+                    </button>
+                  </th>
+                  <th className="border-b border-[#ECEEF1] px-2 py-2.5 w-[80px] text-right uppercase tracking-[0.08em]">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r, idx) => {
+                  const isHigh = highPrioritySet.has(r.id);
+                  return (
+                    <tr
+                      key={r.id}
+                      onClick={() => navigate(`/admin/leads/${r.id}`)}
+                      style={isHigh ? { boxShadow: "inset 3px 0 0 #FF6D1D" } : undefined}
+                      className={cn(
+                        "group cursor-pointer transition-colors hover:bg-[#FAFBFC]",
+                        idx !== rows.length - 1 && "border-b border-[#F1F3F6]",
+                      )}
+                    >
+                      <td className="px-3 py-[11px]">
+                        <div className="flex items-center gap-2">
+                          {isHigh && (
+                            <span
+                              className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full"
+                              style={{ backgroundColor: "#FFF0E6", color: "#FF6D1D" }}
+                              aria-label="High priority"
+                              title="High priority"
                             >
-                              {r.partner_display_name ? `Partner · ${r.partner_display_name}` : "Partner Lead"}
-                            </Badge>
+                              <AlertTriangle className="h-3 w-3" />
+                            </span>
                           )}
-                        </TableCell>
-                        <TableCell className="py-3.5 text-muted-foreground tabular-nums text-xs">{r.student_phone}</TableCell>
-                        <TableCell className="py-3.5 text-sm">{r.intended_study_country || "—"}</TableCell>
-                        <TableCell className="py-3.5 max-w-[180px] truncate text-sm" title={r.course_name}>{r.course_name || "—"}</TableCell>
-                        <TableCell className="py-3.5 text-right tabular-nums font-semibold text-foreground">
-                          {r.loan_amount_required === null || r.loan_amount_required === undefined ? (
-                            <span className="text-muted-foreground font-normal">—</span>
-                          ) : (
-                            formatINRCompact(r.loan_amount_required)
-                          )}
-                        </TableCell>
-                        <TableCell className="py-3.5"><StageBadge stage={r.current_stage} /></TableCell>
-                        <TableCell className="py-3.5"><StatusBadge status={r.current_status} /></TableCell>
-                        <TableCell className="py-3.5 text-muted-foreground whitespace-nowrap text-xs">
-                          {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
-                        </TableCell>
-                        <TableCell className="py-3.5 text-muted-foreground whitespace-nowrap text-xs">
-                          {formatDistanceToNow(new Date(r.updated_at), { addSuffix: true })}
-                        </TableCell>
-                        <TableCell className="py-3.5 text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
-                            title="Edit lead"
+                          <span
+                            className="truncate whitespace-nowrap text-[12px] font-medium text-[#45505C]"
+                            style={{ fontFamily: "ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace" }}
+                            title={r.lead_id ?? undefined}
+                          >
+                            {r.lead_id ?? "—"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-[11px]"><StudentCell row={r} /></td>
+                      <td className="px-3 py-[11px]"><SourceCell row={r} /></td>
+                      <td
+                        className="px-3 py-[11px] whitespace-nowrap text-[12px] font-medium text-[#45505C] tabular-nums"
+                        style={{ fontFamily: "ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace" }}
+                      >
+                        {r.student_phone}
+                      </td>
+                      <td className="px-3 py-[11px]"><CountryCell country={r.intended_study_country} /></td>
+                      <td
+                        className="px-3 py-[11px] max-w-[180px] truncate text-[12.5px] text-[#1C1B1F]"
+                        title={r.course_name}
+                      >
+                        {r.course_name || "—"}
+                      </td>
+                      <td className="px-3 py-[11px] text-right tabular-nums text-[13px] font-bold text-[#1C1B1F]">
+                        {r.loan_amount_required === null || r.loan_amount_required === undefined ? (
+                          <span className="font-normal text-[#9AA3AE]">—</span>
+                        ) : (
+                          formatINRCompact(r.loan_amount_required)
+                        )}
+                      </td>
+                      <td className="px-3 py-[11px]"><StagePill stage={r.current_stage} /></td>
+                      <td className="px-3 py-[11px]"><StatusPill status={r.current_status} /></td>
+                      <td className="px-3 py-[11px] whitespace-nowrap text-[12.5px] text-[#45505C] tabular-nums">
+                        {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
+                      </td>
+                      <td className="px-3 py-[11px] whitespace-nowrap text-[12.5px] text-[#45505C] tabular-nums">
+                        {formatDistanceToNow(new Date(r.updated_at), { addSuffix: true })}
+                      </td>
+                      <td className="px-2 py-[11px] text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            aria-label="Open lead"
+                            title="Open lead"
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/admin/leads/new?edit=${r.id}`);
+                              navigate(`/admin/leads/${r.id}`);
                             }}
+                            className="flex h-[26px] w-[26px] items-center justify-center rounded-md text-[#45505C] hover:bg-[#F1F3F6] hover:text-[#1C1B1F]"
                           >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                            <ExternalLink className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label="More actions"
+                            title="More actions"
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex h-[26px] w-[26px] items-center justify-center rounded-md text-[#45505C] hover:bg-[#F1F3F6] hover:text-[#1C1B1F]"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-          {/* Pagination */}
-          {!loading && !error && totalCount > 0 && (
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-5 py-3.5 border-t bg-muted/20">
-              <span className="text-xs text-muted-foreground tabular-nums">
-                Showing <span className="font-semibold text-foreground">{(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, totalCount)}</span> of <span className="font-semibold text-foreground">{totalCount.toLocaleString("en-IN")}</span>
+        {/* Pagination */}
+        {!loading && !error && totalCount > 0 && (
+          <div className="flex flex-col gap-3 border-t border-[#F1F3F6] bg-[#FAFBFC] px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+            <span className="text-[12px] text-[#6B7684] tabular-nums">
+              Showing{" "}
+              <b className="font-semibold text-[#1C1B1F]">
+                {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, totalCount)}
+              </b>{" "}
+              of <b className="font-semibold text-[#1C1B1F]">{totalCount.toLocaleString("en-IN")}</b> leads
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => p - 1)}
+                className={cn(
+                  "inline-flex h-[30px] min-w-[30px] items-center justify-center gap-1 rounded-md border border-[#E5E7EB] bg-white px-2.5 text-[12.5px] font-semibold text-[#1C1B1F] tabular-nums transition-colors hover:bg-[#FAFBFC]",
+                  page <= 1 && "opacity-45 cursor-not-allowed hover:bg-white",
+                )}
+              >
+                <ChevronLeft className="h-3.5 w-3.5" /> Previous
+              </button>
+              <span className="px-2 text-[12px] text-[#6B7684] tabular-nums">
+                Page <span className="font-semibold text-[#1C1B1F]">{page}</span> of {totalPages}
               </span>
-              <div className="flex items-center gap-1.5">
-                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-                  <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Previous
-                </Button>
-                <span className="text-xs px-3 tabular-nums text-muted-foreground">Page <span className="font-semibold text-foreground">{page}</span> / {totalPages}</span>
-                <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-                  Next <ChevronRight className="h-3.5 w-3.5 ml-1" />
-                </Button>
-              </div>
+              <button
+                type="button"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => p + 1)}
+                className={cn(
+                  "inline-flex h-[30px] min-w-[30px] items-center justify-center gap-1 rounded-md border border-[#E5E7EB] bg-white px-2.5 text-[12.5px] font-semibold text-[#1C1B1F] tabular-nums transition-colors hover:bg-[#FAFBFC]",
+                  page >= totalPages && "opacity-45 cursor-not-allowed hover:bg-white",
+                )}
+              >
+                Next <ChevronRight className="h-3.5 w-3.5" />
+              </button>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
