@@ -413,7 +413,7 @@ export default function QuickLead() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Loan Amount Required (₹) *</Label>
+              <Label>Loan Amount Required (₹)</Label>
               <Input type="number" min="1" value={form.loan_amount_required} onChange={(e) => set("loan_amount_required", e.target.value)} placeholder="e.g. 2500000" />
             </div>
           </CardContent>
