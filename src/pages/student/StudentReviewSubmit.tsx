@@ -14,6 +14,7 @@ import { formatDisplayLabel } from "@/lib/formatDisplayLabel";
 import { INRAmountStacked } from "@/components/shared/INRAmountStacked";
 import { formatINR } from "@/lib/formatCurrency";
 import { getEnabledLevels, getMirroredHighestQual } from "@/lib/academicLevelCascade";
+import { formatStateName } from "@/lib/formatStateName";
 
 interface SummaryItem {
   label: string;
@@ -125,7 +126,7 @@ export default function StudentReviewSubmit() {
           { label: "Date of Birth", value: formData.student_dob },
           { label: "Gender", value: formData.student_gender ? formatDisplayLabel(formData.student_gender) : null },
           { label: "City", value: formData.city || (formData as any).district || null },
-          { label: "State", value: formData.state },
+          { label: "State", value: formatStateName(formData.state) },
           { label: "Pincode", value: formData.pincode },
           { label: "Country of Residence", value: formData.country_of_residence || (formData.pincode && /^\d{6}$/.test(formData.pincode) ? "India" : null) },
           { label: "Destination Country", value: formData.intended_study_country },

@@ -18,6 +18,7 @@ import { COURSE_CATEGORY_OPTIONS } from "@/lib/courseCategoryOptions";
 import { TEST_SCORE_RANGES, ACADEMIC_TOTAL_RANGE, ACADEMIC_PERCENTAGE_MAX, WORK_EXPERIENCE_YEARS_RANGE } from "@/lib/leadScoreRanges";
 import type { MasterOption } from "@/components/ui/master-combobox";
 import { formatDisplayLabel } from "@/lib/formatDisplayLabel";
+import { formatStateName } from "@/lib/formatStateName";
 
 type Lead = Tables<"student_leads"> & {
   district?: string | null;
@@ -226,7 +227,7 @@ export function LeadProfileSection({ lead, submittedByName, onSaved }: Props) {
             <Field label="Pincode" value={lead.pincode} editable={ed("pincode")}  onSaved={onSaved} />
             <Field label="City" value={cityDisplay} editable={ed("city")}  onSaved={onSaved} />
             <Field label="District" value={lead.district ?? null} editable={ed("district")}  onSaved={onSaved} />
-            <Field label="State" value={lead.state} editable={ed("state")}  onSaved={onSaved} />
+            <Field label="State" value={formatStateName(lead.state)} editable={ed("state")}  onSaved={onSaved} />
             <Field label="Tier" value={lead.tier ?? null} editable={ed("tier")}  onSaved={onSaved} />
             <Field label="Country" value={lead.country_of_residence || (lead.pincode && /^\d{6}$/.test(lead.pincode) ? "India" : null)} editable={ed("country_of_residence")}  onSaved={onSaved} />
           </div>

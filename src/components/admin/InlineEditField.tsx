@@ -22,6 +22,7 @@ import {
 } from "@/lib/numericValidation";
 import { MasterCombobox, type MasterOption } from "@/components/ui/master-combobox";
 import { usePincodeLookup } from "@/hooks/usePincodeLookup";
+import { formatStateName } from "@/lib/formatStateName";
 
 
 interface Props {
@@ -542,7 +543,7 @@ export function InlineEditField({
           }
           if (pincodePreview.found === true) {
             const district = pincodePreview.district ?? "—";
-            const state = pincodePreview.state ?? "—";
+            const state = formatStateName(pincodePreview.state) || "—";
             const tier = pincodePreview.tier ?? "—";
             return (
               <span className="flex flex-col gap-0.5 rounded border border-border bg-muted/40 p-1.5 text-[11px]">

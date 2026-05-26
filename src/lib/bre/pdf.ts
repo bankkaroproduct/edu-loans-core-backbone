@@ -5,6 +5,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { BreProfileInput, BreResult, BreScoringConfig } from "./types";
 import { formatEmploymentLabel, isEmploymentTypeParam } from "./employmentDisplay";
+import { formatStateName } from "../formatStateName";
 
 function formatNumber(n: number | null | undefined): string {
   if (n == null) return "—";
@@ -66,7 +67,7 @@ export function buildSimulationPdf(opts: {
       ["Course category", profile.course_category ?? "—"],
       ["Course level", profile.course_level ?? "—"],
       ["Collateral route", profile.collateral_route ?? "—"],
-      ["State", profile.state ?? "—"],
+      ["State", formatStateName(profile.state) || "—"],
     ],
     styles: { fontSize: 9 },
     headStyles: { fillColor: [60, 60, 80] },
