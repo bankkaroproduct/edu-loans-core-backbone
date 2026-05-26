@@ -565,14 +565,15 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
 
   type ValidationFailure = { message: string; step: StepId; field?: string };
   const validate = (isDraft: boolean): ValidationFailure | null => {
+    // ── Essential identifiers — required on BOTH draft and submit ───────────
     if (!form.student_first_name.trim()) return { message: "Student first name is required", step: "student", field: "student_first_name" };
-    if (!form.student_last_name.trim()) return { message: "Student last name is required", step: "student", field: "student_last_name" };
     if (!form.student_phone.trim()) return { message: "Mobile number is required", step: "student", field: "student_phone" };
     if (!isValidIndianPhone(form.student_phone)) return { message: "Mobile must be a valid 10-digit Indian number (with or without +91)", step: "student", field: "student_phone" };
+    // Email is optional, but if entered it must be valid.
     if (form.student_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.student_email.trim())) return { message: "Email format is invalid", step: "student", field: "student_email" };
 
-    // Score-range / numeric-sanity checks run on BOTH draft and submit paths.
-    // Required-ness checks remain submit-only below.
+    // ── Conditional format/range validators — run only when a value is entered.
+    // These do NOT enforce required-ness; they only block obviously bad input.
     {
       const enabledLevels = getEnabledLevels(form.highest_qualification);
       const pairs: Array<[string, string, string, string, boolean]> = [
@@ -594,49 +595,27 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     }
 
     if (!isDraft) {
-      if (!form.intended_study_country) return { message: "Intended study country is required", step: "study", field: "intended_study_country" };
-      if (!resolvedUniversityName.trim()) return { message: "University is required (pick from list or type manually)", step: "study", field: "university" };
-      if (!resolvedCourseName) return { message: "Course is required (pick from list or type manually)", step: "study", field: "course" };
-      if (!form.intake_term) return { message: "Intake term is required", step: "study", field: "intake_term" };
-      if (!form.intake_year) return { message: "Intake year is required", step: "study", field: "intake_year" };
-
-      // Academic Profile — mandatory: highest qualification, 10th score, 12th score.
-      // (10th & 12th are always enabled per the cascade rule.)
-      if (!form.highest_qualification) return { message: "Highest qualification is required", step: "study", field: "highest_qualification" };
-      if (!form.tenth_score.trim()) return { message: "10th score is required", step: "study", field: "tenth_score" };
-      if (!form.twelfth_score.trim()) return { message: "12th score is required", step: "study", field: "twelfth_score" };
-
-      // Financial Info — required in BOTH partner and admin modes (restored).
-      if (!form.loan_amount_required) return { message: "Approx loan amount is required", step: "financial", field: "loan_amount_required" };
-      if (isNaN(Number(form.loan_amount_required)) || Number(form.loan_amount_required) <= 0)
+      // Loan amount is optional. If entered, must be a positive number.
+      if (form.loan_amount_required && (isNaN(Number(form.loan_amount_required)) || Number(form.loan_amount_required) <= 0)) {
         return { message: "Loan amount must be a positive number", step: "financial", field: "loan_amount_required" };
-      // Co-applicant — strict required field set (10 fields), order matches UI.
-      // 1. Name
-      if (!form.coapplicant_name.trim()) return { message: "Co-Applicant Name is required", step: "financial", field: "coapplicant_name" };
-      // 2. Age
-      if (!form.coapplicant_age.trim()) return { message: "Co-Applicant Age is required", step: "financial", field: "coapplicant_age" };
-      {
+      }
+      // Co-applicant — all fields optional. If entered, must pass format checks.
+      if (form.coapplicant_age.trim()) {
         const a = parseInt(form.coapplicant_age, 10);
         if (!Number.isFinite(a) || a < 18 || a > 100)
           return { message: "Co-Applicant Age must be between 18 and 100", step: "financial", field: "coapplicant_age" };
       }
-      // 3. Relation
-      if (!form.coapplicant_relation) return { message: "Co-Applicant Relation is required", step: "financial", field: "coapplicant_relation" };
-      // 4. Mobile
-      if (!form.coapplicant_mobile.trim()) return { message: "Co-Applicant Mobile is required", step: "financial", field: "coapplicant_mobile" };
-      if (!isValidIndianPhone(form.coapplicant_mobile)) return { message: "Co-Applicant Mobile must be a valid 10-digit Indian number", step: "financial", field: "coapplicant_mobile" };
-      // 5. Email
-      if (!form.coapplicant_email.trim()) return { message: "Co-Applicant Email is required", step: "financial", field: "coapplicant_email" };
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.coapplicant_email.trim()))
+      if (form.coapplicant_mobile.trim() && !isValidIndianPhone(form.coapplicant_mobile)) {
+        return { message: "Co-Applicant Mobile must be a valid 10-digit Indian number", step: "financial", field: "coapplicant_mobile" };
+      }
+      if (form.coapplicant_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.coapplicant_email.trim())) {
         return { message: "Co-Applicant Email format is invalid", step: "financial", field: "coapplicant_email" };
-      // 6. Employment Type
-      if (!form.coapplicant_employment_type) return { message: "Employment Type is required", step: "financial", field: "coapplicant_employment_type" };
-      // 7. Monthly Income
-      if (!form.coapplicant_income || Number(form.coapplicant_income) <= 0)
-        return { message: "Monthly Income is required", step: "financial", field: "coapplicant_income" };
+      }
+      if (form.coapplicant_income && Number(form.coapplicant_income) <= 0) {
+        return { message: "Monthly Income must be a positive number", step: "financial", field: "coapplicant_income" };
+      }
       if (form.work_experience_years.trim() && !isValidWorkExp(form.work_experience_years))
         return { message: "Work experience must be a number with at most one decimal (e.g. 3 or 3.2)", step: "study", field: "work_experience_years" };
-      // Co-applicant work experience (optional) — single shorthand input "years.months"
       const cwErr = validateCoappWorkExpShorthand(form.coapplicant_work_experience);
       if (cwErr) return { message: `Co-applicant Work Experience: ${cwErr}`, step: "financial", field: "coapplicant_work_experience" };
     }
