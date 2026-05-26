@@ -55,11 +55,17 @@ export function PartnerDrawer({ open, onOpenChange, record, onSaved }: Props) {
   const [form, setForm] = useState<typeof blank>(blank);
   const [saving, setSaving] = useState(false);
   const [activationError, setActivationError] = useState<string | null>(null);
+  const [autoCode, setAutoCode] = useState<string>("");
+  const [dupCheck, setDupCheck] = useState<"idle" | "checking" | "ok" | "duplicate">("idle");
+  const [dupOwnerName, setDupOwnerName] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
     setActivationError(null);
+    setDupCheck("idle");
+    setDupOwnerName(null);
     if (record) {
+      setAutoCode("");
       setForm({
         display_name: record.display_name ?? "",
         legal_name: record.legal_name ?? "",
@@ -73,8 +79,58 @@ export function PartnerDrawer({ open, onOpenChange, record, onSaved }: Props) {
       });
     } else {
       setForm(blank);
+      setAutoCode("");
+      (async () => {
+        const { data } = await supabase
+          .from("partner_organizations")
+          .select("partner_code")
+          .like("partner_code", "PTR-%");
+        let max = 0;
+        (data ?? []).forEach((r) => {
+          const m = /^PTR-(\d+)$/.exec(r.partner_code ?? "");
+          if (m) {
+            const n = parseInt(m[1], 10);
+            if (!Number.isNaN(n) && n > max) max = n;
+          }
+        });
+        const next = `PTR-${String(max + 1).padStart(4, "0")}`;
+        setAutoCode(next);
+        setForm((p) => (p.partner_code ? p : { ...p, partner_code: next }));
+      })();
     }
   }, [open, record]);
+
+  // Debounced duplicate check (create mode only)
+  useEffect(() => {
+    if (isEdit || !open) return;
+    const code = form.partner_code.trim();
+    if (!code || code === autoCode) {
+      setDupCheck("idle");
+      setDupOwnerName(null);
+      return;
+    }
+    if (!/^[A-Z0-9-]{2,}$/.test(code)) {
+      setDupCheck("idle");
+      setDupOwnerName(null);
+      return;
+    }
+    setDupCheck("checking");
+    const t = setTimeout(async () => {
+      const { data } = await supabase
+        .from("partner_organizations")
+        .select("display_name")
+        .eq("partner_code", code)
+        .maybeSingle();
+      if (data) {
+        setDupOwnerName(data.display_name);
+        setDupCheck("duplicate");
+      } else {
+        setDupOwnerName(null);
+        setDupCheck("ok");
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [form.partner_code, autoCode, isEdit, open]);
 
   const setField = (k: keyof typeof blank, v: any) => {
     setForm((p) => ({ ...p, [k]: v }));
@@ -163,6 +219,12 @@ export function PartnerDrawer({ open, onOpenChange, record, onSaved }: Props) {
                   Partner Code * {isEdit && <Lock className="h-3 w-3 text-muted-foreground" />}
                 </Label>
                 <Input value={form.partner_code} onChange={(e) => setField("partner_code", e.target.value.toUpperCase())} disabled={isEdit} className="font-mono" />
+                {!isEdit && dupCheck === "duplicate" && dupOwnerName && (
+                  <p className="text-[10px] text-destructive">Partner code already assigned to {dupOwnerName}</p>
+                )}
+                {!isEdit && dupCheck !== "duplicate" && form.partner_code && form.partner_code === autoCode && (
+                  <p className="text-[10px] text-muted-foreground">Auto-generated. Edit to use a custom code.</p>
+                )}
               </div>
             </div>
             <div className="space-y-1.5">
@@ -236,7 +298,7 @@ export function PartnerDrawer({ open, onOpenChange, record, onSaved }: Props) {
 
         <SheetFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? "Saving…" : isEdit ? "Save Changes" : "Create Partner"}</Button>
+          <Button onClick={handleSave} disabled={saving || (!isEdit && (dupCheck === "duplicate" || dupCheck === "checking"))}>{saving ? "Saving…" : isEdit ? "Save Changes" : "Create Partner"}</Button>
         </SheetFooter>
       </SheetContent>
     </Sheet>
