@@ -1,7 +1,7 @@
 import {
   Shield, Inbox, Banknote, Users, LogOut,
   Database, FilePlus, Upload, FileSpreadsheet,
-  SlidersHorizontal, History, ScrollText, Calculator, FlaskConical,
+  SlidersHorizontal, History, ScrollText,
   MessageSquare, FileText, Star, UserCog, BarChart3,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
@@ -15,8 +15,8 @@ import {
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { initials, avatarColor } from "@/components/admin/dashboard/visualHelpers";
 
 import { AdminPartnerSwitcher } from "@/components/AdminPartnerSwitcher";
 
@@ -63,11 +63,11 @@ const userMgmtItems: NavItem[] = [
 ];
 
 const navBaseClass =
-  "flex items-center gap-3 w-full px-2.5 py-2 rounded-lg text-sm border-l-2 border-transparent text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground transition-colors";
+  "flex items-center gap-2.5 w-full px-2.5 py-2 rounded-[7px] text-[13.5px] font-medium text-[#45505C] hover:bg-[#F5F7FA] hover:text-[#1C1B1F] transition-colors";
 const navActiveClass =
-  "bg-primary/10 text-primary font-medium border-l-2 border-primary hover:bg-primary/15";
+  "bg-[#EEF2FF] text-[#0036DA] font-semibold shadow-[inset_2px_0_0_#0036DA]";
 const sectionLabelClass =
-  "text-[10px] uppercase tracking-[0.14em] text-sidebar-foreground/55 mt-3 mb-1.5 font-semibold";
+  "text-[10px] uppercase tracking-[0.10em] text-[#9AA3AE] font-bold pl-2.5 pt-3.5 pb-1.5";
 
 export function AdminSidebar() {
   const { state } = useSidebar();
@@ -102,16 +102,38 @@ export function AdminSidebar() {
           className={navBaseClass}
           activeClassName={navActiveClass}
         >
-          <item.icon className="h-4 w-4 shrink-0" />
+          <item.icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.8} />
           {!collapsed && <span className="truncate">{item.title}</span>}
         </NavLink>
       </SidebarMenuButton>
     </SidebarMenuItem>
   );
 
+  const userName = appUser?.full_name ?? "";
+  const userInitials = initials(userName) || "?";
+
   return (
-    <Sidebar collapsible="icon">
-      <SidebarContent>
+    <Sidebar collapsible="icon" className="bg-white border-r border-[#ECEEF1]">
+      <SidebarContent className="bg-white">
+        {/* Brand block */}
+        {!collapsed && (
+          <div className="flex items-center gap-2.5 border-b border-[#ECEEF1] px-3 py-3.5">
+            <div
+              className="flex h-7 w-7 items-center justify-center rounded-[7px] text-white text-[13px] font-bold"
+              style={{ background: "linear-gradient(135deg, #0036DA, #2C40AA)" }}
+              aria-hidden
+            >
+              E
+            </div>
+            <div className="min-w-0 leading-tight">
+              <p className="text-[13px] font-bold text-[#1C1B1F] truncate">Eduloans</p>
+              <p className="text-[9.5px] uppercase tracking-[0.10em] font-bold text-[#9AA3AE]">
+                Admin Portal
+              </p>
+            </div>
+          </div>
+        )}
+
         {visibleAdminItems.length > 0 && (
           <SidebarGroup>
             <SidebarGroupContent>
@@ -122,7 +144,7 @@ export function AdminSidebar() {
 
         {visibleLeadOpsItems.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel>
+            <SidebarGroupLabel className="p-0">
               {!collapsed && <span className={sectionLabelClass}>Lead Operations</span>}
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -134,7 +156,7 @@ export function AdminSidebar() {
 
         {visibleMasterItems.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel>
+            <SidebarGroupLabel className="p-0">
               {!collapsed && <span className={sectionLabelClass}>Master Data</span>}
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -145,13 +167,8 @@ export function AdminSidebar() {
 
         {visibleBreItems.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel>
-              {!collapsed && (
-                <span className={`flex items-center gap-1.5 ${sectionLabelClass}`}>
-                  <SlidersHorizontal className="h-3.5 w-3.5 text-primary" />
-                  BRE Engine
-                </span>
-              )}
+            <SidebarGroupLabel className="p-0">
+              {!collapsed && <span className={sectionLabelClass}>BRE Engine</span>}
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>{visibleBreItems.map(renderItem)}</SidebarMenu>
@@ -161,13 +178,8 @@ export function AdminSidebar() {
 
         {visibleCommsItems.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel>
-              {!collapsed && (
-                <span className={`flex items-center gap-1.5 ${sectionLabelClass}`}>
-                  <MessageSquare className="h-3.5 w-3.5 text-primary" />
-                  Communications
-                </span>
-              )}
+            <SidebarGroupLabel className="p-0">
+              {!collapsed && <span className={sectionLabelClass}>Communications</span>}
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>{visibleCommsItems.map(renderItem)}</SidebarMenu>
@@ -177,13 +189,8 @@ export function AdminSidebar() {
 
         {visibleUserMgmt.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel>
-              {!collapsed && (
-                <span className={`flex items-center gap-1.5 ${sectionLabelClass}`}>
-                  <UserCog className="h-3.5 w-3.5 text-primary" />
-                  Administration
-                </span>
-              )}
+            <SidebarGroupLabel className="p-0">
+              {!collapsed && <span className={sectionLabelClass}>Administration</span>}
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>{visibleUserMgmt.map(renderItem)}</SidebarMenu>
@@ -192,22 +199,26 @@ export function AdminSidebar() {
         )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border/60">
+      <SidebarFooter className="border-t border-[#ECEEF1] bg-white">
         <div className="p-2 space-y-2">
           {!collapsed && appUser && (
-            <div className="px-2 py-2 rounded-lg bg-sidebar-accent/40 border border-sidebar-border/50 space-y-0.5">
-              <div className="flex items-center gap-2 min-w-0">
-                <p className="text-sm font-medium text-sidebar-foreground truncate flex-1 min-w-0">
+            <div className="flex items-center gap-2.5 px-1.5 py-1.5">
+              <div
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white text-[11px] font-bold"
+                style={{ background: avatarColor(userName) || "linear-gradient(135deg, #0036DA, #2C40AA)" }}
+                aria-hidden
+              >
+                {userInitials}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-semibold text-[#1C1B1F] truncate leading-tight">
                   {appUser.full_name}
                 </p>
-                <Badge
-                  variant="outline"
-                  className="text-[9px] px-1.5 py-0 bg-primary/10 text-primary border-primary/30 shrink-0 rounded-full"
-                >
-                  {appUser.role.replace(/_/g, " ").toUpperCase()}
-                </Badge>
+                <p className="text-[11px] text-[#6B7684] truncate leading-tight">{appUser.email}</p>
               </div>
-              <p className="text-xs text-muted-foreground truncate">{appUser.email}</p>
+              <span className="shrink-0 rounded-full bg-[#EEF2FF] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-[#0036DA]">
+                {appUser.role === "super_admin" ? "Super" : "Admin"}
+              </span>
             </div>
           )}
 
@@ -218,7 +229,7 @@ export function AdminSidebar() {
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-9 w-9 border-sidebar-border/60 text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/60"
+                    className="h-9 w-9 border-[#ECEEF1] text-[#45505C] hover:text-[#1C1B1F] hover:bg-[#F5F7FA]"
                     onClick={handleSignOut}
                     aria-label="Sign out"
                   >
@@ -231,7 +242,7 @@ export function AdminSidebar() {
           ) : (
             <Button
               variant="outline"
-              className="w-full justify-start gap-2 h-9 border-sidebar-border/60 text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/60"
+              className="w-full justify-start gap-2 h-9 rounded-[8px] border-[#ECEEF1] text-[13px] font-medium text-[#45505C] hover:text-[#1C1B1F] hover:bg-[#F5F7FA]"
               onClick={handleSignOut}
               aria-label="Sign out"
             >

@@ -53,7 +53,7 @@ function AdminShell({ children }: { children: ReactNode }) {
 
 export function AdminLayout({ children }: { children: ReactNode }) {
   return (
-    <SidebarProvider style={{ "--sidebar-width": "224px" } as CSSProperties}>
+    <SidebarProvider style={{ "--sidebar-width": "240px" } as CSSProperties}>
       <HeaderSlotProvider>
         <AdminShell>{children}</AdminShell>
       </HeaderSlotProvider>
