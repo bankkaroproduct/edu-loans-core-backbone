@@ -1704,7 +1704,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               </div>
               {/* 4. Mobile */}
               <div className="space-y-2" data-field="coapplicant_mobile">
-                <Label>Co-Applicant Mobile *</Label>
+                <Label>Co-Applicant Mobile</Label>
                 <Input
                   value={form.coapplicant_mobile}
                   onChange={(e) => set("coapplicant_mobile", e.target.value.replace(/\D/g, "").slice(0, 10))}
