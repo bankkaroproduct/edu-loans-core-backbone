@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useAdminPermissions } from "@/hooks/useAdminPermissions";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Command,
@@ -29,10 +30,28 @@ import { ReadOnlyBanner } from "@/components/admin/ReadOnlyBanner";
 export default function AdminAddLead() {
   const readOnly = useReadOnly();
   const { effectivePartnerId, effectivePartnerName, partnerOptions, simulatePartner } = usePartnerContext();
+  const { isSuperAdmin, assignedPartnerIds, loading: permsLoading } = useAdminPermissions();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
-  const selected = partnerOptions.find((p) => p.id === effectivePartnerId);
+  // Non-super admins should only see their assigned partners + PTR-DIRECT
+  // (already merged into assignedPartnerIds by useAdminPermissions).
+  const visiblePartnerOptions = useMemo(() => {
+    if (isSuperAdmin) return partnerOptions;
+    const allowed = new Set(assignedPartnerIds);
+    return partnerOptions.filter((p) => allowed.has(p.id));
+  }, [isSuperAdmin, assignedPartnerIds, partnerOptions]);
+
+  // Default partner selection to Student Direct (PTR-DIRECT) when nothing is
+  // simulated yet. Runs once options resolve; respects any existing selection.
+  useEffect(() => {
+    if (permsLoading) return;
+    if (effectivePartnerId) return;
+    const ptrDirect = visiblePartnerOptions.find((p) => p.partner_code === "PTR-DIRECT");
+    if (ptrDirect) simulatePartner(ptrDirect.id);
+  }, [permsLoading, effectivePartnerId, visiblePartnerOptions, simulatePartner]);
+
+  const selected = visiblePartnerOptions.find((p) => p.id === effectivePartnerId);
 
   return (
     <div className="space-y-5 max-w-screen-2xl mx-auto">
@@ -95,7 +114,7 @@ export default function AdminAddLead() {
               <CommandList>
                 <CommandEmpty>No partners match that search.</CommandEmpty>
                 <CommandGroup>
-                  {partnerOptions.map((p) => {
+                  {visiblePartnerOptions.map((p) => {
                     const isDirect = p.partner_code === "PTR-DIRECT";
                     return (
                       <CommandItem

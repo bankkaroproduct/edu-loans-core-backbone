@@ -198,7 +198,7 @@ export default function StudentCoapplicantDetails() {
                 The co-applicant's total work experience (not the student's).
               </p>
               <p className="text-xs text-muted-foreground">
-                Example: enter <strong>3.6</strong> for 3 years 6 months. Used in BRE → Co-applicant Income Stability.
+                Example: enter <strong>3.6</strong> for 3 years 6 months.
               </p>
               <Input
                 inputMode="decimal"
