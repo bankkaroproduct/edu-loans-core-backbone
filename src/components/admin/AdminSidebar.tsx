@@ -77,6 +77,7 @@ export function AdminSidebar() {
   const collapsed = state === "collapsed";
   const { appUser, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { canView, isSuperAdmin } = useAdminPermissions();
 
   const breAccess = canAccessBre(appUser?.role, normalizeBrePermission(appUser?.bre_permission));
