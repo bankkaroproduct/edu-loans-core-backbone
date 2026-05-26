@@ -219,6 +219,12 @@ export function PartnerDrawer({ open, onOpenChange, record, onSaved }: Props) {
                   Partner Code * {isEdit && <Lock className="h-3 w-3 text-muted-foreground" />}
                 </Label>
                 <Input value={form.partner_code} onChange={(e) => setField("partner_code", e.target.value.toUpperCase())} disabled={isEdit} className="font-mono" />
+                {!isEdit && dupCheck === "duplicate" && dupOwnerName && (
+                  <p className="text-[10px] text-destructive">Partner code already assigned to {dupOwnerName}</p>
+                )}
+                {!isEdit && dupCheck !== "duplicate" && form.partner_code && form.partner_code === autoCode && (
+                  <p className="text-[10px] text-muted-foreground">Auto-generated. Edit to use a custom code.</p>
+                )}
               </div>
             </div>
             <div className="space-y-1.5">
