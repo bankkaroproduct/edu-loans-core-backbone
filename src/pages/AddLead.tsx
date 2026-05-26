@@ -1692,7 +1692,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               </div>
               {/* 3. Relation */}
               <div className="space-y-2" data-field="coapplicant_relation">
-                <Label>Co-Applicant Relation *</Label>
+                <Label>Co-Applicant Relation</Label>
                 <Select value={form.coapplicant_relation} onValueChange={(v) => set("coapplicant_relation", v)}>
                   <SelectTrigger><SelectValue placeholder="Select relation" /></SelectTrigger>
                   <SelectContent>
