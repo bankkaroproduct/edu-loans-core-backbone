@@ -1737,7 +1737,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               </div>
               {/* 7. Monthly Income */}
               <div className="space-y-2" data-field="coapplicant_income">
-                <Label>Monthly Income (₹) *</Label>
+                <Label>Monthly Income (₹)</Label>
                 <MoneyInput value={form.coapplicant_income} onChange={(d) => set("coapplicant_income", d)} placeholder="e.g. 1,25,000" />
               </div>
               {/* Co-applicant Work Experience — single shorthand input "years.months"
