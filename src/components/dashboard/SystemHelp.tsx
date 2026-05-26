@@ -1,6 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Download, FileText, HelpCircle, Info, Mail } from "lucide-react";
+import { Download, FileText, HelpCircle, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 function downloadBulkTemplate() {
@@ -13,57 +11,90 @@ function downloadBulkTemplate() {
 export function SystemHelp() {
   const navigate = useNavigate();
 
+  const tiles = [
+    {
+      key: "bulk",
+      title: "Bulk Upload Template",
+      sub: "Download the XLSX template (with dropdowns). Save Sheet 1 as CSV before uploading.",
+      icon: Download,
+      onClick: downloadBulkTemplate,
+    },
+    {
+      key: "docs",
+      title: "Document Checklist",
+      sub: "View required documents for each lender and study destination.",
+      icon: FileText,
+      onClick: () => navigate("/leads?stage=documents_pending"),
+    },
+    {
+      key: "support",
+      title: "Support & Escalation",
+      sub: "For urgent issues, contact support@eduloans.in",
+      icon: Mail,
+      onClick: undefined,
+    },
+  ];
+
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center gap-2">
-          <HelpCircle className="h-4 w-4" /> Help & Resources
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex items-start gap-3 p-2 rounded-lg border">
-          <Download className="h-4 w-4 mt-0.5 text-primary shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium">Bulk Upload Template</p>
-            <p className="text-xs text-muted-foreground">
-              Download the XLSX template (with dropdowns). Save Sheet 1 as CSV before uploading.
-            </p>
-          </div>
-          <Button variant="outline" size="sm" className="text-xs shrink-0" onClick={downloadBulkTemplate}>
-            Download XLSX
-          </Button>
-        </div>
-
-        <div className="flex items-start gap-3 p-2 rounded-lg border">
-          <FileText className="h-4 w-4 mt-0.5 text-primary shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium">Document Checklist Guide</p>
-            <p className="text-xs text-muted-foreground">
-              View required documents for each lender and study destination.
-            </p>
-          </div>
-          <Button variant="outline" size="sm" className="text-xs shrink-0" onClick={() => navigate("/leads?stage=documents_pending")}>
-            View
-          </Button>
-        </div>
-
-        <div className="flex items-start gap-3 p-2 rounded-lg border">
-          <Mail className="h-4 w-4 mt-0.5 text-primary shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium">Support & Escalation</p>
-            <p className="text-xs text-muted-foreground">
-              For urgent issues, contact <span className="font-medium">support@eduloans.in</span>
+    <section
+      className="rounded-[12px] border bg-white"
+      style={{ borderColor: "var(--pp-border-1)" }}
+    >
+      <header
+        className="flex items-center justify-between px-5 py-4 border-b"
+        style={{ borderColor: "var(--pp-border-2)" }}
+      >
+        <div className="flex items-center gap-2">
+          <HelpCircle className="h-[18px] w-[18px]" style={{ color: "var(--pp-blue)" }} />
+          <div>
+            <h3
+              className="text-[16px] font-extrabold"
+              style={{ letterSpacing: "-0.015em", color: "var(--pp-fg-1)" }}
+            >
+              Help & Resources
+            </h3>
+            <p
+              className="text-[11.5px] font-medium"
+              style={{ color: "var(--pp-fg-3)" }}
+            >
+              Get up to speed in minutes
             </p>
           </div>
         </div>
-
-        <div className="flex items-start gap-3 p-2 rounded-lg bg-muted/50 border">
-          <Info className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-          <p className="text-xs text-muted-foreground">
-            Track all your submitted leads from the <strong>Submitted Leads</strong> page. Use the sidebar for quick navigation.
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+      </header>
+      <div className="p-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {tiles.map((t) => {
+          const Icon = t.icon;
+          return (
+            <button
+              key={t.key}
+              type="button"
+              onClick={t.onClick}
+              disabled={!t.onClick}
+              className="flex items-start gap-3 p-[14px] rounded-[10px] border text-left transition-colors hover:bg-[#FAFBFC] disabled:cursor-default"
+              style={{ borderColor: "var(--pp-border-1)" }}
+            >
+              <span
+                className="flex h-9 w-9 items-center justify-center rounded-[9px] shrink-0"
+                style={{ background: "#EEF2FF", color: "var(--pp-blue)" }}
+              >
+                <Icon className="h-5 w-5" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[13px] font-bold" style={{ color: "var(--pp-fg-1)" }}>
+                  {t.title}
+                </p>
+                <p
+                  className="text-[11.5px] leading-[1.4] mt-0.5"
+                  style={{ color: "var(--pp-fg-3)" }}
+                >
+                  {t.sub}
+                </p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </section>
   );
 }

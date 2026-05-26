@@ -142,3 +142,38 @@ All colors MUST be HSL.
     font-family: inherit;
   }
 }
+
+/* ============================================================
+ * Partner Portal scope tokens (V2 Funnel-first polish).
+ * Same hex values as the admin handoffs, but isolated under
+ * `.partner-portal-root` so admin styling cannot bleed in.
+ * ============================================================ */
+.partner-portal-root {
+  --pp-blue: #0036DA;
+  --pp-blue-deep: #2C40AA;
+  --pp-orange: #FF6D1D;
+  --pp-success: #26A651;
+  --pp-success-dark: #167C3D;
+  --pp-success-tint: #ECFBF3;
+  --pp-warning: #E5A800;
+  --pp-warning-tint: #FFF8E6;
+  --pp-error: #D41000;
+  --pp-purple: #9747FF;
+  --pp-purple-tint: #F3EEFF;
+
+  --pp-fg-1: #1C1B1F;
+  --pp-fg-2: #45505C;
+  --pp-fg-3: #6B7684;
+  --pp-fg-muted: #9AA3AE;
+  --pp-fg-zero: #B8BFC8;
+
+  --pp-bg-app: #FAFBFC;
+  --pp-bg-card: #FFFFFF;
+  --pp-bg-row-hover: #FAFBFC;
+  --pp-bg-header: #FAFBFC;
+
+  --pp-border-1: #ECEEF1;
+  --pp-border-2: #F1F3F6;
+  --pp-border-3: #E5E7EB;
+}
+

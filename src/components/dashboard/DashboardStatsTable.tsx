@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { UserPlus, LogIn, BadgeCheck, HandCoins, Ban } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import {
   resolveDateWindow,
@@ -34,14 +35,6 @@ interface Bucket {
   rejected: number;
 }
 
-const COLORS = {
-  leads: "#3B82F6",
-  loggedIn: "#F59E0B",
-  sanctioned: "#10B981",
-  disbursed: "#22C55E",
-  rejected: "#EF4444",
-} as const;
-
 function monthLabel(y: number, m: number): string {
   return new Date(y, m, 1).toLocaleDateString("en-IN", { month: "short", year: "numeric" });
 }
@@ -59,6 +52,14 @@ function compute(key: string, label: string, rows: Lead[], sanctioned: Set<strin
     if (REJECTED_STAGES.has(l.current_stage)) rejected++;
   }
   return { key, label, leadCounts: rows.length, loggedIn, sanctioned: sanctionedC, disbursed, rejected };
+}
+
+interface FunnelStep {
+  key: string;
+  label: string;
+  value: number;
+  tint: string;
+  Icon: typeof UserPlus;
 }
 
 export function DashboardStatsTable({ leads, sanctionedEverIds, loading }: Props) {
@@ -116,90 +117,125 @@ export function DashboardStatsTable({ leads, sanctionedEverIds, loading }: Props
 
   if (loading) {
     return (
-      <div className="px-4 py-6">
-        <Skeleton className="h-1.5 w-full mb-4" />
+      <div className="px-5 py-6">
+        <Skeleton className="h-24 w-full mb-4" />
         <Skeleton className="h-16 w-full" />
       </div>
     );
   }
 
-  const segments: Array<{ key: string; color: string; value: number }> = [
-    { key: "leads", color: COLORS.leads, value: summary.leadCounts },
-    { key: "loggedIn", color: COLORS.loggedIn, value: summary.loggedIn },
-    { key: "sanctioned", color: COLORS.sanctioned, value: summary.sanctioned },
-    { key: "disbursed", color: COLORS.disbursed, value: summary.disbursed },
-    { key: "rejected", color: COLORS.rejected, value: summary.rejected },
+  const steps: FunnelStep[] = [
+    { key: "leads", label: "Leads", value: summary.leadCounts, tint: "var(--pp-blue)", Icon: UserPlus },
+    { key: "logged_in", label: "Logged In", value: summary.loggedIn, tint: "var(--pp-warning)", Icon: LogIn },
+    { key: "sanctioned", label: "Sanctioned", value: summary.sanctioned, tint: "var(--pp-success)", Icon: BadgeCheck },
+    { key: "disbursed", label: "Disbursed", value: summary.disbursed, tint: "var(--pp-purple)", Icon: HandCoins },
+    { key: "rejected", label: "Rejected", value: summary.rejected, tint: "var(--pp-error)", Icon: Ban },
   ];
 
-  const nonZeroCount = segments.filter((s) => s.value > 0).length;
-  const showColored = summary.leadCounts >= 3 && nonZeroCount >= 2;
+  const maxVal = Math.max(1, ...steps.map((s) => s.value));
 
   return (
     <div>
-      {/* Proportion bar */}
-      <div className="flex h-1.5 w-full overflow-hidden">
-        {showColored ? (
-          segments.map((s) =>
-            s.value > 0 ? (
-              <div key={s.key} style={{ flex: s.value, backgroundColor: s.color }} />
-            ) : null,
-          )
-        ) : (
-          <div className="w-full" style={{ backgroundColor: "#E5E7EB" }} />
-        )}
-      </div>
-
-      {/* Stats row */}
-      <div className="grid grid-cols-5 divide-x divide-border">
-        {[
-          { label: "Leads", value: summary.leadCounts, color: COLORS.leads },
-          { label: "Logged in", value: summary.loggedIn, color: COLORS.loggedIn },
-          { label: "Sanctioned", value: summary.sanctioned, color: COLORS.sanctioned },
-          { label: "Disbursed", value: summary.disbursed, color: COLORS.disbursed },
-          { label: "Rejected", value: summary.rejected, color: COLORS.rejected },
-        ].map((s) => (
-          <div key={s.label} className="flex flex-col items-center justify-center gap-1 py-4">
-            <span
-              className="h-2 w-2 rounded-full"
-              style={{ backgroundColor: s.color }}
-              aria-hidden
-            />
-            <span
-              className={cn(
-                "text-2xl font-medium tabular-nums",
-                s.value === 0 ? "text-muted-foreground/60" : "text-foreground",
-              )}
-            >
-              {s.value}
-            </span>
-            <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
-              {s.label}
-            </span>
-          </div>
-        ))}
+      {/* Funnel cells */}
+      <div className="px-5 pt-5 pb-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 relative">
+          {steps.map((s, i) => {
+            const isLast = i === steps.length - 1;
+            const fillPct = (s.value / maxVal) * 100;
+            return (
+              <div
+                key={s.key}
+                className="relative rounded-[10px] border overflow-hidden"
+                style={{
+                  background: "#FAFBFC",
+                  borderColor: "var(--pp-border-1)",
+                  padding: "14px 14px 12px",
+                }}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span
+                    className="flex items-center justify-center rounded-[7px]"
+                    style={{ width: 26, height: 26, background: s.tint, color: "#fff" }}
+                  >
+                    <s.Icon className="h-[14px] w-[14px]" />
+                  </span>
+                  <span
+                    className="text-[11px] font-semibold uppercase"
+                    style={{ letterSpacing: "0.06em", color: "var(--pp-fg-3)" }}
+                  >
+                    {s.label}
+                  </span>
+                </div>
+                <div
+                  className="text-[28px] font-extrabold tabular-nums"
+                  style={{
+                    letterSpacing: "-0.03em",
+                    color: s.value === 0 ? "var(--pp-fg-zero)" : "var(--pp-fg-1)",
+                  }}
+                >
+                  {s.value}
+                </div>
+                <div
+                  className="mt-3 rounded-full overflow-hidden"
+                  style={{ height: 4, background: "#ECEEF1" }}
+                >
+                  <div
+                    className="h-full rounded-full transition-[width]"
+                    style={{ width: `${fillPct}%`, background: s.tint }}
+                  />
+                </div>
+                {!isLast && (
+                  <span
+                    aria-hidden
+                    className="hidden lg:block absolute z-[1]"
+                    style={{
+                      right: -11,
+                      top: "50%",
+                      width: 22,
+                      height: 22,
+                      transform: "translateY(-50%) rotate(45deg)",
+                      background: "#fff",
+                      borderTop: "1px solid var(--pp-border-1)",
+                      borderRight: "1px solid var(--pp-border-1)",
+                    }}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Monthly breakdown */}
-      <div className="border-t border-border">
-        <div className="px-4 pt-3 pb-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+      <div className="border-t" style={{ borderColor: "var(--pp-border-2)" }}>
+        <div
+          className="px-5 pt-[18px] pb-2 text-[10.5px] font-bold uppercase"
+          style={{ letterSpacing: "0.10em", color: "var(--pp-fg-3)" }}
+        >
           Monthly breakdown
         </div>
-        <div className="px-4 pb-3">
-          <table className="w-full text-sm">
+        <div className="px-5 pb-4">
+          <table className="w-full">
             <thead>
-              <tr className="border-b border-border text-[11px] uppercase tracking-wide text-muted-foreground">
-                <th className="py-2 pr-2 text-left font-normal">Month</th>
-                <th className="py-2 px-2 text-right font-normal">Leads</th>
-                <th className="py-2 px-2 text-right font-normal">Logged in</th>
-                <th className="py-2 px-2 text-right font-normal">Sanctioned</th>
-                <th className="py-2 px-2 text-right font-normal">Disbursed</th>
-                <th className="py-2 pl-2 text-right font-normal">Rejected</th>
+              <tr
+                className="border-b"
+                style={{ borderColor: "var(--pp-border-1)" }}
+              >
+                <ThLeft>Month</ThLeft>
+                <ThRight>Leads</ThRight>
+                <ThRight>Logged In</ThRight>
+                <ThRight>Sanctioned</ThRight>
+                <ThRight>Disbursed</ThRight>
+                <ThRight last>Rejected</ThRight>
               </tr>
             </thead>
             <tbody>
               {isMulti && (
-                <tr className="border-b border-border bg-muted/40 font-semibold">
-                  <td className="py-2 pr-2 text-left">Total</td>
+                <tr
+                  className="border-b font-semibold"
+                  style={{ borderColor: "var(--pp-border-2)", background: "#FAFBFC" }}
+                >
+                  <td className="py-3 pr-4 text-left text-[13px]" style={{ color: "var(--pp-fg-1)" }}>Total</td>
                   <Num v={summary.leadCounts} />
                   <Num v={summary.loggedIn} />
                   <Num v={summary.sanctioned} />
@@ -208,8 +244,14 @@ export function DashboardStatsTable({ leads, sanctionedEverIds, loading }: Props
                 </tr>
               )}
               {monthly.map((r) => (
-                <tr key={r.key} className="border-b border-border last:border-b-0">
-                  <td className="py-2 pr-2 text-left text-muted-foreground">{r.label}</td>
+                <tr
+                  key={r.key}
+                  className="border-b last:border-b-0"
+                  style={{ borderColor: "var(--pp-border-2)" }}
+                >
+                  <td className="py-3 pr-4 text-left text-[13px]" style={{ color: "var(--pp-fg-2)" }}>
+                    {r.label}
+                  </td>
                   <Num v={r.leadCounts} />
                   <Num v={r.loggedIn} />
                   <Num v={r.sanctioned} />
@@ -225,14 +267,36 @@ export function DashboardStatsTable({ leads, sanctionedEverIds, loading }: Props
   );
 }
 
+function ThLeft({ children }: { children: React.ReactNode }) {
+  return (
+    <th
+      className="py-2.5 pr-4 text-left text-[10.5px] font-bold uppercase"
+      style={{ letterSpacing: "0.08em", color: "var(--pp-fg-3)" }}
+    >
+      {children}
+    </th>
+  );
+}
+
+function ThRight({ children, last }: { children: React.ReactNode; last?: boolean }) {
+  return (
+    <th
+      className={cn("py-2.5 text-right text-[10.5px] font-bold uppercase", last ? "pl-4" : "px-4")}
+      style={{ letterSpacing: "0.08em", color: "var(--pp-fg-3)" }}
+    >
+      {children}
+    </th>
+  );
+}
+
 function Num({ v, last }: { v: number; last?: boolean }) {
   return (
     <td
       className={cn(
-        "py-2 text-right tabular-nums",
-        last ? "pl-2" : "px-2",
-        v === 0 ? "text-muted-foreground/60" : "text-foreground",
+        "py-3 text-right text-[13px] font-bold tabular-nums",
+        last ? "pl-4" : "px-4",
       )}
+      style={{ color: v === 0 ? "var(--pp-fg-zero)" : "var(--pp-fg-1)" }}
     >
       {v}
     </td>

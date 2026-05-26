@@ -34,24 +34,53 @@ function DashboardHeaderContent({ fullName }: { fullName: string }) {
   return (
     <div className="flex flex-1 items-center justify-between gap-4 min-w-0">
       <div className="min-w-0 truncate">
-        <span className="text-sm sm:text-base font-semibold text-foreground">
-          {getGreeting()}, {fullName}
+        <span
+          className="text-[18px] sm:text-[24px] font-extrabold"
+          style={{ letterSpacing: "-0.025em", color: "var(--pp-fg-1)" }}
+        >
+          {getGreeting()},{" "}
+          <span
+            style={{
+              background: "linear-gradient(90deg, #0036DA 0%, #FF6D1D 100%)",
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              color: "transparent",
+            }}
+          >
+            {fullName}
+          </span>
         </span>
       </div>
-      <div className="flex items-center gap-2 shrink-0">
-        <Button size="sm" onClick={() => navigate("/leads/quick")}>
-          <Zap className="mr-1.5 h-4 w-4" /> Add Quick Lead
-        </Button>
-        <Button size="sm" variant="outline" onClick={() => navigate("/leads/new")}>
-          <Plus className="mr-1.5 h-4 w-4" /> Add New Lead
-        </Button>
-        <Button size="sm" variant="outline" onClick={() => navigate("/bulk-upload")}>
-          <Upload className="mr-1.5 h-4 w-4" /> Bulk Upload
-        </Button>
+      <div className="flex items-center gap-2.5 shrink-0">
+        <button
+          type="button"
+          onClick={() => navigate("/leads/quick")}
+          className="inline-flex items-center gap-1.5 rounded-[8px] px-3.5 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-[#0E0E0F]"
+          style={{ background: "#1C1B1F", boxShadow: "0 1px 2px rgba(16,24,40,0.16)" }}
+        >
+          <Zap className="h-[17px] w-[17px]" /> Add Quick Lead
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate("/leads/new")}
+          className="inline-flex items-center gap-1.5 rounded-[8px] border bg-white px-3.5 py-2 text-[13px] font-semibold transition-colors hover:bg-[#FAFBFC]"
+          style={{ borderColor: "var(--pp-border-3)", color: "var(--pp-fg-1)" }}
+        >
+          <Plus className="h-[17px] w-[17px]" /> Add New Lead
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate("/bulk-upload")}
+          className="inline-flex items-center gap-1.5 rounded-[8px] border bg-white px-3.5 py-2 text-[13px] font-semibold transition-colors hover:bg-[#FAFBFC]"
+          style={{ borderColor: "var(--pp-border-3)", color: "var(--pp-fg-1)" }}
+        >
+          <Upload className="h-[17px] w-[17px]" /> Bulk Upload
+        </button>
       </div>
     </div>
   );
 }
+
 
 function AppShell({ children, isDashboard, fullName }: { children: ReactNode; isDashboard: boolean; fullName: string }) {
   const { headerContent, hideSidebarTrigger, backTo } = useHeaderSlot();
@@ -59,15 +88,16 @@ function AppShell({ children, isDashboard, fullName }: { children: ReactNode; is
   const slotActive = !!headerContent || hideSidebarTrigger;
 
   return (
-    <div className="min-h-screen flex w-full font-sans">
+    <div className="partner-portal-root min-h-screen flex w-full font-sans" style={{ background: "var(--pp-bg-app)" }}>
       <AppSidebar />
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         <SimulationBanner />
         <header
           className={cn(
-            "flex items-center gap-3 border-b px-4",
-            slotActive ? "min-h-14 py-2 h-auto" : "h-14"
+            "flex items-center gap-3 border-b bg-white px-5 lg:px-8",
+            slotActive ? "min-h-14 py-2 h-auto" : "h-16"
           )}
+          style={{ borderColor: "var(--pp-border-2)" }}
         >
           {hideSidebarTrigger && (
             <Button
@@ -89,11 +119,12 @@ function AppShell({ children, isDashboard, fullName }: { children: ReactNode; is
           )}
           <NotificationBell />
         </header>
-        <main className="flex-1 px-4 lg:px-6 py-5">{children}</main>
+        <main className="flex-1 px-5 lg:px-8 py-6">{children}</main>
       </div>
     </div>
   );
 }
+
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { status, appUser } = useAuth();

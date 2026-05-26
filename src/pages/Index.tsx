@@ -111,10 +111,13 @@ function PartnerDashboardContent() {
   const isFirstRun = !loading && leads.length === 0;
 
   return (
-    <div className="space-y-6 max-w-screen-2xl mx-auto">
-      <section className="overflow-hidden rounded-xl border bg-card shadow-sm">
+    <div className="space-y-5 max-w-screen-2xl mx-auto">
+      <section
+        className="overflow-hidden rounded-[12px] border bg-white"
+        style={{ borderColor: "var(--pp-border-1)" }}
+      >
         <DashboardFilterBar />
-        <div className="border-t border-border">
+        <div className="border-t" style={{ borderColor: "var(--pp-border-2)" }}>
           <DashboardStatsTable
             leads={filteredLeads}
             sanctionedEverIds={sanctionedEverIds}
@@ -123,7 +126,7 @@ function PartnerDashboardContent() {
         </div>
       </section>
 
-      <div className="space-y-6">
+      <div className="space-y-5">
         {isFirstRun && <OnboardingEmptyState partnerName={partnerName} />}
 
         <YourLeads leads={leads} loading={loading} payouts={payoutRecords} />
@@ -135,3 +138,4 @@ function PartnerDashboardContent() {
     </div>
   );
 }
+
