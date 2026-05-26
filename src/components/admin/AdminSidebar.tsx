@@ -196,61 +196,19 @@ export function AdminSidebar() {
           </SidebarGroup>
         )}
 
-        {visibleLeadOpsItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="p-0">
-              {!collapsed && <span className={sectionLabelClass}>Lead Operations</span>}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{visibleLeadOpsItems.map(renderItem)}</SidebarMenu>
-              <AdminPartnerSwitcher collapsed={collapsed} />
-            </SidebarGroupContent>
-          </SidebarGroup>
+        {renderCollapsibleGroup(
+          "Lead Operations",
+          visibleLeadOpsItems,
+          <AdminPartnerSwitcher collapsed={collapsed} />,
         )}
 
-        {visibleMasterItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="p-0">
-              {!collapsed && <span className={sectionLabelClass}>Master Data</span>}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{visibleMasterItems.map(renderItem)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+        {renderCollapsibleGroup("Master Data", visibleMasterItems)}
 
-        {visibleBreItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="p-0">
-              {!collapsed && <span className={sectionLabelClass}>BRE Engine</span>}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{visibleBreItems.map(renderItem)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+        {renderCollapsibleGroup("BRE Engine", visibleBreItems)}
 
-        {visibleCommsItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="p-0">
-              {!collapsed && <span className={sectionLabelClass}>Communications</span>}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{visibleCommsItems.map(renderItem)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+        {renderCollapsibleGroup("Communications", visibleCommsItems)}
 
-        {visibleUserMgmt.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="p-0">
-              {!collapsed && <span className={sectionLabelClass}>Administration</span>}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{visibleUserMgmt.map(renderItem)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+        {renderCollapsibleGroup("Administration", visibleUserMgmt)}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-[#ECEEF1] bg-white">
