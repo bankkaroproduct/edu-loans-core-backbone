@@ -3,9 +3,11 @@ import {
   Database, FilePlus, Upload, FileSpreadsheet,
   SlidersHorizontal, History, ScrollText,
   MessageSquare, FileText, Star, UserCog, BarChart3,
+  ChevronDown,
 } from "lucide-react";
+import type { ReactNode } from "react";
 import { NavLink } from "@/components/NavLink";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminPermissions } from "@/hooks/useAdminPermissions";
 import { canAccessBre, normalizeBrePermission } from "@/lib/bre/permissions";
@@ -14,6 +16,7 @@ import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { initials, avatarColor } from "@/components/admin/dashboard/visualHelpers";
@@ -74,6 +77,7 @@ export function AdminSidebar() {
   const collapsed = state === "collapsed";
   const { appUser, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { canView, isSuperAdmin } = useAdminPermissions();
 
   const breAccess = canAccessBre(appUser?.role, normalizeBrePermission(appUser?.bre_permission));
@@ -109,6 +113,56 @@ export function AdminSidebar() {
     </SidebarMenuItem>
   );
 
+  const groupContainsActive = (items: NavItem[]) =>
+    items.some((i) =>
+      i.end ? location.pathname === i.url : location.pathname === i.url || location.pathname.startsWith(i.url + "/"),
+    );
+
+  const renderCollapsibleGroup = (
+    label: string,
+    items: NavItem[],
+    extra?: ReactNode,
+  ) => {
+    if (items.length === 0) return null;
+
+    // In icon-only collapsed mode: render flat (no accordion), preserve today's behavior.
+    if (collapsed) {
+      return (
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>{items.map(renderItem)}</SidebarMenu>
+            {extra}
+          </SidebarGroupContent>
+        </SidebarGroup>
+      );
+    }
+
+    const defaultOpen = groupContainsActive(items);
+    return (
+      <SidebarGroup>
+        <Collapsible defaultOpen={defaultOpen} key={`${label}-${defaultOpen ? "o" : "c"}`}>
+          <SidebarGroupLabel asChild className="p-0">
+            <CollapsibleTrigger className="group/collapsible flex w-full items-center justify-between pr-2 rounded-[7px] hover:bg-[#F5F7FA] transition-colors">
+              <span className={sectionLabelClass}>{label}</span>
+              <ChevronDown
+                className="h-3.5 w-3.5 text-[#9AA3AE] mr-1 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180"
+                strokeWidth={2}
+              />
+            </CollapsibleTrigger>
+          </SidebarGroupLabel>
+          <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+            <SidebarGroupContent>
+              <SidebarMenu>{items.map(renderItem)}</SidebarMenu>
+              {extra}
+            </SidebarGroupContent>
+          </CollapsibleContent>
+        </Collapsible>
+      </SidebarGroup>
+    );
+  };
+
+
+
   const userName = appUser?.full_name ?? "";
   const userInitials = initials(userName) || "?";
 
@@ -142,61 +196,19 @@ export function AdminSidebar() {
           </SidebarGroup>
         )}
 
-        {visibleLeadOpsItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="p-0">
-              {!collapsed && <span className={sectionLabelClass}>Lead Operations</span>}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{visibleLeadOpsItems.map(renderItem)}</SidebarMenu>
-              <AdminPartnerSwitcher collapsed={collapsed} />
-            </SidebarGroupContent>
-          </SidebarGroup>
+        {renderCollapsibleGroup(
+          "Lead Operations",
+          visibleLeadOpsItems,
+          <AdminPartnerSwitcher collapsed={collapsed} />,
         )}
 
-        {visibleMasterItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="p-0">
-              {!collapsed && <span className={sectionLabelClass}>Master Data</span>}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{visibleMasterItems.map(renderItem)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+        {renderCollapsibleGroup("Master Data", visibleMasterItems)}
 
-        {visibleBreItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="p-0">
-              {!collapsed && <span className={sectionLabelClass}>BRE Engine</span>}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{visibleBreItems.map(renderItem)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+        {renderCollapsibleGroup("BRE Engine", visibleBreItems)}
 
-        {visibleCommsItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="p-0">
-              {!collapsed && <span className={sectionLabelClass}>Communications</span>}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{visibleCommsItems.map(renderItem)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+        {renderCollapsibleGroup("Communications", visibleCommsItems)}
 
-        {visibleUserMgmt.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel className="p-0">
-              {!collapsed && <span className={sectionLabelClass}>Administration</span>}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>{visibleUserMgmt.map(renderItem)}</SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+        {renderCollapsibleGroup("Administration", visibleUserMgmt)}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-[#ECEEF1] bg-white">
