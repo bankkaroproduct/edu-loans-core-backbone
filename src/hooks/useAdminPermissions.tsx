@@ -48,7 +48,7 @@ export function AdminPermissionsProvider({ children }: { children: ReactNode }) 
     }
     setLoading(true);
     (async () => {
-      const [{ data: perms }, { data: assigns }] = await Promise.all([
+      const [{ data: perms }, { data: assigns }, { data: ptrDirect }] = await Promise.all([
         supabase
           .from("admin_section_permissions")
           .select("section, access_level")
@@ -57,6 +57,11 @@ export function AdminPermissionsProvider({ children }: { children: ReactNode }) 
           .from("admin_partner_assignments")
           .select("partner_id")
           .eq("user_id", appUser.id),
+        supabase
+          .from("partner_organizations")
+          .select("id")
+          .eq("partner_code", "PTR-DIRECT")
+          .maybeSingle(),
       ]);
       if (cancelled) return;
       const map = defaultSectionAccess();
@@ -64,11 +69,19 @@ export function AdminPermissionsProvider({ children }: { children: ReactNode }) 
         map[row.section as AdminSectionKey] = row.access_level as AdminAccessLevel;
       }
       setSectionAccess(map);
-      setAssignedPartnerIds((assigns ?? []).map((a) => a.partner_id));
+      const assigned = (assigns ?? []).map((a) => a.partner_id);
+      // PTR-DIRECT is the system bucket for direct/referral/internal leads.
+      // Non-super admins automatically inherit access so this operational
+      // workspace stays visible without requiring a manual assignment.
+      // Super admins are unrestricted elsewhere; merging is a harmless no-op.
+      const merged = ptrDirect?.id
+        ? Array.from(new Set([...assigned, ptrDirect.id]))
+        : assigned;
+      setAssignedPartnerIds(merged);
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [appUser?.id]);
+  }, [appUser?.id, isSuperAdmin]);
 
   const getAccess = (section: AdminSectionKey): AdminAccessLevel => {
     if (isSuperAdmin) return "full";
