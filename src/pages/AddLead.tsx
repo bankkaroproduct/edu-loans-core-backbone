@@ -1479,7 +1479,6 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               </div>
               <ScoreTotalPair
                 label="10th"
-                required
                 scoreKey="tenth_score"
                 totalKey="tenth_total"
                 scoreLabel="10th Score Obtained"
@@ -1494,7 +1493,6 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               />
               <ScoreTotalPair
                 label="12th"
-                scoreKey="tenth_score"
                 scoreKey="twelfth_score"
                 totalKey="twelfth_total"
                 scoreLabel="12th Score Obtained"
