@@ -372,7 +372,7 @@ export default function QuickLead() {
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label>Study Country *</Label>
+              <Label>Study Country</Label>
               {(() => {
                 const opts: MasterOption[] = countries.map(c => ({ id: c.country_name, label: c.country_name }));
                 const current = form.intended_study_country || "";
