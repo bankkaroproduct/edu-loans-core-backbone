@@ -1395,7 +1395,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 })()}
               </div>
               <div className="space-y-2 md:col-span-2" data-field="course">
-                <Label>Course *</Label>
+                <Label>Course</Label>
                 {(() => {
                   const selectedId = countryInJson
                     ? (form.course_name || "")
