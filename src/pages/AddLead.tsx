@@ -1670,7 +1670,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
             <CardHeader><CardTitle className="text-lg">Financial Information</CardTitle></CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2 md:col-span-2" data-field="loan_amount_required">
-                <Label>Approx Loan Amount Required (₹) *</Label>
+                <Label>Approx Loan Amount Required (₹)</Label>
                 <LakhsInput value={form.loan_amount_required} onChange={(d) => set("loan_amount_required", d)} placeholder="e.g. 25 or 12.5" />
                 
               </div>
