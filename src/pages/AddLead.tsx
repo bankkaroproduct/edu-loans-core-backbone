@@ -1682,7 +1682,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               </div>
               {/* 2. Age */}
               <div className="space-y-2" data-field="coapplicant_age">
-                <Label>Co-Applicant Age *</Label>
+                <Label>Co-Applicant Age</Label>
                 <Input
                   inputMode="numeric"
                   value={form.coapplicant_age}
