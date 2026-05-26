@@ -114,7 +114,7 @@ export default function AdminAddLead() {
               <CommandList>
                 <CommandEmpty>No partners match that search.</CommandEmpty>
                 <CommandGroup>
-                  {partnerOptions.map((p) => {
+                  {visiblePartnerOptions.map((p) => {
                     const isDirect = p.partner_code === "PTR-DIRECT";
                     return (
                       <CommandItem
