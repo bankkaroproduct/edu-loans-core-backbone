@@ -5,7 +5,7 @@ import {
   MessageSquare, FileText, Star, UserCog, BarChart3,
   ChevronDown,
 } from "lucide-react";
-import { useMemo } from "react";
+import type { ReactNode } from "react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
