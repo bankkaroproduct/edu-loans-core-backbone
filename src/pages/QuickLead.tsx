@@ -392,7 +392,7 @@ export default function QuickLead() {
               })()}
             </div>
             <div className="space-y-2">
-              <Label>Course Name *</Label>
+              <Label>Course Name</Label>
               <Input value={form.course_name} onChange={(e) => set("course_name", e.target.value)} placeholder="e.g. MS Computer Science" />
             </div>
             <div className="space-y-2 md:col-span-2">
