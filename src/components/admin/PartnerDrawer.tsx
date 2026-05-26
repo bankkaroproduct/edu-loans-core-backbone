@@ -298,7 +298,7 @@ export function PartnerDrawer({ open, onOpenChange, record, onSaved }: Props) {
 
         <SheetFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? "Saving…" : isEdit ? "Save Changes" : "Create Partner"}</Button>
+          <Button onClick={handleSave} disabled={saving || (!isEdit && (dupCheck === "duplicate" || dupCheck === "checking"))}>{saving ? "Saving…" : isEdit ? "Save Changes" : "Create Partner"}</Button>
         </SheetFooter>
       </SheetContent>
     </Sheet>
