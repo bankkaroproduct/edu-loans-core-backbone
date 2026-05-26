@@ -46,7 +46,6 @@ interface Props {
   submittedByName: string | null;
   isDraft: boolean;
   hasPendingEditRequest?: boolean;
-  appliedEditCount?: number;
   onRequestEdit?: () => void;
 }
 
@@ -55,7 +54,6 @@ export function LeadDetailHeaderInline({
   submittedByName,
   isDraft,
   hasPendingEditRequest = false,
-  appliedEditCount = 0,
   onRequestEdit,
 }: Props) {
   const navigate = useNavigate();
@@ -65,7 +63,6 @@ export function LeadDetailHeaderInline({
     ATTENTION_STAGES.includes(lead.current_stage) ||
     ATTENTION_STATUSES.includes(lead.current_status) ||
     lead.duplicate_flag;
-  const editLimitReached = appliedEditCount >= 10;
 
   const copyLeadId = () => {
     if (lead.lead_id) {
