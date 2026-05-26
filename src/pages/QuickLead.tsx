@@ -135,18 +135,14 @@ export default function QuickLead() {
   }, [pincodeResult, form.pincode]);
 
   const validate = (): string | null => {
+    // Essentials only: first name + valid Indian phone. Email/pincode format
+    // checks remain, but only when a value is entered.
     if (!form.student_first_name.trim()) return "Student first name is required";
     if (!form.student_phone.trim()) return "Phone number is required";
     if (!isValidIndianPhone(form.student_phone)) return "Phone must be a valid 10-digit Indian number (with or without +91)";
     if (form.student_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.student_email.trim())) return "Email format is invalid";
-    if (!form.pincode.trim()) return "Pincode is required";
-    if (!/^\d{6}$/.test(form.pincode.trim())) return "Pincode must be exactly 6 digits";
-    if (!form.intended_study_country) return "Study country is required";
-    if (!form.intake_term) return "Intake term is required";
-    if (!form.intake_year) return "Intake year is required";
-    if (!form.course_name.trim()) return "Course name is required";
-    if (!form.loan_amount_required.trim()) return "Loan amount is required";
-    if (isNaN(Number(form.loan_amount_required)) || Number(form.loan_amount_required) <= 0) return "Loan amount must be a positive number";
+    if (form.pincode.trim() && !/^\d{6}$/.test(form.pincode.trim())) return "Pincode must be exactly 6 digits";
+    if (form.loan_amount_required.trim() && (isNaN(Number(form.loan_amount_required)) || Number(form.loan_amount_required) <= 0)) return "Loan amount must be a positive number";
     if (!effectivePartnerId) return "No partner organization found. Admins can use 'Test as Partner' in the sidebar.";
     return null;
   };
