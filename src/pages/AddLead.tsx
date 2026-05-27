@@ -20,8 +20,14 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { DuplicateWarningDialog } from "@/components/leads/DuplicateWarningDialog";
 import { LeadSuccessDialog } from "@/components/leads/LeadSuccessDialog";
 import { toast } from "sonner";
-import { ArrowLeft, FileText, User, GraduationCap, MessageSquare, Eye, AlertTriangle, ChevronDown, Wallet, Building2, Check, ChevronsUpDown, Info } from "lucide-react";
+import { ArrowLeft, FileText, User, GraduationCap, MessageSquare, Eye, AlertTriangle, ChevronDown, Wallet, Building2, Check, ChevronsUpDown, Info, Store, BadgeCheck, Trophy, Shield } from "lucide-react";
 import { HorizontalStepper } from "@/components/shared/HorizontalStepper";
+import { PillStepper } from "@/pages/AddLead/_components/PillStepper";
+import { AddLeadHeader } from "@/pages/AddLead/_components/AddLeadHeader";
+import { ContextCard } from "@/pages/AddLead/_components/ContextCard";
+import { FormCardShell } from "@/pages/AddLead/_components/FormCardShell";
+import { RightRail, type CompletionStep } from "@/pages/AddLead/_components/RightRail";
+import { ReviewBlock, ReviewRowInline } from "@/pages/AddLead/_components/ReviewBlock";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
@@ -54,19 +60,22 @@ type Course = Tables<"courses_master">;
 type Intake = Tables<"intake_master">;
 
 const STEP_DEFS = {
-  student: { id: "student", label: "Student Details", icon: User },
+  student: { id: "student", label: "Student", icon: User },
   study: { id: "study", label: "Study Intent", icon: GraduationCap },
-  financial: { id: "financial", label: "Financial Info", icon: Wallet },
+  financial: { id: "financial", label: "Financial", icon: Wallet },
   notes: { id: "notes", label: "Notes", icon: MessageSquare },
-  assign: { id: "assign", label: "Assign to Partner", icon: Building2 },
-  review: { id: "review", label: "Review & Submit", icon: Eye },
+  assign: { id: "assign", label: "Assign", icon: Building2 },
+  review: { id: "review", label: "Review", icon: Eye },
 } as const;
 
 type StepId = keyof typeof STEP_DEFS;
 
-const PARTNER_STEPS: StepId[] = ["student", "study", "financial", "notes", "review"];
-const ADMIN_STEPS: StepId[] = ["student", "study", "financial", "notes", "review"];
-const ADMIN_EDIT_STEPS: StepId[] = ["student", "study", "financial", "notes", "assign", "review"];
+// Notes step is consolidated into Review (partner_remark textarea renders in
+// the Review block). The `notes` StepId is kept in STEP_DEFS purely so legacy
+// `field: "notes"` validator references won't crash if any survived.
+const PARTNER_STEPS: StepId[] = ["student", "study", "financial", "review"];
+const ADMIN_STEPS: StepId[] = ["student", "study", "financial", "review"];
+const ADMIN_EDIT_STEPS: StepId[] = ["student", "study", "financial", "assign", "review"];
 
 import { CO_APPLICANT_RELATIONS } from "@/lib/coapplicantRelations";
 
@@ -1136,12 +1145,11 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
 
   const backTarget = isAdminContext ? "/admin/leads" : "/leads";
 
-  // Mode-aware navigation targets
+  // Mode-aware navigation targets (notes step consolidated into Review).
   const studyNextTarget: StepId = "financial";
-  const notesBackTarget: StepId = "financial";
   const showAssignStep = isAdminForm && isEditMode;
-  const notesNextTarget: StepId = showAssignStep ? "assign" : "review";
-  const reviewBackTarget: StepId = showAssignStep ? "assign" : "notes";
+  const financialNextTarget: StepId = showAssignStep ? "assign" : "review";
+  const reviewBackTarget: StepId = showAssignStep ? "assign" : "financial";
 
   const selectedAssignedPartner = partnersList.find((p) => p.id === partnerIdAssignment);
   const partnerChanged = !!partnerIdAssignment && partnerIdAssignment !== originalPartnerId;
