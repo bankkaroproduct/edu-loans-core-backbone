@@ -1215,9 +1215,11 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
       <Tabs value={activeStep} onValueChange={(v) => goToStep(v as StepId)} className="space-y-5">
         {/* Student Details */}
         <TabsContent value="student" forceMount className="mt-0 data-[state=inactive]:hidden">
-          <Card>
-            <CardHeader><CardTitle className="text-lg">Student Basic Details</CardTitle></CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
+          <FormCardShell
+            title="Student Basic Details"
+            stepLabel={`Step ${steps.findIndex((s) => s.id === "student") + 1} of ${steps.length}`}
+          >
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2" data-field="student_first_name">
                 <Label>First Name *</Label>
                 <Input value={form.student_first_name} onChange={(e) => set("student_first_name", e.target.value)} placeholder="Student first name" />
