@@ -172,6 +172,9 @@ export default function StudentCoapplicantDetails() {
         <CardContent className="p-5 sm:p-6">
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Financial Profile</h2>
           <div className="grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Co-Applicant Financial Details
+            </div>
             {/* Income Source field removed from UI per scoped form-fix pass.
                 Existing `coapplicant_income_source` values in storage remain untouched. */}
             {/* 6. Employment Type */}
