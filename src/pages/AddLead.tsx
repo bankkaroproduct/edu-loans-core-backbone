@@ -1787,31 +1787,14 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
           </Card>
           <div className="flex justify-between mt-4">
             <Button variant="outline" onClick={() => goToStep("study")}>← Study Intent</Button>
-            <Button onClick={() => goNextFrom("financial", "notes")}>Next: Notes →</Button>
+            <Button onClick={() => goNextFrom("financial", financialNextTarget)}>
+              Next: {financialNextTarget === "assign" ? "Assign to Partner" : "Review & Submit"} →
+            </Button>
           </div>
         </TabsContent>
 
-        {/* Notes */}
-        <TabsContent value="notes" forceMount className="mt-0 data-[state=inactive]:hidden">
-          <Card>
-            <CardHeader><CardTitle className="text-lg">Partner Notes</CardTitle></CardHeader>
-            <CardContent className="grid gap-4">
-              <div className="space-y-2">
-                <Label>{isAdminForm ? "Admin / Partner Remark" : "Partner Remark"}</Label>
-                <Textarea value={form.partner_remark} onChange={(e) => set("partner_remark", e.target.value)} placeholder="Any additional context for the operations team..." rows={3} />
-                <p className="text-xs text-muted-foreground">Optional — leave blank if no additional context.</p>
-              </div>
-            </CardContent>
-          </Card>
-          <div className="flex justify-between mt-4">
-            <Button variant="outline" onClick={() => goToStep(notesBackTarget)}>
-              ← {notesBackTarget === "financial" ? "Financial Info" : "Study Intent"}
-            </Button>
-            <Button onClick={() => goNextFrom("notes", notesNextTarget)}>
-              Next: {notesNextTarget === "assign" ? "Assign to Partner" : "Review & Submit"} →
-            </Button>
-          </div>
-        </TabsContent>
+        {/* Notes step is consolidated into Review (see Review block below).
+            partner_remark textarea moved — field key & binding unchanged. */}
 
         {/* Assign to Partner — admin edit only */}
         {showAssignStep && (
