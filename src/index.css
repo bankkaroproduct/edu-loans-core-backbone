@@ -177,3 +177,35 @@ All colors MUST be HSL.
   --pp-border-3: #E5E7EB;
 }
 
+/* ============================================================
+ * Add Lead form scope tokens (UI/UX polish — visual only).
+ * Same palette family as partner-portal-root above; isolated under
+ * `.add-lead-shell` so existing tokens elsewhere are untouched.
+ * ============================================================ */
+.add-lead-shell {
+  --al-blue: #0036DA;
+  --al-blue-deep: #2C40AA;
+  --al-blue-tint: #F7F9FF;
+  --al-orange: #FF6D1D;
+
+  --al-fg-1: #1C1B1F;
+  --al-fg-2: #45505C;
+  --al-fg-3: #6B7684;
+  --al-fg-muted: #9AA3AE;
+
+  --al-bg-card: #FFFFFF;
+  --al-bg-foot: #F5F7F9;
+
+  --al-border-1: #E5E7EB;
+  --al-border-2: #F1F1F1;
+  --al-border-3: #DCE3F7;
+
+  --al-success: #117A3A;
+  --al-success-tint: #E4F7EC;
+}
+
+/* Numeric tabular alignment for stepper bubbles, completion meta, etc. */
+.add-lead-shell .al-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
