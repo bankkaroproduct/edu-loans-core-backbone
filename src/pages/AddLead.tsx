@@ -1169,25 +1169,26 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     );
   }
 
+  // Completion-card steps for the right rail. Derived from the active step
+  // index — state machine unchanged.
+  const activeIdx = Math.max(0, steps.findIndex((s) => s.id === activeStep));
+  const completionSteps: CompletionStep[] = steps.map((s, i) => ({
+    id: s.id,
+    label: s.label,
+    state: i < activeIdx ? "done" : i === activeIdx ? "active" : "pending",
+  }));
+  const railPortal = isAdminForm ? "admin" : "partner";
+
   return (
-    <div className={containerClassName ?? "max-w-4xl mx-auto space-y-5"}>
+    <div className={cn("add-lead-shell", containerClassName ?? "max-w-screen-2xl mx-auto space-y-5")}>
       {!hideOwnHeader && (
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(backTarget)}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" /> {headingTitle}
-              {(draftId || isEditMode) && (
-                <Badge variant="outline" className="ml-1 text-[10px]">
-                  {draftId ? "DRAFT" : "EDIT"}
-                </Badge>
-              )}
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">{headingDesc}</p>
-          </div>
-        </div>
+        <AddLeadHeader
+          portal="partner"
+          title={headingTitle}
+          subtitle={headingDesc}
+          onBack={() => navigate(backTarget)}
+          modeBadge={draftId ? "DRAFT" : isEditMode ? "EDIT" : undefined}
+        />
       )}
 
       {isTerminalEdit && (
@@ -1199,13 +1200,17 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         </Alert>
       )}
 
-      {/* Step progress — horizontal stepper (PR 5). Visual swap of the prior tab pill strip;
-          state machine unchanged: goToStep + activeStep + Tabs value still drive content. */}
-      <HorizontalStepper
+      {/* Step progress — pill stepper (visual swap). State machine unchanged:
+          goToStep + activeStep + Tabs value still drive content. */}
+      <PillStepper
         steps={steps.map((s) => ({ id: s.id, label: s.label }))}
         activeId={activeStep}
         onStepClick={(id) => goToStep(id as StepId)}
       />
+
+      <div className="grid gap-5 md:grid-cols-[1fr_320px] items-start">
+        <div className="min-w-0">
+
 
       <Tabs value={activeStep} onValueChange={(v) => goToStep(v as StepId)} className="space-y-5">
         {/* Student Details */}
@@ -2058,6 +2063,11 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
           </div>
         </TabsContent>
       </Tabs>
+        </div>
+        <RightRail portal={railPortal} steps={completionSteps} onReviewStep={activeStep === "review"} />
+      </div>
+
+
 
       <DuplicateWarningDialog
         open={showDupDialog}
