@@ -1998,12 +1998,31 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   <ReviewRow label="Collateral Notes" value={form.collateral_notes} />
                 )}
               </div>
-              {form.partner_remark.trim() && (
-                <div>
-                  <Badge variant="outline" className="mb-2">Notes</Badge>
-                  <ReviewRow label={isAdminForm ? "Admin / Partner Remark" : "Partner Remark"} value={form.partner_remark} />
+              {/* Notes — partner_remark textarea relocated from removed Notes
+                  step. Same field key, same binding, always editable here. */}
+              <div>
+                <Badge variant="outline" className="mb-2">Notes</Badge>
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="partner_remark" className="text-sm font-medium">
+                      {isAdminForm ? "Admin / Partner Remark" : "Partner Remark"}
+                    </label>
+                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground border rounded px-1.5 py-0.5">
+                      Optional
+                    </span>
+                  </div>
+                  <Textarea
+                    id="partner_remark"
+                    rows={3}
+                    placeholder="Add any additional context for this lead…"
+                    value={form.partner_remark}
+                    onChange={(e) => set("partner_remark", e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Leave blank if no additional context.
+                  </p>
                 </div>
-              )}
+              </div>
               {showAssignStep && (
                 <div>
                   <Badge variant="outline" className="mb-2">Partner Assignment</Badge>
