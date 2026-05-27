@@ -1,106 +1,111 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Check, Shield, TrendingUp, Users, Banknote, AlertTriangle, Eye, EyeOff } from "lucide-react";
+import {
+  AlertTriangle,
+  Eye,
+  EyeOff,
+  Mail,
+  KeyRound,
+  ArrowRight,
+  Check,
+  GraduationCap,
+} from "lucide-react";
 
+/**
+ * Partner sign-in page — V6 Mosaic (cleaned) polish.
+ * Visual-only refresh. LoginForm / SignUpForm handlers, validators,
+ * redirects, role gating, and field name attributes preserved 1:1.
+ */
 export default function Login() {
-  // Login page always renders the form. signInWithPassword overwrites any
-  // existing session on submit. Post-login redirects are handled by
-  // AppLayout / AdminRoute based on role.
+  const values = [
+    {
+      title: "Multi-lender access in one place",
+      desc: "Submit once, get evaluated by every lender that fits the case.",
+    },
+    {
+      title: "Real-time student tracking",
+      desc: "Stage-by-stage visibility — application, BRE, sanction, disbursal.",
+    },
+    {
+      title: "End-to-end processing support",
+      desc: "Documents, follow-ups, queries — handled by our ops team.",
+    },
+    {
+      title: "Transparent payouts",
+      desc: "Track every commission, auditable down to the lead level.",
+    },
+  ];
 
   return (
-    <div className="flex min-h-screen flex-col lg:flex-row">
-      {/* Left Branding Panel */}
-      <div className="relative flex w-full flex-col justify-between bg-primary px-8 py-10 text-primary-foreground lg:w-[45%] lg:px-12 lg:py-16">
-        <div className="space-y-8">
+    <div className="partner-login-shell">
+      <div className="pl-topbar">
+        <div className="pl-brand">
+          <div className="pl-mark"><GraduationCap size={18} strokeWidth={2.25} /></div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight lg:text-4xl">EduLoans</h1>
-            <p className="mt-1 text-sm opacity-70">by CashKaro</p>
+            <div className="pl-wordmark">EduLoans</div>
+            <div className="pl-sub">Partner Portal</div>
           </div>
+        </div>
+      </div>
 
-          <div className="space-y-4">
-            <h2 className="text-xl font-semibold leading-snug lg:text-2xl lg:leading-snug">
-              Simplify Education Loans for Your Students. Grow Your Business With Every Case.
-            </h2>
-            <p className="text-sm leading-relaxed opacity-80 lg:text-base">
-              One platform to manage leads, track applications, and earn payouts — without dealing with multiple lenders.
-            </p>
-          </div>
+      <div className="pl-stage">
+        {/* Left — Hero */}
+        <div className="pl-hero">
+          <h1 className="pl-headline">
+            Loans for your students. <span className="accent">Income</span> for your business.
+          </h1>
+          <p className="pl-hero-sub">
+            EduLoans lets your team operate like a multi-lender broker — without dealing with
+            twelve different portals. Sign in to manage leads or sign up to become a partner.
+          </p>
 
-          <ul className="space-y-3">
-            {[
-              "Multi-lender access in one place",
-              "Real-time student tracking",
-              "End-to-end processing support",
-              "Transparent payouts",
-            ].map((item) => (
-              <li key={item} className="flex items-center gap-3 text-sm lg:text-base">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-foreground/20">
-                  <Check className="h-3 w-3" />
-                </span>
-                {item}
-              </li>
-            ))}
-          </ul>
-
-          <div className="flex flex-wrap gap-2 pt-2">
-            {[
-              { icon: Users, label: "Multi-Lender" },
-              { icon: TrendingUp, label: "Real-Time Tracking" },
-              { icon: Banknote, label: "Secure Payouts" },
-              { icon: Shield, label: "Pan-India" },
-            ].map(({ icon: Icon, label }) => (
-              <span
-                key={label}
-                className="inline-flex items-center gap-1.5 rounded-full border border-primary-foreground/20 px-3 py-1 text-xs opacity-80"
-              >
-                <Icon className="h-3 w-3" />
-                {label}
-              </span>
+          <div className="pl-values">
+            {values.map((v) => (
+              <div key={v.title} className="pl-value">
+                <div className="pl-check">
+                  <Check size={16} strokeWidth={2.75} />
+                </div>
+                <div>
+                  <div className="pl-value-title">{v.title}</div>
+                  <div className="pl-value-desc">{v.desc}</div>
+                </div>
+              </div>
             ))}
           </div>
         </div>
 
-        <p className="mt-8 text-xs opacity-50 lg:mt-0">Trusted by partners across India</p>
-      </div>
-
-      {/* Right Login Panel */}
-      <div className="flex w-full items-center justify-center bg-muted/30 p-6 lg:w-[55%] lg:p-12">
-        <Card className="w-full max-w-md shadow-lg">
-          <CardHeader className="space-y-2 p-8 pb-2 text-center">
-            <CardTitle className="text-2xl font-bold">Welcome to EduLoans Partner Portal</CardTitle>
-            <CardDescription>
-              Manage your student leads, documents, and earnings — all in one place
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-8 pt-4">
+        {/* Right — Auth pane */}
+        <div className="pl-right">
+          <div className="pl-card">
             <Tabs defaultValue="login">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              <TabsList className="pl-tabs h-auto bg-transparent border-0 p-0">
+                <TabsTrigger value="login" className="rounded-full">Sign In</TabsTrigger>
+                <TabsTrigger value="signup" className="rounded-full">Sign Up</TabsTrigger>
               </TabsList>
-              <TabsContent value="login"><LoginForm /></TabsContent>
-              <TabsContent value="signup"><SignUpForm /></TabsContent>
+
+              <TabsContent value="login">
+                <h2 className="pl-heading">Welcome back</h2>
+                <p className="pl-subheading">Sign in to your partner dashboard.</p>
+                <LoginForm />
+              </TabsContent>
+
+              <TabsContent value="signup">
+                <h2 className="pl-heading">Become a partner</h2>
+                <p className="pl-subheading">Create your EduLoans partner account.</p>
+                <SignUpForm />
+              </TabsContent>
             </Tabs>
-            <div className="mt-6 space-y-2 text-center text-xs text-muted-foreground">
-              <p>Secure login · Powered by CashKaro</p>
-              <p>
-                EduLoans admin?{" "}
-                <a href="/admin/login" className="text-primary underline-offset-2 hover:underline">
-                  Use the Admin Portal sign-in →
-                </a>
-              </p>
+
+            <div className="pl-altlink">
+              EduLoans admin?{" "}
+              <a href="/admin/login">Use the Admin Portal sign-in →</a>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -119,7 +124,6 @@ function LoginForm() {
     setErrorMsg(null);
     setSubmitting(true);
 
-    // Resolve username -> email if needed. Emails fall through unchanged.
     let email = identifier.trim();
     if (email && !email.includes("@")) {
       const { data: resolved, error: resolveErr } = await supabase.rpc(
@@ -147,49 +151,60 @@ function LoginForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+    <form onSubmit={handleSubmit} className="pl-form">
       {errorMsg && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>{errorMsg}</AlertDescription>
         </Alert>
       )}
-      <div className="space-y-2">
-        <Label htmlFor="login-identifier">Email / Username</Label>
-        <Input
-          id="login-identifier"
-          type="text"
-          autoComplete="username"
-          value={identifier}
-          onChange={e => setIdentifier(e.target.value)}
-          required
-        />
+      <div>
+        <label htmlFor="login-identifier" className="ll-label">Email / Username</label>
+        <div className="ll-field has-icon-left">
+          <span className="ll-icon-left"><Mail size={18} /></span>
+          <input
+            id="login-identifier"
+            name="email"
+            type="text"
+            autoComplete="username"
+            placeholder="you@partner.com"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+            required
+          />
+        </div>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="login-password">Password</Label>
-        <div className="relative">
-          <Input
+      <div>
+        <label htmlFor="login-password" className="ll-label">Password</label>
+        <div className="ll-field has-icon-left has-icon-right">
+          <span className="ll-icon-left"><KeyRound size={18} /></span>
+          <input
             id="login-password"
+            name="password"
             type={showPassword ? "text" : "password"}
             autoComplete="current-password"
             value={password}
-            onChange={e => setPassword(e.target.value)}
+            onChange={(e) => setPassword(e.target.value)}
             required
-            className="pr-10"
           />
           <button
             type="button"
-            onClick={() => setShowPassword(v => !v)}
+            className="ll-icon-right"
+            onClick={() => setShowPassword((v) => !v)}
             aria-label={showPassword ? "Hide password" : "Show password"}
-            className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
           >
-            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
       </div>
-      <Button type="submit" className="h-11 w-full" disabled={submitting}>
-        {submitting ? "Signing in..." : "Sign In"}
-      </Button>
+      <button type="submit" className="pl-submit" disabled={submitting}>
+        {submitting ? "Signing in..." : (
+          <>
+            Sign in
+            <ArrowRight size={16} strokeWidth={2.25} />
+          </>
+        )}
+      </button>
     </form>
   );
 }
@@ -211,22 +226,60 @@ function SignUpForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-      <div className="space-y-2">
-        <Label htmlFor="signup-name">Full Name</Label>
-        <Input id="signup-name" value={fullName} onChange={e => setFullName(e.target.value)} required />
+    <form onSubmit={handleSubmit} className="pl-form">
+      <div>
+        <label htmlFor="signup-name" className="ll-label">Full Name</label>
+        <div className="ll-field">
+          <input
+            id="signup-name"
+            name="fullName"
+            type="text"
+            autoComplete="name"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            required
+          />
+        </div>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="signup-email">Email</Label>
-        <Input id="signup-email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+      <div>
+        <label htmlFor="signup-email" className="ll-label">Email</label>
+        <div className="ll-field has-icon-left">
+          <span className="ll-icon-left"><Mail size={18} /></span>
+          <input
+            id="signup-email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="signup-password">Password</Label>
-        <Input id="signup-password" type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
+      <div>
+        <label htmlFor="signup-password" className="ll-label">Password</label>
+        <div className="ll-field has-icon-left">
+          <span className="ll-icon-left"><KeyRound size={18} /></span>
+          <input
+            id="signup-password"
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={6}
+          />
+        </div>
       </div>
-      <Button type="submit" className="h-11 w-full" disabled={submitting}>
-        {submitting ? "Creating account..." : "Sign Up"}
-      </Button>
+      <button type="submit" className="pl-submit" disabled={submitting}>
+        {submitting ? "Creating account..." : (
+          <>
+            Sign Up
+            <ArrowRight size={16} strokeWidth={2.25} />
+          </>
+        )}
+      </button>
     </form>
   );
 }
