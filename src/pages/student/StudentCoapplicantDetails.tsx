@@ -192,7 +192,7 @@ export default function StudentCoapplicantDetails() {
             {/* 11. Co-applicant Work Experience — single shorthand input
                 ("years.months", e.g. 3.6 = 3y 6m). Feeds BRE
                 coapplicant.income_stability_years. */}
-            <div className="space-y-1.5 sm:col-span-2">
+            <div className="space-y-1.5">
               <Label className="text-sm font-medium">Co-applicant Work Experience</Label>
               <p className="text-xs text-muted-foreground">
                 The co-applicant's total work experience (not the student's).
