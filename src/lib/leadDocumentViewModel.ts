@@ -47,6 +47,12 @@ export interface AdminDocCounts {
   requiredTotal: number;
   /** Required, non-waived rows whose effective status is "verified". */
   requiredVerified: number;
+  /** Required-only breakdowns (mirror filter: applicable + required_flag + not waived/NA). */
+  requiredNotUploaded: number;
+  requiredUploaded: number;
+  requiredUnderReview: number;
+  requiredRejected: number;
+  requiredReuploadNeeded: number;
 }
 
 export interface AdminDocViewModel {
@@ -103,6 +109,11 @@ export function buildAdminDocViewModel(
     waived: 0,
     requiredTotal: 0,
     requiredVerified: 0,
+    requiredNotUploaded: 0,
+    requiredUploaded: 0,
+    requiredUnderReview: 0,
+    requiredRejected: 0,
+    requiredReuploadNeeded: 0,
   };
 
   for (const row of rows) {
@@ -113,6 +124,11 @@ export function buildAdminDocViewModel(
     if (row.requirement.required_flag && !WAIVED_STATUSES.includes(s)) {
       counts.requiredTotal += 1;
       if (s === "verified") counts.requiredVerified += 1;
+      if (s === "not_uploaded") counts.requiredNotUploaded += 1;
+      if (s === "uploaded") counts.requiredUploaded += 1;
+      if (s === "under_review") counts.requiredUnderReview += 1;
+      if (s === "rejected") counts.requiredRejected += 1;
+      if (s === "reupload_needed") counts.requiredReuploadNeeded += 1;
     }
   }
 
