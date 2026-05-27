@@ -47,6 +47,12 @@ export interface AdminDocCounts {
   requiredTotal: number;
   /** Required, non-waived rows whose effective status is "verified". */
   requiredVerified: number;
+  /** Required-only breakdowns (mirror filter: applicable + required_flag + not waived/NA). */
+  requiredNotUploaded: number;
+  requiredUploaded: number;
+  requiredUnderReview: number;
+  requiredRejected: number;
+  requiredReuploadNeeded: number;
 }
 
 export interface AdminDocViewModel {
