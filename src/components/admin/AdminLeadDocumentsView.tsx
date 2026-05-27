@@ -73,7 +73,7 @@ export function AdminLeadDocumentsView({
 
   const { counts, hasRequirements } = vm;
 
-  const hasBlockers = counts.rejected > 0 || counts.reupload_needed > 0;
+  const hasBlockers = counts.requiredRejected > 0 || counts.requiredReuploadNeeded > 0;
   const allRequiredVerified =
     counts.requiredTotal > 0 && counts.requiredVerified === counts.requiredTotal;
   const completePct =
@@ -92,13 +92,13 @@ export function AdminLeadDocumentsView({
     guidanceVariant = "success";
   } else if (hasBlockers) {
     const parts: string[] = [];
-    if (counts.rejected > 0) parts.push(`${counts.rejected} rejected`);
-    if (counts.reupload_needed > 0)
-      parts.push(`${counts.reupload_needed} need reupload`);
+    if (counts.requiredRejected > 0) parts.push(`${counts.requiredRejected} rejected`);
+    if (counts.requiredReuploadNeeded > 0)
+      parts.push(`${counts.requiredReuploadNeeded} need reupload`);
     guidanceMessage = `Lead is blocked: ${parts.join(" and ")}. Reupload the highlighted documents before review can continue.`;
     guidanceVariant = "blocker";
-  } else if (counts.not_uploaded > 0) {
-    guidanceMessage = `${counts.not_uploaded} required document${counts.not_uploaded > 1 ? "s are" : " is"} still pending upload.`;
+  } else if (counts.requiredNotUploaded > 0) {
+    guidanceMessage = `${counts.requiredNotUploaded} required document${counts.requiredNotUploaded > 1 ? "s are" : " is"} still pending upload.`;
     guidanceVariant = "info";
   } else {
     guidanceMessage = "All documents have been uploaded and are under review.";
@@ -107,14 +107,14 @@ export function AdminLeadDocumentsView({
 
   const tiles = [
     { label: "Total Required", value: counts.requiredTotal, icon: FileQuestion, color: "text-foreground" },
-    { label: "Pending Upload", value: counts.not_uploaded, icon: FileUp, color: "text-orange-600", highlight: counts.not_uploaded > 0 },
-    { label: "Uploaded", value: counts.uploaded, icon: FileClock, color: "text-blue-600" },
+    { label: "Pending Upload", value: counts.requiredNotUploaded, icon: FileUp, color: "text-orange-600", highlight: counts.requiredNotUploaded > 0 },
+    { label: "Uploaded", value: counts.requiredUploaded, icon: FileClock, color: "text-blue-600" },
     {
       label: "Under Review",
-      value: counts.under_review + counts.rejected + counts.reupload_needed,
+      value: counts.requiredUnderReview + counts.requiredRejected + counts.requiredReuploadNeeded,
       icon: FileClock,
       color: "text-amber-600",
-      highlight: counts.rejected > 0 || counts.reupload_needed > 0,
+      highlight: counts.requiredRejected > 0 || counts.requiredReuploadNeeded > 0,
     },
   ];
 
