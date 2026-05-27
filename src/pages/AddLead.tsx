@@ -2063,6 +2063,11 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
           </div>
         </TabsContent>
       </Tabs>
+        </div>
+        <RightRail portal={railPortal} steps={completionSteps} onReviewStep={activeStep === "review"} />
+      </div>
+
+
 
       <DuplicateWarningDialog
         open={showDupDialog}
