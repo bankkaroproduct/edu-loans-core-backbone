@@ -91,29 +91,15 @@ export function LeadDocumentSnapshot({ requirements, leadId, readOnly = false, o
             {hasBlockers && (
               <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-2.5 text-sm text-destructive border border-destructive/20">
                 <AlertTriangle className="h-4 w-4 shrink-0" />
-                <span>
-                  {counts.rejected > 0 && `${counts.rejected} rejected`}
-                  {counts.rejected > 0 && counts.reupload > 0 && ", "}
-                  {counts.reupload > 0 && `${counts.reupload} need reupload`}
-                  {" — action required"}
-                </span>
+                <span>Action required — see highlighted documents below</span>
               </div>
             )}
             {!hasBlockers && hasPending && !allVerified && (
               <div className="flex items-center gap-2 rounded-md bg-blue-50 dark:bg-blue-950/20 p-2.5 text-sm text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                 <Upload className="h-4 w-4 shrink-0" />
-                <span>{counts.pending} document{counts.pending > 1 ? "s" : ""} pending upload</span>
+                <span>Documents pending upload</span>
               </div>
             )}
-
-            <div className="flex gap-4 flex-wrap text-xs">
-              <span className="text-muted-foreground">Total: <span className="font-semibold text-foreground">{counts.total}</span></span>
-              <span className="text-green-700 dark:text-green-400">Verified: <span className="font-semibold">{counts.verified}</span></span>
-              <span className="text-blue-700 dark:text-blue-400">Uploaded: <span className="font-semibold">{counts.uploaded}</span></span>
-              <span className="text-muted-foreground">Pending: <span className="font-semibold">{counts.pending}</span></span>
-              {counts.rejected > 0 && <span className="text-destructive">Rejected: <span className="font-semibold">{counts.rejected}</span></span>}
-              {counts.reupload > 0 && <span className="text-orange-600">Reupload: <span className="font-semibold">{counts.reupload}</span></span>}
-            </div>
 
             {priorityDocs.length > 0 && (
               <div className="space-y-1.5">
