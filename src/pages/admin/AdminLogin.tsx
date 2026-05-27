@@ -1,20 +1,28 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { Shield, Lock, AlertTriangle, Eye, EyeOff } from "lucide-react";
+import {
+  Shield,
+  Lock,
+  AlertTriangle,
+  Eye,
+  EyeOff,
+  Mail,
+  KeyRound,
+  ArrowRight,
+  Boxes,
+  ListChecks,
+  BadgeCheck,
+  Banknote,
+} from "lucide-react";
 
 /**
- * Dedicated Admin sign-in page. Atomic signIn validates role server-side
- * before flipping auth state; mismatched accounts are signed out cleanly.
+ * Admin sign-in page — V1 Console Refined polish.
+ * Visual-only refresh. Auth handler, role gating, redirect, and
+ * field name attributes preserved 1:1.
  */
 export default function AdminLogin() {
-  const navigate = useNavigate();
   const { signIn } = useAuth();
 
   const [email, setEmail] = useState("");
@@ -40,111 +48,143 @@ export default function AdminLogin() {
     window.location.assign("/admin");
   };
 
+  // TODO: wire build version from env var when available
+  const buildVersion = "v0.1.0 · admin-prod";
+
+  const features = [
+    { Icon: Boxes, title: "Cross-partner lead queue", desc: "All leads, across all partners, in one place" },
+    { Icon: ListChecks, title: "Lifecycle & underwriting actions", desc: "Trigger stage transitions and BRE runs" },
+    { Icon: BadgeCheck, title: "Document verification", desc: "Review, approve or flag uploaded docs" },
+    { Icon: Banknote, title: "Payout & disbursement controls", desc: "Authorize disbursals and partner payouts" },
+  ];
+
   return (
-    <div className="flex min-h-screen flex-col lg:flex-row bg-background">
-      {/* Left brand panel — visually distinct from partner login */}
-      <div className="relative flex w-full flex-col justify-between bg-slate-900 px-8 py-10 text-slate-100 lg:w-[40%] lg:px-12 lg:py-16">
-        <div className="space-y-8">
-          <div className="flex items-center gap-2">
-            <Shield className="h-6 w-6 text-amber-400" />
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">EduLoans Admin</h1>
-              <p className="text-xs uppercase tracking-widest opacity-60">Operations Console</p>
-            </div>
+    <div className="admin-login-shell">
+      {/* Left — Console hero */}
+      <div className="al-left">
+        <div className="al-brand">
+          <div className="al-mark">
+            <Shield size={22} strokeWidth={2.25} />
           </div>
-
-          <div className="space-y-3">
-            <h2 className="text-xl font-semibold leading-snug lg:text-2xl">
-              Cross-partner control layer for the EduLoans pipeline.
-            </h2>
-            <p className="text-sm leading-relaxed opacity-80">
-              Manage leads across all partners and the student portal. Trigger stage transitions,
-              verify documents, run BRE evaluations, and oversee disbursements.
-            </p>
+          <div>
+            <div className="al-wordmark">EduLoans Admin</div>
+            <div className="al-eyebrow">Operations Console</div>
           </div>
-
-          <ul className="space-y-2 text-sm opacity-80">
-            <li>• Cross-partner lead queue</li>
-            <li>• Lifecycle &amp; underwriting actions</li>
-            <li>• Document verification</li>
-            <li>• Payout &amp; disbursement controls</li>
-          </ul>
         </div>
 
-        <Alert className="border-amber-500/30 bg-amber-500/10 text-amber-100">
-          <Lock className="h-4 w-4 !text-amber-300" />
-          <AlertDescription className="text-xs text-amber-100/90">
-            Restricted access. Only authorised EduLoans admins should sign in here.
-          </AlertDescription>
-        </Alert>
+        <div className="al-status">
+          <div className="al-status-item">
+            <span className="al-dot" />
+            <span>All systems operational</span>
+          </div>
+        </div>
+
+        <h1 className="al-headline">
+          Cross-partner control layer for the <span className="accent">EduLoans</span> pipeline.
+        </h1>
+        <p className="al-sub">
+          One operations console for every lead, every partner, every lender. Trigger stage
+          transitions, verify documents, run BRE evaluations, and oversee disbursements end-to-end.
+        </p>
+
+        <div className="al-features">
+          {features.map(({ Icon, title, desc }) => (
+            <div key={title} className="al-feature">
+              <div className="al-feature-icon">
+                <Icon size={17} strokeWidth={2} />
+              </div>
+              <div>
+                <div className="al-feature-title">{title}</div>
+                <div className="al-feature-desc">{desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="al-footer">
+          <span className="al-copyright">© 2026 EduLoans · A CashKaro venture</span>
+          <span className="al-build">{buildVersion}</span>
+        </div>
       </div>
 
-      {/* Right login panel */}
-      <div className="flex w-full items-center justify-center p-6 lg:w-[60%] lg:p-12">
-        <Card className="w-full max-w-md shadow-lg">
-          <CardHeader className="space-y-2 p-8 pb-2 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <Shield className="h-6 w-6 text-primary" />
-            </div>
-            <CardTitle className="text-2xl font-bold">Admin Sign In</CardTitle>
-            <CardDescription>
-              Use your EduLoans admin credentials. Partner accounts are not permitted here.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-8 pt-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {errorMsg && (
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>{errorMsg}</AlertDescription>
-                </Alert>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="admin-email">Email</Label>
-                <Input
+      {/* Right — Auth card */}
+      <div className="al-right">
+        <div className="al-card">
+          <div className="al-chip-wrap">
+            <span className="al-chip">
+              <Lock size={12} strokeWidth={2.5} />
+              Restricted · Admin-only access
+            </span>
+          </div>
+          <h2 className="al-heading">Sign in to Admin Console</h2>
+          <p className="al-subheading">
+            Use your EduLoans admin credentials. Partner &amp; student accounts are not permitted here.
+          </p>
+
+          <form onSubmit={handleSubmit} className="al-form">
+            {errorMsg && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>{errorMsg}</AlertDescription>
+              </Alert>
+            )}
+
+            <div>
+              <label htmlFor="admin-email" className="ll-label">Work email</label>
+              <div className="ll-field has-icon-left">
+                <span className="ll-icon-left"><Mail size={18} /></span>
+                <input
                   id="admin-email"
+                  name="email"
                   type="email"
                   autoComplete="email"
+                  placeholder="you@cashkaro.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="admin-password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="admin-password"
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-              <Button type="submit" className="h-11 w-full" disabled={submitting}>
-                {submitting ? "Verifying admin access..." : "Sign In to Admin Console"}
-              </Button>
-            </form>
-
-            <div className="mt-6 space-y-1 text-center text-xs text-muted-foreground">
-              <p>Not an admin?</p>
-              <a href="/login" className="text-primary underline-offset-2 hover:underline">
-                Go to Partner Portal sign-in →
-              </a>
             </div>
-          </CardContent>
-        </Card>
+
+            <div>
+              <label htmlFor="admin-password" className="ll-label">Password</label>
+              <div className="ll-field has-icon-left has-icon-right">
+                <span className="ll-icon-left"><KeyRound size={18} /></span>
+                <input
+                  id="admin-password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  className="ll-icon-right"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" className="al-submit" disabled={submitting}>
+              {submitting ? "Verifying admin access..." : (
+                <>
+                  Sign in to Admin Console
+                  <ArrowRight size={16} strokeWidth={2.25} />
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="al-altlink">
+            Not an admin?{" "}
+            <a href="/login">Go to Partner Portal sign-in →</a>
+          </div>
+        </div>
       </div>
     </div>
   );
