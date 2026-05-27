@@ -148,7 +148,7 @@ export function LeadDocumentSnapshot({ requirements, leadId, readOnly = false, o
                 })}
                 {requirements.length > 4 && !readOnly && (
                   <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => navigate(`/leads/${leadId}/documents`)}>
-                    View all {requirements.length} documents →
+                    View all documents →
                   </Button>
                 )}
               </div>
