@@ -158,8 +158,8 @@ export default function StudentCoapplicantDetails() {
               <Label>Mobile Number *</Label>
               <Input value={formData.coapplicant_mobile} onChange={e => updateField("coapplicant_mobile", e.target.value.replace(/\D/g, "").slice(0, 10))} placeholder="10-digit mobile" inputMode="numeric" />
             </div>
-            {/* 5. Email */}
-            <div className="space-y-1.5 sm:col-span-2">
+            {/* 5. Email — half-width, right side intentionally empty */}
+            <div className="space-y-1.5">
               <Label>Email Address *</Label>
               <Input type="email" value={formData.coapplicant_email} onChange={e => updateField("coapplicant_email", e.target.value)} placeholder="email@example.com" />
             </div>
