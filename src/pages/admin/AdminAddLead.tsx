@@ -54,7 +54,7 @@ export default function AdminAddLead() {
   const selected = visiblePartnerOptions.find((p) => p.id === effectivePartnerId);
 
   return (
-    <div className="space-y-5 max-w-screen-2xl mx-auto">
+    <div className="add-lead-shell space-y-5 max-w-screen-2xl mx-auto">
       <div className="flex items-start gap-3">
         <Button
           variant="ghost"
@@ -73,120 +73,135 @@ export default function AdminAddLead() {
         </div>
       </div>
 
-      {/* Compact Partner Attribution strip — single row */}
-      <div className="flex items-center gap-3 flex-wrap rounded-md border bg-card px-3 py-2.5">
-        <div className="flex items-center gap-2 shrink-0">
-          <Building2 className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium">Partner</span>
-          <Badge variant="secondary" className="text-[10px] uppercase tracking-wide h-5">
-            Required
-          </Badge>
+      {/* Partner Attribution — ContextCard chrome wrapping the existing
+          searchable Popover + Command picker. Mechanics unchanged: open state,
+          simulatePartner, Clear, Tooltip behave exactly as before. */}
+      <div
+        className="flex flex-wrap items-center gap-3 rounded-[12px] border border-[color:var(--al-border-3)] px-[18px] py-3.5"
+        style={{ background: "linear-gradient(180deg, #F7F9FF 0%, #FFFFFF 100%)" }}
+      >
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[color:var(--al-border-3)] bg-[color:var(--al-bg-card)]">
+          <Building2 className="h-5 w-5 text-[color:var(--al-blue)]" />
+        </span>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="text-[10.5px] font-extrabold uppercase tracking-[0.08em] text-[color:var(--al-fg-muted)]">
+              Partner
+            </span>
+            <Badge variant="secondary" className="text-[9px] uppercase tracking-wide h-4 px-1.5">
+              Required
+            </Badge>
+          </div>
+
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                role="combobox"
+                aria-expanded={open}
+                className={cn(
+                  "group mt-0.5 flex w-full items-center gap-2 rounded-md text-left",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--al-blue)] focus-visible:ring-offset-2"
+                )}
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[15px] font-extrabold tracking-[-0.01em] text-[color:var(--al-fg-1)]">
+                    {selected
+                      ? selected.partner_code === "PTR-DIRECT"
+                        ? selected.display_name
+                        : `${selected.display_name} (${selected.partner_code})`
+                      : "Select a partner organization…"}
+                  </span>
+                  <span className="mt-0.5 block truncate text-[11.5px] font-semibold text-[color:var(--al-fg-2)]">
+                    {selected
+                      ? selected.partner_code === "PTR-DIRECT"
+                        ? "Direct / Admin-owned lead — excluded from partner reports"
+                        : `Attributed to ${effectivePartnerName ?? selected.display_name}`
+                      : "Search by partner name or code — or pick Student Direct for admin-owned leads."}
+                  </span>
+                </span>
+                <ChevronsUpDown className="h-4 w-4 shrink-0 text-[color:var(--al-fg-3)] group-hover:text-[color:var(--al-fg-1)]" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-[--radix-popover-trigger-width] p-0"
+              align="start"
+            >
+              <Command>
+                <CommandInput placeholder="Search partner by name or code…" />
+                <CommandList>
+                  <CommandEmpty>No partners match that search.</CommandEmpty>
+                  <CommandGroup>
+                    {visiblePartnerOptions.map((p) => {
+                      const isDirect = p.partner_code === "PTR-DIRECT";
+                      return (
+                        <CommandItem
+                          key={p.id}
+                          value={`${p.display_name} ${p.partner_code}`}
+                          onSelect={() => {
+                            simulatePartner(p.id);
+                            setOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              effectivePartnerId === p.id ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          <span className="truncate">{p.display_name}</span>
+                          {isDirect ? (
+                            <Badge variant="secondary" className="ml-2 text-[9px] uppercase tracking-wide h-4 px-1.5">
+                              Direct / System
+                            </Badge>
+                          ) : (
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              {p.partner_code}
+                            </span>
+                          )}
+                        </CommandItem>
+                      );
+                    })}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
 
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={open}
-              size="sm"
-              className={cn(
-                "min-w-[280px] flex-1 max-w-md justify-between font-normal h-9",
-                !selected && "text-muted-foreground"
-              )}
-            >
-              <span className="truncate">
-                {selected
-                  ? selected.partner_code === "PTR-DIRECT"
-                    ? `${selected.display_name} — Direct / Admin-owned`
-                    : `${selected.display_name} (${selected.partner_code})`
-                  : "Search & select a partner organization…"}
-              </span>
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent
-            className="w-[--radix-popover-trigger-width] p-0"
-            align="start"
-          >
-            <Command>
-              <CommandInput placeholder="Search partner by name or code…" />
-              <CommandList>
-                <CommandEmpty>No partners match that search.</CommandEmpty>
-                <CommandGroup>
-                  {visiblePartnerOptions.map((p) => {
-                    const isDirect = p.partner_code === "PTR-DIRECT";
-                    return (
-                      <CommandItem
-                        key={p.id}
-                        value={`${p.display_name} ${p.partner_code}`}
-                        onSelect={() => {
-                          simulatePartner(p.id);
-                          setOpen(false);
-                        }}
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            effectivePartnerId === p.id ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                        <span className="truncate">{p.display_name}</span>
-                        {isDirect ? (
-                          <Badge variant="secondary" className="ml-2 text-[9px] uppercase tracking-wide h-4 px-1.5">
-                            Direct / System
-                          </Badge>
-                        ) : (
-                          <span className="ml-2 text-xs text-muted-foreground">
-                            {p.partner_code}
-                          </span>
-                        )}
-                      </CommandItem>
-                    );
-                  })}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+        {selected && (
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[color:var(--al-success-tint)] px-2.5 py-1 text-[11px] font-semibold text-[color:var(--al-success)]">
+            <Check className="h-3 w-3" />
+            {selected.partner_code === "PTR-DIRECT" ? "Direct" : "Verified"}
+          </span>
+        )}
 
         {selected && (
           <Button
             variant="ghost"
             size="sm"
             onClick={() => simulatePartner(null)}
-            className="h-7 text-xs text-muted-foreground hover:text-foreground"
+            className="h-7 text-xs text-[color:var(--al-fg-2)] hover:text-[color:var(--al-fg-1)]"
           >
             <X className="h-3 w-3 mr-1" /> Clear
           </Button>
         )}
 
-        <div className="ml-auto flex items-center gap-2">
-          {selected ? (
-            <span className="inline-flex items-center gap-1.5 text-xs text-primary">
-              <Check className="h-3.5 w-3.5" />
-              {selected.partner_code === "PTR-DIRECT"
-                ? "Direct / Admin-owned lead"
-                : `Attributed to ${effectivePartnerName ?? selected.display_name}`}
-            </span>
-          ) : (
-            <span className="text-xs text-muted-foreground">Choose a partner — or pick Student Direct for an admin-owned lead.</span>
-          )}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                aria-label="Why is partner required?"
-                className="text-muted-foreground/60 hover:text-muted-foreground"
-              >
-                <Info className="h-3.5 w-3.5" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="left" className="max-w-xs text-xs">
-              Every lead must be attributed. Pick a real partner organization, or select <strong>Student Direct (PTR-DIRECT)</strong> for walk-in / admin-originated leads. PTR-DIRECT is excluded from billable partner reports.
-            </TooltipContent>
-          </Tooltip>
-        </div>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              aria-label="Why is partner required?"
+              className="shrink-0 text-[color:var(--al-fg-3)] hover:text-[color:var(--al-fg-1)]"
+            >
+              <Info className="h-3.5 w-3.5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="left" className="max-w-xs text-xs">
+            Every lead must be attributed. Pick a real partner organization, or select <strong>Student Direct (PTR-DIRECT)</strong> for walk-in / admin-originated leads. PTR-DIRECT is excluded from billable partner reports.
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       <ReadOnlyBanner />

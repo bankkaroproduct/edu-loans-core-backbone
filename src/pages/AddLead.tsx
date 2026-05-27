@@ -1898,153 +1898,159 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
 
         {/* Review */}
         <TabsContent value="review" forceMount className="mt-0 space-y-4 data-[state=inactive]:hidden">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Eye className="h-5 w-5" /> Review Lead Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Badge variant="outline" className="mb-2">Student Details</Badge>
-                <ReviewRow label="Name" value={fullName} nudgeStep="student" nudgeField="student_first_name" />
-                <ReviewRow label="Phone" value={form.student_phone} nudgeStep="student" nudgeField="student_phone" />
-                <ReviewRow label="Email" value={form.student_email} />
-                <ReviewRow label="WhatsApp" value={form.student_whatsapp} />
-                <ReviewRow label="City" value={form.city} />
-                <ReviewRow label="State" value={formatStateName(form.state)} />
-                <ReviewRow label="Country of Residence" value={form.country_of_residence} />
-              </div>
-              <div>
-                <Badge variant="outline" className="mb-2">Study Intent</Badge>
-                <ReviewRow label="Study Country" value={form.intended_study_country} nudgeStep="study" nudgeField="intended_study_country" />
-                <ReviewRow label="University" value={resolvedUniversityName} nudgeStep="study" nudgeField="university" />
-                <ReviewRow label="Course" value={resolvedCourseName} nudgeStep="study" nudgeField="course" />
-                <ReviewRow
-                  label="Intake"
-                  value={form.intake_term && form.intake_year ? `${form.intake_term} ${form.intake_year}` : ""}
-                  nudgeStep="study"
-                  nudgeField="intake_term"
+          <FormCardShell
+            title="Review lead details"
+            subtitle="Confirm everything below — you can edit any section before submitting."
+            stepLabel={`Step ${steps.findIndex((s) => s.id === "review") + 1} of ${steps.length}`}
+          >
+            {(() => {
+              // Helpers local to the Review block — convert raw values into the
+              // shape ReviewRowInline expects (isEmpty + onNudge). No payload
+              // change: these are display-only transforms.
+              const isBlank = (v: unknown) =>
+                v === undefined || v === null || v === "" || (typeof v === "number" && v === 0);
+              const nudgeOf = (step: StepId, field: string) => () => goToFieldAndFocus(step, field);
+              type RowProps = {
+                label: string;
+                value: React.ReactNode;
+                nudgeStep?: StepId;
+                nudgeField?: string;
+                notApplicable?: boolean;
+              };
+              const Row = ({ label, value, nudgeStep, nudgeField, notApplicable }: RowProps) => (
+                <ReviewRowInline
+                  label={label}
+                  value={value}
+                  notApplicable={notApplicable}
+                  isEmpty={!notApplicable && isBlank(value)}
+                  onNudge={nudgeStep && nudgeField ? nudgeOf(nudgeStep, nudgeField) : undefined}
                 />
-              </div>
-              <div>
-                <Badge variant="outline" className="mb-2">Current Academic Profile</Badge>
-                {(() => {
-                  // Cascade-aware display. Form state / payload unchanged here —
-                  // the payload mirror is applied at submit in buildMergedTestScores.
-                  // Compute the HQ mirror at DISPLAY time so the review shows the
-                  // right value even before submit.
-                  const hq = form.highest_qualification || "";
-                  const enabled = getEnabledLevels(hq);
-                  const mirroredHQ = getMirroredHighestQual(hq, {
-                    tenth: form.tenth_score, tenth_total: form.tenth_total,
-                    twelfth: form.twelfth_score, twelfth_total: form.twelfth_total,
-                    graduation: form.graduation_score, graduation_total: form.graduation_total,
-                  });
-                  const highestScoreDisplay = enabled.highest_qualification
-                    ? form.highest_qualification_score
-                    : mirroredHQ.score;
-                  return (
-                    <>
-                      <ReviewRow label="Highest Qualification" value={hq ? formatDisplayLabel(hq) : ""} nudgeStep="study" nudgeField="highest_qualification" />
-                      <ReviewRow label="Highest Qualification Score" value={highestScoreDisplay} />
-                      <ReviewRow label="10th Score" value={form.tenth_score} nudgeStep={enabled.tenth ? "study" : undefined} nudgeField="tenth_score" notApplicable={!enabled.tenth} />
-                      <ReviewRow label="12th Score" value={form.twelfth_score} nudgeStep={enabled.twelfth ? "study" : undefined} nudgeField="twelfth_score" notApplicable={!enabled.twelfth} />
-                      <ReviewRow label="Graduation Score" value={form.graduation_score} notApplicable={!enabled.graduation} />
-                    </>
-                  );
-                })()}
-                {form.marks_gpa ? <ReviewRow label="Marks / GPA (legacy)" value={form.marks_gpa} /> : null}
-                {form.work_experience_years && (
-                  <ReviewRow
-                    label="Work Experience"
-                    value={formatWorkExperience(form.work_experience_years) || form.work_experience_years}
-                  />
-                )}
-                {(form.ielts || form.toefl || form.duolingo || form.pte || form.gre || form.gmat) && (
-                  <ReviewRow
-                    label="Test Scores"
-                    value={[
-                      form.ielts && `IELTS: ${form.ielts}`,
-                      form.toefl && `TOEFL: ${form.toefl}`,
-                      form.duolingo && `Duolingo: ${form.duolingo}`,
-                      form.pte && `PTE: ${form.pte}`,
-                      form.gre && `GRE: ${form.gre}`,
-                      form.gmat && `GMAT: ${form.gmat}`,
-                    ].filter(Boolean).join(" · ")}
-                  />
-                )}
-              </div>
-              {/* Financial Info — required group, rendered for both partner and admin modes */}
-              <div>
-                <Badge variant="outline" className="mb-2">Financial Info</Badge>
-                <ReviewRow
-                  label="Approx Loan Amount (₹)"
-                  value={form.loan_amount_required ? `₹${Number(form.loan_amount_required).toLocaleString("en-IN")}` : ""}
-                  nudgeStep="financial"
-                  nudgeField="loan_amount_required"
-                />
-                {/* Canonical co-applicant order: Name, Age, Relation, Mobile,
-                    Email, Employment Type, Income. */}
-                <ReviewRow label="Co-Applicant Name" value={form.coapplicant_name} nudgeStep="financial" nudgeField="coapplicant_name" />
-                <ReviewRow label="Age" value={form.coapplicant_age} nudgeStep="financial" nudgeField="coapplicant_age" />
-                <ReviewRow label="Relation" value={form.coapplicant_relation ? formatDisplayLabel(form.coapplicant_relation) : ""} nudgeStep="financial" nudgeField="coapplicant_relation" />
-                <ReviewRow label="Mobile Number" value={form.coapplicant_mobile} nudgeStep="financial" nudgeField="coapplicant_mobile" />
-                <ReviewRow label="Email" value={form.coapplicant_email} nudgeStep="financial" nudgeField="coapplicant_email" />
-                <ReviewRow label="Employment Type" value={form.coapplicant_employment_type ? formatDisplayLabel(form.coapplicant_employment_type) : ""} nudgeStep="financial" nudgeField="coapplicant_employment_type" />
-                <ReviewRow
-                  label="Monthly Income (₹)"
-                  value={form.coapplicant_income ? `₹${Number(form.coapplicant_income).toLocaleString("en-IN")}` : ""}
-                  nudgeStep="financial"
-                  nudgeField="coapplicant_income"
-                />
-                <ReviewRow label="Collateral" value={form.collateral_state === "likely" ? "Yes" : form.collateral_state === "unlikely" ? "No" : "—"} />
-                {form.collateral_state === "likely" && form.collateral_notes && (
-                  <ReviewRow label="Collateral Notes" value={form.collateral_notes} />
-                )}
-              </div>
-              {/* Notes — partner_remark textarea relocated from removed Notes
-                  step. Same field key, same binding, always editable here. */}
-              <div>
-                <Badge variant="outline" className="mb-2">Notes</Badge>
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <label htmlFor="partner_remark" className="text-sm font-medium">
-                      {isAdminForm ? "Admin / Partner Remark" : "Partner Remark"}
-                    </label>
-                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground border rounded px-1.5 py-0.5">
-                      Optional
-                    </span>
-                  </div>
-                  <Textarea
-                    id="partner_remark"
-                    rows={3}
-                    placeholder="Add any additional context for this lead…"
-                    value={form.partner_remark}
-                    onChange={(e) => set("partner_remark", e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Leave blank if no additional context.
-                  </p>
-                </div>
-              </div>
-              {showAssignStep && (
-                <div>
-                  <Badge variant="outline" className="mb-2">Partner Assignment</Badge>
-                  <ReviewRow
-                    label="Assigned Partner"
-                    value={selectedAssignedPartner ? `${selectedAssignedPartner.display_name} (${selectedAssignedPartner.partner_code})` : "—"}
-                  />
-                  {partnerChanged && originalPartner && (
-                    <ReviewRow
-                      label="Previous Partner"
-                      value={`${originalPartner.display_name} (${originalPartner.partner_code})`}
+              );
+
+              const hq = form.highest_qualification || "";
+              const enabled = getEnabledLevels(hq);
+              const mirroredHQ = getMirroredHighestQual(hq, {
+                tenth: form.tenth_score, tenth_total: form.tenth_total,
+                twelfth: form.twelfth_score, twelfth_total: form.twelfth_total,
+                graduation: form.graduation_score, graduation_total: form.graduation_total,
+              });
+              const highestScoreDisplay = enabled.highest_qualification
+                ? form.highest_qualification_score
+                : mirroredHQ.score;
+              const testScoreLine = [
+                form.ielts && `IELTS: ${form.ielts}`,
+                form.toefl && `TOEFL: ${form.toefl}`,
+                form.duolingo && `Duolingo: ${form.duolingo}`,
+                form.pte && `PTE: ${form.pte}`,
+                form.gre && `GRE: ${form.gre}`,
+                form.gmat && `GMAT: ${form.gmat}`,
+              ].filter(Boolean).join(" · ");
+
+              return (
+                <>
+                  <ReviewBlock label="Student Details" onEdit={() => goToStep("student")}>
+                    <Row label="Name" value={fullName} nudgeStep="student" nudgeField="student_first_name" />
+                    <Row label="Phone" value={form.student_phone} nudgeStep="student" nudgeField="student_phone" />
+                    <Row label="Email" value={form.student_email} />
+                    <Row label="WhatsApp" value={form.student_whatsapp} />
+                    <Row label="City" value={form.city} />
+                    <Row label="State" value={formatStateName(form.state)} />
+                    <Row label="Country of Residence" value={form.country_of_residence} />
+                  </ReviewBlock>
+
+                  <ReviewBlock label="Study Intent" onEdit={() => goToStep("study")}>
+                    <Row label="Study Country" value={form.intended_study_country} nudgeStep="study" nudgeField="intended_study_country" />
+                    <Row label="University" value={resolvedUniversityName} nudgeStep="study" nudgeField="university" />
+                    <Row label="Course" value={resolvedCourseName} nudgeStep="study" nudgeField="course" />
+                    <Row
+                      label="Intake"
+                      value={form.intake_term && form.intake_year ? `${form.intake_term} ${form.intake_year}` : ""}
+                      nudgeStep="study"
+                      nudgeField="intake_term"
                     />
+                  </ReviewBlock>
+
+                  <ReviewBlock label="Current Academic Profile" onEdit={() => goToStep("study")}>
+                    <Row label="Highest Qualification" value={hq ? formatDisplayLabel(hq) : ""} nudgeStep="study" nudgeField="highest_qualification" />
+                    <Row label="Highest Qualification Score" value={highestScoreDisplay} />
+                    <Row label="10th Score" value={form.tenth_score} nudgeStep={enabled.tenth ? "study" : undefined} nudgeField="tenth_score" notApplicable={!enabled.tenth} />
+                    <Row label="12th Score" value={form.twelfth_score} nudgeStep={enabled.twelfth ? "study" : undefined} nudgeField="twelfth_score" notApplicable={!enabled.twelfth} />
+                    <Row label="Graduation Score" value={form.graduation_score} notApplicable={!enabled.graduation} />
+                    {form.marks_gpa ? <Row label="Marks / GPA (legacy)" value={form.marks_gpa} /> : null}
+                    {form.work_experience_years && (
+                      <Row
+                        label="Work Experience"
+                        value={formatWorkExperience(form.work_experience_years) || form.work_experience_years}
+                      />
+                    )}
+                    {testScoreLine && <Row label="Test Scores" value={testScoreLine} />}
+                  </ReviewBlock>
+
+                  <ReviewBlock label="Financial Info" onEdit={() => goToStep("financial")}>
+                    <Row
+                      label="Approx Loan Amount (₹)"
+                      value={form.loan_amount_required ? `₹${Number(form.loan_amount_required).toLocaleString("en-IN")}` : ""}
+                      nudgeStep="financial"
+                      nudgeField="loan_amount_required"
+                    />
+                    <Row label="Co-Applicant Name" value={form.coapplicant_name} nudgeStep="financial" nudgeField="coapplicant_name" />
+                    <Row label="Age" value={form.coapplicant_age} nudgeStep="financial" nudgeField="coapplicant_age" />
+                    <Row label="Relation" value={form.coapplicant_relation ? formatDisplayLabel(form.coapplicant_relation) : ""} nudgeStep="financial" nudgeField="coapplicant_relation" />
+                    <Row label="Mobile Number" value={form.coapplicant_mobile} nudgeStep="financial" nudgeField="coapplicant_mobile" />
+                    <Row label="Email" value={form.coapplicant_email} nudgeStep="financial" nudgeField="coapplicant_email" />
+                    <Row label="Employment Type" value={form.coapplicant_employment_type ? formatDisplayLabel(form.coapplicant_employment_type) : ""} nudgeStep="financial" nudgeField="coapplicant_employment_type" />
+                    <Row
+                      label="Monthly Income (₹)"
+                      value={form.coapplicant_income ? `₹${Number(form.coapplicant_income).toLocaleString("en-IN")}` : ""}
+                      nudgeStep="financial"
+                      nudgeField="coapplicant_income"
+                    />
+                    <Row label="Collateral" value={form.collateral_state === "likely" ? "Yes" : form.collateral_state === "unlikely" ? "No" : ""} />
+                    {form.collateral_state === "likely" && form.collateral_notes && (
+                      <Row label="Collateral Notes" value={form.collateral_notes} />
+                    )}
+                  </ReviewBlock>
+
+                  {/* Notes — partner_remark textarea relocated from removed Notes step.
+                      Always editable in place; no Edit chip (it IS the input). Same
+                      field key, same set("partner_remark", …) binding. */}
+                  <ReviewBlock label="Notes" tag="Optional">
+                    <div className="space-y-1.5 pt-1">
+                      <label htmlFor="partner_remark" className="text-[12.5px] font-semibold text-[color:var(--al-fg-2)]">
+                        {isAdminForm ? "Admin / Partner Remark" : "Partner Remark"}
+                      </label>
+                      <Textarea
+                        id="partner_remark"
+                        rows={3}
+                        placeholder="Add any additional context for this lead…"
+                        value={form.partner_remark}
+                        onChange={(e) => set("partner_remark", e.target.value)}
+                      />
+                      <p className="text-[11.5px] text-[color:var(--al-fg-3)]">
+                        Leave blank if no additional context.
+                      </p>
+                    </div>
+                  </ReviewBlock>
+
+                  {showAssignStep && (
+                    <ReviewBlock label="Partner Assignment" onEdit={() => goToStep("assign")}>
+                      <Row
+                        label="Assigned Partner"
+                        value={selectedAssignedPartner ? `${selectedAssignedPartner.display_name} (${selectedAssignedPartner.partner_code})` : ""}
+                      />
+                      {partnerChanged && originalPartner && (
+                        <Row
+                          label="Previous Partner"
+                          value={`${originalPartner.display_name} (${originalPartner.partner_code})`}
+                        />
+                      )}
+                    </ReviewBlock>
                   )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                </>
+              );
+            })()}
+          </FormCardShell>
+
 
           <div className="flex gap-3 justify-between sticky bottom-4 bg-background/80 backdrop-blur p-3 rounded-lg border">
             <Button variant="outline" onClick={() => goToStep(reviewBackTarget)}>
