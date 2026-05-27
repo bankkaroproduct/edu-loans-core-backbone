@@ -126,6 +126,9 @@ export default function StudentCoapplicantDetails() {
         <CardContent className="p-5 sm:p-6">
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Co-applicant Information</h2>
           <div className="grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Co-Applicant Personal Details
+            </div>
             {/* 1. Name */}
             <div className="space-y-1.5">
               <Label>Full Name *</Label>
