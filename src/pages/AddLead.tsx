@@ -1688,6 +1688,10 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
             stepLabel={`Step ${steps.findIndex((s) => s.id === "financial") + 1} of ${steps.length}`}
           >
             <div className="grid gap-4 md:grid-cols-2 md:items-start">
+              {/* — Loan Details — */}
+              <div className="md:col-span-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground first:mt-0">
+                Loan Details
+              </div>
               <div className="space-y-2" data-field="loan_amount_required">
                 <Label>Approx Loan Amount Required (₹)</Label>
                 <LakhsInput value={form.loan_amount_required} onChange={(d) => set("loan_amount_required", d)} placeholder="e.g. 25 or 12.5" />
@@ -1700,6 +1704,11 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   onChangeNotes={(n) => set("collateral_notes", n)}
                   idPrefix="financial-coll"
                 />
+              </div>
+
+              {/* — Co-Applicant Personal Details — */}
+              <div className="md:col-span-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mt-3">
+                Co-Applicant Personal Details
               </div>
               {/* 1. Name */}
               <div className="space-y-2" data-field="coapplicant_name">
@@ -1740,7 +1749,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 />
                 <p className="text-xs text-muted-foreground">Number as per Aadhaar and Passport</p>
               </div>
-              {/* 5. Email */}
+              {/* 5. Email — half-width, right side intentionally empty */}
               <div className="space-y-2" data-field="coapplicant_email">
                 <Label>Co-Applicant Email</Label>
                 <Input
@@ -1749,6 +1758,11 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   onChange={(e) => set("coapplicant_email", e.target.value)}
                   placeholder="email@example.com"
                 />
+              </div>
+
+              {/* — Co-Applicant Financial Details — */}
+              <div className="md:col-span-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mt-3">
+                Co-Applicant Financial Details
               </div>
               {/* 6. Employment Type */}
               <div className="space-y-2" data-field="coapplicant_employment_type">
@@ -1768,7 +1782,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 <MoneyInput value={form.coapplicant_income} onChange={(d) => set("coapplicant_income", d)} placeholder="e.g. 1,25,000" />
               </div>
               {/* Co-applicant Work Experience — single shorthand input "years.months"
-                  (e.g. 3.6 = 3y 6m). Feeds BRE coapplicant.income_stability_years. */}
+                  (e.g. 3.6 = 3y 6m). Feeds BRE coapplicant.income_stability_years.
+                  Half-width; right side intentionally empty. */}
               <div className="space-y-2" data-field="coapplicant_work_experience">
                 <Label>Co-applicant Work Experience</Label>
                 <p className="text-xs text-muted-foreground">The co-applicant's total work experience (not the student's).</p>
