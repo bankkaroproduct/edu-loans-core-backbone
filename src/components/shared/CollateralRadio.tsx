@@ -34,24 +34,26 @@ interface Props {
 
 export function CollateralRadio({ state, notes, onChangeState, onChangeNotes, idPrefix = "coll" }: Props) {
   return (
-    <div className="space-y-3 rounded-md border p-3">
+    <div className="space-y-2">
       <div>
         <Label className="text-sm">Collateral likely available?</Label>
       </div>
-      <RadioGroup
-        value={state ?? ""}
-        onValueChange={(v) => onChangeState(v as CollateralState)}
-        className="flex flex-wrap gap-4"
-      >
-        <div className="flex items-center gap-2">
-          <RadioGroupItem id={`${idPrefix}-likely`} value="likely" />
-          <Label htmlFor={`${idPrefix}-likely`} className="text-sm font-normal cursor-pointer">Yes</Label>
-        </div>
-        <div className="flex items-center gap-2">
-          <RadioGroupItem id={`${idPrefix}-unlikely`} value="unlikely" />
-          <Label htmlFor={`${idPrefix}-unlikely`} className="text-sm font-normal cursor-pointer">No</Label>
-        </div>
-      </RadioGroup>
+      <div className="h-10 flex items-center">
+        <RadioGroup
+          value={state ?? ""}
+          onValueChange={(v) => onChangeState(v as CollateralState)}
+          className="flex flex-wrap gap-4"
+        >
+          <div className="flex items-center gap-2">
+            <RadioGroupItem id={`${idPrefix}-likely`} value="likely" />
+            <Label htmlFor={`${idPrefix}-likely`} className="text-sm font-normal cursor-pointer">Yes</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <RadioGroupItem id={`${idPrefix}-unlikely`} value="unlikely" />
+            <Label htmlFor={`${idPrefix}-unlikely`} className="text-sm font-normal cursor-pointer">No</Label>
+          </div>
+        </RadioGroup>
+      </div>
       {state === "likely" && (
         <Textarea
           value={notes}
