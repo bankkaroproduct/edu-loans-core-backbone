@@ -1687,11 +1687,19 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
             title="Financial Information"
             stepLabel={`Step ${steps.findIndex((s) => s.id === "financial") + 1} of ${steps.length}`}
           >
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2 md:col-span-2" data-field="loan_amount_required">
+            <div className="grid gap-4 md:grid-cols-2 md:items-start">
+              <div className="space-y-2" data-field="loan_amount_required">
                 <Label>Approx Loan Amount Required (₹)</Label>
                 <LakhsInput value={form.loan_amount_required} onChange={(d) => set("loan_amount_required", d)} placeholder="e.g. 25 or 12.5" />
-                
+              </div>
+              <div>
+                <CollateralRadio
+                  state={form.collateral_state}
+                  notes={form.collateral_notes}
+                  onChangeState={(s) => set("collateral_state", s)}
+                  onChangeNotes={(n) => set("collateral_notes", n)}
+                  idPrefix="financial-coll"
+                />
               </div>
               {/* 1. Name */}
               <div className="space-y-2" data-field="coapplicant_name">
@@ -1733,7 +1741,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 <p className="text-xs text-muted-foreground">Number as per Aadhaar and Passport</p>
               </div>
               {/* 5. Email */}
-              <div className="space-y-2 md:col-span-2" data-field="coapplicant_email">
+              <div className="space-y-2" data-field="coapplicant_email">
                 <Label>Co-Applicant Email</Label>
                 <Input
                   type="email"
@@ -1761,7 +1769,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               </div>
               {/* Co-applicant Work Experience — single shorthand input "years.months"
                   (e.g. 3.6 = 3y 6m). Feeds BRE coapplicant.income_stability_years. */}
-              <div className="space-y-2 md:col-span-2" data-field="coapplicant_work_experience">
+              <div className="space-y-2" data-field="coapplicant_work_experience">
                 <Label>Co-applicant Work Experience</Label>
                 <p className="text-xs text-muted-foreground">The co-applicant's total work experience (not the student's).</p>
                 <p className="text-xs text-muted-foreground">Example: enter <strong>3.6</strong> for 3 years 6 months.</p>
@@ -1781,15 +1789,6 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   const preview = previewCoappWorkExpShorthand(raw);
                   return preview ? <p className="text-xs text-muted-foreground">{preview}</p> : null;
                 })()}
-              </div>
-              <div className="md:col-span-2">
-                <CollateralRadio
-                  state={form.collateral_state}
-                  notes={form.collateral_notes}
-                  onChangeState={(s) => set("collateral_state", s)}
-                  onChangeNotes={(n) => set("collateral_notes", n)}
-                  idPrefix="financial-coll"
-                />
               </div>
             </div>
           </FormCardShell>
