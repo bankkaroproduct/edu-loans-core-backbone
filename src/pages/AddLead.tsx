@@ -20,8 +20,14 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { DuplicateWarningDialog } from "@/components/leads/DuplicateWarningDialog";
 import { LeadSuccessDialog } from "@/components/leads/LeadSuccessDialog";
 import { toast } from "sonner";
-import { ArrowLeft, FileText, User, GraduationCap, MessageSquare, Eye, AlertTriangle, ChevronDown, Wallet, Building2, Check, ChevronsUpDown, Info } from "lucide-react";
+import { ArrowLeft, FileText, User, GraduationCap, MessageSquare, Eye, AlertTriangle, ChevronDown, Wallet, Building2, Check, ChevronsUpDown, Info, Store, BadgeCheck, Trophy, Shield } from "lucide-react";
 import { HorizontalStepper } from "@/components/shared/HorizontalStepper";
+import { PillStepper } from "@/pages/AddLead/_components/PillStepper";
+import { AddLeadHeader } from "@/pages/AddLead/_components/AddLeadHeader";
+import { ContextCard } from "@/pages/AddLead/_components/ContextCard";
+import { FormCardShell } from "@/pages/AddLead/_components/FormCardShell";
+import { RightRail, type CompletionStep } from "@/pages/AddLead/_components/RightRail";
+import { ReviewBlock, ReviewRowInline } from "@/pages/AddLead/_components/ReviewBlock";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
@@ -54,19 +60,22 @@ type Course = Tables<"courses_master">;
 type Intake = Tables<"intake_master">;
 
 const STEP_DEFS = {
-  student: { id: "student", label: "Student Details", icon: User },
+  student: { id: "student", label: "Student", icon: User },
   study: { id: "study", label: "Study Intent", icon: GraduationCap },
-  financial: { id: "financial", label: "Financial Info", icon: Wallet },
+  financial: { id: "financial", label: "Financial", icon: Wallet },
   notes: { id: "notes", label: "Notes", icon: MessageSquare },
-  assign: { id: "assign", label: "Assign to Partner", icon: Building2 },
-  review: { id: "review", label: "Review & Submit", icon: Eye },
+  assign: { id: "assign", label: "Assign", icon: Building2 },
+  review: { id: "review", label: "Review", icon: Eye },
 } as const;
 
 type StepId = keyof typeof STEP_DEFS;
 
-const PARTNER_STEPS: StepId[] = ["student", "study", "financial", "notes", "review"];
-const ADMIN_STEPS: StepId[] = ["student", "study", "financial", "notes", "review"];
-const ADMIN_EDIT_STEPS: StepId[] = ["student", "study", "financial", "notes", "assign", "review"];
+// Notes step is consolidated into Review (partner_remark textarea renders in
+// the Review block). The `notes` StepId is kept in STEP_DEFS purely so legacy
+// `field: "notes"` validator references won't crash if any survived.
+const PARTNER_STEPS: StepId[] = ["student", "study", "financial", "review"];
+const ADMIN_STEPS: StepId[] = ["student", "study", "financial", "review"];
+const ADMIN_EDIT_STEPS: StepId[] = ["student", "study", "financial", "assign", "review"];
 
 import { CO_APPLICANT_RELATIONS } from "@/lib/coapplicantRelations";
 
@@ -1136,12 +1145,11 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
 
   const backTarget = isAdminContext ? "/admin/leads" : "/leads";
 
-  // Mode-aware navigation targets
+  // Mode-aware navigation targets (notes step consolidated into Review).
   const studyNextTarget: StepId = "financial";
-  const notesBackTarget: StepId = "financial";
   const showAssignStep = isAdminForm && isEditMode;
-  const notesNextTarget: StepId = showAssignStep ? "assign" : "review";
-  const reviewBackTarget: StepId = showAssignStep ? "assign" : "notes";
+  const financialNextTarget: StepId = showAssignStep ? "assign" : "review";
+  const reviewBackTarget: StepId = showAssignStep ? "assign" : "financial";
 
   const selectedAssignedPartner = partnersList.find((p) => p.id === partnerIdAssignment);
   const partnerChanged = !!partnerIdAssignment && partnerIdAssignment !== originalPartnerId;
@@ -1779,31 +1787,14 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
           </Card>
           <div className="flex justify-between mt-4">
             <Button variant="outline" onClick={() => goToStep("study")}>← Study Intent</Button>
-            <Button onClick={() => goNextFrom("financial", "notes")}>Next: Notes →</Button>
+            <Button onClick={() => goNextFrom("financial", financialNextTarget)}>
+              Next: {financialNextTarget === "assign" ? "Assign to Partner" : "Review & Submit"} →
+            </Button>
           </div>
         </TabsContent>
 
-        {/* Notes */}
-        <TabsContent value="notes" forceMount className="mt-0 data-[state=inactive]:hidden">
-          <Card>
-            <CardHeader><CardTitle className="text-lg">Partner Notes</CardTitle></CardHeader>
-            <CardContent className="grid gap-4">
-              <div className="space-y-2">
-                <Label>{isAdminForm ? "Admin / Partner Remark" : "Partner Remark"}</Label>
-                <Textarea value={form.partner_remark} onChange={(e) => set("partner_remark", e.target.value)} placeholder="Any additional context for the operations team..." rows={3} />
-                <p className="text-xs text-muted-foreground">Optional — leave blank if no additional context.</p>
-              </div>
-            </CardContent>
-          </Card>
-          <div className="flex justify-between mt-4">
-            <Button variant="outline" onClick={() => goToStep(notesBackTarget)}>
-              ← {notesBackTarget === "financial" ? "Financial Info" : "Study Intent"}
-            </Button>
-            <Button onClick={() => goNextFrom("notes", notesNextTarget)}>
-              Next: {notesNextTarget === "assign" ? "Assign to Partner" : "Review & Submit"} →
-            </Button>
-          </div>
-        </TabsContent>
+        {/* Notes step is consolidated into Review (see Review block below).
+            partner_remark textarea moved — field key & binding unchanged. */}
 
         {/* Assign to Partner — admin edit only */}
         {showAssignStep && (
@@ -1893,7 +1884,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               </CardContent>
             </Card>
             <div className="flex justify-between mt-4">
-              <Button variant="outline" onClick={() => goToStep("notes")}>← Notes</Button>
+              <Button variant="outline" onClick={() => goToStep("financial")}>← Financial Info</Button>
               <Button onClick={() => goNextFrom("assign", "review")}>Next: Review & Submit →</Button>
             </div>
           </TabsContent>
