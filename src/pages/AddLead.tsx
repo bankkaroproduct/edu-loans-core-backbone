@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -1306,8 +1306,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   <p className="text-xs text-muted-foreground">Captured later by the student portal if not set here.</p>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </FormCardShell>
           <div className="flex justify-end mt-4">
             <Button onClick={() => goNextFrom("student", "study")}>Next: Study Intent →</Button>
           </div>
@@ -1315,9 +1315,11 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
 
         {/* Study Intent */}
         <TabsContent value="study" forceMount className="mt-0 data-[state=inactive]:hidden">
-          <Card>
-            <CardHeader><CardTitle className="text-lg">Education & Study Intent</CardTitle></CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
+          <FormCardShell
+            title="Education & Study Intent"
+            stepLabel={`Step ${steps.findIndex((s) => s.id === "study") + 1} of ${steps.length}`}
+          >
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2 md:col-span-2" data-field="intended_study_country">
                 <Label>Intended Study Country</Label>
                 {(() => {
@@ -1458,15 +1460,14 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                 </Select>
               </div>
               {/* Loan Amount intentionally moved to the Financial Info step in both modes. */}
-            </CardContent>
-          </Card>
+            </div>
+          </FormCardShell>
 
           {/* Academic Profile — placed AFTER Education & Study Intent and BEFORE financial step.
               Aligned with Bulk Upload columns: highest_qualification, highest_qualification_score,
               10th_score, 12th_score, graduation_score. */}
-          <Card className="mt-4">
-            <CardHeader><CardTitle className="text-lg">Current Academic Profile</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
+          <FormCardShell title="Current Academic Profile" className="mt-4">
+            <div className="space-y-4">
               <p className="text-xs text-muted-foreground">
                 Total Marks / Scale is optional but recommended for accurate scoring. Example: enter <code>9.5</code> and total <code>10</code> for CGPA, or <code>78</code> and total <code>100</code> for percentage.
               </p>
@@ -1569,15 +1570,14 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               </div>
                 );
               })()}
-            </CardContent>
-          </Card>
+            </div>
+          </FormCardShell>
 
           {/* Work Experience — placed above Test Scores. Persists in test_scores.work_experience_years.
               Single decimal digit only: "3" = 3 years, "3.2" = 3 years 2 months. Fresher stores 0.
               Reuses Student helpers (sanitizeWorkExpInput / formatWorkExperience / isValidWorkExp). */}
-          <Card className="mt-4">
-            <CardHeader><CardTitle className="text-lg">Work Experience</CardTitle></CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
+          <FormCardShell title="Work Experience" className="mt-4">
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2" data-field="work_experience_years">
                 <Label>Total Work Experience (years)</Label>
                 <Input
@@ -1608,15 +1608,14 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   <span>I'm a Fresher (no work experience)</span>
                 </label>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </FormCardShell>
 
           {/* Standardized Test Scores — aligned with Student portal keys
               (ielts/toefl/duolingo/pte/gre/gmat). All optional. Persists in test_scores JSONB.
               Progressive disclosure: hidden behind a checkbox to reduce visual noise. */}
-          <Card className="mt-4">
-            <CardHeader><CardTitle className="text-lg">Test Scores</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
+          <FormCardShell title="Test Scores" className="mt-4">
+            <div className="space-y-4">
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <Checkbox
                   checked={hasTestScores}
@@ -1671,8 +1670,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               ) : (
                 <p className="text-xs text-muted-foreground">Tick the box above if you've taken any standardized tests.</p>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </FormCardShell>
 
           <div className="flex justify-between mt-4">
             <Button variant="outline" onClick={() => goToStep("student")}>← Student Details</Button>
@@ -1684,9 +1683,11 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
 
         {/* Financial Info — required step in BOTH partner and admin modes */}
         <TabsContent value="financial" forceMount className="mt-0 data-[state=inactive]:hidden">
-          <Card>
-            <CardHeader><CardTitle className="text-lg">Financial Information</CardTitle></CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
+          <FormCardShell
+            title="Financial Information"
+            stepLabel={`Step ${steps.findIndex((s) => s.id === "financial") + 1} of ${steps.length}`}
+          >
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2 md:col-span-2" data-field="loan_amount_required">
                 <Label>Approx Loan Amount Required (₹)</Label>
                 <LakhsInput value={form.loan_amount_required} onChange={(d) => set("loan_amount_required", d)} placeholder="e.g. 25 or 12.5" />
@@ -1790,8 +1791,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   idPrefix="financial-coll"
                 />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </FormCardShell>
           <div className="flex justify-between mt-4">
             <Button variant="outline" onClick={() => goToStep("study")}>← Study Intent</Button>
             <Button onClick={() => goNextFrom("financial", financialNextTarget)}>
@@ -1806,13 +1807,11 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
         {/* Assign to Partner — admin edit only */}
         {showAssignStep && (
           <TabsContent value="assign" forceMount className="mt-0 data-[state=inactive]:hidden">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-primary" /> Assign to Partner
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            <FormCardShell
+              title="Assign to Partner"
+              stepLabel={`Step ${steps.findIndex((s) => s.id === "assign") + 1} of ${steps.length}`}
+            >
+              <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Partner organization</Label>
                   <Popover open={partnerPickerOpen} onOpenChange={setPartnerPickerOpen}>
@@ -1888,8 +1887,8 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                     </AlertDescription>
                   </Alert>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </FormCardShell>
             <div className="flex justify-between mt-4">
               <Button variant="outline" onClick={() => goToStep("financial")}>← Financial Info</Button>
               <Button onClick={() => goNextFrom("assign", "review")}>Next: Review & Submit →</Button>
