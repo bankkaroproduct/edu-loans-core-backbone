@@ -126,6 +126,9 @@ export default function StudentCoapplicantDetails() {
         <CardContent className="p-5 sm:p-6">
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Co-applicant Information</h2>
           <div className="grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Co-Applicant Personal Details
+            </div>
             {/* 1. Name */}
             <div className="space-y-1.5">
               <Label>Full Name *</Label>
@@ -155,8 +158,8 @@ export default function StudentCoapplicantDetails() {
               <Label>Mobile Number *</Label>
               <Input value={formData.coapplicant_mobile} onChange={e => updateField("coapplicant_mobile", e.target.value.replace(/\D/g, "").slice(0, 10))} placeholder="10-digit mobile" inputMode="numeric" />
             </div>
-            {/* 5. Email */}
-            <div className="space-y-1.5 sm:col-span-2">
+            {/* 5. Email — half-width, right side intentionally empty */}
+            <div className="space-y-1.5">
               <Label>Email Address *</Label>
               <Input type="email" value={formData.coapplicant_email} onChange={e => updateField("coapplicant_email", e.target.value)} placeholder="email@example.com" />
             </div>
@@ -169,6 +172,9 @@ export default function StudentCoapplicantDetails() {
         <CardContent className="p-5 sm:p-6">
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Financial Profile</h2>
           <div className="grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Co-Applicant Financial Details
+            </div>
             {/* Income Source field removed from UI per scoped form-fix pass.
                 Existing `coapplicant_income_source` values in storage remain untouched. */}
             {/* 6. Employment Type */}
