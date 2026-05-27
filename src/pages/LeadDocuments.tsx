@@ -111,23 +111,20 @@ export default function LeadDocuments() {
           onChanged={refresh}
         />
       ) : (
-        <>
-          <DocumentSummaryStrip requirements={requirements} hideNudge={isAdminContext} />
-          <DocumentChecklist
-            requirements={requirements}
-            documents={documents}
-            onUpload={(req) => setUploadTarget(req)}
-            leadId={lead.id}
-            hideNudge={isAdminContext}
-            highestQualification={lead.highest_qualification}
-            applicabilityContext={{
-              highest_qualification: lead.highest_qualification ?? null,
-              intended_study_country: lead.intended_study_country ?? null,
-              collateral_available: lead.collateral_available ?? null,
-              coapplicant_employment_type: lead.coapplicant_employment_type ?? null,
-            }}
-          />
-        </>
+        <DocumentChecklist
+          requirements={requirements}
+          documents={documents}
+          onUpload={(req) => setUploadTarget(req)}
+          leadId={lead.id}
+          hideNudge={isAdminContext}
+          highestQualification={lead.highest_qualification}
+          applicabilityContext={{
+            highest_qualification: lead.highest_qualification ?? null,
+            intended_study_country: lead.intended_study_country ?? null,
+            collateral_available: lead.collateral_available ?? null,
+            coapplicant_employment_type: lead.coapplicant_employment_type ?? null,
+          }}
+        />
       )}
 
       {/* Upload Dialog — only used by the partner/student checklist path */}
