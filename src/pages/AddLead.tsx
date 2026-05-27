@@ -1884,7 +1884,7 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               </CardContent>
             </Card>
             <div className="flex justify-between mt-4">
-              <Button variant="outline" onClick={() => goToStep("notes")}>← Notes</Button>
+              <Button variant="outline" onClick={() => goToStep("financial")}>← Financial Info</Button>
               <Button onClick={() => goNextFrom("assign", "review")}>Next: Review & Submit →</Button>
             </div>
           </TabsContent>
