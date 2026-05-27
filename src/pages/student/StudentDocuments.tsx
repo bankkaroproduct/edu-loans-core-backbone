@@ -244,24 +244,7 @@ export default function StudentDocuments() {
                 <p className={`text-sm font-medium ${banner.textColor}`}>{banner.message}</p>
               </div>
 
-              {/* Summary Strip */}
-              {effectiveCounts.total > 0 && (
-                <div className="mb-5 grid grid-cols-3 gap-2 sm:grid-cols-6">
-                  {[
-                    { label: "Total", value: effectiveCounts.total, color: "text-foreground" },
-                    { label: "Pending", value: effectiveCounts.pending, color: "text-muted-foreground" },
-                    { label: "Uploaded", value: effectiveCounts.uploaded, color: "text-blue-600" },
-                    { label: "Reviewing", value: effectiveCounts.under_review, color: "text-amber-600" },
-                    { label: "Verified", value: effectiveCounts.verified, color: "text-emerald-600" },
-                    { label: "Action", value: effectiveCounts.action_needed, color: effectiveCounts.action_needed > 0 ? "text-red-600" : "text-muted-foreground" },
-                  ].map(c => (
-                    <div key={c.label} className="rounded-lg border bg-card px-3 py-2 text-center">
-                      <p className={`text-lg font-bold ${c.color}`}>{c.value}</p>
-                      <p className="text-[10px] text-muted-foreground">{c.label}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {/* Numeric summary intentionally omitted for student view — checklist below is the source of truth. */}
 
               {hiddenAcademicCount > 0 && (
                 <p className="mb-1 text-[11px] italic text-muted-foreground">

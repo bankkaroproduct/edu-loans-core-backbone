@@ -106,7 +106,7 @@ export function AdminLeadDocumentsView({
   }
 
   const tiles = [
-    { label: "Total Required", value: counts.total, icon: FileQuestion, color: "text-foreground" },
+    { label: "Total Required", value: counts.requiredTotal, icon: FileQuestion, color: "text-foreground" },
     { label: "Pending Upload", value: counts.not_uploaded, icon: FileUp, color: "text-orange-600", highlight: counts.not_uploaded > 0 },
     { label: "Uploaded", value: counts.uploaded, icon: FileClock, color: "text-blue-600" },
     {
