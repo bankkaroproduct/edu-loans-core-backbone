@@ -3,7 +3,7 @@ import {
   Database, FilePlus, Upload, FileSpreadsheet,
   SlidersHorizontal, History, ScrollText,
   MessageSquare, FileText, Star, UserCog, BarChart3,
-  ChevronDown,
+  ChevronDown, Calendar as CalendarIcon,
 } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import { NavLink } from "@/components/NavLink";
