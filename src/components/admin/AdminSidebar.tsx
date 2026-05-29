@@ -3,7 +3,7 @@ import {
   Database, FilePlus, Upload, FileSpreadsheet,
   SlidersHorizontal, History, ScrollText,
   MessageSquare, FileText, Star, UserCog, BarChart3,
-  ChevronDown,
+  ChevronDown, Calendar as CalendarIcon,
 } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import { NavLink } from "@/components/NavLink";
@@ -35,6 +35,7 @@ const adminItems: NavItem[] = [
   { title: "Admin Dashboard", url: "/admin", icon: Shield, end: true, section: "dashboard" },
   { title: "Lead Queue", url: "/admin/leads", icon: Inbox, section: "lead_queue" },
   { title: "Reports", url: "/admin/reports", icon: FileSpreadsheet, section: "reports" },
+  { title: "Calendar", url: "/admin/calendar", icon: CalendarIcon, section: "calendar" },
 ];
 
 const leadOpsItems: NavItem[] = [

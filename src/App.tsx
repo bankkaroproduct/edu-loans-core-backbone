@@ -41,6 +41,7 @@ import AdminBulkUpload from "./pages/admin/AdminBulkUpload";
 import AdminCommunications from "./pages/admin/AdminCommunications";
 import AdminCommunicationLogs from "./pages/admin/AdminCommunicationLogs";
 import AdminCommunicationTemplates from "./pages/admin/AdminCommunicationTemplates";
+import AdminCalendar from "./pages/admin/AdminCalendar";
 import Login from "./pages/Login";
 import Leads from "./pages/Leads";
 import AddLead from "./pages/AddLead";
@@ -117,6 +118,7 @@ const App = () => (
             <Route path="/admin/partners" element={<AdminRoute><SectionGate section="partners"><AdminPartners /></SectionGate></AdminRoute>} />
             <Route path="/admin/lenders" element={<AdminRoute><SectionGate section="lenders"><AdminLenders /></SectionGate></AdminRoute>} />
             <Route path="/admin/reports" element={<AdminRoute><SectionGate section="reports"><AdminReports /></SectionGate></AdminRoute>} />
+            <Route path="/admin/calendar" element={<AdminRoute><SectionGate section="calendar"><AdminCalendar /></SectionGate></AdminRoute>} />
             <Route path="/admin/communications" element={<AdminRoute><SectionGate section="communications"><AdminCommunications /></SectionGate></AdminRoute>} />
             <Route path="/admin/communications/logs" element={<AdminRoute><SectionGate section="communications"><AdminCommunicationLogs /></SectionGate></AdminRoute>} />
             <Route path="/admin/communications/templates" element={<AdminRoute><SectionGate section="communications"><AdminCommunicationTemplates /></SectionGate></AdminRoute>} />

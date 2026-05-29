@@ -24,6 +24,8 @@ interface Ctx {
 const defaultSectionAccess = (): Record<AdminSectionKey, AdminAccessLevel> => {
   const o = {} as Record<AdminSectionKey, AdminAccessLevel>;
   for (const k of ADMIN_SECTION_KEYS) o[k] = "hidden";
+  // Calendar defaults to full for any admin without an explicit permission row.
+  o["calendar"] = "full";
   return o;
 };
 

@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_google_tokens: {
+        Row: {
+          access_token: string | null
+          connected_at: string
+          created_at: string
+          google_email: string
+          google_name: string | null
+          id: string
+          last_synced_at: string | null
+          refresh_token: string
+          scope: string | null
+          token_expires_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          connected_at?: string
+          created_at?: string
+          google_email: string
+          google_name?: string | null
+          id?: string
+          last_synced_at?: string | null
+          refresh_token: string
+          scope?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          connected_at?: string
+          created_at?: string
+          google_email?: string
+          google_name?: string | null
+          id?: string
+          last_synced_at?: string | null
+          refresh_token?: string
+          scope?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_google_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_partner_assignments: {
         Row: {
           created_at: string
@@ -2121,6 +2174,7 @@ export type Database = {
         | "bre"
         | "communications"
         | "admin_users"
+        | "calendar"
       app_role: "super_admin" | "admin" | "partner_admin" | "partner_agent"
       bulk_upload_status_enum:
         | "uploaded"
@@ -2356,6 +2410,7 @@ export const Constants = {
         "bre",
         "communications",
         "admin_users",
+        "calendar",
       ],
       app_role: ["super_admin", "admin", "partner_admin", "partner_agent"],
       bulk_upload_status_enum: [

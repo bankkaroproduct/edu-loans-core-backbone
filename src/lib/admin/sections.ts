@@ -13,6 +13,7 @@ export const ADMIN_SECTION_KEYS = [
   "bre",
   "communications",
   "admin_users",
+  "calendar",
 ] as const;
 
 export type AdminSectionKey = (typeof ADMIN_SECTION_KEYS)[number];
@@ -31,6 +32,7 @@ export const ADMIN_SECTION_LABELS: Record<AdminSectionKey, string> = {
   bre: "BRE Engine",
   communications: "Communications",
   admin_users: "User Management",
+  calendar: "Calendar",
 };
 
 export const ADMIN_ACCESS_LEVELS: AdminAccessLevel[] = ["hidden", "view", "full"];
