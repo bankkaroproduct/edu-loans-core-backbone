@@ -1502,11 +1502,6 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
               </p>
               {(() => {
                 const enabled = getEnabledLevels(form.highest_qualification);
-                const mirrored = getMirroredHighestQual(form.highest_qualification, {
-                  tenth: form.tenth_score, tenth_total: form.tenth_total,
-                  twelfth: form.twelfth_score, twelfth_total: form.twelfth_total,
-                  graduation: form.graduation_score, graduation_total: form.graduation_total,
-                });
                 return (
               <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2 md:col-span-2" data-field="highest_qualification">
