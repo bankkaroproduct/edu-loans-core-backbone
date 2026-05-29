@@ -12,7 +12,9 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const RAW_GOOGLE_CLIENT_ID = Deno.env.get("GOOGLE_OAUTH_CLIENT_ID") ?? "";
+// TEMPORARY HARDCODE for testing — remove once Supabase secret is fixed
+const HARDCODED_GOOGLE_CLIENT_ID = "187263863670-cfvlaboaiinetdngmnsqapskasa9nv8k.apps.googleusercontent.com";
+const RAW_GOOGLE_CLIENT_ID = HARDCODED_GOOGLE_CLIENT_ID;
 const RAW_GOOGLE_CLIENT_SECRET = Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET") ?? "";
 const GOOGLE_CLIENT_ID = RAW_GOOGLE_CLIENT_ID.trim();
 const GOOGLE_CLIENT_SECRET = RAW_GOOGLE_CLIENT_SECRET.trim();
