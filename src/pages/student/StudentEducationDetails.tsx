@@ -324,11 +324,6 @@ export default function StudentEducationDetails() {
           </p>
           {(() => {
             const enabled = getEnabledLevels(formData.highest_qualification);
-            const mirrored = getMirroredHighestQual(formData.highest_qualification, {
-              tenth: formData.test_scores.tenth || "", tenth_total: formData.test_scores.tenth_total || "",
-              twelfth: formData.test_scores.twelfth || "", twelfth_total: formData.test_scores.twelfth_total || "",
-              graduation: formData.test_scores.graduation || "", graduation_total: formData.test_scores.graduation_total || "",
-            });
             return (
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5 sm:col-span-2">
