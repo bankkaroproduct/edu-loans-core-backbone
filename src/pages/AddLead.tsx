@@ -1525,62 +1525,66 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
                   </SelectContent>
                 </Select>
               </div>
-              <ScoreTotalPair
-                label="10th"
-                scoreKey="tenth_score"
-                totalKey="tenth_total"
-                scoreLabel="10th Score Obtained"
-                totalLabel="10th Total Marks"
-                scorePlaceholder="e.g. 85"
-                totalPlaceholder="e.g. 100"
-                scoreValue={form.tenth_score}
-                totalValue={form.tenth_total}
-                onScore={(v) => set("tenth_score", v)}
-                onTotal={(v) => set("tenth_total", v)}
-                disabled={!enabled.tenth}
-              />
-              <ScoreTotalPair
-                label="12th"
-                scoreKey="twelfth_score"
-                totalKey="twelfth_total"
-                scoreLabel="12th Score Obtained"
-                totalLabel="12th Total Marks"
-                scorePlaceholder="e.g. 88"
-                totalPlaceholder="e.g. 100"
-                scoreValue={form.twelfth_score}
-                totalValue={form.twelfth_total}
-                onScore={(v) => set("twelfth_score", v)}
-                onTotal={(v) => set("twelfth_total", v)}
-                disabled={!enabled.twelfth}
-              />
-              <ScoreTotalPair
-                label="Graduation"
-                scoreKey="graduation_score"
-                totalKey="graduation_total"
-                scoreLabel="Graduation Score Obtained"
-                totalLabel="Graduation Total Marks / CGPA Scale"
-                scorePlaceholder="e.g. 7.8"
-                totalPlaceholder="e.g. 10"
-                scoreValue={form.graduation_score}
-                totalValue={form.graduation_total}
-                onScore={(v) => set("graduation_score", v)}
-                onTotal={(v) => set("graduation_total", v)}
-                disabled={!enabled.graduation}
-              />
-              <ScoreTotalPair
-                label="Highest Qualification"
-                scoreKey="highest_qualification_score"
-                totalKey="highest_qualification_total"
-                scoreLabel="Highest Qualification Score Obtained"
-                totalLabel="Highest Qualification Total Marks / CGPA Scale"
-                scorePlaceholder="e.g. 8.5"
-                totalPlaceholder="e.g. 10"
-                scoreValue={enabled.highest_qualification ? form.highest_qualification_score : mirrored.score}
-                totalValue={enabled.highest_qualification ? form.highest_qualification_total : mirrored.total}
-                onScore={(v) => set("highest_qualification_score", v)}
-                onTotal={(v) => set("highest_qualification_total", v)}
-                disabled={!enabled.highest_qualification}
-              />
+              {enabled.tenth && (
+                <ScoreTotalPair
+                  label="10th"
+                  scoreKey="tenth_score"
+                  totalKey="tenth_total"
+                  scoreLabel="10th Score Obtained"
+                  totalLabel="10th Total Marks"
+                  scorePlaceholder="e.g. 85"
+                  totalPlaceholder="e.g. 100"
+                  scoreValue={form.tenth_score}
+                  totalValue={form.tenth_total}
+                  onScore={(v) => set("tenth_score", v)}
+                  onTotal={(v) => set("tenth_total", v)}
+                />
+              )}
+              {enabled.twelfth && (
+                <ScoreTotalPair
+                  label="12th"
+                  scoreKey="twelfth_score"
+                  totalKey="twelfth_total"
+                  scoreLabel="12th Score Obtained"
+                  totalLabel="12th Total Marks"
+                  scorePlaceholder="e.g. 88"
+                  totalPlaceholder="e.g. 100"
+                  scoreValue={form.twelfth_score}
+                  totalValue={form.twelfth_total}
+                  onScore={(v) => set("twelfth_score", v)}
+                  onTotal={(v) => set("twelfth_total", v)}
+                />
+              )}
+              {enabled.graduation && (
+                <ScoreTotalPair
+                  label="Graduation"
+                  scoreKey="graduation_score"
+                  totalKey="graduation_total"
+                  scoreLabel="Graduation Score Obtained"
+                  totalLabel="Graduation Total Marks / CGPA Scale"
+                  scorePlaceholder="e.g. 7.8"
+                  totalPlaceholder="e.g. 10"
+                  scoreValue={form.graduation_score}
+                  totalValue={form.graduation_total}
+                  onScore={(v) => set("graduation_score", v)}
+                  onTotal={(v) => set("graduation_total", v)}
+                />
+              )}
+              {enabled.highest_qualification && (
+                <ScoreTotalPair
+                  label="Highest Qualification"
+                  scoreKey="highest_qualification_score"
+                  totalKey="highest_qualification_total"
+                  scoreLabel="Highest Qualification Score Obtained"
+                  totalLabel="Highest Qualification Total Marks / CGPA Scale"
+                  scorePlaceholder="e.g. 8.5"
+                  totalPlaceholder="e.g. 10"
+                  scoreValue={form.highest_qualification_score}
+                  totalValue={form.highest_qualification_total}
+                  onScore={(v) => set("highest_qualification_score", v)}
+                  onTotal={(v) => set("highest_qualification_total", v)}
+                />
+              )}
 
               {/* Read-only academic context for student-origin leads in admin edit mode */}
               {isAdminForm && isEditMode && originalLead?.source_type === "student_direct" && (
