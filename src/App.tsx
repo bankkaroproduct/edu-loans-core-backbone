@@ -41,6 +41,7 @@ import AdminBulkUpload from "./pages/admin/AdminBulkUpload";
 import AdminCommunications from "./pages/admin/AdminCommunications";
 import AdminCommunicationLogs from "./pages/admin/AdminCommunicationLogs";
 import AdminCommunicationTemplates from "./pages/admin/AdminCommunicationTemplates";
+import AdminCalendar from "./pages/admin/AdminCalendar";
 import Login from "./pages/Login";
 import Leads from "./pages/Leads";
 import AddLead from "./pages/AddLead";
