@@ -576,9 +576,30 @@ export function buildFilename(slug: string, ext: "csv" | "xlsx"): string {
   return `${slug}_${timestamp()}.${ext}`;
 }
 
+/** Replace UTF-8 punctuation that Excel mis-renders with ASCII equivalents. */
+function sanitizeForExcel(v: any): any {
+  if (typeof v !== "string") return v;
+  return v
+    .replace(/[\u2014\u2013\u2212]/g, "-")          // — – − → -
+    .replace(/[\u201C\u201D\u201E\u201F]/g, '"')    // smart double quotes → "
+    .replace(/[\u2018\u2019\u201A\u201B]/g, "'")    // smart single quotes → '
+    .replace(/\u2026/g, "...")                       // … → ...
+    .replace(/[\u2022\u00B7]/g, "*")                 // • · → *
+    .replace(/\u00A0/g, " ");                        // nbsp → space
+}
+
+function sanitizeRows(rows: Record<string, any>[]): Record<string, any>[] {
+  return rows.map((r) => {
+    const out: Record<string, any> = {};
+    for (const k of Object.keys(r)) out[k] = sanitizeForExcel(r[k]);
+    return out;
+  });
+}
+
 export function downloadCSV(rows: Record<string, any>[], filename: string) {
   if (!rows.length) return;
-  const headers = Object.keys(rows[0]);
+  const clean = sanitizeRows(rows);
+  const headers = Object.keys(clean[0]);
   const escape = (v: any) => {
     if (v === null || v === undefined) return "";
     const s = String(v);
@@ -587,9 +608,10 @@ export function downloadCSV(rows: Record<string, any>[], filename: string) {
   };
   const csv = [
     headers.join(","),
-    ...rows.map((r) => headers.map((h) => escape(r[h])).join(",")),
+    ...clean.map((r) => headers.map((h) => escape(r[h])).join(",")),
   ].join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  // Prepend UTF-8 BOM so Excel detects encoding correctly.
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -602,7 +624,7 @@ export function downloadCSV(rows: Record<string, any>[], filename: string) {
 
 export function downloadXLSX(rows: Record<string, any>[], filename: string, sheetName = "Report") {
   if (!rows.length) return;
-  const ws = XLSX.utils.json_to_sheet(rows);
+  const ws = XLSX.utils.json_to_sheet(sanitizeRows(rows));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0, 31));
   XLSX.writeFile(wb, filename);
