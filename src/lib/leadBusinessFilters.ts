@@ -163,8 +163,8 @@ export const SOURCE_LABELS: Record<SourceFilter, string> = {
   partner: "Partner",
   student_direct: "Student Direct",
   referral: "Referral",
-  partner_direct: "Partner — Direct",
-  partner_referral: "Partner — Referral",
+  partner_direct: "Partner - Direct",
+  partner_referral: "Partner - Referral",
   student_portal: "Student Portal",
   university_referral: "University Referral",
 };
