@@ -12,8 +12,17 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const GOOGLE_CLIENT_ID = Deno.env.get("GOOGLE_OAUTH_CLIENT_ID")!;
-const GOOGLE_CLIENT_SECRET = Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET")!;
+const RAW_GOOGLE_CLIENT_ID = Deno.env.get("GOOGLE_OAUTH_CLIENT_ID") ?? "";
+const RAW_GOOGLE_CLIENT_SECRET = Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET") ?? "";
+const GOOGLE_CLIENT_ID = RAW_GOOGLE_CLIENT_ID.trim();
+const GOOGLE_CLIENT_SECRET = RAW_GOOGLE_CLIENT_SECRET.trim();
+
+// TEMP DIAGNOSTIC — remove after verification
+console.log("[diag] client_id_prefix:", GOOGLE_CLIENT_ID.slice(0, 10));
+console.log("[diag] client_id_len raw/trim:", RAW_GOOGLE_CLIENT_ID.length, GOOGLE_CLIENT_ID.length);
+console.log("[diag] client_id_had_whitespace:", RAW_GOOGLE_CLIENT_ID !== GOOGLE_CLIENT_ID);
+console.log("[diag] client_secret_len raw/trim:", RAW_GOOGLE_CLIENT_SECRET.length, GOOGLE_CLIENT_SECRET.length);
+console.log("[diag] client_secret_had_whitespace:", RAW_GOOGLE_CLIENT_SECRET !== GOOGLE_CLIENT_SECRET);
 
 const REDIRECT_URI = `${SUPABASE_URL}/functions/v1/google-calendar-oauth/callback`;
 const SCOPES = [
@@ -130,7 +139,16 @@ Deno.serve(async (req) => {
       authUrl.searchParams.set("include_granted_scopes", "true");
       authUrl.searchParams.set("state", state);
 
-      return json({ authUrl: authUrl.toString() });
+      return json({
+        authUrl: authUrl.toString(),
+        _diag: {
+          client_id_prefix: GOOGLE_CLIENT_ID.slice(0, 10),
+          client_id_len: GOOGLE_CLIENT_ID.length,
+          had_whitespace: RAW_GOOGLE_CLIENT_ID !== GOOGLE_CLIENT_ID,
+          secret_len: GOOGLE_CLIENT_SECRET.length,
+          secret_had_whitespace: RAW_GOOGLE_CLIENT_SECRET !== GOOGLE_CLIENT_SECRET,
+        },
+      });
     }
 
     // -------- CALLBACK (Google redirects user-agent here) --------
