@@ -603,8 +603,10 @@ All colors MUST be HSL.
 .cal-shell .rbc-day-header-stacked .date { font-size:17px; font-weight:800; color:var(--cal-fg-1); width:30px; height:30px; display:grid; place-items:center; border-radius:50%; }
 .cal-shell .rbc-day-header-stacked[data-today="true"] .dow { color:var(--cal-blue); }
 .cal-shell .rbc-day-header-stacked[data-today="true"] .date { background:var(--cal-blue); color:#fff; }
-/* Collapse all-day lane when empty but allow it to expand for real all-day events */
+/* Collapse all-day lane when empty; keep it visible when real all-day events exist */
 .cal-shell .rbc-allday-cell { height:auto; min-height:0; }
-.cal-shell .rbc-time-header.rbc-overflowing { border-bottom:0; }
+.cal-shell .rbc-allday-cell:not(:has(.rbc-event)) { display:none; }
+.cal-shell .rbc-time-header-content > .rbc-row:not(:has(.rbc-event)):has(.rbc-allday-cell) { display:none; }
+.cal-shell .rbc-time-header.rbc-overflowing { border-bottom:0; margin-right:0 !important; }
 /* Aligned row heights across gutter + day columns */
 .cal-shell .rbc-timeslot-group { min-height:54px; }
