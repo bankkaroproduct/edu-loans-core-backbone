@@ -7,12 +7,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RefreshCw, FileText, GitBranch, FileWarning, Inbox, Building2, FileSpreadsheet, CalendarIcon, RotateCcw } from "lucide-react";
+import { RefreshCw, FileSpreadsheet, CalendarIcon, RotateCcw, Users, GitCommitHorizontal, FileText, Mail, BarChart3 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, subMonths, subDays, startOfDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminReportFilters } from "@/components/admin/reports/AdminReportFilters";
-import { ReportCard } from "@/components/admin/reports/ReportCard";
+import { ReportListRow } from "@/components/admin/reports/ReportListRow";
+import { ReportListPanel, ReportListGroup } from "@/components/admin/reports/ReportListPanel";
 import {
   countDocumentsPending,
   countEditRequests,
@@ -165,61 +166,80 @@ export default function AdminReports() {
           partners={partners}
         />
 
-        {/* Report grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <ReportCard
-            title="Leads Report"
-            description="All leads with full business attributes — Source, Type, Entry Mode, Region, Loan, Stage, Status."
-            slug="leads-report"
-            icon={<FileText className="h-4 w-4" />}
-            filterVersion={cardKey}
-            fetchCount={() => countLeadsReport(filters)}
-            fetchData={() => fetchLeadsReport(filters)}
-            dateFieldHint="Uses created date"
-          />
-          <ReportCard
-            title="Stage Movement Report"
-            description="Lifecycle audit trail — every stage transition with previous → new and change reason."
-            slug="stage-movement-report"
-            icon={<GitBranch className="h-4 w-4" />}
-            filterVersion={cardKey}
-            fetchCount={() => countStageMovement(filters)}
-            fetchData={() => fetchStageMovementReport(filters)}
-            dateFieldHint="Uses transition date"
-          />
-          <ReportCard
-            title="Documents Pending Review"
-            description="Latest document versions awaiting verification (uploaded or reupload-needed). Sorted by days waiting."
-            slug="documents-pending-report"
-            icon={<FileWarning className="h-4 w-4" />}
-            filterVersion={cardKey}
-            fetchCount={() => countDocumentsPending(filters)}
-            fetchData={() => fetchDocumentsPendingReport(filters)}
-            dateFieldHint="Uses uploaded date"
-          />
-          <ReportCard
-            title="Edit Requests Report"
-            description="Partner-raised edit requests with status, fields changed, and decision notes."
-            slug="edit-requests-report"
-            icon={<Inbox className="h-4 w-4" />}
-            filterVersion={cardKey}
-            fetchCount={() => countEditRequests(filters)}
-            fetchData={() => fetchEditRequestsReport(filters)}
-            dateFieldHint="Uses created date"
-          />
-          <div className="md:col-span-2">
-            <ReportCard
+        {/* Available reports */}
+        <div className="flex items-baseline justify-between pt-1">
+          <h2 className="text-sm font-semibold text-foreground">Available reports</h2>
+          <p className="text-[11px] text-muted-foreground">One row per report · respects the filters above</p>
+        </div>
+
+        <ReportListPanel>
+          <ReportListGroup label="Leads & Pipeline">
+            <ReportListRow
+              title="Leads Report"
+              description="All leads with full business attributes — Source, Type, Entry Mode, Region, Loan, Stage, Status."
+              slug="leads-report"
+              accent="leads"
+              Icon={Users}
+              filterVersion={cardKey}
+              fetchCount={() => countLeadsReport(filters)}
+              fetchData={() => fetchLeadsReport(filters)}
+              dateFieldHint="Uses created date"
+            />
+            <ReportListRow
+              title="Stage Movement Report"
+              description="Lifecycle audit trail — every stage transition with previous → new and change reason."
+              slug="stage-movement-report"
+              accent="stage"
+              Icon={GitCommitHorizontal}
+              filterVersion={cardKey}
+              fetchCount={() => countStageMovement(filters)}
+              fetchData={() => fetchStageMovementReport(filters)}
+              dateFieldHint="Uses transition date"
+              isLast
+            />
+          </ReportListGroup>
+
+          <ReportListGroup label="Documents & Requests">
+            <ReportListRow
+              title="Documents Pending Review"
+              description="Latest document versions awaiting verification (uploaded or reupload-needed). Sorted by days waiting."
+              slug="documents-pending-report"
+              accent="documents"
+              Icon={FileText}
+              filterVersion={cardKey}
+              fetchCount={() => countDocumentsPending(filters)}
+              fetchData={() => fetchDocumentsPendingReport(filters)}
+              dateFieldHint="Uses uploaded date"
+            />
+            <ReportListRow
+              title="Edit Requests Report"
+              description="Partner-raised edit requests with status, fields changed, and decision notes."
+              slug="edit-requests-report"
+              accent="editRequests"
+              Icon={Mail}
+              filterVersion={cardKey}
+              fetchCount={() => countEditRequests(filters)}
+              fetchData={() => fetchEditRequestsReport(filters)}
+              dateFieldHint="Uses created date"
+              isLast
+            />
+          </ReportListGroup>
+
+          <ReportListGroup label="Partners">
+            <ReportListRow
               title="Partner Performance"
               description="One row per active partner with total leads + per-stage breakdown. Excludes archived and system partners."
               slug="partner-performance-report"
-              icon={<Building2 className="h-4 w-4" />}
+              accent="partners"
+              Icon={BarChart3}
               filterVersion={cardKey}
               fetchCount={() => countPartnerPerformance(filters)}
               fetchData={() => fetchPartnerPerformanceReport(filters)}
               dateFieldHint="Uses created date"
+              isLast
             />
-          </div>
-        </div>
+          </ReportListGroup>
+        </ReportListPanel>
 
         <p className="text-[11px] text-muted-foreground text-center pt-2 flex items-center justify-center gap-1.5">
           <FileSpreadsheet className="h-3 w-3" />
