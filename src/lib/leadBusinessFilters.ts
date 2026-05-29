@@ -221,8 +221,8 @@ export function deriveEntryModeLabel(source_type: string | null | undefined, sou
 export function deriveSourceLabel(source_type: string | null | undefined, source_sub_type: string | null | undefined): string {
   if (source_type === "student_direct") return "Student Portal";
   if (source_sub_type === "university_referral") return "University Referral";
-  if (source_sub_type && /refer/i.test(source_sub_type)) return "Partner — Referral";
-  return "Partner — Direct";
+  if (source_sub_type && /refer/i.test(source_sub_type)) return "Partner - Referral";
+  return "Partner - Direct";
 }
 
 /** Derive the business "Region" label for a single lead row. */
