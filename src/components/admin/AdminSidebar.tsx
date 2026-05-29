@@ -35,6 +35,7 @@ const adminItems: NavItem[] = [
   { title: "Admin Dashboard", url: "/admin", icon: Shield, end: true, section: "dashboard" },
   { title: "Lead Queue", url: "/admin/leads", icon: Inbox, section: "lead_queue" },
   { title: "Reports", url: "/admin/reports", icon: FileSpreadsheet, section: "reports" },
+  { title: "Calendar", url: "/admin/calendar", icon: CalendarIcon, section: "calendar" },
 ];
 
 const leadOpsItems: NavItem[] = [
