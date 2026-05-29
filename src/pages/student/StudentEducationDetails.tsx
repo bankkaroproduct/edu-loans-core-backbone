@@ -22,7 +22,7 @@ import { normalizeAcademicScore, validateScoreTotalPair } from "@/lib/academicSc
 import { validateTestScoresMap } from "@/lib/leadScoreRanges";
 import { TEST_SCORE_LIMITS, clampTestScore } from "@/lib/testScoreLimits";
 import { ScoreTotalPair } from "@/components/shared/ScoreTotalPair";
-import { getEnabledLevels, getMirroredHighestQual } from "@/lib/academicLevelCascade";
+import { getEnabledLevels } from "@/lib/academicLevelCascade";
 
 interface UniversityRow { id: string; university_name: string; country: string }
 interface CourseRow { id: string; course_name: string; course_category: string | null }
