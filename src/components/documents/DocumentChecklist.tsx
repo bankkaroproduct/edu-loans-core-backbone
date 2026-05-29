@@ -269,25 +269,24 @@ export function DocumentChecklist({
                       const guidance = findGuidanceForDocument(displayName, docName);
                       if (!helper && !sample && !guidance) return null;
                       return (
-                        <div className="flex items-start gap-1.5 flex-wrap text-xs text-muted-foreground">
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                           {helper && <span className="leading-snug">{helper}</span>}
                           {sample && (
                             <button
                               type="button"
                               onClick={() => setSampleOpen(sample)}
-                              className="inline-flex items-center gap-1 text-primary hover:underline shrink-0"
+                              className="inline-flex items-center gap-1 rounded-full px-3 py-[5px] text-xs font-medium shrink-0 bg-[#E6F1FB] text-[#185FA5] dark:bg-[#185FA5]/25 dark:text-[#8FC1ED] hover:opacity-90 transition"
                             >
-                              <ImageIcon className="h-3 w-3" /> View Sample
+                              <ImageIcon className="h-3.5 w-3.5" /> View Sample
                             </button>
                           )}
-                          {sample && guidance && <span className="text-muted-foreground/60 shrink-0">|</span>}
                           {guidance && (
                             <button
                               type="button"
                               onClick={() => setGuidanceOpen(guidance)}
-                              className="inline-flex items-center gap-1 text-primary hover:underline shrink-0"
+                              className="inline-flex items-center gap-1 rounded-full px-3 py-[5px] text-xs font-medium shrink-0 bg-[#EEEDFE] text-[#534AB7] dark:bg-[#534AB7]/25 dark:text-[#B8B4F0] hover:opacity-90 transition"
                             >
-                              <HelpCircle className="h-3 w-3" /> How to get this document?
+                              <HelpCircle className="h-3.5 w-3.5" /> How to get this
                             </button>
                           )}
                         </div>
