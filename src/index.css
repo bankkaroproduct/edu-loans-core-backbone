@@ -611,9 +611,12 @@ All colors MUST be HSL.
 /* Aligned row heights across gutter + day columns */
 .cal-shell .rbc-timeslot-group { min-height:54px; border-bottom:1px solid var(--cal-border-2); }
 /* Kill ghost artifacts: events container strip, empty event shells, half-hour lines, duplicate column borders */
-.cal-shell .rbc-day-slot .rbc-events-container { margin-right:0; border:0; }
+.cal-shell .rbc-day-slot .rbc-events-container { margin-right:0; border:0; pointer-events:none; }
+.cal-shell .rbc-day-slot .rbc-events-container .rbc-event { pointer-events:auto; }
 .cal-shell .rbc-event:empty,
-.cal-shell .rbc-background-event:empty { display:none; }
+.cal-shell .rbc-background-event:empty,
+.cal-shell .rbc-day-slot .rbc-event:not(:has(.rbc-event-content:not(:empty))),
+.cal-shell .rbc-day-slot .rbc-background-event:not(:has(.rbc-event-content:not(:empty))) { display:none; }
 .cal-shell .rbc-day-slot .rbc-time-slot { border-top:0; }
 .cal-shell .rbc-time-content > * + * { border-left:1px solid var(--cal-border-2); }
 .cal-shell .rbc-day-slot { border-right:0; }
