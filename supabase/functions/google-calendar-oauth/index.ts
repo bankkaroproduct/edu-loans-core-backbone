@@ -139,7 +139,16 @@ Deno.serve(async (req) => {
       authUrl.searchParams.set("include_granted_scopes", "true");
       authUrl.searchParams.set("state", state);
 
-      return json({ authUrl: authUrl.toString() });
+      return json({
+        authUrl: authUrl.toString(),
+        _diag: {
+          client_id_prefix: GOOGLE_CLIENT_ID.slice(0, 10),
+          client_id_len: GOOGLE_CLIENT_ID.length,
+          had_whitespace: RAW_GOOGLE_CLIENT_ID !== GOOGLE_CLIENT_ID,
+          secret_len: GOOGLE_CLIENT_SECRET.length,
+          secret_had_whitespace: RAW_GOOGLE_CLIENT_SECRET !== GOOGLE_CLIENT_SECRET,
+        },
+      });
     }
 
     // -------- CALLBACK (Google redirects user-agent here) --------
