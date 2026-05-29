@@ -47,26 +47,34 @@ export default function AdminCalendar() {
         </p>
       </div>
 
-      <CalendarConnectCard connection={connection ?? null} myUserId={appUser.id} />
-
-      {isLoading ? null : connection ? (
-        isSuperAdmin ? (
-          <Tabs defaultValue="mine">
-            <TabsList>
-              <TabsTrigger value="mine">My Calendar</TabsTrigger>
-              <TabsTrigger value="team">Team Calendar</TabsTrigger>
-            </TabsList>
-            <TabsContent value="mine" className="mt-4">
-              <MyCalendarView userId={appUser.id} canCreate={canEdit("calendar")} />
-            </TabsContent>
-            <TabsContent value="team" className="mt-4">
-              <TeamCalendarView />
-            </TabsContent>
-          </Tabs>
-        ) : (
-          <MyCalendarView userId={appUser.id} canCreate={canEdit("calendar")} />
-        )
-      ) : null}
+      {isSuperAdmin ? (
+        <Tabs defaultValue="mine">
+          <TabsList>
+            <TabsTrigger value="mine">My Calendar</TabsTrigger>
+            <TabsTrigger value="team">Team Calendar</TabsTrigger>
+          </TabsList>
+          <TabsContent value="mine" className="mt-4 space-y-6">
+            {isLoading ? null : connection ? (
+              <>
+                <CalendarConnectCard connection={connection} myUserId={appUser.id} />
+                <MyCalendarView userId={appUser.id} canCreate={canEdit("calendar")} />
+              </>
+            ) : (
+              <CalendarConnectCard connection={null} myUserId={appUser.id} />
+            )}
+          </TabsContent>
+          <TabsContent value="team" className="mt-4">
+            <TeamCalendarView />
+          </TabsContent>
+        </Tabs>
+      ) : (
+        <>
+          <CalendarConnectCard connection={connection ?? null} myUserId={appUser.id} />
+          {isLoading ? null : connection ? (
+            <MyCalendarView userId={appUser.id} canCreate={canEdit("calendar")} />
+          ) : null}
+        </>
+      )}
     </div>
   );
 }
