@@ -55,6 +55,31 @@ export default function StudentEducationDetails() {
     if (!isVerified) { navigate("/student/login"); return; }
   }, [isVerified, navigate]);
 
+  // Clear hidden academic-score fields when the user changes Highest
+  // Qualification downward. Skips the first run so initially-loaded data
+  // is preserved until the user actively changes qualification.
+  const lastHQRef = useRef<string | null>(null);
+  useEffect(() => {
+    const hq = formData.highest_qualification ?? "";
+    if (lastHQRef.current === null) {
+      lastHQRef.current = hq;
+      return;
+    }
+    if (lastHQRef.current === hq) return;
+    lastHQRef.current = hq;
+    const en = getEnabledLevels(hq);
+    const ts = formData.test_scores as Record<string, unknown>;
+    if (!en.graduation) {
+      if (ts?.graduation) updateTestScore("graduation", "");
+      if (ts?.graduation_total) updateTestScore("graduation_total", "");
+    }
+    if (!en.highest_qualification) {
+      if (ts?.highest_qualification_score) updateTestScore("highest_qualification_score", "");
+      if (ts?.highest_qualification_total) updateTestScore("highest_qualification_total", "");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.highest_qualification]);
+
   useEffect(() => {
     supabase.from("intake_master").select("id, intake_term, intake_year").eq("active_flag", true).order("sort_order").then(({ data }) => {
       if (data) setIntakes(data);
