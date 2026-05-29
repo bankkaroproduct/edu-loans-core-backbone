@@ -426,6 +426,35 @@ export default function AddLead({ hideOwnHeader = false, containerClassName, adm
     setForm((prev) => ({ ...prev, ...patch }));
   };
 
+  // Clear academic-score fields that become hidden when the user changes
+  // Highest Qualification downward (e.g. Bachelor's → 12th clears graduation
+  // scores). Skips the first run so initially-loaded leads keep stored data
+  // until the user actively changes qualification.
+  const lastHQRef = useRef<string | null>(null);
+  useEffect(() => {
+    const hq = form.highest_qualification ?? "";
+    if (lastHQRef.current === null) {
+      lastHQRef.current = hq;
+      return;
+    }
+    if (lastHQRef.current === hq) return;
+    lastHQRef.current = hq;
+    const en = getEnabledLevels(hq);
+    const patch: Record<string, string> = {};
+    if (!en.graduation) {
+      if (form.graduation_score) patch.graduation_score = "";
+      if (form.graduation_total) patch.graduation_total = "";
+    }
+    if (!en.highest_qualification) {
+      if (form.highest_qualification_score) patch.highest_qualification_score = "";
+      if (form.highest_qualification_total) patch.highest_qualification_total = "";
+    }
+    if (Object.keys(patch).length > 0) {
+      setForm((prev) => ({ ...prev, ...patch }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.highest_qualification]);
+
   // Pincode auto-fill (only fires when 6 digits entered).
   // CRITICAL: If pincode changes to one that doesn't match (invalid or not-found),
   // clear district/state/tier we previously auto-filled — never carry forward stale.
