@@ -418,25 +418,24 @@ function DocReviewRow({
       </button>
 
       {(helperText || sample || guidance) && (
-        <div className="px-2.5 pb-2 -mt-1 flex items-start gap-1.5 flex-wrap text-xs text-muted-foreground">
+        <div className="px-2.5 pb-2 -mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           {helperText && <span className="leading-snug">{helperText}</span>}
           {sample && (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); setSampleOpen(true); }}
-              className="inline-flex items-center gap-1 text-primary hover:underline shrink-0"
+              className="inline-flex items-center gap-1 rounded-full px-3 py-[5px] text-xs font-medium shrink-0 bg-[#E6F1FB] text-[#185FA5] dark:bg-[#185FA5]/25 dark:text-[#8FC1ED] hover:opacity-90 transition"
             >
-              <ImageIcon className="h-3 w-3" /> View Sample
+              <ImageIcon className="h-3.5 w-3.5" /> View Sample
             </button>
           )}
-          {sample && guidance && <span className="text-muted-foreground/60 shrink-0">|</span>}
           {guidance && (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); setGuidanceOpen(true); }}
-              className="inline-flex items-center gap-1 text-primary hover:underline shrink-0"
+              className="inline-flex items-center gap-1 rounded-full px-3 py-[5px] text-xs font-medium shrink-0 bg-[#EEEDFE] text-[#534AB7] dark:bg-[#534AB7]/25 dark:text-[#B8B4F0] hover:opacity-90 transition"
             >
-              <HelpCircle className="h-3 w-3" /> How to get this document?
+              <HelpCircle className="h-3.5 w-3.5" /> How to get this
             </button>
           )}
         </div>
@@ -447,16 +446,29 @@ function DocReviewRow({
         const isActionable = ["not_uploaded", "rejected", "reupload_needed"].includes(status);
         if (!isActionable) return null;
         const isReupload = status === "rejected" || status === "reupload_needed";
+        if (isReupload) {
+          return (
+            <div className="px-2.5 pb-2.5 -mt-1 flex items-center gap-2 flex-wrap">
+              <Button
+                size="sm"
+                variant="destructive"
+                className="h-7 px-2 text-xs"
+                onClick={(e) => { e.stopPropagation(); setUploadOpen(true); }}
+              >
+                <Upload className="h-3 w-3 mr-1" /> Reupload
+              </Button>
+            </div>
+          );
+        }
         return (
-          <div className="px-2.5 pb-2.5 -mt-1 flex items-center gap-2 flex-wrap">
-            <Button
-              size="sm"
-              variant={isReupload ? "destructive" : "outline"}
-              className="h-7 px-2 text-xs"
+          <div className="px-2.5 pb-2.5 -mt-1 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
               onClick={(e) => { e.stopPropagation(); setUploadOpen(true); }}
+              className="inline-flex items-center gap-1 rounded-full px-3 py-[5px] text-xs font-medium shrink-0 bg-[#E1F5EE] text-[#0F6E56] dark:bg-[#0F6E56]/25 dark:text-[#7FD4B8] hover:opacity-90 transition"
             >
-              <Upload className="h-3 w-3 mr-1" /> {isReupload ? "Reupload" : "Upload on Behalf"}
-            </Button>
+              <Upload className="h-3.5 w-3.5" /> Upload on Behalf
+            </button>
           </div>
         );
       })()}
