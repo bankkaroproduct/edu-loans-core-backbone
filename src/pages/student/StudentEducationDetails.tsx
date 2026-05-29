@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { StudentStepLayout } from "@/components/student/StudentStepLayout";
 import { useStudentAuth } from "@/hooks/useStudentAuth";
@@ -22,7 +22,7 @@ import { normalizeAcademicScore, validateScoreTotalPair } from "@/lib/academicSc
 import { validateTestScoresMap } from "@/lib/leadScoreRanges";
 import { TEST_SCORE_LIMITS, clampTestScore } from "@/lib/testScoreLimits";
 import { ScoreTotalPair } from "@/components/shared/ScoreTotalPair";
-import { getEnabledLevels, getMirroredHighestQual } from "@/lib/academicLevelCascade";
+import { getEnabledLevels } from "@/lib/academicLevelCascade";
 
 interface UniversityRow { id: string; university_name: string; country: string }
 interface CourseRow { id: string; course_name: string; course_category: string | null }
@@ -54,6 +54,31 @@ export default function StudentEducationDetails() {
   useEffect(() => {
     if (!isVerified) { navigate("/student/login"); return; }
   }, [isVerified, navigate]);
+
+  // Clear hidden academic-score fields when the user changes Highest
+  // Qualification downward. Skips the first run so initially-loaded data
+  // is preserved until the user actively changes qualification.
+  const lastHQRef = useRef<string | null>(null);
+  useEffect(() => {
+    const hq = formData.highest_qualification ?? "";
+    if (lastHQRef.current === null) {
+      lastHQRef.current = hq;
+      return;
+    }
+    if (lastHQRef.current === hq) return;
+    lastHQRef.current = hq;
+    const en = getEnabledLevels(hq);
+    const ts = formData.test_scores as Record<string, unknown>;
+    if (!en.graduation) {
+      if (ts?.graduation) updateTestScore("graduation", "");
+      if (ts?.graduation_total) updateTestScore("graduation_total", "");
+    }
+    if (!en.highest_qualification) {
+      if (ts?.highest_qualification_score) updateTestScore("highest_qualification_score", "");
+      if (ts?.highest_qualification_total) updateTestScore("highest_qualification_total", "");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.highest_qualification]);
 
   useEffect(() => {
     supabase.from("intake_master").select("id, intake_term, intake_year").eq("active_flag", true).order("sort_order").then(({ data }) => {
@@ -299,11 +324,6 @@ export default function StudentEducationDetails() {
           </p>
           {(() => {
             const enabled = getEnabledLevels(formData.highest_qualification);
-            const mirrored = getMirroredHighestQual(formData.highest_qualification, {
-              tenth: formData.test_scores.tenth || "", tenth_total: formData.test_scores.tenth_total || "",
-              twelfth: formData.test_scores.twelfth || "", twelfth_total: formData.test_scores.twelfth_total || "",
-              graduation: formData.test_scores.graduation || "", graduation_total: formData.test_scores.graduation_total || "",
-            });
             return (
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5 sm:col-span-2">
@@ -314,64 +334,68 @@ export default function StudentEducationDetails() {
               </Select>
             </div>
 
-            <ScoreTotalPair
-              label="10th"
-              required
-              scoreKey="tenth"
-              totalKey="tenth_total"
-              scoreLabel="10th Score Obtained"
-              totalLabel="10th Total Marks"
-              scorePlaceholder="e.g. 85"
-              totalPlaceholder="e.g. 100"
-              scoreValue={formData.test_scores.tenth || ""}
-              totalValue={formData.test_scores.tenth_total || ""}
-              onScore={(v) => updateTestScore("tenth", v)}
-              onTotal={(v) => updateTestScore("tenth_total", v)}
-              disabled={!enabled.tenth}
-            />
-            <ScoreTotalPair
-              label="12th"
-              required
-              scoreKey="twelfth"
-              totalKey="twelfth_total"
-              scoreLabel="12th Score Obtained"
-              totalLabel="12th Total Marks"
-              scorePlaceholder="e.g. 88"
-              totalPlaceholder="e.g. 100"
-              scoreValue={formData.test_scores.twelfth || ""}
-              totalValue={formData.test_scores.twelfth_total || ""}
-              onScore={(v) => updateTestScore("twelfth", v)}
-              onTotal={(v) => updateTestScore("twelfth_total", v)}
-              disabled={!enabled.twelfth}
-            />
-            <ScoreTotalPair
-              label="Graduation"
-              scoreKey="graduation"
-              totalKey="graduation_total"
-              scoreLabel="Graduation Score Obtained"
-              totalLabel="Graduation Total Marks / CGPA Scale"
-              scorePlaceholder="e.g. 7.8"
-              totalPlaceholder="e.g. 10"
-              scoreValue={formData.test_scores.graduation || ""}
-              totalValue={formData.test_scores.graduation_total || ""}
-              onScore={(v) => updateTestScore("graduation", v)}
-              onTotal={(v) => updateTestScore("graduation_total", v)}
-              disabled={!enabled.graduation}
-            />
-            <ScoreTotalPair
-              label="Highest Qualification"
-              scoreKey="highest_qualification_score"
-              totalKey="highest_qualification_total"
-              scoreLabel="Highest Qualification Score Obtained"
-              totalLabel="Highest Qualification Total Marks / CGPA Scale"
-              scorePlaceholder="e.g. 8.5"
-              totalPlaceholder="e.g. 10"
-              scoreValue={enabled.highest_qualification ? (formData.test_scores.highest_qualification_score || "") : mirrored.score}
-              totalValue={enabled.highest_qualification ? (formData.test_scores.highest_qualification_total || "") : mirrored.total}
-              onScore={(v) => updateTestScore("highest_qualification_score", v)}
-              onTotal={(v) => updateTestScore("highest_qualification_total", v)}
-              disabled={!enabled.highest_qualification}
-            />
+            {enabled.tenth && (
+              <ScoreTotalPair
+                label="10th"
+                required
+                scoreKey="tenth"
+                totalKey="tenth_total"
+                scoreLabel="10th Score Obtained"
+                totalLabel="10th Total Marks"
+                scorePlaceholder="e.g. 85"
+                totalPlaceholder="e.g. 100"
+                scoreValue={formData.test_scores.tenth || ""}
+                totalValue={formData.test_scores.tenth_total || ""}
+                onScore={(v) => updateTestScore("tenth", v)}
+                onTotal={(v) => updateTestScore("tenth_total", v)}
+              />
+            )}
+            {enabled.twelfth && (
+              <ScoreTotalPair
+                label="12th"
+                required
+                scoreKey="twelfth"
+                totalKey="twelfth_total"
+                scoreLabel="12th Score Obtained"
+                totalLabel="12th Total Marks"
+                scorePlaceholder="e.g. 88"
+                totalPlaceholder="e.g. 100"
+                scoreValue={formData.test_scores.twelfth || ""}
+                totalValue={formData.test_scores.twelfth_total || ""}
+                onScore={(v) => updateTestScore("twelfth", v)}
+                onTotal={(v) => updateTestScore("twelfth_total", v)}
+              />
+            )}
+            {enabled.graduation && (
+              <ScoreTotalPair
+                label="Graduation"
+                scoreKey="graduation"
+                totalKey="graduation_total"
+                scoreLabel="Graduation Score Obtained"
+                totalLabel="Graduation Total Marks / CGPA Scale"
+                scorePlaceholder="e.g. 7.8"
+                totalPlaceholder="e.g. 10"
+                scoreValue={formData.test_scores.graduation || ""}
+                totalValue={formData.test_scores.graduation_total || ""}
+                onScore={(v) => updateTestScore("graduation", v)}
+                onTotal={(v) => updateTestScore("graduation_total", v)}
+              />
+            )}
+            {enabled.highest_qualification && (
+              <ScoreTotalPair
+                label="Highest Qualification"
+                scoreKey="highest_qualification_score"
+                totalKey="highest_qualification_total"
+                scoreLabel="Highest Qualification Score Obtained"
+                totalLabel="Highest Qualification Total Marks / CGPA Scale"
+                scorePlaceholder="e.g. 8.5"
+                totalPlaceholder="e.g. 10"
+                scoreValue={formData.test_scores.highest_qualification_score || ""}
+                totalValue={formData.test_scores.highest_qualification_total || ""}
+                onScore={(v) => updateTestScore("highest_qualification_score", v)}
+                onTotal={(v) => updateTestScore("highest_qualification_total", v)}
+              />
+            )}
             <p className="text-xs text-muted-foreground sm:col-span-2">
               Highest Qualification, 10th and 12th are required. Graduation and Highest Qualification Score are optional. Total Marks / Scale is optional but recommended for accurate scoring.
             </p>
