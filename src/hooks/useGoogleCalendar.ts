@@ -51,29 +51,6 @@ export function useTeamGoogleConnections(enabled: boolean) {
   });
 }
 
-export function useCalendarEvents(
-  userId: string | undefined,
-  fromIso: string,
-  toIso: string,
-  enabled = true,
-) {
-  return useQuery({
-    queryKey: ["gcal-events", userId, fromIso, toIso],
-    enabled: enabled && !!userId,
-    staleTime: 60_000,
-    queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("google-calendar-events", {
-        method: "GET",
-        body: undefined,
-        // pass params via headers? Use direct fetch instead for query params:
-      });
-      if (!error && data) return data as { items: GCalEvent[] };
-      // Fall back to direct fetch with query string (functions.invoke doesn't add query params).
-      throw error ?? new Error("unknown_error");
-    },
-  });
-}
-
 /** Direct-fetch helper because supabase.functions.invoke doesn't support query strings. */
 export async function fetchCalendarEvents(
   userId: string,
