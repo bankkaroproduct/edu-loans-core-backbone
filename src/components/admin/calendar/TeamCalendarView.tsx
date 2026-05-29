@@ -3,10 +3,7 @@ import { Calendar, dateFnsLocalizer, type View } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay, startOfMonth, endOfMonth } from "date-fns";
 import { enUS } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { RefreshCw, Loader2 } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
+import { RefreshCw, Loader2, Check, AlertCircle, X } from "lucide-react";
 import {
   useTeamGoogleConnections,
   fetchCalendarEvents,
@@ -14,6 +11,7 @@ import {
   type GCalEvent,
 } from "@/hooks/useGoogleCalendar";
 import { useQuery } from "@tanstack/react-query";
+import { CalShellToolbar, stackedDayHeader } from "./CalShellToolbar";
 
 const locales = { "en-US": enUS };
 const localizer = dateFnsLocalizer({
@@ -24,11 +22,19 @@ const localizer = dateFnsLocalizer({
   locales,
 });
 
-// Deterministic color per user (HSL from semantic primary range).
 function colorFor(userId: string): string {
   let h = 0;
   for (let i = 0; i < userId.length; i++) h = (h * 31 + userId.charCodeAt(i)) % 360;
   return `hsl(${h}, 65%, 55%)`;
+}
+
+function initialsOf(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? "")
+    .join("");
 }
 
 export function TeamCalendarView() {
@@ -86,7 +92,7 @@ export function TeamCalendarView() {
       const owner = connections?.find((c) => c.user_id === uid);
       return {
         id: `${uid}:${ev.id}`,
-        title: `${ev.summary}${owner ? ` — ${owner.google_name ?? owner.google_email}` : ""}`,
+        title: `${ev.summary}${owner ? ` - ${owner.google_name ?? owner.google_email}` : ""}`,
         start, end, allDay,
         resource: { ev, uid, color: colorFor(uid) },
       };
@@ -101,73 +107,135 @@ export function TeamCalendarView() {
     });
   };
 
+  const today = useMemo(() => new Date(), []);
+  const scrollToTime = useMemo(() => new Date(0, 0, 0, 8, 0, 0), []);
+
+  // Render-only dismissal: cleared automatically whenever a new errors payload arrives.
+  const errorCount = teamQuery.data?.errors?.length ?? 0;
+  const [dismissedKey, setDismissedKey] = useState<string | null>(null);
+  const errorKey = teamQuery.data?.errors
+    ? teamQuery.data.errors.map((e) => e.uid).sort().join("|")
+    : null;
+  const showError = errorCount > 0 && errorKey !== dismissedKey;
+
   return (
-    <Card className="p-4">
-      <div className="flex items-center justify-between mb-4 gap-2">
-        <h2 className="text-lg font-semibold">Team Calendar</h2>
-        <Button size="sm" variant="outline" onClick={refresh} disabled={teamQuery.isFetching}>
-          {teamQuery.isFetching ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <RefreshCw className="h-4 w-4 mr-2" />
-          )}
-          Sync now
-        </Button>
-      </div>
-
-      {connLoading ? (
-        <div className="text-sm text-muted-foreground">Loading team connections…</div>
-      ) : (connections?.length ?? 0) === 0 ? (
-        <div className="text-sm text-muted-foreground">
-          No admins have connected their Google Calendar yet.
+    <div className="cal-shell">
+      <div className="cal-shell__panel">
+        <div className="cal-shell__panel-head">
+          <h2 className="cal-shell__panel-title">Team Calendar</h2>
+          <button
+            type="button"
+            className="cal-shell__sync"
+            onClick={refresh}
+            disabled={teamQuery.isFetching}
+          >
+            {teamQuery.isFetching ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+            Sync now
+          </button>
         </div>
-      ) : (
-        <>
-          <div className="flex flex-wrap gap-3 mb-4">
-            {connections!.map((c) => (
-              <label key={c.user_id} className="flex items-center gap-2 text-sm">
-                <Checkbox
-                  checked={selected.has(c.user_id)}
-                  onCheckedChange={() => toggle(c.user_id)}
-                />
-                <span
-                  className="inline-block h-3 w-3 rounded-full"
-                  style={{ backgroundColor: colorFor(c.user_id) }}
-                />
-                <span>{c.google_name ?? c.google_email}</span>
-              </label>
-            ))}
+
+        {connLoading ? (
+          <div style={{ padding: 22, fontSize: 13, color: "var(--cal-fg-3)" }}>
+            Loading team connections…
           </div>
-
-          {teamQuery.data?.errors?.length ? (
-            <div className="mb-3 p-3 rounded-md bg-destructive/10 text-destructive text-xs">
-              Could not load events for {teamQuery.data.errors.length} admin(s).
-            </div>
-          ) : null}
-
-          <div style={{ height: 680 }}>
-            <Calendar
-              localizer={localizer}
-              events={events}
-              view={view}
-              onView={setView}
-              date={date}
-              onNavigate={setDate}
-              views={["month", "week", "day", "agenda"]}
-              min={new Date(2024, 0, 1, 7, 0)}
-              max={new Date(2024, 0, 1, 22, 0)}
-              step={30}
-              timeslots={2}
-              eventPropGetter={(event) => ({
-                style: {
-                  backgroundColor: (event.resource as { color: string }).color,
-                  border: "none",
-                },
+        ) : (connections?.length ?? 0) === 0 ? (
+          <div style={{ padding: 22, fontSize: 13, color: "var(--cal-fg-3)" }}>
+            No admins have connected their Google Calendar yet.
+          </div>
+        ) : (
+          <div className="cal-shell__split">
+            <aside className="cal-shell__rail">
+              <p className="cal-shell__rail-label">Team Members</p>
+              {connections!.map((c) => {
+                const on = selected.has(c.user_id);
+                const color = colorFor(c.user_id);
+                const name = c.google_name ?? c.google_email;
+                return (
+                  <button
+                    key={c.user_id}
+                    type="button"
+                    className="cal-shell__rail-row"
+                    onClick={() => toggle(c.user_id)}
+                    aria-pressed={on}
+                  >
+                    <span
+                      className="cal-shell__rail-check"
+                      data-on={on}
+                      style={on ? { background: color } : undefined}
+                    >
+                      {on && <Check />}
+                    </span>
+                    <span
+                      className="cal-shell__rail-avatar"
+                      style={{ background: color }}
+                    >
+                      {initialsOf(name)}
+                    </span>
+                    <span className="cal-shell__rail-name">{name}</span>
+                  </button>
+                );
               })}
-            />
+            </aside>
+
+            <div className="cal-shell__right">
+              {showError && (
+                <div className="cal-shell__error" role="alert">
+                  <AlertCircle className="cal-shell__error-icon" />
+                  <span className="cal-shell__error-text">
+                    Could not load events for {errorCount} admin(s).
+                  </span>
+                  <button
+                    type="button"
+                    className="cal-shell__error-close"
+                    aria-label="Dismiss"
+                    onClick={() => setDismissedKey(errorKey)}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+
+              <div className="cal-shell__cal">
+                <Calendar
+                  localizer={localizer}
+                  events={events}
+                  view={view}
+                  onView={setView}
+                  date={date}
+                  onNavigate={setDate}
+                  views={["month", "week", "day", "agenda"]}
+                  min={new Date(2024, 0, 1, 7, 0)}
+                  max={new Date(2024, 0, 1, 22, 0)}
+                  scrollToTime={scrollToTime}
+                  step={30}
+                  timeslots={2}
+                  components={{
+                    toolbar: CalShellToolbar,
+                    week: {
+                      header: ({ date: d }) => {
+                        const { dow, d: dd, isToday } = stackedDayHeader(d, today);
+                        return (
+                          <div className="rbc-day-header-stacked" data-today={isToday}>
+                            <span className="dow">{dow}</span>
+                            <span className="date">{dd}</span>
+                          </div>
+                        );
+                      },
+                    },
+                  }}
+                  eventPropGetter={(event) => ({
+                    style: {
+                      backgroundColor: (event.resource as { color: string }).color,
+                      border: "none",
+                    },
+                  })}
+                />
+                <div className="cal-shell__fade" />
+              </div>
+            </div>
           </div>
-        </>
-      )}
-    </Card>
+        )}
+      </div>
+    </div>
   );
 }
