@@ -104,6 +104,12 @@ export function StudentAuthProvider({ children }: { children: ReactNode }) {
     try {
       const { error } = await supabase.auth.signInWithOtp({ phone });
       if (error) {
+        // Rate-limit short-circuit — surface lockout UI, skip toast spam.
+        if (isOtpRateLimit(error as any)) {
+          setState(s => ({ ...s, otpState: "idle" }));
+          triggerLockout();
+          return;
+        }
         // Provider unavailable in preview/dev → engage demo fallback so the student flow stays testable.
         const msg = (error.message || "").toLowerCase();
         const isProviderDisabled =
