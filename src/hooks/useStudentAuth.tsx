@@ -81,6 +81,12 @@ export function StudentAuthProvider({ children }: { children: ReactNode }) {
     return null;
   });
 
+  const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
+  const clearLockout = useCallback(() => setLockoutUntil(null), []);
+  const triggerLockout = useCallback(() => {
+    setLockoutUntil(Date.now() + 15 * 60 * 1000);
+  }, []);
+
   const persist = useCallback((newState: StudentAuthState) => {
     setState(newState);
     sessionStorage.setItem("student_auth", JSON.stringify(newState));
