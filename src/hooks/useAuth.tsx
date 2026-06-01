@@ -24,6 +24,14 @@ interface SignInOptions {
   expect: ExpectPortal;
 }
 
+interface SignInResult {
+  error: string | null;
+  /** Set to "rate_limited" when Lovable Cloud Auth returned HTTP 429. */
+  code?: "rate_limited";
+  /** Seconds to wait before retry when rate-limited. Default 900 (15 min). */
+  retryAfterSec?: number;
+}
+
 interface AuthContextType {
   status: AuthStatus;
   user: User | null;
