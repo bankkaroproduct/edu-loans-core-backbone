@@ -192,8 +192,8 @@ export default function AdminLogin() {
               </div>
             </div>
 
-            <button type="submit" className="al-submit" disabled={submitting}>
-              {submitting ? "Verifying admin access..." : (
+            <button type="submit" className="al-submit" disabled={submitting || isLocked}>
+              {submitting ? "Verifying admin access..." : isLocked ? "Temporarily locked" : (
                 <>
                   Sign in to Admin Console
                   <ArrowRight size={16} strokeWidth={2.25} />
