@@ -217,8 +217,8 @@ function LoginForm() {
           </button>
         </div>
       </div>
-      <button type="submit" className="pl-submit" disabled={submitting}>
-        {submitting ? "Signing in..." : (
+      <button type="submit" className="pl-submit" disabled={submitting || isLocked}>
+        {submitting ? "Signing in..." : isLocked ? "Temporarily locked" : (
           <>
             Sign in
             <ArrowRight size={16} strokeWidth={2.25} />
