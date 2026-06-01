@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, readSoftCounter, SOFT_LIMITS } from "@/hooks/useAuth";
+import { LockoutNotice } from "@/components/auth/LockoutNotice";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import {
