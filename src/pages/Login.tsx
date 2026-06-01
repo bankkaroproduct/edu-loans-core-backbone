@@ -119,9 +119,14 @@ function LoginForm() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [unlockAt, setUnlockAt] = useState<number | null>(null);
+  const [attemptsUsed, setAttemptsUsed] = useState<number>(0);
+
+  const isLocked = unlockAt !== null && unlockAt > Date.now();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLocked) return;
     setErrorMsg(null);
     setSubmitting(true);
 
@@ -140,9 +145,16 @@ function LoginForm() {
     }
     email = email.toLowerCase();
 
-    const { error } = await signIn(email, password, { expect: "partner" });
-    if (error) {
-      setErrorMsg(error);
+    const result = await signIn(email, password, { expect: "partner" });
+    if (result.code === "rate_limited") {
+      setUnlockAt(Date.now() + (result.retryAfterSec ?? 900) * 1000);
+      setErrorMsg(null);
+      setSubmitting(false);
+      return;
+    }
+    if (result.error) {
+      setErrorMsg(result.error);
+      setAttemptsUsed(readSoftCounter(email)?.count ?? 0);
       setSubmitting(false);
       return;
     }
