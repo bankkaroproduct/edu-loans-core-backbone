@@ -119,8 +119,8 @@ export default function StudentLogin() {
                   )}
                 </div>
 
-                <Button type="submit" size="lg" className="w-full text-base" disabled={otp.length !== 6 || isVerifying}>
-                  {isVerifying ? "Verifying…" : "Verify & Continue"}
+                <Button type="submit" size="lg" className="w-full text-base" disabled={otp.length !== 6 || isVerifying || isLocked}>
+                  {isVerifying ? "Verifying…" : isLocked ? "Temporarily locked" : "Verify & Continue"}
                 </Button>
               </form>
             )}
