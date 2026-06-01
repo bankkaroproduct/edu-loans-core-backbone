@@ -7,11 +7,12 @@ import { Input } from "@/components/ui/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useStudentAuth } from "@/hooks/useStudentAuth";
+import { LockoutNotice } from "@/components/auth/LockoutNotice";
 import { ArrowLeft, Shield, Compass, BookOpen, RefreshCw } from "lucide-react";
 
 export default function StudentLogin() {
   const navigate = useNavigate();
-  const { sendOtp, verifyOtp, resetOtp, otpState, phone, eligibilityData } = useStudentAuth();
+  const { sendOtp, verifyOtp, resetOtp, otpState, phone, eligibilityData, lockoutUntil, clearLockout } = useStudentAuth();
   const [phoneInput, setPhoneInput] = useState(eligibilityData?.mobile || "");
   const [otp, setOtp] = useState("");
 
@@ -31,6 +32,7 @@ export default function StudentLogin() {
   const isOtpSent = otpState === "otp_sent" || otpState === "verifying";
   const isSending = otpState === "sending";
   const isVerifying = otpState === "verifying";
+  const isLocked = lockoutUntil !== null && lockoutUntil > Date.now();
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-primary/[0.02] via-background to-primary/[0.04]">
@@ -55,6 +57,11 @@ export default function StudentLogin() {
           <CardContent>
             {!isOtpSent ? (
               <form onSubmit={handleSendOtp} className="space-y-5">
+                {isLocked ? (
+                  <LockoutNotice kind="locked" unlockAt={lockoutUntil!} onUnlock={clearLockout} />
+                ) : (
+                  <LockoutNotice kind="hidden" />
+                )}
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-foreground">Mobile Number</label>
                   <div className="flex">
@@ -68,12 +75,17 @@ export default function StudentLogin() {
                     />
                   </div>
                 </div>
-                <Button type="submit" size="lg" className="w-full text-base" disabled={phoneInput.length !== 10 || isSending}>
-                  {isSending ? "Sending OTP…" : "Send OTP"}
+                <Button type="submit" size="lg" className="w-full text-base" disabled={phoneInput.length !== 10 || isSending || isLocked}>
+                  {isSending ? "Sending OTP…" : isLocked ? "Temporarily locked" : "Send OTP"}
                 </Button>
               </form>
             ) : (
               <form onSubmit={handleVerify} className="space-y-5">
+                {isLocked ? (
+                  <LockoutNotice kind="locked" unlockAt={lockoutUntil!} onUnlock={clearLockout} />
+                ) : (
+                  <LockoutNotice kind="hidden" />
+                )}
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">
                     OTP sent to <span className="font-medium text-foreground">+91 {phone?.slice(-10)}</span>
@@ -107,8 +119,8 @@ export default function StudentLogin() {
                   )}
                 </div>
 
-                <Button type="submit" size="lg" className="w-full text-base" disabled={otp.length !== 6 || isVerifying}>
-                  {isVerifying ? "Verifying…" : "Verify & Continue"}
+                <Button type="submit" size="lg" className="w-full text-base" disabled={otp.length !== 6 || isVerifying || isLocked}>
+                  {isVerifying ? "Verifying…" : isLocked ? "Temporarily locked" : "Verify & Continue"}
                 </Button>
               </form>
             )}

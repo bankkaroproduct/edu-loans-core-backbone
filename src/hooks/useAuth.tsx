@@ -24,15 +24,64 @@ interface SignInOptions {
   expect: ExpectPortal;
 }
 
+interface SignInResult {
+  error: string | null;
+  /** Set to "rate_limited" when Lovable Cloud Auth returned HTTP 429. */
+  code?: "rate_limited";
+  /** Seconds to wait before retry when rate-limited. Default 900 (15 min). */
+  retryAfterSec?: number;
+}
+
 interface AuthContextType {
   status: AuthStatus;
   user: User | null;
   appUser: AppUser | null;
   /** @deprecated use `status === "initializing"` */
   loading: boolean;
-  signIn: (email: string, password: string, opts: SignInOptions) => Promise<{ error: string | null }>;
+  signIn: (email: string, password: string, opts: SignInOptions) => Promise<SignInResult>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
+}
+
+/**
+ * Soft client-side attempt counter — cosmetic UX only, NOT a security control.
+ * Real rate-limiting is enforced by Lovable Cloud Auth at the server (HTTP 429).
+ * Anyone clearing sessionStorage bypasses this counter; that's fine.
+ */
+const SOFT_COUNTER_WINDOW_MS = 15 * 60 * 1000;
+const SOFT_COUNTER_MAX = 5;
+function softCounterKey(email: string) {
+  return `login_attempts:${email.toLowerCase()}`;
+}
+export function readSoftCounter(email: string): { count: number; firstAt: number } | null {
+  try {
+    const raw = sessionStorage.getItem(softCounterKey(email));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { count: number; firstAt: number };
+    if (Date.now() - parsed.firstAt > SOFT_COUNTER_WINDOW_MS) {
+      sessionStorage.removeItem(softCounterKey(email));
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+function bumpSoftCounter(email: string) {
+  const cur = readSoftCounter(email);
+  const next = cur ? { count: cur.count + 1, firstAt: cur.firstAt } : { count: 1, firstAt: Date.now() };
+  sessionStorage.setItem(softCounterKey(email), JSON.stringify(next));
+}
+export function clearSoftCounter(email: string) {
+  sessionStorage.removeItem(softCounterKey(email));
+}
+export const SOFT_LIMITS = { max: SOFT_COUNTER_MAX, windowMs: SOFT_COUNTER_WINDOW_MS };
+
+function isRateLimitError(err: { message?: string; status?: number } | null | undefined): boolean {
+  if (!err) return false;
+  if (err.status === 429) return true;
+  const msg = (err.message || "").toLowerCase();
+  return msg.includes("rate limit") || msg.includes("too many");
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -155,6 +204,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setAppUser(null);
       setStatus("anonymous");
+
+      // Lovable Cloud Auth returned 429 — surface a structured rate-limit code
+      // so login screens can render the lockout notice with a countdown.
+      if (isRateLimitError(error as any)) {
+        return {
+          error: "Too many sign-in attempts. Please wait a few minutes and try again.",
+          code: "rate_limited" as const,
+          retryAfterSec: 15 * 60,
+        };
+      }
+
+      // Bad-credentials / other auth failure → bump the cosmetic soft counter.
+      bumpSoftCounter(email);
       return { error: error?.message ?? "Could not establish session. Please try again." };
     }
 
@@ -202,6 +264,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data.user);
     setAppUser(profile);
     setStatus("authenticated");
+    clearSoftCounter(email);
     return { error: null };
   };
 

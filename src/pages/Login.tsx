@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, readSoftCounter, SOFT_LIMITS } from "@/hooks/useAuth";
+import { LockoutNotice } from "@/components/auth/LockoutNotice";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -118,9 +119,14 @@ function LoginForm() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [unlockAt, setUnlockAt] = useState<number | null>(null);
+  const [attemptsUsed, setAttemptsUsed] = useState<number>(0);
+
+  const isLocked = unlockAt !== null && unlockAt > Date.now();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLocked) return;
     setErrorMsg(null);
     setSubmitting(true);
 
@@ -139,9 +145,16 @@ function LoginForm() {
     }
     email = email.toLowerCase();
 
-    const { error } = await signIn(email, password, { expect: "partner" });
-    if (error) {
-      setErrorMsg(error);
+    const result = await signIn(email, password, { expect: "partner" });
+    if (result.code === "rate_limited") {
+      setUnlockAt(Date.now() + (result.retryAfterSec ?? 900) * 1000);
+      setErrorMsg(null);
+      setSubmitting(false);
+      return;
+    }
+    if (result.error) {
+      setErrorMsg(result.error);
+      setAttemptsUsed(readSoftCounter(email)?.count ?? 0);
       setSubmitting(false);
       return;
     }
@@ -152,7 +165,14 @@ function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="pl-form">
-      {errorMsg && (
+      {isLocked ? (
+        <LockoutNotice kind="locked" unlockAt={unlockAt!} onUnlock={() => setUnlockAt(null)} />
+      ) : attemptsUsed >= 2 ? (
+        <LockoutNotice kind="soft" attemptsUsed={attemptsUsed} maxAttempts={SOFT_LIMITS.max} />
+      ) : (
+        <LockoutNotice kind="hidden" />
+      )}
+      {errorMsg && !isLocked && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>{errorMsg}</AlertDescription>
@@ -197,8 +217,8 @@ function LoginForm() {
           </button>
         </div>
       </div>
-      <button type="submit" className="pl-submit" disabled={submitting}>
-        {submitting ? "Signing in..." : (
+      <button type="submit" className="pl-submit" disabled={submitting || isLocked}>
+        {submitting ? "Signing in..." : isLocked ? "Temporarily locked" : (
           <>
             Sign in
             <ArrowRight size={16} strokeWidth={2.25} />

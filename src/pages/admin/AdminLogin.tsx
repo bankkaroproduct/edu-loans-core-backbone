@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, readSoftCounter, SOFT_LIMITS } from "@/hooks/useAuth";
+import { LockoutNotice } from "@/components/auth/LockoutNotice";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import {
@@ -30,16 +31,30 @@ export default function AdminLogin() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [unlockAt, setUnlockAt] = useState<number | null>(null);
+  const [attemptsUsed, setAttemptsUsed] = useState<number>(
+    () => readSoftCounter(email || "")?.count ?? 0
+  );
+
+  const isLocked = unlockAt !== null && unlockAt > Date.now();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLocked) return;
     setErrorMsg(null);
     setSubmitting(true);
 
     const normalizedEmail = email.trim().toLowerCase();
-    const { error } = await signIn(normalizedEmail, password, { expect: "admin" });
-    if (error) {
-      setErrorMsg(error);
+    const result = await signIn(normalizedEmail, password, { expect: "admin" });
+    if (result.code === "rate_limited") {
+      setUnlockAt(Date.now() + (result.retryAfterSec ?? 900) * 1000);
+      setErrorMsg(null);
+      setSubmitting(false);
+      return;
+    }
+    if (result.error) {
+      setErrorMsg(result.error);
+      setAttemptsUsed(readSoftCounter(normalizedEmail)?.count ?? 0);
       setSubmitting(false);
       return;
     }
@@ -122,7 +137,14 @@ export default function AdminLogin() {
           </p>
 
           <form onSubmit={handleSubmit} className="al-form">
-            {errorMsg && (
+            {isLocked ? (
+              <LockoutNotice kind="locked" unlockAt={unlockAt!} onUnlock={() => setUnlockAt(null)} />
+            ) : attemptsUsed >= 2 ? (
+              <LockoutNotice kind="soft" attemptsUsed={attemptsUsed} maxAttempts={SOFT_LIMITS.max} />
+            ) : (
+              <LockoutNotice kind="hidden" />
+            )}
+            {errorMsg && !isLocked && (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>{errorMsg}</AlertDescription>
@@ -170,8 +192,8 @@ export default function AdminLogin() {
               </div>
             </div>
 
-            <button type="submit" className="al-submit" disabled={submitting}>
-              {submitting ? "Verifying admin access..." : (
+            <button type="submit" className="al-submit" disabled={submitting || isLocked}>
+              {submitting ? "Verifying admin access..." : isLocked ? "Temporarily locked" : (
                 <>
                   Sign in to Admin Console
                   <ArrowRight size={16} strokeWidth={2.25} />

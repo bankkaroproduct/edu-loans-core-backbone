@@ -41,6 +41,16 @@ interface StudentAuthContextType extends StudentAuthState {
   eligibilityData: EligibilityData | null;
   /** Re-fetch leads for the currently verified phone and push into context. */
   refreshLeads: () => Promise<void>;
+  /** Epoch ms when the user can attempt again after a rate-limit response. */
+  lockoutUntil: number | null;
+  clearLockout: () => void;
+}
+
+function isOtpRateLimit(err: { message?: string; status?: number } | null | undefined): boolean {
+  if (!err) return false;
+  if (err.status === 429) return true;
+  const msg = (err.message || "").toLowerCase();
+  return msg.includes("rate limit") || msg.includes("too many") || msg.includes("for security purposes");
 }
 
 export interface EligibilityData {
@@ -71,6 +81,12 @@ export function StudentAuthProvider({ children }: { children: ReactNode }) {
     return null;
   });
 
+  const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
+  const clearLockout = useCallback(() => setLockoutUntil(null), []);
+  const triggerLockout = useCallback(() => {
+    setLockoutUntil(Date.now() + 15 * 60 * 1000);
+  }, []);
+
   const persist = useCallback((newState: StudentAuthState) => {
     setState(newState);
     sessionStorage.setItem("student_auth", JSON.stringify(newState));
@@ -88,6 +104,12 @@ export function StudentAuthProvider({ children }: { children: ReactNode }) {
     try {
       const { error } = await supabase.auth.signInWithOtp({ phone });
       if (error) {
+        // Rate-limit short-circuit — surface lockout UI, skip toast spam.
+        if (isOtpRateLimit(error as any)) {
+          setState(s => ({ ...s, otpState: "idle" }));
+          triggerLockout();
+          return;
+        }
         // Provider unavailable in preview/dev → engage demo fallback so the student flow stays testable.
         const msg = (error.message || "").toLowerCase();
         const isProviderDisabled =
@@ -161,6 +183,11 @@ export function StudentAuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) {
+        if (isOtpRateLimit(error as any)) {
+          setState(s => ({ ...s, otpState: "otp_sent" }));
+          triggerLockout();
+          return false;
+        }
         setState(s => ({ ...s, otpState: "otp_sent" }));
         toast({
           title: "Verification failed",
@@ -218,6 +245,8 @@ export function StudentAuthProvider({ children }: { children: ReactNode }) {
         eligibilityData,
         setEligibilityData: handleSetEligibilityData,
         refreshLeads,
+        lockoutUntil,
+        clearLockout,
       }}
     >
       {children}
