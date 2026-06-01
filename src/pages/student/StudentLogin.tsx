@@ -57,6 +57,11 @@ export default function StudentLogin() {
           <CardContent>
             {!isOtpSent ? (
               <form onSubmit={handleSendOtp} className="space-y-5">
+                {isLocked ? (
+                  <LockoutNotice kind="locked" unlockAt={lockoutUntil!} onUnlock={clearLockout} />
+                ) : (
+                  <LockoutNotice kind="hidden" />
+                )}
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-foreground">Mobile Number</label>
                   <div className="flex">
@@ -70,8 +75,8 @@ export default function StudentLogin() {
                     />
                   </div>
                 </div>
-                <Button type="submit" size="lg" className="w-full text-base" disabled={phoneInput.length !== 10 || isSending}>
-                  {isSending ? "Sending OTP…" : "Send OTP"}
+                <Button type="submit" size="lg" className="w-full text-base" disabled={phoneInput.length !== 10 || isSending || isLocked}>
+                  {isSending ? "Sending OTP…" : isLocked ? "Temporarily locked" : "Send OTP"}
                 </Button>
               </form>
             ) : (
