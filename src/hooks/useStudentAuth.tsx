@@ -41,6 +41,16 @@ interface StudentAuthContextType extends StudentAuthState {
   eligibilityData: EligibilityData | null;
   /** Re-fetch leads for the currently verified phone and push into context. */
   refreshLeads: () => Promise<void>;
+  /** Epoch ms when the user can attempt again after a rate-limit response. */
+  lockoutUntil: number | null;
+  clearLockout: () => void;
+}
+
+function isOtpRateLimit(err: { message?: string; status?: number } | null | undefined): boolean {
+  if (!err) return false;
+  if (err.status === 429) return true;
+  const msg = (err.message || "").toLowerCase();
+  return msg.includes("rate limit") || msg.includes("too many") || msg.includes("for security purposes");
 }
 
 export interface EligibilityData {
