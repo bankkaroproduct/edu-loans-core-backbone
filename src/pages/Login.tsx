@@ -165,7 +165,14 @@ function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="pl-form">
-      {errorMsg && (
+      {isLocked ? (
+        <LockoutNotice kind="locked" unlockAt={unlockAt!} onUnlock={() => setUnlockAt(null)} />
+      ) : attemptsUsed >= 2 ? (
+        <LockoutNotice kind="soft" attemptsUsed={attemptsUsed} maxAttempts={SOFT_LIMITS.max} />
+      ) : (
+        <LockoutNotice kind="hidden" />
+      )}
+      {errorMsg && !isLocked && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>{errorMsg}</AlertDescription>
