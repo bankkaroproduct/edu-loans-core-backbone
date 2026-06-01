@@ -32,6 +32,7 @@ export default function StudentLogin() {
   const isOtpSent = otpState === "otp_sent" || otpState === "verifying";
   const isSending = otpState === "sending";
   const isVerifying = otpState === "verifying";
+  const isLocked = lockoutUntil !== null && lockoutUntil > Date.now();
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-primary/[0.02] via-background to-primary/[0.04]">
