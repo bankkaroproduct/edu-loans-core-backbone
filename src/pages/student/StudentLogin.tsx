@@ -81,6 +81,11 @@ export default function StudentLogin() {
               </form>
             ) : (
               <form onSubmit={handleVerify} className="space-y-5">
+                {isLocked ? (
+                  <LockoutNotice kind="locked" unlockAt={lockoutUntil!} onUnlock={clearLockout} />
+                ) : (
+                  <LockoutNotice kind="hidden" />
+                )}
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">
                     OTP sent to <span className="font-medium text-foreground">+91 {phone?.slice(-10)}</span>
