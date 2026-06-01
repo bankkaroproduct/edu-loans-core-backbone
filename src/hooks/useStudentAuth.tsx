@@ -234,6 +234,8 @@ export function StudentAuthProvider({ children }: { children: ReactNode }) {
         eligibilityData,
         setEligibilityData: handleSetEligibilityData,
         refreshLeads,
+        lockoutUntil,
+        clearLockout,
       }}
     >
       {children}
