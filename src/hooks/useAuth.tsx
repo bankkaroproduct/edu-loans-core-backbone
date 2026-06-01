@@ -204,6 +204,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setAppUser(null);
       setStatus("anonymous");
+
+      // Lovable Cloud Auth returned 429 — surface a structured rate-limit code
+      // so login screens can render the lockout notice with a countdown.
+      if (isRateLimitError(error as any)) {
+        return {
+          error: "Too many sign-in attempts. Please wait a few minutes and try again.",
+          code: "rate_limited" as const,
+          retryAfterSec: 15 * 60,
+        };
+      }
+
+      // Bad-credentials / other auth failure → bump the cosmetic soft counter.
+      bumpSoftCounter(email);
       return { error: error?.message ?? "Could not establish session. Please try again." };
     }
 
