@@ -7,11 +7,12 @@ import { Input } from "@/components/ui/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useStudentAuth } from "@/hooks/useStudentAuth";
+import { LockoutNotice } from "@/components/auth/LockoutNotice";
 import { ArrowLeft, Shield, Compass, BookOpen, RefreshCw } from "lucide-react";
 
 export default function StudentLogin() {
   const navigate = useNavigate();
-  const { sendOtp, verifyOtp, resetOtp, otpState, phone, eligibilityData } = useStudentAuth();
+  const { sendOtp, verifyOtp, resetOtp, otpState, phone, eligibilityData, lockoutUntil, clearLockout } = useStudentAuth();
   const [phoneInput, setPhoneInput] = useState(eligibilityData?.mobile || "");
   const [otp, setOtp] = useState("");
 
