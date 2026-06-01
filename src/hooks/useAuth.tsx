@@ -264,6 +264,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data.user);
     setAppUser(profile);
     setStatus("authenticated");
+    clearSoftCounter(email);
     return { error: null };
   };
 
