@@ -183,6 +183,11 @@ export function StudentAuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) {
+        if (isOtpRateLimit(error as any)) {
+          setState(s => ({ ...s, otpState: "otp_sent" }));
+          triggerLockout();
+          return false;
+        }
         setState(s => ({ ...s, otpState: "otp_sent" }));
         toast({
           title: "Verification failed",
